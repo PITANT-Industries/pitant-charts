@@ -1,0 +1,58 @@
+{
+  "name": "@pitant/charts-react",
+  "version": "0.0.1",
+  "description": "React 19 bindings for @pitant/charts",
+  "type": "module",
+  "license": "MIT",
+  "author": "Ali",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pitant/charts",
+    "directory": "packages/charts-react"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "@pitant/charts": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@pitant/charts": "workspace:*",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "keywords": [
+    "charts",
+    "react",
+    "webgpu",
+    "timeseries",
+    "scientific"
+  ],
+  "engines": {
+    "node": ">=22"
+  }
+}

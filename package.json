@@ -1,0 +1,33 @@
+{
+  "name": "@pitant/charts-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "bun run --filter @pitant/charts build && bun run --filter @pitant/charts-react build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit -p packages/charts/tsconfig.json && tsc --noEmit -p packages/charts-react/tsconfig.json",
+    "bench": "bun run --filter @pitant/benchmark bench",
+    "audit:colors": "node scripts/audit-hardcoded-colors.mjs",
+    "clean": "rm -rf packages/*/dist apps/*/dist"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "@webgpu/types": "^0.1.61",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1",
+    "@vitest/coverage-v8": "^3.1.1",
+    "tsup": "^8.4.0",
+    "lefthook": "^1.11.0",
+    "happy-dom": "^17.4.4",
+    "size-limit": "^11.2.0",
+    "@size-limit/file": "^11.2.0"
+  }
+}

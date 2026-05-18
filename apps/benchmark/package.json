@@ -1,0 +1,20 @@
+{
+  "name": "@pitant/benchmark",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Performance benchmark app for @pitant/charts",
+  "type": "module",
+  "scripts": {
+    "bench": "bun run src/run.ts",
+    "bench:update-baseline": "bun run src/run.ts --update-baseline",
+    "bench:json": "bun run src/run.ts --json",
+    "bench:scenario": "bun run src/run.ts",
+    "dev": "echo 'Benchmark dev server — see E1.6'"
+  },
+  "dependencies": {
+    "@pitant/charts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.11"
+  }
+}

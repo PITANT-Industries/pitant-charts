@@ -1,0 +1,92 @@
+/* @pitant/charts — CSS Variable Token Map
+ *
+ * All visual properties are driven by these custom properties.
+ * They cascade naturally — wrap a chart container in .dark or
+ * .high-contrast to switch palettes instantly.
+ *
+ * Tokens fall back to shadcn/ui variables (--background, --foreground,
+ * --border, etc.) so charts inherit the app theme with zero config.
+ */
+
+/* ── Light theme (default) ────────────────────────────────────────── */
+
+:root {
+  /* Series palette — maps to shadcn convention */
+  --chart-1: hsl(220, 70%, 50%);
+  --chart-2: hsl(160, 60%, 45%);
+  --chart-3: hsl(30, 80%, 55%);
+  --chart-4: hsl(280, 65%, 60%);
+  --chart-5: hsl(340, 75%, 55%);
+  --chart-6: hsl(200, 70%, 50%);
+  --chart-7: hsl(100, 60%, 45%);
+  --chart-8: hsl(50, 80%, 50%);
+
+  /* Surface tokens */
+  --chart-background: var(--background, hsl(0, 0%, 100%));
+  --chart-foreground: var(--foreground, hsl(222, 47%, 11%));
+  --chart-muted: var(--muted, hsl(210, 40%, 96%));
+  --chart-muted-foreground: var(--muted-foreground, hsl(215, 16%, 47%));
+  --chart-border: var(--border, hsl(214, 32%, 91%));
+
+  /* Interaction tokens */
+  --chart-crosshair: var(--chart-foreground);
+  --chart-crosshair-width: 1px;
+  --chart-selection-fill: hsl(220, 70%, 50%, 0.1);
+  --chart-selection-stroke: var(--chart-1);
+  --chart-tooltip-background: var(--popover, hsl(0, 0%, 100%));
+  --chart-tooltip-foreground: var(--popover-foreground, hsl(222, 47%, 11%));
+  --chart-tooltip-border: var(--chart-border);
+  --chart-tooltip-radius: var(--radius, 0.5rem);
+  --chart-tooltip-shadow: 0 2px 8px hsl(0, 0%, 0%, 0.08);
+
+  /* Axis tokens */
+  --chart-axis-color: var(--chart-muted-foreground);
+  --chart-axis-width: 1px;
+  --chart-grid-color: var(--chart-muted);
+  --chart-grid-width: 1px;
+  --chart-grid-dash: 4 4;
+
+  /* Typography tokens */
+  --chart-font-family: var(--font-sans, system-ui, sans-serif);
+  --chart-font-size-sm: 0.75rem;
+  --chart-font-size-base: 0.875rem;
+  --chart-font-size-lg: 1rem;
+
+  /* Layout tokens */
+  --chart-padding: 1rem;
+  --chart-gap: 0.5rem;
+  --chart-legend-gap: 0.75rem;
+}
+
+/* ── Dark theme ───────────────────────────────────────────────────── */
+
+.dark {
+  --chart-1: hsl(220, 70%, 65%);
+  --chart-2: hsl(160, 60%, 58%);
+  --chart-3: hsl(30, 80%, 65%);
+  --chart-4: hsl(280, 65%, 70%);
+  --chart-5: hsl(340, 75%, 65%);
+  --chart-6: hsl(200, 70%, 60%);
+  --chart-7: hsl(100, 60%, 55%);
+  --chart-8: hsl(50, 80%, 60%);
+
+  --chart-selection-fill: hsl(220, 70%, 65%, 0.15);
+  --chart-tooltip-shadow: 0 2px 8px hsl(0, 0%, 0%, 0.3);
+}
+
+/* ── High-contrast theme ──────────────────────────────────────────── */
+
+.high-contrast {
+  --chart-1: hsl(220, 100%, 40%);
+  --chart-2: hsl(0, 100%, 45%);
+  --chart-3: hsl(120, 100%, 30%);
+  --chart-4: hsl(280, 100%, 50%);
+  --chart-5: hsl(30, 100%, 45%);
+  --chart-6: hsl(180, 100%, 30%);
+  --chart-7: hsl(60, 100%, 35%);
+  --chart-8: hsl(320, 100%, 45%);
+
+  --chart-axis-width: 2px;
+  --chart-crosshair-width: 2px;
+  --chart-grid-width: 2px;
+}

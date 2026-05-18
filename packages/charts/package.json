@@ -1,0 +1,53 @@
+{
+  "name": "@pitant/charts",
+  "version": "0.0.1",
+  "description": "WebGPU-first, TypeScript-native scientific charting library for industrial time-series at scale",
+  "type": "module",
+  "license": "MIT",
+  "author": "Ali",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pitant/charts",
+    "directory": "packages/charts"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./data-engine": {
+      "types": "./dist/data-engine/index.d.ts",
+      "import": "./dist/data-engine/index.js"
+    },
+    "./styles/tokens.css": "./styles/tokens.css"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "styles",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "charts",
+    "webgpu",
+    "timeseries",
+    "scientific",
+    "visualization",
+    "canvas",
+    "line-chart",
+    "performance"
+  ],
+  "engines": {
+    "node": ">=22"
+  }
+}

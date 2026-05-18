@@ -1,0 +1,37 @@
+{
+  "005_pyramid_build_1M": {
+    "value": 21.07,
+    "unit": "ms",
+    "target": 100
+  },
+  "006_pyramid_build_5M": {
+    "value": 108.97,
+    "unit": "ms",
+    "target": 500
+  },
+  "007_streaming_append": {
+    "value": 1.698,
+    "unit": "ms/batch",
+    "target": 2
+  },
+  "010_fast_path_init": {
+    "value": 0.102,
+    "unit": "ms",
+    "target": 5
+  },
+  "011_query_perf": {
+    "value": 0.029,
+    "unit": "ms/query",
+    "target": 2
+  },
+  "012_memory_overhead": {
+    "value": 3,
+    "unit": "× raw",
+    "target": 3.5
+  },
+  "013_ingestion_throughput": {
+    "value": 52063471,
+    "unit": "pts/sec",
+    "target": 5000000
+  }
+}

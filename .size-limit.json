@@ -1,0 +1,23 @@
+[
+  {
+    "name": "@pitant/charts (core)",
+    "path": "packages/charts/dist/index.js",
+    "import": "{ createRenderContext }",
+    "limit": "40 kB",
+    "gzip": true
+  },
+  {
+    "name": "@pitant/charts (data-engine)",
+    "path": "packages/charts/dist/data-engine/index.js",
+    "import": "{ DataEngine }",
+    "limit": "15 kB",
+    "gzip": true
+  },
+  {
+    "name": "@pitant/charts-react",
+    "path": "packages/charts-react/dist/index.js",
+    "import": "{ ChartCanvas }",
+    "limit": "5 kB",
+    "gzip": true
+  }
+]
