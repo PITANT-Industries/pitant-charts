@@ -57,6 +57,7 @@ Data Engine (Worker) -> Layout Engine -> Render Backend -> <canvas>
 
 - [Project definition](project.md)
 - [Architecture](ARCHITECTURE.md)
+- [Architecture planning catalog](docs/architecture/README.md)
 - [Canonical roadmap](docs/ROADMAP.md)
 - [Detailed phase plans](plan/00-master-plan.md)
 - [Current session state](SESSION.md)

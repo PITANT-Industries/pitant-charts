@@ -27,6 +27,20 @@
         "@types/bun": "^1.3.11",
       },
     },
+    "apps/multiaxis-demo": {
+      "name": "@pitant/multiaxis-demo",
+      "version": "0.0.0",
+      "dependencies": {
+        "react": "^19.1.0",
+        "react-dom": "^19.1.0",
+      },
+      "devDependencies": {
+        "@types/react": "^19.1.0",
+        "@types/react-dom": "^19.1.0",
+        "typescript": "^5.8.3",
+        "vite": "^7.3.1",
+      },
+    },
     "packages/charts": {
       "name": "@pitant/charts",
       "version": "0.0.1",
@@ -156,6 +170,8 @@
     "@pitant/charts": ["@pitant/charts@workspace:packages/charts"],
 
     "@pitant/charts-react": ["@pitant/charts-react@workspace:packages/charts-react"],
+
+    "@pitant/multiaxis-demo": ["@pitant/multiaxis-demo@workspace:apps/multiaxis-demo"],
 
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
 

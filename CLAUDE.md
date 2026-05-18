@@ -7,8 +7,9 @@ workflows.
 ## Start Here
 
 1. Read `docs/ROADMAP.md` for current phase and next executable tasks.
-2. Read `SESSION.md` for the current handoff state.
-3. Use `plan/*.md` as detailed reference material, not as the primary tracker.
+2. Read `docs/architecture/README.md` for historian-style planning docs.
+3. Read `SESSION.md` for the current handoff state.
+4. Use `plan/*.md` as detailed reference material, not as the primary tracker.
 
 ## Project Shape
 
@@ -17,6 +18,7 @@ workflows.
 - `apps/benchmark`: benchmark harness.
 - `scripts`: repo maintenance scripts.
 - `docs/ROADMAP.md`: canonical delivery roadmap.
+- `docs/architecture/`: 00-10 planning catalog and phase evidence.
 
 ## Development Commands
 
@@ -44,4 +46,4 @@ bun run bench
 
 Phase 3 is the active implementation phase. The next major work is wiring
 actual TimeSeries rendering through the existing data engine and render
-contexts.
+contexts. Planning source of truth is now `docs/architecture/06-FEATURE-SPEC-INVENTORY.md`.

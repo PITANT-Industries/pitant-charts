@@ -3,8 +3,8 @@
 **Date:** 2026-05-18  
 **Current phase:** Phase 3 - TimeSeries and Data Pipeline  
 **Latest action:** Imported `/Users/ali/Pchart` tracked files into this repo,
-created canonical project docs, installed dependencies, built packages, and ran
-the verification suite.
+created canonical project docs, installed dependencies, built packages, ran the
+verification suite, and added the historian-style architecture planning catalog.
 
 ## What Exists
 
@@ -14,6 +14,9 @@ the verification suite.
 - React primitives and early `useChart()` hook.
 - Detailed legacy phase plans under `plan/`.
 - Canonical roadmap at `docs/ROADMAP.md`.
+- Architecture catalog at `docs/architecture/README.md`.
+- Source-of-truth feature inventory at
+  `docs/architecture/06-FEATURE-SPEC-INVENTORY.md`.
 
 ## Next Build Task
 
@@ -23,6 +26,10 @@ Start Phase 3 implementation:
 2. Wire `useChart().setData()` into `DataEngine.ingest()`.
 3. Generate line draw commands from LOD viewport queries.
 4. Render a single-pen TimeSeries through the existing render context.
+
+Before adding a new visible feature, update or check
+`docs/architecture/06-FEATURE-SPEC-INVENTORY.md` and the relevant frontend
+contract pack under `docs/frontend-contracts/`.
 
 ## Verification Status
 
