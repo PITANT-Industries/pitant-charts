@@ -2,11 +2,12 @@
 
 **Date:** 2026-05-19
 **Current phase:** Phase 5 - Registry, Documentation, Export, Launch
-**Latest action:** Fixed the first PR CI failures found after opening the Phase
-5 release-candidate PR. `harness:build` now rebuilds package declarations on a
-fresh checkout, the CDP verifier runs under Bun so it has WebSocket support on
-GitHub's Node 20 runners, and CI uses an explicit shared-runner benchmark
-profile while strict local benchmarks remain the release performance gate.
+**Latest action:** Fixed the PR CI failures and captured the passing Phase 5 CI
+run. `harness:build` rebuilds package declarations on fresh checkout, the CDP
+verifier runs under Bun so it has WebSocket support on GitHub's Node 20
+runners, Windows browser cleanup now terminates Vite process trees, and CI uses
+an explicit shared-runner benchmark profile while strict local benchmarks
+remain the release performance gate.
 
 ## What Exists
 
@@ -134,12 +135,10 @@ profile while strict local benchmarks remain the release performance gate.
 
 Continue Phase 5 implementation:
 
-1. Commit and push the CI-fix patch on the Phase 5 release-candidate PR.
-2. Re-run GitHub CI and capture the passing run URL in
-   `docs/architecture/phase-5/release-candidate-evidence.md`.
-3. Run the publish workflow with `dry_run=true` after the workflow is available
+1. Commit and push the passing CI evidence update.
+2. Run the publish workflow with `dry_run=true` after the workflow is available
    on the default branch.
-4. Start Phase 6 only after the external GitHub evidence is attached or the
+3. Start Phase 6 only after the external GitHub evidence is attached or the
    release owner accepts local release-candidate evidence as sufficient.
 
 Before adding a new visible feature, update or check
@@ -780,3 +779,5 @@ Run after Phase 5 PR CI-fix slice on 2026-05-19:
   verifier.
 - `bun run harness:cross-browser -- --browser=chromium --renderer=canvas2d --profile=compact`:
   pass after adding Windows process-tree cleanup for the Edge CI path.
+- GitHub PR CI run `26089497306`: pass for build, Canvas2D/WebGPU browser
+  smoke, Chromium, Firefox, WebKit/Safari runtime, and Microsoft Edge.

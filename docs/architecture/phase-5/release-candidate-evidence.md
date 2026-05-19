@@ -1,7 +1,7 @@
 # Phase 5 Release Candidate Evidence
 
 **Date:** 2026-05-19
-**Status:** Local release candidate complete; PR CI fix in progress.
+**Status:** Local release candidate complete; PR CI passed.
 
 ## Package Evidence
 
@@ -73,8 +73,24 @@ committed and pushed.
 
 Draft PR: https://github.com/PITANT-Industries/pitant-charts/pull/1
 
-First PR CI run:
+First PR CI run, failed:
 https://github.com/PITANT-Industries/pitant-charts/actions/runs/26088799878
+
+Second PR CI run, failed before browser verifier/runtime fixes:
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089123123
+
+Passing PR CI run:
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089497306
+
+Passing run coverage:
+
+- `build (22)`: typecheck, lint, build, tests, CI benchmark profile, registry
+  validation/typecheck, docs build, bundle-size gate, and package dry-run.
+- `browser-smoke (canvas2d)`: harness build, pixel smoke, FPS smoke.
+- `browser-smoke (webgpu)`: harness build, pixel/FPS smoke with capability
+  skip where `navigator.gpu` is unavailable.
+- `cross-browser-smoke`: Chromium, Firefox, WebKit/Safari runtime, and
+  Microsoft Edge compact Canvas2D render output.
 
 Observed failures and fixes:
 
@@ -118,9 +134,6 @@ workflow list until it is present on the default branch.
 
 ## Remaining External Evidence
 
-- Push the CI-fix commit.
-- Confirm the GitHub CI matrix passes, including Firefox, WebKit/Safari
-  runtime, and Microsoft Edge.
 - Dispatch `.github/workflows/publish.yml` with `dry_run=true` after the
   workflow exists on the default branch.
-- Attach the GitHub Actions run URL before claiming external Phase 5 closure.
+- Attach publish dry-run URL before claiming external Phase 5 closure.
