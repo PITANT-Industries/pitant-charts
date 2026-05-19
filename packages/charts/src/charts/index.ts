@@ -72,6 +72,28 @@ export {
   zoomRangeAroundCenter,
 } from './range-navigation.js'
 export type {
+  SpectrogramColorStop,
+  SpectrogramCommandFrame,
+  SpectrogramDataSet,
+  SpectrogramFrameOptions,
+  SpectrogramPlannedTile,
+  SpectrogramRenderOptions,
+  SpectrogramRenderPlan,
+  SpectrogramValueLayout,
+} from './spectrogram.js'
+export {
+  addSpectrogramToCommandList,
+  buildSpectrogramCommandFrame,
+  buildSpectrogramRenderPlan,
+  createSpectrogramViewTransform,
+  renderSpectrogramPlan,
+} from './spectrogram.js'
+export type {
+  SpectrogramChartCreateOptions,
+  SpectrogramChartOptions,
+} from './spectrogram-chart.js'
+export { SpectrogramChart } from './spectrogram-chart.js'
+export type {
   SpectrumCommandFrame,
   SpectrumDataSet,
   SpectrumFillSegment,

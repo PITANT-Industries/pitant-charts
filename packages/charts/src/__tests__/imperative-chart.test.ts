@@ -7,6 +7,8 @@ import {
   type RectOptions,
   type RenderContext,
   type RendererCapabilities,
+  SpectrogramChart,
+  type SpectrogramDataSet,
   SpectrumChart,
   type SpectrumDataSet,
   TimeSeriesChart,
@@ -104,6 +106,12 @@ const SPECTRUM_DATA: SpectrumDataSet = {
   ],
 }
 
+const SPECTROGRAM_DATA: SpectrogramDataSet = {
+  timeBins: new Float64Array([0, 1, 2]),
+  frequencyBins: new Float64Array([10, 20]),
+  values: new Float32Array([1, 2, 3, 4, 5, 6]),
+}
+
 describe('imperative chart classes', () => {
   it('renders TimeSeriesChart through the existing render-plan path', () => {
     const context = new FakeRenderContext()
@@ -186,5 +194,23 @@ describe('imperative chart classes', () => {
 
     chart.dispose()
     expect(() => chart.render()).toThrow('SpectrumChart has been disposed')
+  })
+
+  it('renders SpectrogramChart through the existing render-plan path', () => {
+    const context = new FakeRenderContext()
+    const chart = new SpectrogramChart(context, { data: SPECTROGRAM_DATA })
+
+    expect(chart.renderPlan.kind).toBe('spectrogram')
+    expect(chart.renderPlan.renderedTileCount).toBe(6)
+    expect(context.beginCount).toBe(1)
+    expect(context.endCount).toBe(1)
+    expect(context.rectCount).toBe(6)
+
+    chart.setRenderOptions({ xRange: [0.5, 2.5] })
+    expect(chart.renderPlan.renderedTileCount).toBe(4)
+    expect(context.beginCount).toBe(2)
+
+    chart.dispose()
+    expect(() => chart.render()).toThrow('SpectrogramChart has been disposed')
   })
 })

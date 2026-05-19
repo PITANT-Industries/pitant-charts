@@ -59,6 +59,17 @@ export type {
   UseDigitalChannelReturn,
 } from './digital-channel.js'
 export { DigitalChannel, useDigitalChannel } from './digital-channel.js'
+// Spectrogram
+export type {
+  SpectrogramColorStopConfig,
+  SpectrogramConfig,
+  SpectrogramMatrixData,
+  SpectrogramProps,
+  SpectrogramStats,
+  UseSpectrogramOptions,
+  UseSpectrogramReturn,
+} from './spectrogram.js'
+export { Spectrogram, useSpectrogram } from './spectrogram.js'
 // Spectrum
 export type {
   SpectrumColumnData,

@@ -1,5 +1,8 @@
 import type { RgbaColor } from '@pitant/charts'
 import {
+  Spectrogram,
+  type SpectrogramConfig,
+  type SpectrogramMatrixData,
   Spectrum,
   type SpectrumColumnData,
   type SpectrumConfig,
@@ -5664,6 +5667,84 @@ function PitantSpectrumEnginePanel({
   )
 }
 
+interface PitantSpectrogramEnginePanelProps {
+  activeSeries: SeriesConfig
+  displaySamples: readonly Sample[]
+}
+
+function PitantSpectrogramEnginePanel({
+  activeSeries,
+  displaySamples,
+}: PitantSpectrogramEnginePanelProps): React.JSX.Element {
+  const spectrogramData = useMemo(
+    () => buildPitantSpectrogramData(displaySamples, activeSeries),
+    [activeSeries, displaySamples],
+  )
+  const spectrogramConfig = useMemo(
+    () => buildPitantSpectrogramConfig(activeSeries),
+    [activeSeries],
+  )
+  const topMagnitude = maxFiniteValue(spectrogramData.values)
+
+  return (
+    <section className="pitant-spectrogram-panel" aria-label="PITANT Spectrogram engine">
+      <div className="pitant-spectrogram-header">
+        <div>
+          <p className="eyebrow">Scientific renderer</p>
+          <h3>{activeSeries.shortLabel} Spectrogram path</h3>
+        </div>
+        <dl className="pitant-spectrogram-readout">
+          <div>
+            <dt>Peak</dt>
+            <dd>{topMagnitude.toFixed(2)}</dd>
+          </div>
+          <div>
+            <dt>Windows</dt>
+            <dd>{spectrogramData.timeBins.length}</dd>
+          </div>
+          <div>
+            <dt>Bands</dt>
+            <dd>{spectrogramData.frequencyBins.length}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <Spectrogram
+        ariaLabel={`${activeSeries.label} spectrogram rendered by PITANT Spectrogram`}
+        aspectRatio={21 / 5}
+        chartKey={`multiaxis-demo-spectrogram-${activeSeries.id}`}
+        className="pitant-spectrogram-chart"
+        config={spectrogramConfig}
+        data={spectrogramData}
+        renderer="canvas2d"
+      >
+        {(chart) => (
+          <dl className="pitant-spectrogram-stats" aria-label="Spectrogram render statistics">
+            <div>
+              <dt>Path</dt>
+              <dd>PITANT Spectrogram</dd>
+            </div>
+            <div>
+              <dt>Tiles</dt>
+              <dd>{chart.stats.renderedTileCount}</dd>
+            </div>
+            <div>
+              <dt>Window</dt>
+              <dd>
+                {chart.stats.timeBinCount} x {chart.stats.frequencyBinCount}
+              </dd>
+            </div>
+            <div>
+              <dt>Render</dt>
+              <dd>{chart.stats.renderTime.toFixed(1)} ms</dd>
+            </div>
+          </dl>
+        )}
+      </Spectrogram>
+    </section>
+  )
+}
+
 function App(): React.JSX.Element {
   const samples = useMemo(() => generateSamples(), [])
   const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode)
@@ -5978,6 +6059,8 @@ function App(): React.JSX.Element {
         />
 
         <PitantSpectrumEnginePanel displaySamples={displaySamples} />
+
+        <PitantSpectrogramEnginePanel activeSeries={activeSeries} displaySamples={displaySamples} />
 
         {overlays.legend ? (
           <ScientificLegend
@@ -7862,6 +7945,79 @@ function buildPitantSpectrumConfig(topBin: SpectrumBin): SpectrumConfig {
       paddingRatio: 0.12,
     },
   }
+}
+
+function buildPitantSpectrogramData(
+  samples: readonly Sample[],
+  series: SeriesConfig,
+): SpectrogramMatrixData {
+  const timeBinCount: number = 12
+  const frequencyBinCount: number = 14
+  const sampleIntervalSeconds = 0.5
+  const windowSize = Math.max(8, Math.min(24, Math.floor(samples.length / 4) || 8))
+  const maxStart = Math.max(0, samples.length - windowSize)
+  const timeBins = new Float64Array(timeBinCount)
+  const frequencyBins = new Float64Array(frequencyBinCount)
+  const values = new Float32Array(timeBinCount * frequencyBinCount)
+  const timeSpan = Math.max(1, (samples[samples.length - 1]?.time ?? 1) - (samples[0]?.time ?? 0))
+  const timeBinWidth = timeSpan / Math.max(1, timeBinCount)
+  const frequencyBinWidth = 1 / Math.max(sampleIntervalSeconds, windowSize * sampleIntervalSeconds)
+
+  for (let timeIndex = 0; timeIndex < timeBinCount; timeIndex++) {
+    const ratio = timeBinCount === 1 ? 0 : timeIndex / (timeBinCount - 1)
+    const startIndex = Math.round(maxStart * ratio)
+    const windowSamples = samples.slice(startIndex, startIndex + windowSize)
+    const windowValues = sampleValues(windowSamples, series)
+    const windowStart = windowSamples[0]?.time ?? timeIndex * timeBinWidth
+    timeBins[timeIndex] = windowStart + (windowSize * sampleIntervalSeconds) / 2
+
+    for (let frequencyIndex = 0; frequencyIndex < frequencyBinCount; frequencyIndex++) {
+      const bin = frequencyIndex + 1
+      frequencyBins[frequencyIndex] = bin / (windowSize * sampleIntervalSeconds)
+      values[frequencyIndex * timeBinCount + timeIndex] = dftMagnitude(windowValues, bin)
+    }
+  }
+
+  return {
+    timeBins,
+    frequencyBins,
+    values,
+    timeBinWidth,
+    frequencyBinWidth,
+  }
+}
+
+function buildPitantSpectrogramConfig(series: SeriesConfig): SpectrogramConfig {
+  return {
+    colorStops: [
+      { value: 0, rgba: [0.04, 0.07, 0.16, 1] },
+      { value: 0.34, rgba: [0.03, 0.58, 0.78, 1] },
+      { value: 0.68, rgba: [0.93, 0.74, 0.22, 1] },
+      { value: 1, rgba: [0.86, 0.15, 0.15, 1] },
+    ],
+    xAxis: {
+      label: 'Seconds',
+      formatValue: (value) => `${value.toFixed(0)}`,
+    },
+    yAxis: {
+      label: 'Hz',
+      formatValue: (value) => `${value.toFixed(2)}`,
+    },
+    zAxis: {
+      label: `${series.shortLabel} STFT magnitude`,
+    },
+  }
+}
+
+function maxFiniteValue(values: Float32Array | Float64Array): number {
+  let max = 0
+  for (let index = 0; index < values.length; index++) {
+    const value = values[index]
+    if (typeof value === 'number' && Number.isFinite(value) && value > max) {
+      max = value
+    }
+  }
+  return max
 }
 
 function SpectrumPanel({ bins }: SpectrumPanelProps): React.JSX.Element {

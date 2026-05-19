@@ -2,11 +2,12 @@
  * Benchmark scenarios for @pitant/charts.
  *
  * Scenarios 1-4, 8-9 require a browser (WebGPU/Canvas2D).
- * Scenarios 5-7 and 10-26 are pure-compute/package-level gates.
+ * Scenarios 5-7 and 10-27 are pure-compute/package-level gates.
  * Bundle-size scenario runs via size-limit.
  */
 import {
   addDigitalChannelToCommandList,
+  addSpectrogramToCommandList,
   addSpectrumBandsToCommandList,
   addSpectrumPeakMarkersToCommandList,
   addSpectrumToCommandList,
@@ -16,6 +17,7 @@ import {
   addTimeSeriesSpcTracksToCommandList,
   addTimeSeriesToCommandList,
   buildDigitalChannelRenderPlan,
+  buildSpectrogramRenderPlan,
   buildSpectrumRenderPlan,
   buildTimeSeriesCommandFrame,
   buildTimeSeriesRenderPlan,
@@ -26,6 +28,7 @@ import {
   panRangeByPixels,
   panRangeByValue,
   RenderCommandList,
+  type SpectrogramDataSet,
   type SpectrumFrequencyBand,
   type SpectrumPeakMarker,
   type SpectrumSeries,
@@ -194,6 +197,49 @@ function generateSpectrumData(binCount: number): {
         frequencyEnd: 336,
       },
     ],
+  }
+}
+
+function generateSpectrogramData(
+  timeBinCount: number,
+  frequencyBinCount: number,
+): SpectrogramDataSet {
+  const timeBins = new Float64Array(timeBinCount)
+  const frequencyBins = new Float64Array(frequencyBinCount)
+  const values = new Float32Array(timeBinCount * frequencyBinCount)
+  const timeStepSeconds = 15
+  const frequencyStepHz = 2
+
+  for (let timeIndex = 0; timeIndex < timeBinCount; timeIndex++) {
+    timeBins[timeIndex] = timeIndex * timeStepSeconds
+  }
+  for (let frequencyIndex = 0; frequencyIndex < frequencyBinCount; frequencyIndex++) {
+    frequencyBins[frequencyIndex] = frequencyIndex * frequencyStepHz
+  }
+
+  for (let frequencyIndex = 0; frequencyIndex < frequencyBinCount; frequencyIndex++) {
+    const frequency = frequencyBins[frequencyIndex] ?? 0
+    for (let timeIndex = 0; timeIndex < timeBinCount; timeIndex++) {
+      const time = timeBins[timeIndex] ?? 0
+      const bearingDrift = 72 + Math.sin(time / 420) * 9
+      const gearMeshDrift = 310 + Math.cos(time / 780) * 15
+      const resonance =
+        gaussian(frequency, bearingDrift, 3.5) * (28 + Math.sin(time / 180) * 8) +
+        gaussian(frequency, gearMeshDrift, 9) * (18 + Math.cos(time / 240) * 6)
+      const floor =
+        1.2 +
+        Math.abs(Math.sin((timeIndex + frequencyIndex) / 31)) * 0.5 +
+        Math.abs(Math.cos(frequencyIndex / 47)) * 0.35
+      values[frequencyIndex * timeBinCount + timeIndex] = floor + resonance
+    }
+  }
+
+  return {
+    timeBins,
+    frequencyBins,
+    values,
+    timeBinWidth: timeStepSeconds,
+    frequencyBinWidth: frequencyStepHz,
   }
 }
 
@@ -1093,6 +1139,44 @@ scenarios['026_spectrum_1m_window_64k_bins'] = () => {
   return {
     scenario: '026_spectrum_1m_window_64k_bins',
     metric: `${(sourceWindowSamples / 1e6).toFixed(0)}M-sample window as ${renderedBinCount.toLocaleString()} spectrum bins (${commandCount} commands)`,
+    value: Math.round(medianMs * 100) / 100,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 027: Spectrogram precomputed-tile render planning ─
+
+scenarios['027_spectrogram_60m_64k_tiles'] = () => {
+  const timeBinCount = 256
+  const frequencyBinCount = 256
+  const data = generateSpectrogramData(timeBinCount, frequencyBinCount)
+  const target = 35 // ms for one-hour STFT tile payload as 64k precomputed cells
+
+  const warmup = buildSpectrogramRenderPlan(data)
+  const warmupCommands = new RenderCommandList()
+  addSpectrogramToCommandList(warmupCommands, warmup)
+
+  const times: number[] = []
+  let renderedTileCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 5; i++) {
+    const start = performance.now()
+    const plan = buildSpectrogramRenderPlan(data)
+    const commands = new RenderCommandList()
+    addSpectrogramToCommandList(commands, plan)
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    renderedTileCount = plan.renderedTileCount
+    commandCount = commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '027_spectrogram_60m_64k_tiles',
+    metric: `${timeBinCount} windows x ${frequencyBinCount} bands as ${renderedTileCount.toLocaleString()} tiles (${commandCount.toLocaleString()} commands)`,
     value: Math.round(medianMs * 100) / 100,
     unit: 'ms',
     target,

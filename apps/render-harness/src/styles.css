@@ -121,6 +121,10 @@ select {
   min-height: 260px;
 }
 
+.chart-surface.spectrogram {
+  min-height: 300px;
+}
+
 .chart-overlay {
   position: absolute;
   inset: 12px 14px auto 14px;

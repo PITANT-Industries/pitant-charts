@@ -453,6 +453,16 @@ packs after v1 field feedback.
   source window represented as 64k precomputed spectrum bins.
 - [x] Render harness `spectrum` profile and the multi-axis demo exercise the
   public `Spectrum` package path.
+- [x] Precomputed-tile `Spectrogram` / `SpectrogramChart` support renders
+  upstream STFT time-frequency tiles without making the chart package
+  responsible for authoritative STFT computation.
+- [x] React `Spectrogram` passes tile matrices into the core render plan and
+  SVG/PNG export path.
+- [x] `027_spectrogram_60m_64k_tiles` benchmark covers a one-hour
+  regular-cadence source window represented as 64k precomputed spectrogram
+  tiles.
+- [x] Render harness `spectrogram` profile and the multi-axis demo exercise the
+  public `Spectrogram` package path.
 
 **Tests and Acceptance.** Pack-specific unit, visual, and performance tests.
 

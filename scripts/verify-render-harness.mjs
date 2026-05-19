@@ -16,7 +16,7 @@ const VISUAL_BASELINE_PATH = resolve(HARNESS_DIR, 'visual-baselines.json')
 const VIEWPORT = { width: 1280, height: 900, deviceScaleFactor: 1 }
 const VISUAL_GRID = { columns: 24, rows: 12 }
 const DEFAULT_RENDERERS = ['canvas2d', 'webgpu']
-const DEFAULT_VERIFY_PROFILES = ['compact', 'bands', 'anomaly', 'spc', 'spectrum']
+const DEFAULT_VERIFY_PROFILES = ['compact', 'bands', 'anomaly', 'spc', 'spectrum', 'spectrogram']
 const DEFAULT_VISUAL_PROFILES = ['compact', 'large']
 const DEFAULT_FPS_PROFILES = ['compact']
 const MIN_SIGNIFICANT_PIXELS = 90
@@ -286,12 +286,22 @@ function validateProfileState(state, profile) {
   if (profile !== 'spectrum' && state.spectrumBins !== 0) {
     errors.push(`Expected ${profile} profile to render 0 spectrum bins, got ${state.spectrumBins}.`)
   }
+  if (profile === 'spectrogram' && state.spectrogramTiles !== 12288) {
+    errors.push(
+      `Expected spectrogram profile to render 12288 spectrogram tiles, got ${state.spectrogramTiles ?? 'none'}.`,
+    )
+  }
+  if (profile !== 'spectrogram' && state.spectrogramTiles !== 0) {
+    errors.push(
+      `Expected ${profile} profile to render 0 spectrogram tiles, got ${state.spectrogramTiles}.`,
+    )
+  }
 
   return errors
 }
 
 function expectedChartSurfaceCount(profile) {
-  return profile === 'spectrum' ? 3 : 2
+  return profile === 'spectrum' || profile === 'spectrogram' ? 3 : 2
 }
 
 async function runFpsBenchmark(tab, renderer, profile) {

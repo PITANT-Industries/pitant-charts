@@ -29,7 +29,7 @@ export function commandFrameToSvg(
   for (const command of frame.commands.sorted()) {
     const element = commandToSvgElement(command, frame.transform)
     if (!element) continue
-    if (command.kind === 'line' || command.kind === 'fill') {
+    if (command.kind === 'line' || command.kind === 'fill' || command.kind === 'rect') {
       dataElements.push(element)
     } else {
       screenElements.push(element)
@@ -72,7 +72,7 @@ function commandToSvgElement(command: DrawCommand, transform: ViewTransform): st
     case 'fill':
       return fillToSvg(command.upper, command.lower, command.options, transform)
     case 'rect':
-      return rectToSvg(command.x, command.y, command.w, command.h, command.options)
+      return rectToSvg(command.x, command.y, command.w, command.h, command.options, transform)
     case 'text':
       return textToSvg(command.text, command.x, command.y, command.options)
   }
@@ -107,12 +107,19 @@ function rectToSvg(
   width: number,
   height: number,
   options: RectOptions,
+  transform: ViewTransform,
 ): string | null {
+  const topLeft = transform.dataToPixel(x, y)
+  const bottomRight = transform.dataToPixel(x + width, y + height)
+  const screenX = Math.min(topLeft.x, bottomRight.x)
+  const screenY = Math.min(topLeft.y, bottomRight.y)
+  const screenWidth = Math.abs(bottomRight.x - topLeft.x)
+  const screenHeight = Math.abs(bottomRight.y - topLeft.y)
   const attrs: string[] = [
-    `x="${formatNumber(x)}"`,
-    `y="${formatNumber(y)}"`,
-    `width="${formatNumber(width)}"`,
-    `height="${formatNumber(height)}"`,
+    `x="${formatNumber(screenX)}"`,
+    `y="${formatNumber(screenY)}"`,
+    `width="${formatNumber(screenWidth)}"`,
+    `height="${formatNumber(screenHeight)}"`,
   ]
   if (options.fillColor) attrs.push(fillAttrs(options.fillColor))
   if (options.strokeColor) attrs.push(strokeAttrs(options.strokeColor, options.strokeWidth ?? 1))

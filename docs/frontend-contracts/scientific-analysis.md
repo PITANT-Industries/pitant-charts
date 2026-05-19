@@ -11,7 +11,7 @@ quality engineers, and process engineers.
 
 | Surface | Path or symbol | 06 section |
 |---|---|---|
-| Future chart | `Spectrogram` | Phase 6 Chart Family Use / Do Not Use Catalog |
+| Package API | `Spectrogram`, `useSpectrogram`, `SpectrogramChart` | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Package API | `Spectrum`, `useSpectrum`, `SpectrumChart` | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Future chart | `BodeChart` | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Future transform | `spectrogram tile generation` | Transform Inventory |
@@ -35,6 +35,22 @@ quality engineers, and process engineers.
     yAxis: { label: 'Magnitude', baseline: 0 },
   }}
 />
+
+<Spectrogram
+  ariaLabel="Pump vibration spectrogram"
+  data={{
+    timeBins,
+    frequencyBins,
+    values,
+    timeBinWidth: 15,
+    frequencyBinWidth: 2,
+  }}
+  config={{
+    xAxis: { label: 'Seconds' },
+    yAxis: { label: 'Hz' },
+    zAxis: { label: 'Magnitude' },
+  }}
+/>
 ```
 
 ## Success State Shape
@@ -43,7 +59,10 @@ quality engineers, and process engineers.
   visible in tooltip or legend.
 - Initial Spectrum view renders precomputed frequency bins, peak labels, and
   frequency bands through the package command-frame path.
-- Spectrogram tiles later pan and zoom on the same time axis as linked trends.
+- Initial Spectrogram view renders precomputed time-frequency tiles through the
+  package command-frame path.
+- Spectrogram labels must make upstream STFT/window/sample-rate provenance
+  visible before fault-signature conclusions are trusted.
 - Spectrum view labels must make the upstream window/sample-rate provenance
   visible before band-power or harmonic conclusions are trusted.
 - Bode view shows gain, phase, confidence, and invalid-pair states.
@@ -52,8 +71,10 @@ quality engineers, and process engineers.
 
 - Success: `spectrum-1m-window` renders through benchmark
   `026_spectrum_1m_window_64k_bins` and render-harness profile `spectrum`.
-- Future success: `spectrogram-tiles-60m` and `bode-response-fixture` render
-  within their declared benchmark profiles.
+- Success: `spectrogram-tiles-60m` renders through benchmark
+  `027_spectrogram_60m_64k_tiles` and render-harness profile `spectrogram`.
+- Future success: `bode-response-fixture` renders within its declared benchmark
+  profile.
 - Degraded: irregular cadence, missing sampling-rate metadata, or low
   confidence appears as a visible degraded state.
 - Denied: profile or tenant disables specialist scientific analysis.
@@ -71,9 +92,10 @@ quality engineers, and process engineers.
 
 ## Profile Gating
 
-Initial Spectrum is enabled for `plant`, `enterprise`, and `premium`
-deployments when upstream analytics provides frozen frequency bins. Spectrogram
-and Bode remain hidden until their fixtures move beyond `contract_only`.
+Initial Spectrum and Spectrogram are enabled for `plant`, `enterprise`, and
+`premium` deployments when upstream analytics provides frozen frequency bins or
+time-frequency tiles. Bode remains hidden until its fixture moves beyond
+`contract_only`.
 
 ## Mode Vector Summary
 

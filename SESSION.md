@@ -2,17 +2,18 @@
 
 **Date:** 2026-05-19
 **Current phase:** Phase 6 - Post-v1 Industrial Chart Packs
-**Latest action:** Continued Phase 6 with the initial precomputed-bin Spectrum
-pack in the core engine, React API, render harness, benchmark suite, frontend
-contract pack, and multi-axis demo. The demo's vibration spectrum panel now
-mounts the public `Spectrum` component while keeping the compact bar readout,
-so visible scientific-analysis work stays attached to the package engine.
+**Latest action:** Continued Phase 6 with the initial precomputed-tile
+Spectrogram pack in the core engine, React API, render harness, benchmark
+suite, frontend contract pack, and multi-axis demo. The demo now mounts visible
+PITANT Spectrum and Spectrogram panels from the package APIs, so
+scientific-analysis rendering stays continuously exercised through shared
+engine code instead of bespoke demo-only SVG.
 
 ## What Exists
 
 - Bun monorepo with `@pitant/charts`, `@pitant/charts-react`, and benchmark app.
-- Render harness app with compact/large/bands/anomaly/spc/spectrum data profiles and renderer
-  selection.
+- Render harness app with compact/large/bands/anomaly/spc/spectrum/spectrogram
+  data profiles and renderer selection.
 - Core render contexts for WebGPU and Canvas2D.
 - Worker-backed data engine and LOD pyramid.
 - Benchmark suite includes 8-pen TimeSeries and 16-channel DigitalChannel
@@ -34,8 +35,9 @@ so visible scientific-analysis work stays attached to the package engine.
   disturbing data-space grid and series transforms.
 - Historian query rows and trend fixtures can be adapted into TimeSeries
   columnar data without pulling in a runtime dependency on `pitant-historian`.
-- Non-React consumers can use `TimeSeriesChart`, `DigitalChannelChart`, and `SpectrumChart`
-  directly against a `RenderContext` or create them from a canvas.
+- Non-React consumers can use `TimeSeriesChart`, `DigitalChannelChart`,
+  `SpectrumChart`, and `SpectrogramChart` directly against a `RenderContext` or
+  create them from a canvas.
 - Docs examples now cover React trend composition, digital channel lanes,
   synchronized dashboards, and core imperative chart usage.
 - Initial frontend contract packs exist for historian trends, digital channels,
@@ -173,6 +175,14 @@ so visible scientific-analysis work stays attached to the package engine.
   `Spectrum` component against the existing spectrum bins, so the demo can show
   scientific-analysis rendering through package code instead of bespoke bars
   alone.
+- Phase 6 initial Spectrogram support exists in core and React config, with
+  precomputed time-frequency tiles, command-frame/SVG export coverage, browser
+  harness `spectrogram` profile coverage, and benchmark scenario
+  `027_spectrogram_60m_64k_tiles`.
+- The multi-axis demo now mounts the public `Spectrogram` component against a
+  frozen upstream-style STFT tile matrix for the active signal, so spectrogram
+  work is visible on the default page and remains outside authoritative STFT
+  computation.
 
 ## Next Build Task
 
@@ -181,8 +191,8 @@ Continue Phase 6 implementation:
 1. Build the next concrete post-v1 industrial pack with the same rule: no
    visible runtime claim without a fixture, a contract-pack update, and a
    benchmark or browser-harness state.
-2. Prioritize spectrogram or capability/distribution next unless a higher-value
-   demo need appears first.
+2. Prioritize capability/distribution next unless a higher-value demo need
+   appears first.
 3. Keep correlation, KPI, and PDF packs at
    contract-only until their benchmark fixtures exist.
 
@@ -371,6 +381,30 @@ Run after Phase 6 Spectrum precomputed-bin slice on 2026-05-19:
   `026_spectrum_1m_window_64k_bins` measured 1.48 ms in the full run against a
   25 ms target
 - `git diff --check`: pass
+
+Run after Phase 6 Spectrogram precomputed-tile slice on 2026-05-19:
+
+- `bun run lint`: pass, 140 files checked
+- `bun run typecheck`: pass
+- `bun run build`: pass
+- Focused tests for Spectrogram core, public API, imperative chart classes, and
+  React Spectrogram: pass, 4 files / 15 tests
+- `bun run --filter @pitant/benchmark bench 027`: pass,
+  `027_spectrogram_60m_64k_tiles` at 5.44 ms against a 35 ms target
+- `bun run --filter @pitant/render-harness build`: pass
+- `bun run --filter @pitant/multiaxis-demo build`: pass
+- `bun run harness:verify -- --renderers=canvas2d --profiles=spectrogram`:
+  pass; Canvas2D spectrogram profile produced significant chart pixels with
+  12,288 spectrogram tiles
+- `bun run test`: pass, 34 files / 358 tests
+- `bun run bench`: pass, 22/22 benchmark scenarios;
+  `027_spectrogram_60m_64k_tiles` measured 2.91 ms in the full run against a
+  35 ms target. One prior full-bench run missed existing
+  `007_streaming_append`, but isolated `007` immediately passed at
+  1.49 ms/batch and the rerun full suite passed.
+- Playwright local demo smoke against `http://127.0.0.1:5174/`: pass; default
+  page exposes the PITANT Spectrogram engine panel with a nonblank canvas,
+  168 rendered tiles, and render time around 0.6 ms.
 
 Run after Phase 3 high-DPI resize slice on 2026-05-19:
 

@@ -5,6 +5,9 @@ import {
   DigitalChannel,
   type DigitalChannelColumnData,
   type DigitalChannelConfig,
+  Spectrogram,
+  type SpectrogramConfig,
+  type SpectrogramMatrixData,
   Spectrum,
   type SpectrumColumnData,
   type SpectrumConfig,
@@ -15,12 +18,13 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 
 type RendererChoice = RendererType | 'auto'
-type LoadProfile = 'compact' | 'large' | 'bands' | 'anomaly' | 'spc' | 'spectrum'
+type LoadProfile = 'compact' | 'large' | 'bands' | 'anomaly' | 'spc' | 'spectrum' | 'spectrogram'
 
 interface GeneratedData {
   analog: TimeSeriesColumnData
   digital: DigitalChannelColumnData
   spectrum: SpectrumColumnData
+  spectrogram: SpectrogramMatrixData
 }
 
 declare global {
@@ -35,12 +39,21 @@ declare global {
       analogSpcTracks: number
       digitalChannels: number
       spectrumBins: number
+      spectrogramTiles: number
     }
   }
 }
 
 const RENDERERS: readonly RendererChoice[] = ['auto', 'canvas2d', 'webgpu']
-const PROFILES: readonly LoadProfile[] = ['compact', 'large', 'bands', 'anomaly', 'spc', 'spectrum']
+const PROFILES: readonly LoadProfile[] = [
+  'compact',
+  'large',
+  'bands',
+  'anomaly',
+  'spc',
+  'spectrum',
+  'spectrogram',
+]
 
 const SERIES_CONFIG: TimeSeriesConfig['series'] = [
   {
@@ -249,6 +262,26 @@ const SPECTRUM_CONFIG: SpectrumConfig = {
   },
 }
 
+const SPECTROGRAM_CONFIG: SpectrogramConfig = {
+  colorStops: [
+    { value: 0, rgba: [0.04, 0.07, 0.16, 1] },
+    { value: 0.35, rgba: [0.03, 0.58, 0.78, 1] },
+    { value: 0.7, rgba: [0.93, 0.74, 0.22, 1] },
+    { value: 1, rgba: [0.86, 0.15, 0.15, 1] },
+  ],
+  xAxis: {
+    label: 'Seconds',
+    formatValue: (value) => `${value.toFixed(0)}`,
+  },
+  yAxis: {
+    label: 'Hz',
+    formatValue: (value) => `${value.toFixed(0)}`,
+  },
+  zAxis: {
+    label: 'Magnitude',
+  },
+}
+
 export function App(): React.JSX.Element {
   const [renderer, setRenderer] = useState<RendererChoice>(() =>
     readChoiceFromQuery('renderer', RENDERERS, 'auto'),
@@ -261,7 +294,7 @@ export function App(): React.JSX.Element {
       ? 180_000
       : profile === 'bands' || profile === 'anomaly'
         ? 90_000
-        : profile === 'spc' || profile === 'spectrum'
+        : profile === 'spc' || profile === 'spectrum' || profile === 'spectrogram'
           ? 10_000
           : 12_000
   const generated = useMemo(() => generateData(pointCount, profile), [pointCount, profile])
@@ -305,8 +338,19 @@ export function App(): React.JSX.Element {
       analogSpcTracks: profile === 'spc' ? SPC_TRACK_CONFIG.length : 0,
       digitalChannels: DIGITAL_CONFIG.length,
       spectrumBins: profile === 'spectrum' ? generated.spectrum.frequencies.length : 0,
+      spectrogramTiles:
+        profile === 'spectrogram'
+          ? generated.spectrogram.timeBins.length * generated.spectrogram.frequencyBins.length
+          : 0,
     }
-  }, [generated.spectrum.frequencies.length, pointCount, profile, renderer])
+  }, [
+    generated.spectrogram.frequencyBins.length,
+    generated.spectrogram.timeBins.length,
+    generated.spectrum.frequencies.length,
+    pointCount,
+    profile,
+    renderer,
+  ])
 
   return (
     <main className="harness-shell" data-profile={profile} data-renderer={renderer}>
@@ -436,6 +480,34 @@ export function App(): React.JSX.Element {
           </Spectrum>
         </section>
       ) : null}
+
+      {profile === 'spectrogram' ? (
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>STFT Spectrogram</h2>
+              <p>Precomputed time-frequency tile API, one-hour source window</p>
+            </div>
+          </div>
+          <Spectrogram
+            ariaLabel="STFT spectrogram render harness"
+            className="chart-surface spectrogram"
+            config={{ ...SPECTROGRAM_CONFIG, renderer }}
+            data={generated.spectrogram}
+          >
+            {(chart) => (
+              <div className="chart-overlay">
+                <SpectrogramStatsRow
+                  frequencyBinCount={chart.stats.frequencyBinCount}
+                  renderTime={chart.stats.renderTime}
+                  renderedTileCount={chart.stats.renderedTileCount}
+                  timeBinCount={chart.stats.timeBinCount}
+                />
+              </div>
+            )}
+          </Spectrogram>
+        </section>
+      ) : null}
     </main>
   )
 }
@@ -496,6 +568,35 @@ function SpectrumStatsRow(props: {
       <div>
         <dt>Segments</dt>
         <dd>{segmentCount}</dd>
+      </div>
+      <div>
+        <dt>Render</dt>
+        <dd>{renderTime.toFixed(2)} ms</dd>
+      </div>
+    </dl>
+  )
+}
+
+function SpectrogramStatsRow(props: {
+  frequencyBinCount: number
+  renderTime: number
+  renderedTileCount: number
+  timeBinCount: number
+}): React.JSX.Element {
+  const { frequencyBinCount, renderTime, renderedTileCount, timeBinCount } = props
+  return (
+    <dl className="stats-row">
+      <div>
+        <dt>Tiles</dt>
+        <dd>{renderedTileCount.toLocaleString()}</dd>
+      </div>
+      <div>
+        <dt>Windows</dt>
+        <dd>{timeBinCount}</dd>
+      </div>
+      <div>
+        <dt>Bands</dt>
+        <dd>{frequencyBinCount}</dd>
       </div>
       <div>
         <dt>Render</dt>
@@ -567,6 +668,7 @@ function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
       },
     },
     spectrum: generateSpectrumData(8192),
+    spectrogram: generateSpectrogramData(128, 96),
   }
 }
 
@@ -591,6 +693,50 @@ function generateSpectrumData(binCount: number): SpectrumColumnData {
     columns: {
       magnitude,
     },
+  }
+}
+
+function generateSpectrogramData(
+  timeBinCount: number,
+  frequencyBinCount: number,
+): SpectrogramMatrixData {
+  const timeBins = new Float64Array(timeBinCount)
+  const frequencyBins = new Float64Array(frequencyBinCount)
+  const values = new Float32Array(timeBinCount * frequencyBinCount)
+  const timeBinWidth = 30
+  const frequencyBinWidth = 4
+
+  for (let timeIndex = 0; timeIndex < timeBinCount; timeIndex++) {
+    timeBins[timeIndex] = timeIndex * timeBinWidth
+  }
+  for (let frequencyIndex = 0; frequencyIndex < frequencyBinCount; frequencyIndex++) {
+    frequencyBins[frequencyIndex] = frequencyIndex * frequencyBinWidth
+  }
+
+  for (let frequencyIndex = 0; frequencyIndex < frequencyBinCount; frequencyIndex++) {
+    const frequency = frequencyBins[frequencyIndex] ?? 0
+    for (let timeIndex = 0; timeIndex < timeBinCount; timeIndex++) {
+      const time = timeBins[timeIndex] ?? 0
+      const bearing = 72 + Math.sin(time / 440) * 8
+      const gearMesh = 310 + Math.cos(time / 760) * 13
+      const floor =
+        1.2 +
+        Math.abs(Math.sin((timeIndex + frequencyIndex) / 31)) * 0.5 +
+        Math.abs(Math.cos(frequencyIndex / 41)) * 0.35
+      const magnitude =
+        floor +
+        gaussian(frequency, bearing, 3.8) * (26 + Math.sin(time / 180) * 7) +
+        gaussian(frequency, gearMesh, 9) * (17 + Math.cos(time / 230) * 5)
+      values[frequencyIndex * timeBinCount + timeIndex] = magnitude
+    }
+  }
+
+  return {
+    timeBins,
+    frequencyBins,
+    values,
+    timeBinWidth,
+    frequencyBinWidth,
   }
 }
 

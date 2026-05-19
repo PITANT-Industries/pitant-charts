@@ -16,7 +16,15 @@ const FPS_FRAME_COUNT = 90
 const DEFAULT_BROWSERS = ['chromium', 'firefox', 'webkit']
 const DEFAULT_RENDERERS = ['canvas2d']
 const DEFAULT_PROFILES = ['compact']
-const SUPPORTED_PROFILES = ['compact', 'large', 'bands', 'anomaly', 'spc', 'spectrum']
+const SUPPORTED_PROFILES = [
+  'compact',
+  'large',
+  'bands',
+  'anomaly',
+  'spc',
+  'spectrum',
+  'spectrogram',
+]
 
 const args = parseArgs(process.argv.slice(2))
 const browsers = args.browsers ?? DEFAULT_BROWSERS
@@ -209,6 +217,16 @@ function validateProfileState(state, profile) {
   if (profile !== 'spectrum' && state.spectrumBins !== 0) {
     errors.push(`Expected ${profile} profile to render 0 spectrum bins, got ${state.spectrumBins}.`)
   }
+  if (profile === 'spectrogram' && state.spectrogramTiles !== 12288) {
+    errors.push(
+      `Expected spectrogram profile to render 12288 spectrogram tiles, got ${state.spectrogramTiles ?? 'none'}.`,
+    )
+  }
+  if (profile !== 'spectrogram' && state.spectrogramTiles !== 0) {
+    errors.push(
+      `Expected ${profile} profile to render 0 spectrogram tiles, got ${state.spectrogramTiles}.`,
+    )
+  }
 
   return errors
 }
@@ -228,7 +246,7 @@ function launchBrowser(browserName, renderer) {
 }
 
 function expectedChartSurfaceCount(profile) {
-  return profile === 'spectrum' ? 3 : 2
+  return profile === 'spectrum' || profile === 'spectrogram' ? 3 : 2
 }
 
 async function runFpsBenchmark(page, renderer, profile) {
