@@ -29,6 +29,8 @@ inventory into workflow and fixture expectations.
 | Digital channel | Controls engineers | `DigitalChannel`, `ChartDataZoom`, state labels | loading, empty, stale, unknown-state, transition-dense, panned, keyboard-navigated, touch-panned, pinch-zoomed, datazoom-active, fallback-renderer |
 | Anomaly review | Reliability, data science | anomaly tracks, root cause overlays | loading, no-evidence, detector-missing, signed-result, model-version-missing, denied |
 | SPC review | Quality engineers | control chart, capability histogram | loading, no-limits, rule-violation, quality-degraded, signed-result, validation-error |
+| Scientific analysis | Vibration, controls, power quality specialists | spectrogram, spectrum, Bode response | loading, irregular-cadence, sampling-rate-missing, tile-degraded, linked-trend-ready, denied, validation-error |
+| Correlation workbench | Process engineers, data scientists | scatter, correlation matrix, parallel coordinates | loading, sampled-density, brushing, missing-data, linked-trend-ready, causality-warning, denied, validation-error |
 | Batch profile | Batch engineers | batch profile, golden envelope | loading, no-batch, partial-batch, misaligned-phase, signed-result |
 | Synchronized dashboard | Operators, engineers | `ChartSyncGroup`, DataZoom | loading, partial-panel-fail, synced-cursor, synced-range, panned, keyboard-navigated, touch-panned, pinch-zoomed, datazoom-active, sync-conflict, cross-site-denied, high-cost |
 | Export and evidence | Auditors, engineers | export API, replay spec | proof-ready, no-evidence, degraded, denied, regulator-review, export-failed |
@@ -68,7 +70,7 @@ Each frontend workflow gets `/docs/frontend-contracts/{workflow}.md` with:
 | migration | side-by-side incumbent comparison |
 | enterprise | federation-aware dashboards, package provenance |
 | ai_ready | cited anomaly and copilot evidence windows |
-| premium | persistent data tips, ruler, advanced overlays |
+| premium | persistent data tips, ruler, advanced overlays, scientific analysis, correlation workbench |
 | future | disabled first-owner prototypes with preview labels |
 
 ## Status Mapping In UI
@@ -92,11 +94,13 @@ Each frontend workflow gets `/docs/frontend-contracts/{workflow}.md` with:
 | Workflow | Pack |
 |---|---|
 | Historian trend | [historian-trend.md](../frontend-contracts/historian-trend.md) |
-| Digital channel | `../frontend-contracts/digital-channel.md` |
-| Anomaly review | `../frontend-contracts/anomaly-review.md` |
-| SPC review | `../frontend-contracts/spc-review.md` |
+| Digital channel | [digital-channel.md](../frontend-contracts/digital-channel.md) |
+| Anomaly review | [anomaly-review.md](../frontend-contracts/anomaly-review.md) |
+| SPC review | [spc-review.md](../frontend-contracts/spc-review.md) |
+| Scientific analysis | [scientific-analysis.md](../frontend-contracts/scientific-analysis.md) |
+| Correlation workbench | [correlation-workbench.md](../frontend-contracts/correlation-workbench.md) |
 | Batch profile | `../frontend-contracts/batch-profile.md` |
-| Synchronized dashboard | `../frontend-contracts/synchronized-dashboard.md` |
-| Export and evidence | `../frontend-contracts/export-evidence.md` |
+| Synchronized dashboard | [synchronized-dashboard.md](../frontend-contracts/synchronized-dashboard.md) |
+| Export and evidence | [export-evidence.md](../frontend-contracts/export-evidence.md) |
 | Migration comparison | `../frontend-contracts/migration-comparison.md` |
-| Benchmark lab | `../frontend-contracts/benchmark-lab.md` |
+| Benchmark lab | [benchmark-lab.md](../frontend-contracts/benchmark-lab.md) |

@@ -1,13 +1,12 @@
 # Session State
 
 **Date:** 2026-05-19
-**Current phase:** Phase 5 - Registry, Documentation, Export, Launch
-**Latest action:** Fixed the PR CI failures and captured the passing Phase 5 CI
-run. `harness:build` rebuilds package declarations on fresh checkout, the CDP
-verifier runs under Bun so it has WebSocket support on GitHub's Node 20
-runners, Windows browser cleanup now terminates Vite process trees, and CI uses
-an explicit shared-runner benchmark profile while strict local benchmarks
-remain the release performance gate.
+**Current phase:** Phase 6 - Post-v1 Industrial Chart Packs
+**Latest action:** Closed Phase 5 externally. PR #1 was merged to `main`, main
+CI passed, `.github/workflows/publish.yml` became available on the default
+branch, and the publish workflow dry-run passed after aligning its hosted-runner
+benchmark profile with CI while preserving strict local benchmarks as the
+release performance gate.
 
 ## What Exists
 
@@ -133,13 +132,15 @@ remain the release performance gate.
 
 ## Next Build Task
 
-Continue Phase 5 implementation:
+Start Phase 6 planning before implementation:
 
-1. Commit and push the gap-ledger / evidence cleanup.
-2. Run the publish workflow with `dry_run=true` after the workflow is available
-   on the default branch.
-3. Start Phase 6 only after the external GitHub evidence is attached or the
-   release owner accepts local release-candidate evidence as sufficient.
+1. Expand `docs/architecture/06-FEATURE-SPEC-INVENTORY.md` for post-v1
+   industrial chart packs with explicit used/not-used guidance per chart type.
+2. Add or expand frontend contract packs for the first Phase 6 candidates:
+   alarm/envelope overlays, SPC control charts, spectrum/spectrogram, scatter
+   and correlation surfaces, annotations, and PDF export.
+3. Only implement a Phase 6 chart after its 06 inventory entry, frontend state
+   matrix, performance target, and non-use boundary are written.
 
 Before adding a new visible feature, update or check
 `docs/architecture/06-FEATURE-SPEC-INVENTORY.md` and the relevant frontend
@@ -781,3 +782,28 @@ Run after Phase 5 PR CI-fix slice on 2026-05-19:
   pass after adding Windows process-tree cleanup for the Edge CI path.
 - GitHub PR CI run `26089497306`: pass for build, Canvas2D/WebGPU browser
   smoke, Chromium, Firefox, WebKit/Safari runtime, and Microsoft Edge.
+
+Run after Phase 5 external release closure on 2026-05-19:
+
+- PR #1 merged to `main` as squash commit `357e0a9`.
+- Main CI after merge: pass,
+  https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090111139.
+- First publish dry-run attempt: failed in hosted-runner strict benchmark path,
+  https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090129223.
+- Publish workflow benchmark profile fix pushed as `67ac09e`.
+- Main CI after workflow fix: pass,
+  https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090260058.
+- Publish workflow dry-run after workflow fix: pass,
+  https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090262210.
+
+Run after Phase 6 planning-entry slice on 2026-05-19:
+
+- `docs/architecture/06-FEATURE-SPEC-INVENTORY.md` now has a Phase 6
+  chart-family use/do-not-use catalog and named fixture requirements for alarm
+  bands, envelope bands, anomaly tracks, annotations, SPC, capability,
+  distributions, spectrogram, spectrum, Bode, scatter, correlation, parallel
+  coordinates, KPI strips, and PDF evidence export.
+- Frontend contract packs were added for anomaly review, SPC review,
+  scientific analysis, correlation workbench, export/evidence, and benchmark
+  lab.
+- `git diff --check`: pass.

@@ -231,7 +231,7 @@ benchmark.
 
 ## Phase 4 - Interactions and Navigation
 
-**Status.** Local release candidate complete; GitHub publish dry-run pending.
+**Status.** Release candidate closed; GitHub publish dry-run passed.
 
 **Scope.** Region zoom, pan, wheel, keyboard, touch, crosshair, snap tooltip,
 DataZoom, and synchronized cursor/range.
@@ -307,7 +307,7 @@ memory-leak stress test.
 
 ## Phase 5 - Registry, Docs, Export, Launch
 
-**Status.** Local release candidate complete; PR CI passed; publish workflow dry-run pending.
+**Status.** Closed on 2026-05-19.
 
 **Scope.** shadcn registry, docs, PNG/SVG export, npm readiness, cross-browser
 checks, and release gates.
@@ -376,8 +376,8 @@ browser visual checks.
 - [x] Local Playwright cross-browser smoke passes for Chromium, Firefox, and
   WebKit compact Canvas2D output; Edge remains configured for Windows CI.
 - [x] `docs/architecture/phase-5/release-candidate-evidence.md` records local
-  package, registry, publish dry-run, and browser evidence plus the remaining
-  external GitHub Actions gate.
+  package, registry, publish dry-run, browser evidence, PR CI, main CI, and
+  publish workflow dry-run evidence.
 
 **Definition of Done.**
 - [x] New user renders first chart in under five minutes.
@@ -385,10 +385,12 @@ browser visual checks.
 - [x] PNG and SVG export verified.
 - [x] npm packages are publishable.
 
-**Release gate.** v1 local release candidate. PR CI passed on
-https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089639951.
-External closure still requires the publish workflow to be dispatched with
-`dry_run=true` after the workflow exists on the default branch.
+**Release gate.** v1 release candidate closed. PR CI passed on
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089906506.
+Main CI after the publish-workflow fix passed on
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090260058.
+The publish workflow dry-run passed on
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090262210.
 
 ## Phase 6 - Post-v1 Industrial Chart Packs
 

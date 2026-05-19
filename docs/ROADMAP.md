@@ -1,6 +1,6 @@
 # @pitant/charts Roadmap
 
-**Status:** Phase 5 local release candidate complete; PR CI passed; GitHub publish dry-run pending
+**Status:** Phase 5 release candidate closed; GitHub publish dry-run passed; Phase 6 planned
 **Last updated:** 2026-05-19
 **Imported source:** `/Users/ali/Pchart`
 **North star:** Replace SciChart inside Pitant Systems with a WebGPU-first,

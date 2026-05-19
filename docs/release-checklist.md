@@ -24,6 +24,11 @@ bun run registry:smoke
 The release is blocked if any test, benchmark, docs build, registry check,
 bundle-size gate, or package dry-run fails.
 
+Local `release:check` uses the strict benchmark profile and owns the
+performance claim. GitHub Actions may set `PITANT_BENCH_PROFILE=ci` for
+hosted-runner variance; that profile cannot update baselines and only relaxes
+bounded latency scenarios that are known to be scheduler-sensitive.
+
 `registry:smoke` is intentionally not part of the default PR `release:check`
 script because it downloads and runs the external shadcn CLI, initializes a
 fresh Vite consumer, and packs local tarballs. It is mandatory for maintainer

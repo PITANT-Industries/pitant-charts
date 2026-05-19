@@ -1,7 +1,7 @@
 # Phase 5 Release Candidate Evidence
 
 **Date:** 2026-05-19
-**Status:** Local release candidate complete; PR CI passed.
+**Status:** Release candidate closed; PR CI, main CI, and publish dry-run passed.
 
 ## Package Evidence
 
@@ -85,6 +85,18 @@ https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089497306
 Captured passing PR CI run after verifier/runtime fixes:
 https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089639951
 
+Final passing PR CI run after evidence cleanup:
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089906506
+
+Merged PR:
+https://github.com/PITANT-Industries/pitant-charts/pull/1
+
+Passing main CI run after merge:
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090111139
+
+Passing main CI run after publish-workflow benchmark-profile fix:
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090260058
+
 Passing run coverage:
 
 - `build (22)`: typecheck, lint, build, tests, CI benchmark profile, registry
@@ -115,6 +127,10 @@ Observed failures and fixes:
   the release-candidate performance gate. CI now sets
   `PITANT_BENCH_PROFILE=ci`, which only relaxes those noisy shared-runner
   latency gates and refuses baseline updates outside strict mode.
+- The first publish workflow dry-run failed in the same strict hosted-runner
+  benchmark path before npm dry-run. The publish workflow release gate now uses
+  `PITANT_BENCH_PROFILE=ci` for GitHub-hosted runner variance while preserving
+  strict local `bun run release:check` as the performance claim.
 
 Local verification after the CI-fix patch:
 
@@ -131,12 +147,24 @@ bun run harness:cross-browser -- --browser=chromium --renderer=canvas2d --profil
 
 All listed commands passed on 2026-05-19.
 
-`gh workflow list` reports the remote `CI` workflow. The publish workflow exists
-on this PR branch but cannot be manually dispatched from the repository
-workflow list until it is present on the default branch.
+`gh workflow list` reports the remote `CI` and `Publish` workflows after the
+release-candidate PR was merged to `main`.
 
-## Remaining External Evidence
+## External Publish Evidence
 
-- Dispatch `.github/workflows/publish.yml` with `dry_run=true` after the
-  workflow exists on the default branch.
-- Attach publish dry-run URL before claiming external Phase 5 closure.
+First publish dry-run attempt, failed in the hosted-runner strict benchmark
+gate before package dry-run:
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090129223
+
+Passing publish dry-run after aligning the workflow benchmark profile with CI:
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090262210
+
+Passing publish dry-run coverage:
+
+- `Release gate`: build, typecheck, lint, tests, CI benchmark profile, registry
+  validation/typecheck, docs build, bundle-size gate, and package dry-run.
+- `Registry smoke gate`: shadcn registry consumer smoke with all eight blocks.
+- `Publish dry run`: `npm publish ./packages/charts --dry-run --access public`
+  and `npm publish ./packages/charts-react --dry-run --access public`.
+- `Publish with npm provenance`: skipped because the workflow was dispatched
+  with `dry_run=true`.

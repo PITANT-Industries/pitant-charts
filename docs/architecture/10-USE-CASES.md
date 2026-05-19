@@ -164,6 +164,36 @@ tests, export evidence fixtures.
 **Production promotion evidence.** Model-version labels, cited evidence window,
 unsupported-answer rejection.
 
+## Scientific Analysis Pack
+
+**Actor.** Vibration specialist, controls engineer, power quality engineer.
+
+**Band.** Add-on.
+
+**Repo owns.** Spectrogram, spectrum, power spectrum, Bode response, linked
+trend cursor, sampling-rate and window-policy display.
+
+**Sibling owners.** `pitant-historian` owns aligned time windows.
+`pitant-model-registry` owns model-derived features when present.
+
+**Production promotion evidence.** Spectrogram tile fixture, spectrum window
+fixture, Bode response fixture, and browser performance budget for each view.
+
+## Correlation Pack
+
+**Actor.** Process engineer, reliability engineer, data scientist.
+
+**Band.** Add-on.
+
+**Repo owns.** Scatter brushing, correlation matrix display, parallel
+coordinates, density fallback, missing-data markers, and linked trend handoff.
+
+**Sibling owners.** `pitant-lake`, `pitant-model-registry`, and
+`pitant-copilot` own dataset construction, feature semantics, and explanation.
+
+**Production promotion evidence.** Scatter, matrix, and parallel-coordinate
+fixtures with tenant/site-safe sample-set identity and no causality claims.
+
 ## Migration Pack
 
 **Actor.** Platform engineer or customer migration lead.

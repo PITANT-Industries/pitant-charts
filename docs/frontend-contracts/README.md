@@ -22,10 +22,12 @@ Each pack must include:
 |---|---|---|
 | Historian trend | `historian-trend.md` | initial pack |
 | Digital channel | `digital-channel.md` | initial pack |
-| Anomaly review | `anomaly-review.md` | pending |
-| SPC review | `spc-review.md` | pending |
+| Anomaly review | `anomaly-review.md` | contract-only pack |
+| SPC review | `spc-review.md` | contract-only pack |
+| Scientific analysis | `scientific-analysis.md` | contract-only pack |
+| Correlation workbench | `correlation-workbench.md` | contract-only pack |
 | Batch profile | `batch-profile.md` | pending |
 | Synchronized dashboard | `synchronized-dashboard.md` | initial pack |
-| Export and evidence | `export-evidence.md` | pending |
+| Export and evidence | `export-evidence.md` | contract-only pack |
 | Migration comparison | `migration-comparison.md` | pending |
-| Benchmark lab | `benchmark-lab.md` | pending |
+| Benchmark lab | `benchmark-lab.md` | contract-only pack |

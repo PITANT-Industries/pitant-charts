@@ -6,7 +6,7 @@ evidence.
 
 | File | Purpose |
 |---|---|
-| [release-candidate-evidence.md](release-candidate-evidence.md) | Local v1 evidence for package dry-run, publish dry-run, registry smoke, browser matrix, and remaining external gates |
+| [release-candidate-evidence.md](release-candidate-evidence.md) | v1 evidence for package dry-run, publish dry-run, registry smoke, browser matrix, PR CI, main CI, and publish workflow dry-run |
 
 ## Closure Rule
 
@@ -19,6 +19,8 @@ passes, and the publish workflow is dispatched with `dry_run=true`.
 
 - Local release candidate: complete.
 - PR CI matrix: passed on
-  https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089639951.
-- Remaining external evidence: publish workflow dry-run after
-  `.github/workflows/publish.yml` exists on the default branch.
+  https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089906506.
+- Main CI after publish-workflow fix: passed on
+  https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090260058.
+- Publish workflow dry-run: passed on
+  https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090262210.

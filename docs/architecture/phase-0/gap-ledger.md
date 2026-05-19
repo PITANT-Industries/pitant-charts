@@ -17,20 +17,22 @@ new gaps are added only when they block a phase gate or change product scope.
 | No true SVG export | Export | Medium | Phase 5 | Command-frame SVG export tests and package docs |
 | No shadcn registry blocks | Package | Medium | Phase 5 | Eight registry blocks, `registry:validate`, `registry:typecheck`, `registry:smoke` |
 | No frontend contract packs beyond README | Compose / Govern | Medium | Phase 3-5 | Trend, digital-channel, and synchronized-dashboard contract packs |
+| Publish workflow dry-run missing from external evidence | Package / Govern | Medium | Phase 5 | Publish workflow run `26090262210` on `main` passed release gate, registry smoke, and npm dry-run |
 
 ## Active Or Managed Gaps
 
 | Gap | Family | Severity | Disposition |
 |---|---|---:|---|
-| Publish workflow dry-run cannot be dispatched yet | Package / Govern | Medium | Blocked until `.github/workflows/publish.yml` exists on the default branch; PR CI is green |
 | Doc 06 is performance-depth but not full broad-catalog depth | Govern | Low | Managed; keep expanding non-v1 packs at Phase 6+ gates |
-| Post-v1 industrial chart pack contracts are not enumerated deeply enough | Govern / Package | Medium | Phase 6 entry task before implementation |
+| Post-v1 industrial chart pack contracts need benchmark fixtures | Govern / Package | Medium | Initial Phase 6 use/do-not-use catalog and contract packs exist; implementation waits for concrete benchmark fixtures |
 | PDF export remains future work | Export | Low | Phase 6 / v1.3 after SVG and PNG remain stable |
 
 ## Current Gate State
 
 - Phase 5 local release candidate: closed.
 - PR CI matrix: closed on
-  https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089639951.
-- External publish dry-run: not closed because GitHub does not expose
-  workflow-dispatch for branch-only workflow files.
+  https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089906506.
+- Main CI matrix after publish-workflow fix: closed on
+  https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090260058.
+- External publish dry-run: closed on
+  https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090262210.
