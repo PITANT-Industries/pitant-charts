@@ -394,7 +394,7 @@ https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090262210.
 
 ## Phase 6 - Post-v1 Industrial Chart Packs
 
-**Status.** Planned.
+**Status.** In progress.
 
 **Scope.** Overlay, spectral, SPC, distribution, correlation, anomaly, and KPI
 packs after v1 field feedback.
@@ -406,10 +406,18 @@ packs after v1 field feedback.
 - Add scatter/correlation/parallel coordinate surfaces.
 - Add PDF export after SVG/PNG are stable.
 
+**Progress.**
+- [x] TimeSeries value-band and envelope-band core render-plan support.
+- [x] React `TimeSeriesConfig.bands[]` support for value bands and envelope
+  bands.
+- [x] SVG export includes TimeSeries band fills from command frames.
+- [x] `020_time_series_bands_8x1M` benchmark covers the first Phase 6 overlay
+  path.
+
 **Tests and Acceptance.** Pack-specific unit, visual, and performance tests.
 
 **Definition of Done.**
-- [ ] Each pack has contract-only inventory before implementation.
+- [x] Initial Phase 6 packs have contract-only inventory before implementation.
 - [ ] V1 performance is not regressed.
 - [ ] Pack maturity labels are visible.
 

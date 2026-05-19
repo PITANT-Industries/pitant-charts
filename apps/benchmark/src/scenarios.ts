@@ -2,11 +2,12 @@
  * Benchmark scenarios for @pitant/charts.
  *
  * Scenarios 1-4, 8-9 require a browser (WebGPU/Canvas2D).
- * Scenarios 5-7 and 10-19 are pure-compute/package-level gates.
+ * Scenarios 5-7 and 10-20 are pure-compute/package-level gates.
  * Bundle-size scenario runs via size-limit.
  */
 import {
   addDigitalChannelToCommandList,
+  addTimeSeriesBandsToCommandList,
   addTimeSeriesToCommandList,
   buildDigitalChannelRenderPlan,
   buildTimeSeriesRenderPlan,
@@ -458,6 +459,83 @@ scenarios['015_digital_channel_plan_16x250K'] = () => {
   return {
     scenario: '015_digital_channel_plan_16x250K',
     metric: `${channelCount} channels x ${pointCount.toLocaleString()} pts (${renderedPointCount.toLocaleString()} rendered, ${commandCount} commands)`,
+    value: Math.round(medianMs * 100) / 100,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 020: Alarm/envelope overlay plan generation ────
+
+scenarios['020_time_series_bands_8x1M'] = () => {
+  const pointCount = 1_000_000
+  const penCount = 8
+  const data = generateMultiPenData(pointCount, penCount)
+  const baseline = data.columns['pen_0']
+  if (!baseline) {
+    throw new Error('benchmark fixture missing pen_0')
+  }
+
+  const low = new Float64Array(pointCount)
+  const high = new Float64Array(pointCount)
+  for (let i = 0; i < pointCount; i++) {
+    const value = baseline[i] ?? 0
+    low[i] = value - 12
+    high[i] = value + 12
+  }
+  const dataWithBands = {
+    ...data,
+    columns: {
+      ...data.columns,
+      model_low: low,
+      model_high: high,
+    },
+    bands: [
+      {
+        kind: 'value-band',
+        key: 'warning',
+        yStart: 52,
+        yEnd: 68,
+        fillColor: [1, 0.15, 0.05, 0.1],
+        lineColor: [1, 0.15, 0.05, 0.55],
+      },
+      {
+        kind: 'envelope',
+        key: 'model',
+        lowerField: 'model_low',
+        upperField: 'model_high',
+        fillColor: [0.1, 0.4, 1, 0.08],
+      },
+    ],
+  } as const
+  const target = 250 // ms for 8M trend samples plus 1M envelope samples
+
+  const warmup = buildTimeSeriesRenderPlan(dataWithBands, { gapThreshold: 0 })
+  const warmupCommands = new RenderCommandList()
+  addTimeSeriesBandsToCommandList(warmupCommands, warmup)
+  addTimeSeriesToCommandList(warmupCommands, warmup)
+
+  const times: number[] = []
+  let bandPointCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 3; i++) {
+    const start = performance.now()
+    const plan = buildTimeSeriesRenderPlan(dataWithBands, { gapThreshold: 0 })
+    const commands = new RenderCommandList()
+    addTimeSeriesBandsToCommandList(commands, plan)
+    addTimeSeriesToCommandList(commands, plan)
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    bandPointCount = plan.bands.reduce((total, band) => total + band.renderedPointCount, 0)
+    commandCount = commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '020_time_series_bands_8x1M',
+    metric: `${penCount} pens x ${(pointCount / 1e6).toFixed(0)}M pts plus ${bandPointCount.toLocaleString()} band pts (${commandCount} commands)`,
     value: Math.round(medianMs * 100) / 100,
     unit: 'ms',
     target,

@@ -5,6 +5,7 @@ import {
   buildTimeSeriesRenderPlan,
   type ChartLayout,
   type ChartPointerCoordinates,
+  type TimeSeriesBand as CoreTimeSeriesBand,
   type TimeSeriesSeries as CoreTimeSeriesSeries,
   commandFrameToSvg,
   createChartLayout,
@@ -74,8 +75,39 @@ export interface TimeSeriesSeriesConfig extends SeriesConfig {
   gapThreshold?: number
 }
 
+export interface TimeSeriesValueBandConfig {
+  kind: 'value-band'
+  key: string
+  label?: string
+  yStart: number
+  yEnd: number
+  xRange?: readonly [number, number]
+  fillRgba?: RgbaColor
+  lineRgba?: RgbaColor
+  lineWidth?: number
+  visible?: boolean
+  includeInYRange?: boolean
+}
+
+export interface TimeSeriesEnvelopeBandConfig {
+  kind: 'envelope'
+  key: string
+  label?: string
+  lowerField: string
+  upperField: string
+  fillRgba?: RgbaColor
+  lineRgba?: RgbaColor
+  lineWidth?: number
+  gapThreshold?: number
+  visible?: boolean
+  includeInYRange?: boolean
+}
+
+export type TimeSeriesBandConfig = TimeSeriesValueBandConfig | TimeSeriesEnvelopeBandConfig
+
 export interface TimeSeriesConfig {
   series: TimeSeriesSeriesConfig[]
+  bands?: TimeSeriesBandConfig[]
   xAxis?: AxisConfig & {
     gapThreshold?: number
   }
@@ -199,13 +231,26 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     [config.series, visibilityMap],
   )
 
+  const planBands: CoreTimeSeriesBand[] = useMemo(
+    () => (config.bands ?? []).map(toCoreTimeSeriesBand),
+    [config.bands],
+  )
+
   const activeXRange =
     visibleRange[0] < visibleRange[1] ? (visibleRange as readonly [number, number]) : undefined
   const activeYRange = config.yAxis?.range
-  const visibleFields = useMemo(
-    () => planSeries.filter((series) => series.visible !== false).map((series) => series.field),
-    [planSeries],
-  )
+  const visibleFields = useMemo(() => {
+    const fields = new Set<string>()
+    for (const series of planSeries) {
+      if (series.visible !== false) fields.add(series.field)
+    }
+    for (const band of planBands) {
+      if (band.visible === false || band.kind !== 'envelope') continue
+      fields.add(band.lowerField)
+      fields.add(band.upperField)
+    }
+    return Array.from(fields)
+  }, [planBands, planSeries])
   const targetPixels = useMemo(() => {
     void resizeKey
     return Math.max(
@@ -237,6 +282,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
         timestamps: viewport.data.timestamps,
         columns: viewport.data.columns,
         series: planSeries,
+        bands: planBands,
       },
       renderOptions,
     )
@@ -246,6 +292,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     config.interpolation,
     config.xAxis?.gapThreshold,
     config.yAxis?.paddingRatio,
+    planBands,
     planSeries,
     viewport.data,
   ])
@@ -471,6 +518,40 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     renderedPointCount: renderPlan.renderedPointCount,
     layout,
   }
+}
+
+function toCoreTimeSeriesBand(band: TimeSeriesBandConfig): CoreTimeSeriesBand {
+  if (band.kind === 'value-band') {
+    const coreBand: CoreTimeSeriesBand = {
+      kind: 'value-band',
+      key: band.key,
+      yStart: band.yStart,
+      yEnd: band.yEnd,
+    }
+    if (band.label !== undefined) coreBand.label = band.label
+    if (band.xRange !== undefined) coreBand.xRange = band.xRange
+    if (band.fillRgba !== undefined) coreBand.fillColor = band.fillRgba
+    if (band.lineRgba !== undefined) coreBand.lineColor = band.lineRgba
+    if (band.lineWidth !== undefined) coreBand.lineWidth = band.lineWidth
+    if (band.visible !== undefined) coreBand.visible = band.visible
+    if (band.includeInYRange !== undefined) coreBand.includeInYRange = band.includeInYRange
+    return coreBand
+  }
+
+  const coreBand: CoreTimeSeriesBand = {
+    kind: 'envelope',
+    key: band.key,
+    lowerField: band.lowerField,
+    upperField: band.upperField,
+  }
+  if (band.label !== undefined) coreBand.label = band.label
+  if (band.fillRgba !== undefined) coreBand.fillColor = band.fillRgba
+  if (band.lineRgba !== undefined) coreBand.lineColor = band.lineRgba
+  if (band.lineWidth !== undefined) coreBand.lineWidth = band.lineWidth
+  if (band.gapThreshold !== undefined) coreBand.gapThreshold = band.gapThreshold
+  if (band.visible !== undefined) coreBand.visible = band.visible
+  if (band.includeInYRange !== undefined) coreBand.includeInYRange = band.includeInYRange
+  return coreBand
 }
 
 function createTimeSeriesLayout(

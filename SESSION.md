@@ -129,18 +129,19 @@ release performance gate.
   `docs/architecture/06-FEATURE-SPEC-INVENTORY.md`.
 - Phase 5 release evidence at
   `docs/architecture/phase-5/release-candidate-evidence.md`.
+- Phase 6 TimeSeries value-band and envelope-band support exists in core and
+  React config, with SVG export coverage and benchmark scenario
+  `020_time_series_bands_8x1M`.
 
 ## Next Build Task
 
-Start Phase 6 planning before implementation:
+Continue Phase 6 implementation:
 
-1. Expand `docs/architecture/06-FEATURE-SPEC-INVENTORY.md` for post-v1
-   industrial chart packs with explicit used/not-used guidance per chart type.
-2. Add or expand frontend contract packs for the first Phase 6 candidates:
-   alarm/envelope overlays, SPC control charts, spectrum/spectrogram, scatter
-   and correlation surfaces, annotations, and PDF export.
-3. Only implement a Phase 6 chart after its 06 inventory entry, frontend state
-   matrix, performance target, and non-use boundary are written.
+1. Add browser/render-harness coverage for TimeSeries value/envelope bands.
+2. Decide whether the next v1.1 slice is persistent annotations/rulers or
+   derived-series overlays.
+3. Keep SPC, spectrum/spectrogram, correlation, KPI, and PDF packs at
+   contract-only until their benchmark fixtures exist.
 
 Before adding a new visible feature, update or check
 `docs/architecture/06-FEATURE-SPEC-INVENTORY.md` and the relevant frontend
@@ -807,3 +808,12 @@ Run after Phase 6 planning-entry slice on 2026-05-19:
   scientific analysis, correlation workbench, export/evidence, and benchmark
   lab.
 - `git diff --check`: pass.
+
+Run after Phase 6 TimeSeries band slice on 2026-05-19:
+
+- `bun run typecheck`: pass.
+- `bun run lint`: pass.
+- `bunx vitest run packages/charts/src/__tests__/time-series.test.ts packages/charts/src/__tests__/svg-export.test.ts packages/charts-react/src/__tests__/time-series.test.tsx`:
+  pass, 23 focused tests.
+- `bun run --filter @pitant/benchmark bench 020`: pass,
+  `020_time_series_bands_8x1M` at 97.6 ms against a 250 ms target.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  addTimeSeriesBandsToCommandList,
   addTimeSeriesToCommandList,
   buildTimeSeriesRenderPlan,
   createTimeSeriesViewTransform,
@@ -96,6 +97,64 @@ describe('time-series chart planning', () => {
 
     expect(commands.length).toBe(1)
     expect(commands.sorted()[0]?.kind).toBe('line')
+  })
+
+  it('plans value bands as fill segments and includes them in y range', () => {
+    const plan = buildTimeSeriesRenderPlan({
+      timestamps: new Float64Array([0, 1, 2]),
+      columns: {
+        temp: new Float64Array([10, 11, 12]),
+      },
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+      bands: [
+        {
+          kind: 'value-band',
+          key: 'high-warning',
+          label: 'High warning',
+          yStart: 14,
+          yEnd: 16,
+          fillColor: [1, 0, 0, 0.1],
+          lineColor: [1, 0, 0, 0.7],
+        },
+      ],
+    })
+
+    expect(plan.bands).toHaveLength(1)
+    expect(plan.bands[0]?.segments[0]?.lower).toEqual(new Float32Array([0, 14, 2, 14]))
+    expect(plan.bands[0]?.segments[0]?.upper).toEqual(new Float32Array([0, 16, 2, 16]))
+    expect(plan.yRange[1]).toBeGreaterThan(16)
+
+    const commands = new RenderCommandList()
+    addTimeSeriesBandsToCommandList(commands, plan)
+    expect(commands.sorted().map((command) => command.kind)).toEqual(['fill', 'line', 'line'])
+  })
+
+  it('plans envelope bands from columnar upper and lower fields', () => {
+    const plan = buildTimeSeriesRenderPlan({
+      timestamps: new Float64Array([0, 1, 2, 10]),
+      columns: {
+        temp: new Float64Array([10, 12, 11, 13]),
+        low: new Float64Array([8, 9, 9, 10]),
+        high: new Float64Array([14, 15, 14, 16]),
+      },
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+      bands: [
+        {
+          kind: 'envelope',
+          key: 'model-envelope',
+          lowerField: 'low',
+          upperField: 'high',
+          gapThreshold: 3,
+        },
+      ],
+    })
+
+    expect(plan.bands).toHaveLength(1)
+    expect(plan.bands[0]?.segments).toHaveLength(1)
+    expect(plan.bands[0]?.segments[0]?.lower).toEqual(new Float32Array([0, 8, 1, 9, 2, 9]))
+    expect(plan.bands[0]?.segments[0]?.upper).toEqual(new Float32Array([0, 14, 1, 15, 2, 14]))
+    expect(plan.bands[0]?.includedSampleCount).toBe(4)
+    expect(plan.bands[0]?.renderedPointCount).toBe(3)
   })
 
   it('creates a transform that maps rebased data to pixels', () => {

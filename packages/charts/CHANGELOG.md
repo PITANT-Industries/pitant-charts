@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added TimeSeries value-band and envelope-band render-plan support with
+  command-frame/SVG output and a high-density benchmark gate.
+
 ## 1.0.0 - 2026-05-19
 
 - Initial v1 PITANT chart core package.

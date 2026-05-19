@@ -17,6 +17,8 @@ export function HistorianTrend() {
       columns: {
         reactor_temp: new Float64Array([91.2, 91.4, 91.1, 91.8, 92.0]),
         jacket_temp: new Float64Array([44.1, 44.3, 44.4, 44.2, 44.6]),
+        reactor_expected_low: new Float64Array([90.8, 90.9, 90.9, 91.0, 91.1]),
+        reactor_expected_high: new Float64Array([92.0, 92.1, 92.1, 92.2, 92.3]),
       },
       quality: {
         reactor_temp: new Uint8Array([0, 0, 1, 0, 0]),
@@ -32,6 +34,25 @@ export function HistorianTrend() {
       series: [
         { key: 'reactor', label: 'Reactor temp', field: 'reactor_temp' },
         { key: 'jacket', label: 'Jacket temp', field: 'jacket_temp' },
+      ],
+      bands: [
+        {
+          kind: 'value-band' as const,
+          key: 'high-warning',
+          label: 'High warning',
+          yStart: 92,
+          yEnd: 94,
+          fillRgba: [1, 0.16, 0.05, 0.12],
+          lineRgba: [1, 0.16, 0.05, 0.7],
+        },
+        {
+          kind: 'envelope' as const,
+          key: 'expected-window',
+          label: 'Expected window',
+          lowerField: 'reactor_expected_low',
+          upperField: 'reactor_expected_high',
+          fillRgba: [0.1, 0.4, 1, 0.1],
+        },
       ],
       xAxis: {
         label: 'Time',
@@ -87,6 +108,7 @@ export function HistorianTrend() {
   hot path and live-edge range instead of rebuilding the chart.
 - Legend toggles filter series before render-plan generation, so hidden pens do
   not pay draw cost.
+- `config.bands` renders value bands and envelope bands inside the core command
+  frame, not as per-point React elements.
 - Quality and gap arrays stay in the data object so degraded states can be
   surfaced by overlays and future evidence exports.
-

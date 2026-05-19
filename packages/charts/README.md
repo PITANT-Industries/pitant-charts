@@ -25,6 +25,7 @@ import '@pitant/charts/styles/tokens.css'
 ```ts
 import {
   buildTimeSeriesCommandFrame,
+  buildTimeSeriesRenderPlan,
   commandFrameToSvg,
   createRenderContext,
   TimeSeriesChart,
@@ -35,12 +36,32 @@ const data = {
   timestamps,
   columns: {
     pressure: new Float64Array([1.1, 1.4, 1.3, 1.8]),
+    pressure_low: new Float64Array([1.0, 1.1, 1.1, 1.2]),
+    pressure_high: new Float64Array([1.5, 1.6, 1.6, 1.7]),
   },
   series: [
     {
       key: 'pressure',
       label: 'Pressure',
       field: 'pressure',
+    },
+  ],
+  bands: [
+    {
+      kind: 'value-band',
+      key: 'trip',
+      label: 'Trip range',
+      yStart: 1.75,
+      yEnd: 2.0,
+      fillColor: [1, 0.1, 0.05, 0.12],
+      lineColor: [1, 0.1, 0.05, 0.65],
+    },
+    {
+      kind: 'envelope',
+      key: 'model-envelope',
+      lowerField: 'pressure_low',
+      upperField: 'pressure_high',
+      fillColor: [0.1, 0.4, 1, 0.1],
     },
   ],
 }
@@ -54,11 +75,8 @@ chart.setRenderOptions({
   yPaddingRatio: 0.08,
 })
 
-const frame = buildTimeSeriesCommandFrame(data, {
-  width: 960,
-  height: 540,
-  renderOptions: { yPaddingRatio: 0.08 },
-})
+const plan = buildTimeSeriesRenderPlan(data, { yPaddingRatio: 0.08 })
+const frame = buildTimeSeriesCommandFrame(plan, 960, 540)
 
 const svg = commandFrameToSvg(frame, {
   title: 'Pressure trend',
@@ -73,6 +91,9 @@ const svg = commandFrameToSvg(frame, {
   into the render loop.
 - Preserve quality, gap, and provenance metadata before handoff to React
   surfaces so tooltips and evidence views do not invent lineage.
+- Use `bands` for alarm ranges, static limits, and model envelopes when the
+  band changes interpretation of an existing trend. Do not use bands for dense
+  event timelines or unsupported control advice.
 - Prefer `renderer: 'auto'`; do not force WebGPU in production apps.
 
 ## Use When

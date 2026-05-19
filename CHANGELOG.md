@@ -3,6 +3,13 @@
 All notable changes to `@pitant/charts` and `@pitant/charts-react` are tracked
 here. Versions follow SemVer once the packages are published.
 
+## Unreleased
+
+### Added
+
+- TimeSeries value-band and envelope-band support in the core render plan,
+  React config, command-frame SVG export, and benchmark suite.
+
 ## 1.0.0 - 2026-05-19
 
 ### Added

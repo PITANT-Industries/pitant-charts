@@ -11,6 +11,7 @@ describe('public API', () => {
     expect(api.createChartLayout).toBeDefined()
     expect(api.createPlotViewportTransform).toBeDefined()
     expect(api.buildTimeSeriesRenderPlan).toBeDefined()
+    expect(api.addTimeSeriesBandsToCommandList).toBeDefined()
     expect(api.buildDigitalChannelRenderPlan).toBeDefined()
     expect(api.TimeSeriesChart).toBeDefined()
     expect(api.DigitalChannelChart).toBeDefined()

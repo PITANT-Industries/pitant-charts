@@ -74,17 +74,23 @@ export {
 export type { CommandFrameSvgInput, CommandFrameSvgOptions } from './svg-export.js'
 export { commandFrameToSvg } from './svg-export.js'
 export type {
+  TimeSeriesBand,
+  TimeSeriesBandSegment,
   TimeSeriesCommandFrame,
   TimeSeriesDataSet,
+  TimeSeriesEnvelopeBand,
   TimeSeriesFrameOptions,
   TimeSeriesInterpolation,
   TimeSeriesLineSegment,
+  TimeSeriesPlannedBand,
   TimeSeriesPlannedSeries,
   TimeSeriesRenderOptions,
   TimeSeriesRenderPlan,
   TimeSeriesSeries,
+  TimeSeriesValueBand,
 } from './time-series.js'
 export {
+  addTimeSeriesBandsToCommandList,
   addTimeSeriesToCommandList,
   buildTimeSeriesCommandFrame,
   buildTimeSeriesRenderPlan,

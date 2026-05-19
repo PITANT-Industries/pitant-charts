@@ -188,6 +188,45 @@ describe('useTimeSeries', () => {
     expect(result.current.layout.legendArea).not.toBeNull()
   })
 
+  it('passes value and envelope bands into the core render plan', () => {
+    const data: TimeSeriesColumnData = {
+      timestamps: new Float64Array([1000, 1010, 1020]),
+      columns: {
+        temp: new Float64Array([10, 12, 11]),
+        low: new Float64Array([8, 9, 9]),
+        high: new Float64Array([14, 15, 14]),
+      },
+    }
+    const config: TimeSeriesConfig = {
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+      bands: [
+        {
+          kind: 'value-band',
+          key: 'alarm',
+          yStart: 13,
+          yEnd: 16,
+          fillRgba: [1, 0, 0, 0.12],
+        },
+        {
+          kind: 'envelope',
+          key: 'model',
+          lowerField: 'low',
+          upperField: 'high',
+          fillRgba: [0, 0.4, 1, 0.1],
+        },
+      ],
+    }
+    const { result } = renderHook(() => {
+      const containerRef = useRef<ChartContainerRef | null>(null)
+      return useTimeSeries({ config, data, containerRef })
+    })
+
+    expect(result.current.renderPlan.bands.map((band) => band.key)).toEqual(['alarm', 'model'])
+    expect(result.current.renderPlan.bands[1]?.segments[0]?.upper).toEqual(
+      new Float32Array([0, 14, 10, 15, 20, 14]),
+    )
+  })
+
   it('exports SVG from the vector command frame with explicit dimensions', async () => {
     const { result } = renderHook(() =>
       useTimeSeries({

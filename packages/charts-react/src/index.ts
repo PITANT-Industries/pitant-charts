@@ -61,11 +61,14 @@ export type {
 export { DigitalChannel, useDigitalChannel } from './digital-channel.js'
 // Time series
 export type {
+  TimeSeriesBandConfig,
   TimeSeriesColumnData,
   TimeSeriesConfig,
+  TimeSeriesEnvelopeBandConfig,
   TimeSeriesProps,
   TimeSeriesSeriesConfig,
   TimeSeriesStats,
+  TimeSeriesValueBandConfig,
   UseTimeSeriesOptions,
   UseTimeSeriesReturn,
 } from './time-series.js'

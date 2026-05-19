@@ -24,7 +24,7 @@ new gaps are added only when they block a phase gate or change product scope.
 | Gap | Family | Severity | Disposition |
 |---|---|---:|---|
 | Doc 06 is performance-depth but not full broad-catalog depth | Govern | Low | Managed; keep expanding non-v1 packs at Phase 6+ gates |
-| Post-v1 industrial chart pack contracts need benchmark fixtures | Govern / Package | Medium | Initial Phase 6 use/do-not-use catalog and contract packs exist; implementation waits for concrete benchmark fixtures |
+| Remaining post-v1 industrial chart packs need benchmark fixtures | Govern / Package | Medium | Alarm/envelope bands now have `020_time_series_bands_8x1M`; SPC, scientific, correlation, KPI, and PDF packs still need concrete fixtures |
 | PDF export remains future work | Export | Low | Phase 6 / v1.3 after SVG and PNG remain stable |
 
 ## Current Gate State

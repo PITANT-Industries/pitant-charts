@@ -32,6 +32,8 @@ export function PressureTrend() {
       timestamps: new Float64Array([0, 1_000, 2_000, 3_000]),
       columns: {
         pressure: new Float64Array([1.1, 1.4, 1.3, 1.8]),
+        pressure_low: new Float64Array([1.0, 1.1, 1.1, 1.2]),
+        pressure_high: new Float64Array([1.5, 1.6, 1.6, 1.7]),
       },
       quality: {
         pressure: new Uint8Array([0, 0, 1, 0]),
@@ -47,6 +49,24 @@ export function PressureTrend() {
     () => ({
       renderer: 'auto' as const,
       series: [{ key: 'pressure', label: 'Pressure', field: 'pressure' }],
+      bands: [
+        {
+          kind: 'value-band' as const,
+          key: 'high-warning',
+          label: 'High warning',
+          yStart: 1.7,
+          yEnd: 2.0,
+          fillRgba: [1, 0.1, 0.05, 0.12],
+          lineRgba: [1, 0.1, 0.05, 0.65],
+        },
+        {
+          kind: 'envelope' as const,
+          key: 'model-envelope',
+          lowerField: 'pressure_low',
+          upperField: 'pressure_high',
+          fillRgba: [0.1, 0.4, 1, 0.1],
+        },
+      ],
       xAxis: {
         label: 'Time',
         formatValue: (value: number) => new Date(value).toLocaleTimeString(),
@@ -128,10 +148,14 @@ installs every block, typechecks, and bundles the consumer.
 - The chart data can be supplied as typed arrays.
 - Quality, gap, provenance, tooltip, zoom, sync, and export behavior should be
   owned by the chart component.
+- Alarm/value bands and model envelopes need to be rendered inside the same
+  high-density TimeSeries command path as the base trend.
 
 ## Do Not Use When
 
 - The app cannot mount React components.
 - A workflow needs direct PLC/DCS/SIS write authority.
+- Overlay data is decorative, unverified, or dense enough to obscure the base
+  trend.
 - The export must be a signed regulator record. Use future compliance/evidence
   handoff surfaces for that path.

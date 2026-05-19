@@ -85,16 +85,16 @@ Pitant use until it is at least `perf_browser`.
 | Normalize | 35% | 55% | 10% | validation tests, quality/gap viewport tests |
 | Transform | 65% | 25% | 10% | `LodPyramid`, `DataEngine`, benchmarks |
 | Layout | 35% | 50% | 15% | `createChartLayout`, plot reservation, axis text tests |
-| Render | 65% | 25% | 10% | WebGPU, Canvas2D, command list, text overlay |
+| Render | 68% | 22% | 10% | WebGPU, Canvas2D, command list, text overlay, TimeSeries value/envelope bands |
 | Interact | 82% | 6% | 12% | pointer, zoom, pan, keyboard, touch, DataZoom, crosshair, quality/gap/provenance tooltip tests, range-navigation helper tests, live-append interaction regression |
 | Compose | 70% | 25% | 5% | React primitives and tests |
 | Synchronize | 65% | 25% | 10% | `ChartSyncGroup`, TimeSeries, DigitalChannel sync tests, cursor propagation benchmark |
 | Theme | 70% | 25% | 5% | token resolver and CSS |
 | Export | 75% | 15% | 10% | explicit PNG export options and true SVG export from command frames |
-| Benchmark | 90% | 3% | 7% | strict benchmark app gate, explicit CI benchmark profile, interaction range stress gate, cursor propagation gate, browser FPS mode, browser screenshot verifier, visual baseline, local Playwright Chromium/Firefox/WebKit smoke matrix |
+| Benchmark | 91% | 2% | 7% | strict benchmark app gate, explicit CI benchmark profile, interaction range stress gate, cursor propagation gate, TimeSeries band benchmark, browser FPS mode, browser screenshot verifier, visual baseline, local Playwright Chromium/Firefox/WebKit smoke matrix |
 | Package | 90% | 0% | 10% | v1 package metadata, README files, package changelogs, MIT licenses, npm publish dry-run, expanded shadcn registry, registry validator, registry typecheck, shadcn smoke, live docs app, quick start |
 | Govern | 20% | 70% | 10% | architecture docs |
-| Performance Contract | 47% | 48% | 5% | LOD, interaction range, cursor propagation, browser FPS benchmarks, and live-append interaction regression |
+| Performance Contract | 50% | 45% | 5% | LOD, interaction range, cursor propagation, TimeSeries band, browser FPS benchmarks, and live-append interaction regression |
 | GPU Hot Path | 35% | 55% | 10% | WebGPU context and shaders |
 | Worker Hot Path | 60% | 35% | 5% | `DataEngine`, `LodPyramid` |
 | Memory Budget | 30% | 60% | 10% | memory overhead and interaction heap-growth benchmarks |
@@ -205,8 +205,8 @@ validation states, and the performance budget owner has accepted the benchmark.
 - `evidence-gapped-window`: static signed-style window with gaps, corrections, and quality flags. [Both] {Proof=signed; Workflow=inspect; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
 - `fallback-canvas-200k`: Canvas2D fallback stress fixture. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - `small-dashboard-16charts`: many small charts testing DOM overlay and sync overhead. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
-- `trend-alarm-band-8x1m`: eight high-density trend pens with warning/trip/permit bands, band labels, and visibility toggles. [Both] {Proof=signed; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
-- `trend-envelope-band-1m`: one million point signal with model, recipe, tolerance, and golden-run envelope variants. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=assisted; Privacy=telemetry-only; Liability=engineering-review}
+- `trend-alarm-band-8x1m`: eight high-density trend pens with warning/trip/permit bands, band labels, and visibility toggles, covered by `020_time_series_bands_8x1M`. [Both] {Proof=signed; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- `trend-envelope-band-1m`: one million point signal with model, recipe, tolerance, and golden-run envelope variants, covered by `020_time_series_bands_8x1M`. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=assisted; Privacy=telemetry-only; Liability=engineering-review}
 - `anomaly-score-track-4x1m`: four synchronized trends plus model-versioned anomaly score lanes and reviewer states. [Both] {Proof=signed; Workflow=approve; Sovereignty=tenant-bound; Autonomy=assisted; Privacy=confidential; Liability=engineering-review}
 - `trend-event-marker-10k`: sparse and bursty alarm, batch, comment, hold, correction, and investigation markers on one time axis. [Both] {Proof=signed; Workflow=inspect; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=operational}
 - `annotation-ruler-review`: persistent rulers, region notes, reviewer initials, custody labels, and hidden/visible annotation states. [Frontend] {Proof=signed; Workflow=approve; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
@@ -844,6 +844,7 @@ uses `pitant-charts` to show side-by-side visual equivalence and drift.
 - `018_interaction_range_1000_cycles` benchmark for 1000 mixed zoom, pan, DataZoom, keyboard-style zoom, and touch range updates. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Interaction heap-growth benchmark for 10000 range updates with a 2 MB gate. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - `019_cursor_propagation_4panels` benchmark for source-suppressed cursor propagation, nearest timestamp lookup, per-pen value reads, and quality reads across synchronized panels. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- `020_time_series_bands_8x1M` benchmark for eight high-density trend pens plus value and envelope bands in the core command-list path. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Export duration benchmark. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
 - Bundle-size benchmark. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Strict local benchmark profile that owns release-candidate performance claims and baseline updates. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}

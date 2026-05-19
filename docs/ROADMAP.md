@@ -422,6 +422,14 @@ predictable navigation.*
 | v1.2 | Industrial visualization | Spectrogram, power spectrum, Bode, histogram, box/violin, control charts, process KPIs |
 | v1.3 | Correlation and anomaly | Scatter, correlation matrix, parallel coordinates, anomaly timeline, root cause bars, PDF export |
 
+### Initial Progress
+
+- [x] Added `TimeSeriesConfig.bands[]` for value bands and envelope bands.
+- [x] Added core command-frame band fills so Canvas2D, WebGPU, and SVG export
+  share the same path.
+- [x] Added `020_time_series_bands_8x1M` benchmark for eight high-density
+  trend pens plus alarm/envelope bands.
+
 ## Deliberately Not Building For v1
 
 - General dashboard charts: pie, donut, funnel, treemap, Sankey.

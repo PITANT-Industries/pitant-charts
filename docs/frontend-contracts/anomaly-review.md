@@ -11,8 +11,8 @@ and incident investigators.
 | Surface | Path or symbol | 06 section |
 |---|---|---|
 | React component | `TimeSeries` from `@pitant/charts-react` | Compose Inventory |
-| Future overlay | `AlarmBandLayer` | Phase 6 Chart Family Use / Do Not Use Catalog |
-| Future overlay | `EnvelopeBandLayer` | Phase 6 Chart Family Use / Do Not Use Catalog |
+| React config | `TimeSeriesConfig.bands[]` value bands | Phase 6 Chart Family Use / Do Not Use Catalog |
+| React config | `TimeSeriesConfig.bands[]` envelope bands | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Future overlay | `AnomalyScoreTrack` | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Future overlay | `AnnotationLayer` | Phase 6 Chart Family Use / Do Not Use Catalog |
 
@@ -23,11 +23,9 @@ and incident investigators.
   ariaLabel="Compressor vibration anomaly review"
   config={trendConfig}
   data={columnarData}
-  overlays={{
-    alarmBands,
-    envelopeBands,
-    anomalyTracks,
-    annotations,
+  config={{
+    ...trendConfig,
+    bands: [...alarmBands, ...envelopeBands],
   }}
 />
 ```
@@ -36,16 +34,18 @@ and incident investigators.
 
 - Trend data remains the primary visual object.
 - Alarm and envelope bands are clipped to the plot and never hide raw values.
-- Anomaly score tracks render as bounded lanes with model version and threshold.
-- Annotation markers show reviewer, timestamp, custody state, and visibility.
+- Anomaly score tracks remain future work and must render as bounded lanes with
+  model version and threshold before pilot.
+- Annotation markers remain future work and must show reviewer, timestamp,
+  custody state, and visibility before pilot.
 - Tooltip payload includes raw value, quality, gap, provenance, overlay source,
   model version, and reviewer state.
 
 ## Fixtures
 
-- Success: `trend-alarm-band-8x1m`, `trend-envelope-band-1m`, and
-  `anomaly-score-track-4x1m` combine without dropping below the accepted
-  Phase 6 benchmark budget.
+- Success: `trend-alarm-band-8x1m` and `trend-envelope-band-1m` render through
+  `020_time_series_bands_8x1M` without dropping below the accepted Phase 6
+  benchmark budget; `anomaly-score-track-4x1m` remains contract-only.
 - Degraded: one overlay has stale limits, one anomaly score lacks confidence,
   and one annotation is pending review.
 - Denied: user can read trend values but lacks `model.review` or

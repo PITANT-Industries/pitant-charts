@@ -28,7 +28,18 @@ const DIGITAL_DATA: DigitalChannelDataSet = {
 
 describe('command frame SVG export', () => {
   it('serializes a time-series command frame as clipped vector SVG', () => {
-    const plan = buildTimeSeriesRenderPlan(TIME_SERIES_DATA)
+    const plan = buildTimeSeriesRenderPlan({
+      ...TIME_SERIES_DATA,
+      bands: [
+        {
+          kind: 'value-band',
+          key: 'warning',
+          yStart: 11,
+          yEnd: 14,
+          fillColor: [1, 0, 0, 0.12],
+        },
+      ],
+    })
     const layout = createChartLayout({
       width: 640,
       height: 360,
@@ -52,6 +63,7 @@ describe('command frame SVG export', () => {
     expect(svg).toContain('<clipPath id="plot-clip">')
     expect(svg).toContain('clip-path="url(#plot-clip)"')
     expect(svg).toContain('<path')
+    expect(svg).toContain('fill="rgb(255 0 0)" fill-opacity="0.12"')
     expect(svg).toContain('stroke="rgb(255 0 0)"')
     expect(svg).toContain('>Time</text>')
     expect(svg).not.toContain('[object Object]')
