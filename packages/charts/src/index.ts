@@ -21,6 +21,7 @@ export {
   qualityCodeForHistorianRow,
 } from './adapters/index.js'
 export type {
+  AddTimeSeriesDerivedColumnsOptions,
   AxisLayoutOptions,
   AxisTick,
   ChartClientPoint,
@@ -62,6 +63,10 @@ export type {
   TimeSeriesChartOptions,
   TimeSeriesCommandFrame,
   TimeSeriesDataSet,
+  TimeSeriesDerivedColumn,
+  TimeSeriesDerivedColumnData,
+  TimeSeriesDerivedColumnKind,
+  TimeSeriesDerivedColumnResult,
   TimeSeriesEnvelopeBand,
   TimeSeriesFrameOptions,
   TimeSeriesInterpolation,
@@ -78,6 +83,7 @@ export {
   addChartGuidesToCommandList,
   addDigitalChannelToCommandList,
   addTimeSeriesBandsToCommandList,
+  addTimeSeriesDerivedColumns,
   addTimeSeriesToCommandList,
   buildDigitalChannelCommandFrame,
   buildDigitalChannelRenderPlan,

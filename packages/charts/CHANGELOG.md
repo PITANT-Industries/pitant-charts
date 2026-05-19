@@ -4,6 +4,8 @@
 
 - Added TimeSeries value-band and envelope-band render-plan support with
   command-frame/SVG output and a high-density benchmark gate.
+- Added `addTimeSeriesDerivedColumns()` for visual-only scale/offset, delta,
+  rate-of-change, and moving-average overlays with benchmark coverage.
 
 ## 1.0.0 - 2026-05-19
 

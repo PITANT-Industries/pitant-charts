@@ -2,12 +2,13 @@
  * Benchmark scenarios for @pitant/charts.
  *
  * Scenarios 1-4, 8-9 require a browser (WebGPU/Canvas2D).
- * Scenarios 5-7 and 10-20 are pure-compute/package-level gates.
+ * Scenarios 5-7 and 10-21 are pure-compute/package-level gates.
  * Bundle-size scenario runs via size-limit.
  */
 import {
   addDigitalChannelToCommandList,
   addTimeSeriesBandsToCommandList,
+  addTimeSeriesDerivedColumns,
   addTimeSeriesToCommandList,
   buildDigitalChannelRenderPlan,
   buildTimeSeriesRenderPlan,
@@ -18,6 +19,7 @@ import {
   panRangeByPixels,
   panRangeByValue,
   RenderCommandList,
+  type TimeSeriesDerivedColumn,
   type TimeSeriesSeries,
   zoomRangeAroundAnchor,
   zoomRangeAroundCenter,
@@ -536,6 +538,84 @@ scenarios['020_time_series_bands_8x1M'] = () => {
   return {
     scenario: '020_time_series_bands_8x1M',
     metric: `${penCount} pens x ${(pointCount / 1e6).toFixed(0)}M pts plus ${bandPointCount.toLocaleString()} band pts (${commandCount} commands)`,
+    value: Math.round(medianMs * 100) / 100,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 021: Derived series overlay generation ────────
+
+scenarios['021_time_series_derived_8x1M'] = () => {
+  const pointCount = 1_000_000
+  const penCount = 8
+  const data = generateMultiPenData(pointCount, penCount)
+  const derivedColumns: TimeSeriesDerivedColumn[] = []
+  const derivedSeries: TimeSeriesSeries[] = []
+
+  for (let pen = 0; pen < penCount; pen++) {
+    const sourceField = `pen_${pen}`
+    const field = pen % 2 === 0 ? `${sourceField}_ma` : `${sourceField}_rate`
+    if (pen % 2 === 0) {
+      derivedColumns.push({
+        kind: 'moving-average',
+        sourceField,
+        field,
+        windowSize: 64,
+        minimumSamples: 16,
+      })
+    } else {
+      derivedColumns.push({
+        kind: 'rate-of-change',
+        sourceField,
+        field,
+        per: 1000,
+      })
+    }
+    derivedSeries.push({
+      key: field,
+      label: pen % 2 === 0 ? `Pen ${pen + 1} MA` : `Pen ${pen + 1} rate`,
+      field,
+      lineWidth: 1,
+    })
+  }
+
+  const target = 350 // ms for 8M derived samples plus 16-series render-plan commands
+
+  const warmupData = addTimeSeriesDerivedColumns(data, derivedColumns)
+  const warmup = buildTimeSeriesRenderPlan({
+    timestamps: warmupData.timestamps,
+    columns: warmupData.columns,
+    series: [...data.series, ...derivedSeries],
+  })
+  const warmupCommands = new RenderCommandList()
+  addTimeSeriesToCommandList(warmupCommands, warmup)
+
+  const times: number[] = []
+  let renderedPointCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 3; i++) {
+    const start = performance.now()
+    const derivedData = addTimeSeriesDerivedColumns(data, derivedColumns)
+    const plan = buildTimeSeriesRenderPlan({
+      timestamps: derivedData.timestamps,
+      columns: derivedData.columns,
+      series: [...data.series, ...derivedSeries],
+    })
+    const commands = new RenderCommandList()
+    addTimeSeriesToCommandList(commands, plan)
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    renderedPointCount = plan.renderedPointCount
+    commandCount = commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '021_time_series_derived_8x1M',
+    metric: `${penCount} pens x ${(pointCount / 1e6).toFixed(0)}M pts plus ${derivedColumns.length} derived overlays (${renderedPointCount.toLocaleString()} rendered, ${commandCount} commands)`,
     value: Math.round(medianMs * 100) / 100,
     unit: 'ms',
     target,

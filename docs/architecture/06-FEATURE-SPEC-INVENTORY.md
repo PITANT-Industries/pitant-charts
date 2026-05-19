@@ -83,18 +83,18 @@ Pitant use until it is at least `perf_browser`.
 |---|---:|---:|---:|---|
 | Ingest | 45% | 45% | 10% | `ColumnarData`, `DataSource`, historian adapter tests |
 | Normalize | 35% | 55% | 10% | validation tests, quality/gap viewport tests |
-| Transform | 65% | 25% | 10% | `LodPyramid`, `DataEngine`, benchmarks |
+| Transform | 68% | 22% | 10% | `LodPyramid`, `DataEngine`, derived-series columns, benchmarks |
 | Layout | 35% | 50% | 15% | `createChartLayout`, plot reservation, axis text tests |
-| Render | 68% | 22% | 10% | WebGPU, Canvas2D, command list, text overlay, TimeSeries value/envelope bands |
+| Render | 70% | 20% | 10% | WebGPU, Canvas2D, command list, text overlay, TimeSeries value/envelope bands, derived overlays through the normal line path |
 | Interact | 82% | 6% | 12% | pointer, zoom, pan, keyboard, touch, DataZoom, crosshair, quality/gap/provenance tooltip tests, range-navigation helper tests, live-append interaction regression |
 | Compose | 70% | 25% | 5% | React primitives and tests |
 | Synchronize | 65% | 25% | 10% | `ChartSyncGroup`, TimeSeries, DigitalChannel sync tests, cursor propagation benchmark |
 | Theme | 70% | 25% | 5% | token resolver and CSS |
 | Export | 75% | 15% | 10% | explicit PNG export options and true SVG export from command frames |
-| Benchmark | 92% | 2% | 6% | strict benchmark app gate, explicit CI benchmark profile, interaction range stress gate, cursor propagation gate, TimeSeries band benchmark, browser FPS mode, browser screenshot verifier, TimeSeries bands harness profile, visual baseline, local Playwright Chromium/Firefox/WebKit smoke matrix |
+| Benchmark | 93% | 2% | 5% | strict benchmark app gate, explicit CI benchmark profile, interaction range stress gate, cursor propagation gate, TimeSeries band benchmark, TimeSeries derived-series benchmark, browser FPS mode, browser screenshot verifier, TimeSeries bands harness profile, visual baseline, local Playwright Chromium/Firefox/WebKit smoke matrix |
 | Package | 90% | 0% | 10% | v1 package metadata, README files, package changelogs, MIT licenses, npm publish dry-run, expanded shadcn registry, registry validator, registry typecheck, shadcn smoke, live docs app, quick start |
 | Govern | 20% | 70% | 10% | architecture docs |
-| Performance Contract | 50% | 45% | 5% | LOD, interaction range, cursor propagation, TimeSeries band, browser FPS benchmarks, and live-append interaction regression |
+| Performance Contract | 52% | 43% | 5% | LOD, interaction range, cursor propagation, TimeSeries band, TimeSeries derived-series, browser FPS benchmarks, and live-append interaction regression |
 | GPU Hot Path | 35% | 55% | 10% | WebGPU context and shaders |
 | Worker Hot Path | 60% | 35% | 5% | `DataEngine`, `LodPyramid` |
 | Memory Budget | 30% | 60% | 10% | memory overhead and interaction heap-growth benchmarks |
@@ -142,6 +142,7 @@ decision, fixture, non-use boundary, and benchmark.
 |---|---|---|---|---|
 | Alarm bands | Operators or reviewers need high/low, warning, trip, permit, or environmental limits overlaid on a trend. | Limits are not authoritative, change per cursor position, or would imply a control command path. | `trend-alarm-band-8x1m` | [Both] {Proof=signed; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational} |
 | Envelope bands | Engineers compare an observed signal against model, recipe, expected, tolerance, or golden-run envelopes. | The envelope is speculative, not time-aligned, or would hide actual raw values. | `trend-envelope-band-1m` | [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=assisted; Privacy=telemetry-only; Liability=engineering-review} |
+| Derived series overlays | Engineers need fast visual overlays such as moving average, delta, rate-of-change, unit-normalized copy, or scale/offset comparison in the same trend. | The calculation owns domain semantics, regulatory evidence, SPC rules, OEE, model inference, correction records, or any value that must become a source-of-record result. | `derived-series-8x1m` | [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review} |
 | Anomaly score tracks | Reliability or AI review needs a separate bounded score lane aligned with the trend cursor. | The score has no model version, threshold provenance, or reviewer state. | `anomaly-score-track-4x1m` | [Both] {Proof=signed; Workflow=approve; Sovereignty=tenant-bound; Autonomy=assisted; Privacy=confidential; Liability=engineering-review} |
 | Event markers | Users need sparse starts, stops, alarms, comments, batches, holds, or investigation pins on a time axis. | Markers become dense enough to replace a timeline/event-table UI or obscure plotted data. | `trend-event-marker-10k` | [Both] {Proof=signed; Workflow=inspect; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=operational} |
 | Annotation layers | Engineers need reviewed callouts, measured intervals, rulers, or persistent investigation notes. | Notes are free-form unreviewed operational instructions, or the view lacks custody/evidence context. | `annotation-ruler-review` | [Frontend] {Proof=signed; Workflow=approve; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=engineering-review} |
@@ -207,6 +208,7 @@ validation states, and the performance budget owner has accepted the benchmark.
 - `small-dashboard-16charts`: many small charts testing DOM overlay and sync overhead. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - `trend-alarm-band-8x1m`: eight high-density trend pens with warning/trip/permit bands, band labels, and visibility toggles, covered by `020_time_series_bands_8x1M` and the browser harness `bands` profile. [Both] {Proof=signed; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - `trend-envelope-band-1m`: one million point signal with model, recipe, tolerance, and golden-run envelope variants, covered by `020_time_series_bands_8x1M` and the browser harness `bands` profile. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=assisted; Privacy=telemetry-only; Liability=engineering-review}
+- `derived-series-8x1m`: eight high-density trend pens plus eight visual-only derived overlays using moving average and rate-of-change, covered by `021_time_series_derived_8x1M`. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - `anomaly-score-track-4x1m`: four synchronized trends plus model-versioned anomaly score lanes and reviewer states. [Both] {Proof=signed; Workflow=approve; Sovereignty=tenant-bound; Autonomy=assisted; Privacy=confidential; Liability=engineering-review}
 - `trend-event-marker-10k`: sparse and bursty alarm, batch, comment, hold, correction, and investigation markers on one time axis. [Both] {Proof=signed; Workflow=inspect; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=operational}
 - `annotation-ruler-review`: persistent rulers, region notes, reviewer initials, custody labels, and hidden/visible annotation states. [Frontend] {Proof=signed; Workflow=approve; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
@@ -236,6 +238,7 @@ for v1.
 | Worker LOD pyramid | Series are large enough that LOD build/query would block the main thread or be reused across views. | Series are below the measured fast-path threshold and worker startup costs dominate. |
 | Main-thread fast path | Small fixture or low-point-count series need immediate render with minimal overhead. | Data can exceed the threshold, append live, or participate in large synchronized dashboards. |
 | Min-max LOD | The visual must preserve spikes, valleys, and extremes while reducing point count. | The chart is statistical, categorical, or already pre-aggregated to viewport density. |
+| Core derived columns | A visual-only overlay can be computed from existing numeric columns before LOD, then rendered, queried, exported, and tooled like any other series. | The calculation is a business result, signed evidence, model inference, SPC violation, OEE metric, or audit correction; sibling repos must own those semantics. |
 | Ring buffer | Live append mode has bounded recent-history requirements. | Historical evidence review, legal hold, or replay requires complete retained history. |
 | Query result pooling | Repeated pan/zoom/cursor work would allocate transient arrays. | A one-off export or tiny chart does not create allocation pressure. |
 | Command-list cache | Axes, grid, labels, lanes, or overlays are stable across frames. | The command depends on every pointer movement or rapidly changing data. |
@@ -846,6 +849,7 @@ uses `pitant-charts` to show side-by-side visual equivalence and drift.
 - Interaction heap-growth benchmark for 10000 range updates with a 2 MB gate. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - `019_cursor_propagation_4panels` benchmark for source-suppressed cursor propagation, nearest timestamp lookup, per-pen value reads, and quality reads across synchronized panels. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - `020_time_series_bands_8x1M` benchmark for eight high-density trend pens plus value and envelope bands in the core command-list path. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- `021_time_series_derived_8x1M` benchmark for eight high-density trend pens plus eight derived moving-average/rate-of-change overlays before render-plan generation. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Export duration benchmark. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
 - Bundle-size benchmark. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Strict local benchmark profile that owns release-candidate performance claims and baseline updates. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}

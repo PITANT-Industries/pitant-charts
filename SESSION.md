@@ -135,13 +135,19 @@ release performance gate.
   `020_time_series_bands_8x1M`.
 - The render harness has a `bands` profile that mounts `TimeSeriesConfig.bands[]`
   with a value band plus an envelope band and is covered by the browser verifier.
+- Phase 6 visual-only derived series overlays exist in core and React config,
+  with `scale-offset`, `delta`, `rate-of-change`, and `moving-average` columns
+  computed before DataSource ingestion so they reuse LOD, tooltip, export, and
+  append paths. Benchmark scenario `021_time_series_derived_8x1M` covers eight
+  high-density trend pens plus eight derived overlays.
 
 ## Next Build Task
 
 Continue Phase 6 implementation:
 
-1. Decide whether the next v1.1 slice is persistent annotations/rulers or
-   derived-series overlays.
+1. Build persistent annotations/rulers next, using the same rule: no visible
+   runtime claim without a fixture, a contract-pack update, and a benchmark or
+   browser-harness state.
 2. Keep SPC, spectrum/spectrogram, correlation, KPI, and PDF packs at
    contract-only until their benchmark fixtures exist.
 
@@ -218,6 +224,21 @@ Run after Phase 3 quality/gap viewport slice on 2026-05-19:
 - `bun run bench`: pass, 11/11 benchmark scenarios
 - New benchmark gate: `017_data_source_quality_query_4pens` at
   0.191 ms/query against a 1 ms/query target.
+
+Run after Phase 6 derived-series overlay slice on 2026-05-19:
+
+- `bun run build`: pass
+- `bun run typecheck`: pass
+- `bun run lint`: pass, 130 files checked
+- `bun run test`: pass, 30 files / 330 tests
+- `bun run bench`: pass, 16/16 benchmark scenarios
+- `bun run --filter @pitant/benchmark bench 021`: pass,
+  `021_time_series_derived_8x1M` at 184.48 ms on focused run and 171.64 ms in
+  full run against a 350 ms target
+- `bun run harness:build`: pass
+- `bun run harness:verify`: pass for Canvas2D compact and bands profiles;
+  WebGPU profiles skipped because `navigator.gpu` is unavailable locally
+- `git diff --check`: pass
 
 Run after Phase 3 high-DPI resize slice on 2026-05-19:
 

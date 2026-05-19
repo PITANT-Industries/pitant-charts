@@ -64,6 +64,7 @@ export type {
   TimeSeriesBandConfig,
   TimeSeriesColumnData,
   TimeSeriesConfig,
+  TimeSeriesDerivedSeriesConfig,
   TimeSeriesEnvelopeBandConfig,
   TimeSeriesProps,
   TimeSeriesSeriesConfig,

@@ -431,6 +431,11 @@ predictable navigation.*
   trend pens plus alarm/envelope bands.
 - [x] Added a browser render-harness `bands` profile so CI exercises
   `TimeSeriesConfig.bands[]` through the mounted React chart path.
+- [x] Added visual-only derived series overlays (`moving-average`, `delta`,
+  `rate-of-change`, `scale-offset`) computed before DataSource ingestion so
+  they reuse the existing LOD, tooltip, export, and append paths.
+- [x] Added `021_time_series_derived_8x1M` benchmark for eight high-density
+  trend pens plus eight derived overlays.
 
 ## Deliberately Not Building For v1
 

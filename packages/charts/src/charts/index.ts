@@ -99,3 +99,11 @@ export {
 } from './time-series.js'
 export type { TimeSeriesChartCreateOptions, TimeSeriesChartOptions } from './time-series-chart.js'
 export { TimeSeriesChart } from './time-series-chart.js'
+export type {
+  AddTimeSeriesDerivedColumnsOptions,
+  TimeSeriesDerivedColumn,
+  TimeSeriesDerivedColumnData,
+  TimeSeriesDerivedColumnKind,
+  TimeSeriesDerivedColumnResult,
+} from './time-series-derived.js'
+export { addTimeSeriesDerivedColumns } from './time-series-derived.js'

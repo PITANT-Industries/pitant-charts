@@ -9,6 +9,8 @@ here. Versions follow SemVer once the packages are published.
 
 - TimeSeries value-band and envelope-band support in the core render plan,
   React config, command-frame SVG export, and benchmark suite.
+- TimeSeries visual-only derived series overlays for moving average, delta,
+  rate-of-change, and scale/offset with a high-density benchmark gate.
 - Browser render-harness `bands` profile for mounted React TimeSeries
   value/envelope band verification.
 

@@ -1,11 +1,13 @@
 'use client'
 
 import {
+  addTimeSeriesDerivedColumns,
   buildTimeSeriesCommandFrame,
   buildTimeSeriesRenderPlan,
   type ChartLayout,
   type ChartPointerCoordinates,
   type TimeSeriesBand as CoreTimeSeriesBand,
+  type TimeSeriesDerivedColumn as CoreTimeSeriesDerivedColumn,
   type TimeSeriesSeries as CoreTimeSeriesSeries,
   commandFrameToSvg,
   createChartLayout,
@@ -13,6 +15,7 @@ import {
   mapDataPointToChartPoint,
   type RgbaColor,
   renderTimeSeriesPlan,
+  type TimeSeriesDerivedColumnKind,
   type TimeSeriesInterpolation,
   type TimeSeriesRenderOptions,
   type TimeSeriesRenderPlan,
@@ -75,6 +78,17 @@ export interface TimeSeriesSeriesConfig extends SeriesConfig {
   gapThreshold?: number
 }
 
+export interface TimeSeriesDerivedSeriesConfig extends Omit<TimeSeriesSeriesConfig, 'field'> {
+  kind: TimeSeriesDerivedColumnKind
+  sourceField: string
+  field?: string
+  windowSize?: number
+  minimumSamples?: number
+  per?: number
+  scale?: number
+  offset?: number
+}
+
 export interface TimeSeriesValueBandConfig {
   kind: 'value-band'
   key: string
@@ -107,6 +121,7 @@ export type TimeSeriesBandConfig = TimeSeriesValueBandConfig | TimeSeriesEnvelop
 
 export interface TimeSeriesConfig {
   series: TimeSeriesSeriesConfig[]
+  derivedSeries?: TimeSeriesDerivedSeriesConfig[]
   bands?: TimeSeriesBandConfig[]
   xAxis?: AxisConfig & {
     gapThreshold?: number
@@ -201,20 +216,32 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     containerRef,
     renderer: config.renderer ?? 'auto',
   })
-  const { visibilityMap, toggleSeries } = useSeriesVisibility(config.series)
-  const legendItems = useLegendItems(config.series, visibilityMap)
+  const derivedColumns = useMemo(
+    () => (config.derivedSeries ?? []).map(toCoreTimeSeriesDerivedColumn),
+    [config.derivedSeries],
+  )
+  const effectiveSeries = useMemo(
+    () => [...config.series, ...(config.derivedSeries ?? []).map(toDerivedTimeSeriesSeriesConfig)],
+    [config.derivedSeries, config.series],
+  )
+  const chartData = useMemo(
+    () => addTimeSeriesDerivedColumns(options.data, derivedColumns),
+    [derivedColumns, options.data],
+  )
+  const { visibilityMap, toggleSeries } = useSeriesVisibility(effectiveSeries)
+  const legendItems = useLegendItems(effectiveSeries, visibilityMap)
   const tooltipSeries = useMemo(
     () =>
-      config.series.map((series) => ({
+      effectiveSeries.map((series) => ({
         ...series,
         visible: visibilityMap[series.key] ?? series.visible !== false,
       })),
-    [config.series, visibilityMap],
+    [effectiveSeries, visibilityMap],
   )
 
   const planSeries: CoreTimeSeriesSeries[] = useMemo(
     () =>
-      config.series.map((series, index) => {
+      effectiveSeries.map((series, index) => {
         const planned: CoreTimeSeriesSeries = {
           key: series.key,
           label: series.label,
@@ -228,7 +255,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
         if (series.gapThreshold !== undefined) planned.gapThreshold = series.gapThreshold
         return planned
       }),
-    [config.series, visibilityMap],
+    [effectiveSeries, visibilityMap],
   )
 
   const planBands: CoreTimeSeriesBand[] = useMemo(
@@ -255,11 +282,11 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     void resizeKey
     return Math.max(
       1,
-      Math.round(containerRef.current?.dimensions.width ?? options.data.timestamps.length),
+      Math.round(containerRef.current?.dimensions.width ?? chartData.timestamps.length),
     )
-  }, [containerRef, options.data.timestamps.length, resizeKey])
+  }, [chartData.timestamps.length, containerRef, resizeKey])
   const viewport = useColumnarViewport({
-    data: options.data,
+    data: chartData,
     fields: visibleFields,
     ...(activeXRange ? { range: activeXRange } : {}),
     targetPixels,
@@ -353,27 +380,31 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
 
   const setData = useCallback(
     (nextData: TimeSeriesColumnData) => {
-      viewport.setData(nextData)
+      const nextChartData = addTimeSeriesDerivedColumns(nextData, derivedColumns)
+      viewport.setData(nextChartData)
       if (streaming?.liveEdge) {
         setVisibleRangeState(
-          liveEdgeRange(new Float64Array(0), nextData.timestamps, streaming.windowSize),
+          liveEdgeRange(new Float64Array(0), nextChartData.timestamps, streaming.windowSize),
         )
       }
     },
-    [streaming?.liveEdge, streaming?.windowSize, viewport],
+    [derivedColumns, streaming?.liveEdge, streaming?.windowSize, viewport],
   )
 
   const append = useCallback(
     (nextData: TimeSeriesColumnData) => {
       const previousTimestamps = viewport.rawData.timestamps
-      viewport.appendData(nextData)
+      const nextChartData = addTimeSeriesDerivedColumns(nextData, derivedColumns, {
+        previousData: viewport.rawData,
+      })
+      viewport.appendData(nextChartData)
       if (streaming?.liveEdge) {
         setVisibleRangeState(
-          liveEdgeRange(previousTimestamps, nextData.timestamps, streaming.windowSize),
+          liveEdgeRange(previousTimestamps, nextChartData.timestamps, streaming.windowSize),
         )
       }
     },
-    [streaming?.liveEdge, streaming?.windowSize, viewport],
+    [derivedColumns, streaming?.liveEdge, streaming?.windowSize, viewport],
   )
 
   const setVisibleRange = useCallback(
@@ -518,6 +549,39 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     renderedPointCount: renderPlan.renderedPointCount,
     layout,
   }
+}
+
+function toCoreTimeSeriesDerivedColumn(
+  series: TimeSeriesDerivedSeriesConfig,
+): CoreTimeSeriesDerivedColumn {
+  const derived: CoreTimeSeriesDerivedColumn = {
+    kind: series.kind,
+    sourceField: series.sourceField,
+    field: series.field ?? series.key,
+  }
+  if (series.windowSize !== undefined) derived.windowSize = series.windowSize
+  if (series.minimumSamples !== undefined) derived.minimumSamples = series.minimumSamples
+  if (series.per !== undefined) derived.per = series.per
+  if (series.scale !== undefined) derived.scale = series.scale
+  if (series.offset !== undefined) derived.offset = series.offset
+  return derived
+}
+
+function toDerivedTimeSeriesSeriesConfig(
+  series: TimeSeriesDerivedSeriesConfig,
+): TimeSeriesSeriesConfig {
+  const derived: TimeSeriesSeriesConfig = {
+    key: series.key,
+    label: series.label,
+    field: series.field ?? series.key,
+  }
+  if (series.color !== undefined) derived.color = series.color
+  if (series.visible !== undefined) derived.visible = series.visible
+  if (series.rgba !== undefined) derived.rgba = series.rgba
+  if (series.lineWidth !== undefined) derived.lineWidth = series.lineWidth
+  if (series.interpolation !== undefined) derived.interpolation = series.interpolation
+  if (series.gapThreshold !== undefined) derived.gapThreshold = series.gapThreshold
+  return derived
 }
 
 function toCoreTimeSeriesBand(band: TimeSeriesBandConfig): CoreTimeSeriesBand {

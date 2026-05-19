@@ -415,6 +415,10 @@ packs after v1 field feedback.
   path.
 - [x] Render harness `bands` profile exercises value/envelope bands through
   the mounted React browser path.
+- [x] Visual-only derived series overlays compute moving average, delta,
+  rate-of-change, and scale/offset columns before DataSource ingestion.
+- [x] `021_time_series_derived_8x1M` benchmark covers eight high-density trend
+  pens plus eight derived overlays.
 
 **Tests and Acceptance.** Pack-specific unit, visual, and performance tests.
 

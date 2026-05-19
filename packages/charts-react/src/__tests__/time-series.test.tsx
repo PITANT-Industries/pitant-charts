@@ -227,6 +227,105 @@ describe('useTimeSeries', () => {
     )
   })
 
+  it('expands derived series into legend, render plan, and tooltip metadata', () => {
+    const data: TimeSeriesColumnData = {
+      timestamps: new Float64Array([1000, 1010, 1020]),
+      columns: {
+        temp: new Float64Array([10, 14, 16]),
+      },
+      quality: {
+        temp: new Uint8Array([0, 0, 0]),
+      },
+    }
+    const config: TimeSeriesConfig = {
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+      derivedSeries: [
+        {
+          key: 'temp_ma',
+          label: 'Temperature MA',
+          kind: 'moving-average',
+          sourceField: 'temp',
+          windowSize: 2,
+          minimumSamples: 1,
+          rgba: [0, 0.5, 1, 1],
+        },
+        {
+          key: 'temp_rate',
+          label: 'Temperature rate',
+          kind: 'rate-of-change',
+          sourceField: 'temp',
+          per: 10,
+        },
+      ],
+    }
+    const { result } = renderHook(() => {
+      const containerRef = useRef<ChartContainerRef | null>(null)
+      return useTimeSeries({ config, data, containerRef })
+    })
+
+    expect(result.current.legendItems.map((item) => item.key)).toEqual([
+      'temp',
+      'temp_ma',
+      'temp_rate',
+    ])
+    expect(result.current.renderPlan.series.map((series) => series.key)).toEqual([
+      'temp',
+      'temp_ma',
+      'temp_rate',
+    ])
+    expect(result.current.renderPlan.series[1]?.segments[0]?.buffer).toEqual(
+      new Float32Array([0, 10, 10, 12, 20, 15]),
+    )
+
+    act(() => {
+      result.current.handleHoverChange(pointerAt(1020))
+    })
+
+    expect(result.current.tooltipPayload?.series[1]).toMatchObject({
+      key: 'temp_ma',
+      value: 15,
+      quality: 6,
+      qualityLabel: 'calculated',
+    })
+  })
+
+  it('keeps derived append values continuous at live data boundaries', () => {
+    const data: TimeSeriesColumnData = {
+      timestamps: new Float64Array([1000, 1010]),
+      columns: {
+        temp: new Float64Array([10, 14]),
+      },
+    }
+    const config: TimeSeriesConfig = {
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+      derivedSeries: [
+        { key: 'temp_delta', label: 'Temperature delta', kind: 'delta', sourceField: 'temp' },
+      ],
+    }
+    const { result } = renderHook(() => {
+      const containerRef = useRef<ChartContainerRef | null>(null)
+      return useTimeSeries({ config, data, containerRef })
+    })
+
+    act(() => {
+      result.current.append({
+        timestamps: new Float64Array([1020]),
+        columns: {
+          temp: new Float64Array([19]),
+        },
+      })
+    })
+    act(() => {
+      result.current.handleHoverChange(pointerAt(1020))
+    })
+
+    expect(result.current.tooltipPayload?.series[1]).toMatchObject({
+      key: 'temp_delta',
+      value: 5,
+      qualityLabel: 'calculated',
+    })
+  })
+
   it('exports SVG from the vector command frame with explicit dimensions', async () => {
     const { result } = renderHook(() =>
       useTimeSeries({
