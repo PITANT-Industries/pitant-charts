@@ -2,19 +2,20 @@
 
 **Date:** 2026-05-19
 **Current phase:** Phase 6 - Post-v1 Industrial Chart Packs
-**Latest action:** Continued Phase 6 with the initial precomputed-bin
-Distribution pack in the core engine, React API, render harness, benchmark
-suite, frontend contract packs, and multi-axis demo. The demo now mounts
-visible PITANT Spectrum, Spectrogram, and Distribution panels from the package
-APIs, so scientific-analysis rendering stays continuously exercised through
-shared engine code instead of bespoke demo-only SVG/bars.
+**Latest action:** Continued Phase 6 with the initial frozen-coefficient
+CorrelationMatrix pack in the core engine, imperative API, React API, render
+harness, benchmark suite, frontend contract packs, and multi-axis demo. The
+demo now mounts visible PITANT Spectrum, Spectrogram, Distribution, and
+CorrelationMatrix panels from the package APIs, so scientific-analysis
+rendering stays continuously exercised through shared engine code instead of
+bespoke demo-only SVG/bars.
 
 ## What Exists
 
 - Bun monorepo with `@pitant/charts`, `@pitant/charts-react`, and benchmark app.
 - Render harness app with
-  compact/large/bands/anomaly/spc/spectrum/spectrogram/distribution data
-  profiles and renderer selection.
+  compact/large/bands/anomaly/spc/spectrum/spectrogram/distribution/correlation
+  data profiles and renderer selection.
 - Core render contexts for WebGPU and Canvas2D.
 - Worker-backed data engine and LOD pyramid.
 - Benchmark suite includes 8-pen TimeSeries and 16-channel DigitalChannel
@@ -37,8 +38,9 @@ shared engine code instead of bespoke demo-only SVG/bars.
 - Historian query rows and trend fixtures can be adapted into TimeSeries
   columnar data without pulling in a runtime dependency on `pitant-historian`.
 - Non-React consumers can use `TimeSeriesChart`, `DigitalChannelChart`,
-  `SpectrumChart`, `SpectrogramChart`, and `DistributionChart` directly against
-  a `RenderContext` or create them from a canvas.
+  `SpectrumChart`, `SpectrogramChart`, `DistributionChart`, and
+  `CorrelationMatrixChart` directly against a `RenderContext` or create them
+  from a canvas.
 - Docs examples now cover React trend composition, digital channel lanes,
   synchronized dashboards, and core imperative chart usage.
 - Initial frontend contract packs exist for historian trends, digital channels,
@@ -193,6 +195,19 @@ shared engine code instead of bespoke demo-only SVG/bars.
   default chart stack and the analytics workbench Distribution card, while
   upstream analytics/SPC siblings retain ownership of authoritative Cp/Cpk and
   frozen sample semantics.
+- Phase 6 initial CorrelationMatrix support exists in core, imperative, and
+  React config, with frozen upstream coefficients, missing/low-sample/masked
+  cell states, diagonal handling, command-frame/SVG/PNG export coverage,
+  browser harness `correlation` profile coverage, and benchmark scenario
+  `029_correlation_matrix_128vars`.
+- The multi-axis demo now mounts the public `CorrelationMatrix` component in
+  the default chart stack and reuses it for covariance/residual matrix panels,
+  while analytics/model siblings retain ownership of authoritative
+  coefficient computation, lag discovery, and causality claims.
+- The LOD append path keeps typed-array capacity separate from logical sample
+  count, so preallocated storage no longer pollutes stats, gap detection,
+  binary search, or pyramid generation while streaming appends stay under the
+  existing benchmark target.
 
 ## Next Build Task
 
@@ -201,16 +216,36 @@ Continue Phase 6 implementation:
 1. Build the next concrete post-v1 industrial pack with the same rule: no
    visible runtime claim without a fixture, a contract-pack update, and a
    benchmark or browser-harness state.
-2. Prioritize correlation or KPI next unless a higher-value demo need appears
-   first.
-3. Keep PDF packs and unimplemented correlation/KPI variants at
-   contract-only until their benchmark fixtures exist.
+2. Prioritize KPI next unless a higher-value demo need appears first.
+3. Keep PDF packs and unimplemented scatter/parallel/correlation-analysis
+   variants at contract-only until their benchmark fixtures exist.
 
 Before adding a new visible feature, update or check
 `docs/architecture/06-FEATURE-SPEC-INVENTORY.md` and the relevant frontend
 contract pack under `docs/frontend-contracts/`.
 
 ## Verification Status
+
+Run after Phase 6 CorrelationMatrix slice on 2026-05-19:
+
+- `bun run lint`: pass
+- `bun run typecheck`: pass
+- `bun run build`: pass
+- `bun run test`: pass, 38 files / 376 tests
+- `bun run bench`: pass, 24/24 benchmark scenarios
+- `bun run --filter @pitant/render-harness build`: pass; Vite still reports
+  the existing mixed static/dynamic import chunking warning.
+- `bun run --filter @pitant/multiaxis-demo build`: pass; Vite still reports
+  the existing mixed static/dynamic import chunking warning.
+- `bun run harness:verify -- --renderers=canvas2d --profiles=correlation`:
+  pass, significant pixels across all three correlation surfaces.
+- Playwright smoke against `http://127.0.0.1:5174/`: pass for
+  `.pitant-correlation-surface canvas` nonblank rendering with no console
+  errors.
+- Focused performance evidence: `007_streaming_append` initially regressed
+  above its 2 ms/batch gate, then passed after the logical-count append
+  optimization; latest full-run value was 1.075 ms/batch. New
+  `029_correlation_matrix_128vars` passed at 1.365 ms against a 10 ms target.
 
 Run after import on 2026-05-18:
 

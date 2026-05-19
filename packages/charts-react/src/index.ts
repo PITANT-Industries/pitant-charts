@@ -48,6 +48,18 @@ export type {
   ColumnarTooltipProvenanceMap,
   ColumnarTooltipProvenanceValue,
 } from './chart-tooltip-data.js'
+// Correlation matrix
+export type {
+  CorrelationColorStopConfig,
+  CorrelationMatrixConfig,
+  CorrelationMatrixData,
+  CorrelationMatrixLabelConfig,
+  CorrelationMatrixProps,
+  CorrelationMatrixStats,
+  UseCorrelationMatrixOptions,
+  UseCorrelationMatrixReturn,
+} from './correlation-matrix.js'
+export { CorrelationMatrix, useCorrelationMatrix } from './correlation-matrix.js'
 // Digital channel
 export type {
   DigitalChannelColumnData,

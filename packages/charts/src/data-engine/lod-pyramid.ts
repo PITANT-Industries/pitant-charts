@@ -34,6 +34,7 @@ export class LodPyramid {
   private _levels: LodLevel[] = []
   private _timestamps: BigInt64Array = new BigInt64Array(0)
   private _values: Float64Array = new Float64Array(0)
+  private _count = 0
   private _stats: SeriesStats = emptyStats()
   private _gaps: Gap[] = []
   private _maxGapDuration = 0n
@@ -78,14 +79,18 @@ export class LodPyramid {
     }
 
     const effectiveN = n - startIdx
-    this._timestamps = timestamps.slice(startIdx, startIdx + effectiveN)
-    this._values = values.slice(startIdx, startIdx + effectiveN)
+    const capacity = Math.max(effectiveN, this._maxPoints > 0 ? this._maxPoints : 0)
+    this._timestamps = new BigInt64Array(capacity)
+    this._values = new Float64Array(capacity)
+    this._timestamps.set(timestamps.subarray(startIdx, startIdx + effectiveN))
+    this._values.set(values.subarray(startIdx, startIdx + effectiveN))
+    this._count = effectiveN
 
     // Compute stats
-    this._stats = computeStats(this._timestamps, this._values)
+    this._stats = computeStats(this._timestamps, this._values, this._count)
 
     // Detect gaps
-    this._gaps = detectGaps(this._timestamps, this._maxGapDuration)
+    this._gaps = detectGaps(this._timestamps, this._maxGapDuration, this._count)
     this._stats = { ...this._stats, gapCount: this._gaps.length }
 
     // Build pyramid
@@ -102,7 +107,7 @@ export class LodPyramid {
     const appendN = Math.min(timestamps.length, values.length)
     if (appendN === 0) return this._stats.count
 
-    const oldN = this._timestamps.length
+    const oldN = this._count
     const newN = oldN + appendN
 
     // Check ring buffer
@@ -117,8 +122,8 @@ export class LodPyramid {
 
       // Copy surviving old data
       if (keepFromOld > 0) {
-        newTs.set(this._timestamps.subarray(oldN - keepFromOld))
-        newVals.set(this._values.subarray(oldN - keepFromOld))
+        newTs.set(this._timestamps.subarray(oldN - keepFromOld, oldN))
+        newVals.set(this._values.subarray(oldN - keepFromOld, oldN))
       }
       // Copy new data
       newTs.set(timestamps.subarray(0, appendN), keepFromOld)
@@ -126,25 +131,21 @@ export class LodPyramid {
 
       this._timestamps = newTs
       this._values = newVals
+      this._count = keepN
 
       // Full rebuild after ring buffer eviction
-      this._stats = computeStats(this._timestamps, this._values)
-      this._gaps = detectGaps(this._timestamps, this._maxGapDuration)
+      this._stats = computeStats(this._timestamps, this._values, this._count)
+      this._gaps = detectGaps(this._timestamps, this._maxGapDuration, this._count)
       this._stats = { ...this._stats, gapCount: this._gaps.length }
       this._buildPyramid()
 
-      return this._timestamps.length
+      return this._count
     }
 
-    // Simple append — grow arrays
-    const newTs = new BigInt64Array(newN)
-    const newVals = new Float64Array(newN)
-    newTs.set(this._timestamps)
-    newTs.set(timestamps.subarray(0, appendN), oldN)
-    newVals.set(this._values)
-    newVals.set(values.subarray(0, appendN), oldN)
-    this._timestamps = newTs
-    this._values = newVals
+    this._ensureCapacity(newN)
+    this._timestamps.set(timestamps.subarray(0, appendN), oldN)
+    this._values.set(values.subarray(0, appendN), oldN)
+    this._count = newN
 
     // Update stats incrementally
     this._updateStatsIncremental(timestamps.subarray(0, appendN), values.subarray(0, appendN))
@@ -158,7 +159,7 @@ export class LodPyramid {
     // Propagate pyramid levels incrementally
     this._propagateAppend(oldN, appendN)
 
-    return this._timestamps.length
+    return this._count
   }
 
   /**
@@ -170,7 +171,7 @@ export class LodPyramid {
     endTime: bigint,
     viewportWidth: number,
   ): { data: Float32Array; level: number; pointCount: number; gaps: Gap[] } {
-    const n = this._timestamps.length
+    const n = this._count
     if (n === 0) {
       return { data: new Float32Array(0), level: 0, pointCount: 0, gaps: [] }
     }
@@ -180,8 +181,8 @@ export class LodPyramid {
 
     if (level === 0) {
       // Raw data — binary search for range
-      const startIdx = lowerBound(this._timestamps, startTime)
-      const endIdx = upperBound(this._timestamps, endTime)
+      const startIdx = lowerBound(this._timestamps, startTime, n)
+      const endIdx = upperBound(this._timestamps, endTime, n)
       const rangeN = endIdx - startIdx
       if (rangeN <= 0) {
         return { data: new Float32Array(0), level: 0, pointCount: 0, gaps: [] }
@@ -245,8 +246,25 @@ export class LodPyramid {
     this._levels = []
     this._timestamps = new BigInt64Array(0)
     this._values = new Float64Array(0)
+    this._count = 0
     this._stats = emptyStats()
     this._gaps = []
+  }
+
+  private _ensureCapacity(required: number): void {
+    if (this._timestamps.length >= required && this._values.length >= required) return
+
+    const doubled = Math.max(required, this._timestamps.length * 2, 1)
+    const capacity =
+      this._maxPoints > 0 && this._maxPoints >= required
+        ? Math.max(required, this._maxPoints)
+        : doubled
+    const nextTimestamps = new BigInt64Array(capacity)
+    const nextValues = new Float64Array(capacity)
+    nextTimestamps.set(this._timestamps.subarray(0, this._count))
+    nextValues.set(this._values.subarray(0, this._count))
+    this._timestamps = nextTimestamps
+    this._values = nextValues
   }
 
   /**
@@ -256,7 +274,7 @@ export class LodPyramid {
    */
   private _buildPyramid(): void {
     this._levels = []
-    const n = this._timestamps.length
+    const n = this._count
 
     if (n < LodPyramid.MIN_LEVEL_SIZE) return
 
@@ -282,12 +300,12 @@ export class LodPyramid {
   private _selectLevel(startTime: bigint, endTime: bigint, viewportWidth: number): number {
     if (viewportWidth <= 0) return 0
 
-    const n = this._timestamps.length
+    const n = this._count
     if (n === 0) return 0
 
     // Estimate raw points in range
-    const startIdx = lowerBound(this._timestamps, startTime)
-    const endIdx = upperBound(this._timestamps, endTime)
+    const startIdx = lowerBound(this._timestamps, startTime, n)
+    const endIdx = upperBound(this._timestamps, endTime, n)
     const rawPointsInRange = endIdx - startIdx
 
     // If raw data fits in viewport, use raw
@@ -311,7 +329,7 @@ export class LodPyramid {
    * Incrementally propagate appended data through pyramid levels.
    */
   private _propagateAppend(oldN: number, appendN: number): void {
-    const n = this._timestamps.length
+    const n = this._count
 
     // Rebuild first LOD level from raw — only the tail
     if (this._levels.length === 0) {
@@ -351,7 +369,7 @@ export class LodPyramid {
     const level0 = this._levels[0]
     if (!level0) return
 
-    const n = this._timestamps.length
+    const n = this._count
     // Old bucket count based on old raw count
     const oldBuckets = Math.ceil(oldRawN / 2)
     const newBuckets = Math.ceil(n / 2)
@@ -547,8 +565,12 @@ function emptyStats(): SeriesStats {
   }
 }
 
-function computeStats(timestamps: BigInt64Array, values: Float64Array): SeriesStats {
-  const n = values.length
+function computeStats(
+  timestamps: BigInt64Array,
+  values: Float64Array,
+  count = values.length,
+): SeriesStats {
+  const n = Math.min(count, timestamps.length, values.length)
   if (n === 0) return emptyStats()
 
   let min = Number.POSITIVE_INFINITY
@@ -580,10 +602,15 @@ function computeStats(timestamps: BigInt64Array, values: Float64Array): SeriesSt
   }
 }
 
-function detectGaps(timestamps: BigInt64Array, maxGapDuration: bigint): Gap[] {
+function detectGaps(
+  timestamps: BigInt64Array,
+  maxGapDuration: bigint,
+  count = timestamps.length,
+): Gap[] {
   if (maxGapDuration <= 0n) return []
+  const n = Math.min(count, timestamps.length)
   const gaps: Gap[] = []
-  for (let i = 0; i < timestamps.length - 1; i++) {
+  for (let i = 0; i < n - 1; i++) {
     const dt = (timestamps[i + 1] as bigint) - (timestamps[i] as bigint)
     if (dt > maxGapDuration) {
       gaps.push({ startIndex: i, endIndex: i + 1 })
@@ -685,9 +712,9 @@ function recomputeBucket(
  * Lower bound binary search on a BigInt64Array.
  * Returns index of first element >= target.
  */
-function lowerBound(arr: BigInt64Array, target: bigint): number {
+function lowerBound(arr: BigInt64Array, target: bigint, count = arr.length): number {
   let lo = 0
-  let hi = arr.length
+  let hi = Math.min(count, arr.length)
   while (lo < hi) {
     const mid = (lo + hi) >>> 1
     if ((arr[mid] as bigint) < target) {
@@ -703,9 +730,9 @@ function lowerBound(arr: BigInt64Array, target: bigint): number {
  * Upper bound binary search on a BigInt64Array.
  * Returns index of first element > target.
  */
-function upperBound(arr: BigInt64Array, target: bigint): number {
+function upperBound(arr: BigInt64Array, target: bigint, count = arr.length): number {
   let lo = 0
-  let hi = arr.length
+  let hi = Math.min(count, arr.length)
   while (lo < hi) {
     const mid = (lo + hi) >>> 1
     if ((arr[mid] as bigint) <= target) {

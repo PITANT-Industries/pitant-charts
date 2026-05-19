@@ -11,7 +11,7 @@ data scientists, reliability engineers, and model-prep reviewers.
 | Surface | Path or symbol | 06 section |
 |---|---|---|
 | Future chart | `ScatterPlot` | Phase 6 Chart Family Use / Do Not Use Catalog |
-| Future chart | `CorrelationMatrix` | Phase 6 Chart Family Use / Do Not Use Catalog |
+| Package API | `CorrelationMatrix`, `useCorrelationMatrix`, `CorrelationMatrixChart` | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Future chart | `ParallelCoordinates` | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Handoff owner | `pitant-model-registry` for model features | Whole-PITANT Composition Model |
 
@@ -25,21 +25,42 @@ data scientists, reliability engineers, and model-prep reviewers.
   brushing={brushingState}
   linkedTimeRange={linkedTimeRange}
 />
+
+<CorrelationMatrix
+  ariaLabel="128-variable correlation matrix"
+  config={{
+    minSampleCount: 100,
+    labels: { visible: true, maxCount: 24 },
+    xAxis: { label: 'Source variable' },
+    yAxis: { label: 'Target variable' }
+  }}
+  data={{
+    variables,
+    values: correlationValues,
+    sampleCounts,
+    missingCounts,
+    mask
+  }}
+/>
 ```
 
 ## Success State Shape
 
 - Scatter plots support brushing, density fallback, selection summaries, and
   linked trend handoff.
-- Correlation matrix shows missing-data state and refuses to imply causality.
+- Initial CorrelationMatrix renders frozen upstream coefficients, missing-data
+  state, low-sample state, masked cells, labels, SVG export, and refuses to
+  imply causality or lag discovery.
 - Parallel coordinates show sampled density mode and axis brushing.
 - Every exported selection carries variable list, sample-set identity, time
   bounds, filter policy, and tenant/site scope.
 
 ## Fixtures
 
-- Success: `scatter-500k-brush`, `correlation-matrix-128vars`, and
-  `parallel-coordinates-20k` render and round-trip brushed selections.
+- Success: `correlation-matrix-128vars` renders through `CorrelationMatrix`,
+  benchmark `029_correlation_matrix_128vars`, and browser harness profile
+  `correlation`; `scatter-500k-brush` and `parallel-coordinates-20k` remain
+  contract-only.
 - Degraded: missing values, mixed units, sampled rows, and density fallback are
   visible.
 - Denied: user lacks access to one or more variables in the requested matrix.
@@ -58,8 +79,10 @@ data scientists, reliability engineers, and model-prep reviewers.
 
 ## Profile Gating
 
-Enabled for `enterprise`, `ai_ready`, and `premium`. Pilot-only for plant
-profiles until model/dataset handoff contracts are production-ready.
+Initial CorrelationMatrix is enabled for `enterprise`, `ai_ready`, and
+`premium`, with plant profiles allowed for bounded engineering review. Scatter
+and parallel-coordinate surfaces remain pilot-only until their fixtures move
+beyond `contract_only`.
 
 ## Mode Vector Summary
 
@@ -67,6 +90,7 @@ profiles until model/dataset handoff contracts are production-ready.
 
 ## Use Boundary
 
-Use this pack for relationship discovery and sample selection. Do not use it
-for causality claims, autonomous recommendations, or regulator-facing evidence
-without a signed export/evidence workflow.
+Use this pack for relationship discovery and sample selection from a frozen
+matrix. Do not use it for causality claims, autonomous recommendations, lag
+discovery, model explanation, or regulator-facing evidence without analytics
+handoff and a signed export/evidence workflow.

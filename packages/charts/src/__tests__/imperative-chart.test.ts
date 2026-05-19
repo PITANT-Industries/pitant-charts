@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CorrelationMatrixChart,
+  type CorrelationMatrixDataSet,
   DigitalChannelChart,
   type DigitalChannelDataSet,
   DistributionChart,
@@ -127,6 +129,15 @@ const DISTRIBUTION_DATA: DistributionDataSet = {
   markers: [{ key: 'target', kind: 'target', value: 1.5, label: 'Target' }],
 }
 
+const CORRELATION_DATA: CorrelationMatrixDataSet = {
+  variables: [
+    { key: 'pressure', label: 'Pressure' },
+    { key: 'torque', label: 'Torque' },
+    { key: 'temperature', label: 'Temperature' },
+  ],
+  values: new Float32Array([1, 0.82, -0.2, 0.82, 1, 0.34, -0.2, 0.34, 1]),
+}
+
 describe('imperative chart classes', () => {
   it('renders TimeSeriesChart through the existing render-plan path', () => {
     const context = new FakeRenderContext()
@@ -246,5 +257,23 @@ describe('imperative chart classes', () => {
 
     chart.dispose()
     expect(() => chart.render()).toThrow('DistributionChart has been disposed')
+  })
+
+  it('renders CorrelationMatrixChart through the existing render-plan path', () => {
+    const context = new FakeRenderContext()
+    const chart = new CorrelationMatrixChart(context, { data: CORRELATION_DATA })
+
+    expect(chart.renderPlan.kind).toBe('correlation-matrix')
+    expect(chart.renderPlan.renderedCellCount).toBe(9)
+    expect(context.beginCount).toBe(1)
+    expect(context.endCount).toBe(1)
+    expect(context.rectCount).toBe(9)
+
+    chart.setRenderOptions({ rowRange: [0, 2], columnRange: [1, 3] })
+    expect(chart.renderPlan.renderedCellCount).toBe(4)
+    expect(context.beginCount).toBe(2)
+
+    chart.dispose()
+    expect(() => chart.render()).toThrow('CorrelationMatrixChart has been disposed')
   })
 })

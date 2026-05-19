@@ -21,6 +21,30 @@ export {
   drawCommandList,
   resolveChartLayout,
 } from './common.js'
+export type {
+  CorrelationCellState,
+  CorrelationColorStop,
+  CorrelationMatrixCommandFrame,
+  CorrelationMatrixDataSet,
+  CorrelationMatrixFrameOptions,
+  CorrelationMatrixRenderOptions,
+  CorrelationMatrixRenderPlan,
+  CorrelationMatrixValueLayout,
+  CorrelationPlannedCell,
+  CorrelationVariable,
+} from './correlation-matrix.js'
+export {
+  addCorrelationMatrixToCommandList,
+  buildCorrelationMatrixCommandFrame,
+  buildCorrelationMatrixRenderPlan,
+  createCorrelationMatrixViewTransform,
+  renderCorrelationMatrixPlan,
+} from './correlation-matrix.js'
+export type {
+  CorrelationMatrixChartCreateOptions,
+  CorrelationMatrixChartOptions,
+} from './correlation-matrix-chart.js'
+export { CorrelationMatrixChart } from './correlation-matrix-chart.js'
 export type { NearestTimestampResult } from './cursor.js'
 export { findNearestTimestampIndex } from './cursor.js'
 export type {

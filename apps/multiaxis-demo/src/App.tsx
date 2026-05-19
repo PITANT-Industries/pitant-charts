@@ -1,5 +1,8 @@
 import type { RgbaColor } from '@pitant/charts'
 import {
+  CorrelationMatrix,
+  type CorrelationMatrixConfig,
+  type CorrelationMatrixData,
   Distribution,
   type DistributionColumnData,
   type DistributionConfig,
@@ -5828,6 +5831,47 @@ function PitantDistributionEnginePanel({
   )
 }
 
+interface PitantCorrelationEnginePanelProps {
+  displaySamples: readonly Sample[]
+}
+
+function PitantCorrelationEnginePanel({
+  displaySamples,
+}: PitantCorrelationEnginePanelProps): React.JSX.Element {
+  const insight = useMemo(() => buildCorrelationMatrix(displaySamples), [displaySamples])
+
+  return (
+    <section className="pitant-correlation-panel" aria-label="PITANT Correlation engine">
+      <div className="pitant-correlation-header">
+        <div>
+          <p className="eyebrow">Scientific renderer</p>
+          <h3>Correlation Matrix path</h3>
+        </div>
+        <dl className="pitant-correlation-readout">
+          <div>
+            <dt>Mode</dt>
+            <dd>lag disabled</dd>
+          </div>
+          <div>
+            <dt>Peak</dt>
+            <dd>{formatSignedNumber(insight.peakValue, 2)}</dd>
+          </div>
+          <div>
+            <dt>Pair</dt>
+            <dd>{insight.peakLabel}</dd>
+          </div>
+        </dl>
+      </div>
+      <div className="pitant-correlation-engine">
+        <PitantCorrelationMatrixSurface
+          insight={insight}
+          label="Multi-axis correlation rendered by PITANT CorrelationMatrix"
+        />
+      </div>
+    </section>
+  )
+}
+
 function App(): React.JSX.Element {
   const samples = useMemo(() => generateSamples(), [])
   const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode)
@@ -6149,6 +6193,8 @@ function App(): React.JSX.Element {
           activeSeries={activeSeries}
           displaySamples={displaySamples}
         />
+
+        <PitantCorrelationEnginePanel displaySamples={displaySamples} />
 
         {overlays.legend ? (
           <ScientificLegend
@@ -8203,6 +8249,86 @@ function buildPitantDistributionConfig(
   }
 }
 
+function buildPitantCorrelationMatrixData(insight: MatrixHeatmapInsight): CorrelationMatrixData {
+  const variables = insight.rows.map((label, index) => ({
+    key: `signal_${index}`,
+    label,
+  }))
+  const size = variables.length
+  const values = new Float32Array(size * size)
+  const sampleCounts = new Uint32Array(size * size)
+
+  values.fill(Number.NaN)
+  sampleCounts.fill(0)
+  for (const cell of insight.cells) {
+    const index = cell.row * size + cell.column
+    values[index] = cell.value
+    sampleCounts[index] = 240
+  }
+
+  return {
+    variables,
+    values,
+    sampleCounts,
+  }
+}
+
+function buildPitantCorrelationMatrixConfig(): CorrelationMatrixConfig {
+  return {
+    minSampleCount: 3,
+    labels: {
+      visible: true,
+      maxCount: 8,
+    },
+    xAxis: {
+      label: 'Source',
+    },
+    yAxis: {
+      label: 'Target',
+    },
+  }
+}
+
+function PitantCorrelationMatrixSurface(props: {
+  insight: MatrixHeatmapInsight
+  label: string
+}): React.JSX.Element {
+  const { insight, label } = props
+  const matrixData = useMemo(() => buildPitantCorrelationMatrixData(insight), [insight])
+  const matrixConfig = useMemo(() => buildPitantCorrelationMatrixConfig(), [])
+
+  return (
+    <CorrelationMatrix
+      ariaLabel={label}
+      className="pitant-correlation-surface"
+      config={matrixConfig}
+      data={matrixData}
+      renderer="canvas2d"
+    >
+      {(chart) => (
+        <dl className="pitant-correlation-stats" aria-label="Correlation render statistics">
+          <div>
+            <dt>Path</dt>
+            <dd>PITANT Correlation</dd>
+          </div>
+          <div>
+            <dt>Cells</dt>
+            <dd>{chart.stats.renderedCellCount}</dd>
+          </div>
+          <div>
+            <dt>Vars</dt>
+            <dd>{chart.stats.visibleVariableCount}</dd>
+          </div>
+          <div>
+            <dt>Render</dt>
+            <dd>{chart.stats.renderTime.toFixed(2)} ms</dd>
+          </div>
+        </dl>
+      )}
+    </CorrelationMatrix>
+  )
+}
+
 function maxFiniteValue(values: Float32Array | Float64Array): number {
   let max = 0
   for (let index = 0; index < values.length; index++) {
@@ -10167,13 +10293,12 @@ function CovarianceMatrixPanel({ insight }: MatrixPanelProps): React.JSX.Element
   return (
     <article className="workbench-panel">
       <PanelHeader index="73" meta={`strongest ${insight.peakLabel}`} title="Covariance matrix" />
-      <MatrixHeatmapChart
-        colorMode="correlation"
-        columns={insight.columns}
-        label="Normalized sensor covariance matrix"
-        rows={insight.rows}
-        cells={insight.cells}
-      />
+      <div className="pitant-correlation-engine compact">
+        <PitantCorrelationMatrixSurface
+          insight={insight}
+          label="Normalized sensor covariance matrix rendered by PITANT CorrelationMatrix"
+        />
+      </div>
       <dl className="workbench-metrics compact">
         <div>
           <dt>Peak r</dt>
@@ -10196,13 +10321,12 @@ function ResidualCovariancePanel({ insight }: MatrixPanelProps): React.JSX.Eleme
         meta={`residual link ${insight.peakLabel}`}
         title="Residual covariance"
       />
-      <MatrixHeatmapChart
-        colorMode="correlation"
-        columns={insight.columns}
-        label="Residual covariance matrix"
-        rows={insight.rows}
-        cells={insight.cells}
-      />
+      <div className="pitant-correlation-engine compact">
+        <PitantCorrelationMatrixSurface
+          insight={insight}
+          label="Residual covariance matrix rendered by PITANT CorrelationMatrix"
+        />
+      </div>
       <dl className="workbench-metrics compact">
         <div>
           <dt>Peak r</dt>

@@ -473,6 +473,17 @@ packs after v1 field feedback.
   sample source window represented as 512 precomputed distribution bins.
 - [x] Render harness `distribution` profile and the multi-axis demo exercise
   the public `Distribution` package path.
+- [x] Precomputed-cell `CorrelationMatrix` / `CorrelationMatrixChart` support
+  renders frozen correlation coefficients, missing cells, low-sample cells, and
+  masked cells without making the chart package responsible for causality, lag
+  discovery, or authoritative computation.
+- [x] React `CorrelationMatrix` passes variables, coefficient matrices,
+  sample-count metadata, and label controls into the core render plan and
+  SVG/PNG export path.
+- [x] `029_correlation_matrix_128vars` benchmark covers a 128-variable frozen
+  correlation matrix.
+- [x] Render harness `correlation` profile and the multi-axis demo exercise the
+  public `CorrelationMatrix` package path.
 
 **Tests and Acceptance.** Pack-specific unit, visual, and performance tests.
 

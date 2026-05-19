@@ -24,6 +24,7 @@ const DEFAULT_VERIFY_PROFILES = [
   'spectrum',
   'spectrogram',
   'distribution',
+  'correlation',
 ]
 const DEFAULT_VISUAL_PROFILES = ['compact', 'large']
 const DEFAULT_FPS_PROFILES = ['compact']
@@ -314,12 +315,27 @@ function validateProfileState(state, profile) {
       `Expected ${profile} profile to render 0 distribution bins, got ${state.distributionBins}.`,
     )
   }
+  if (profile === 'correlation' && state.correlationCells !== 16384) {
+    errors.push(
+      `Expected correlation profile to render 16384 correlation cells, got ${state.correlationCells ?? 'none'}.`,
+    )
+  }
+  if (profile !== 'correlation' && state.correlationCells !== 0) {
+    errors.push(
+      `Expected ${profile} profile to render 0 correlation cells, got ${state.correlationCells}.`,
+    )
+  }
 
   return errors
 }
 
 function expectedChartSurfaceCount(profile) {
-  return profile === 'spectrum' || profile === 'spectrogram' || profile === 'distribution' ? 3 : 2
+  return profile === 'spectrum' ||
+    profile === 'spectrogram' ||
+    profile === 'distribution' ||
+    profile === 'correlation'
+    ? 3
+    : 2
 }
 
 async function runFpsBenchmark(tab, renderer, profile) {

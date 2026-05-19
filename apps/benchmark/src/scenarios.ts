@@ -2,10 +2,11 @@
  * Benchmark scenarios for @pitant/charts.
  *
  * Scenarios 1-4, 8-9 require a browser (WebGPU/Canvas2D).
- * Scenarios 5-7 and 10-28 are pure-compute/package-level gates.
+ * Scenarios 5-7 and 10-29 are pure-compute/package-level gates.
  * Bundle-size scenario runs via size-limit.
  */
 import {
+  addCorrelationMatrixToCommandList,
   addDigitalChannelToCommandList,
   addDistributionMarkersToCommandList,
   addDistributionToCommandList,
@@ -18,12 +19,14 @@ import {
   addTimeSeriesDerivedColumns,
   addTimeSeriesSpcTracksToCommandList,
   addTimeSeriesToCommandList,
+  buildCorrelationMatrixRenderPlan,
   buildDigitalChannelRenderPlan,
   buildDistributionRenderPlan,
   buildSpectrogramRenderPlan,
   buildSpectrumRenderPlan,
   buildTimeSeriesCommandFrame,
   buildTimeSeriesRenderPlan,
+  type CorrelationMatrixDataSet,
   clampRangeToBounds,
   DataSource,
   type DigitalChannelSeries,
@@ -291,6 +294,37 @@ function generateDistributionData(binCount: number): DistributionDataSet {
       { key: 'p05', kind: 'percentile', value: -1.65, label: 'P05' },
       { key: 'p95', kind: 'percentile', value: 1.72, label: 'P95' },
     ],
+  }
+}
+
+function generateCorrelationMatrixData(variableCount: number): CorrelationMatrixDataSet {
+  const variables = Array.from({ length: variableCount }, (_, index) => ({
+    key: `var_${index}`,
+    label: `V${index + 1}`,
+  }))
+  const values = new Float32Array(variableCount * variableCount)
+  const sampleCounts = new Uint32Array(variableCount * variableCount)
+  const missingCounts = new Uint32Array(variableCount * variableCount)
+
+  for (let row = 0; row < variableCount; row++) {
+    for (let column = 0; column < variableCount; column++) {
+      const index = row * variableCount + column
+      const distance = Math.abs(row - column)
+      const cluster = Math.floor(row / 16) === Math.floor(column / 16) ? 0.44 : 0
+      const periodic = Math.sin((row + 3) * (column + 5) * 0.013) * 0.28
+      const anti = (row + column) % 19 === 0 ? -0.38 : 0
+      values[index] =
+        row === column ? 1 : Math.max(-1, Math.min(1, cluster + periodic + anti - distance / 900))
+      sampleCounts[index] = 9_600 - ((row * 17 + column * 29) % 240)
+      missingCounts[index] = (row * 7 + column * 11) % 17 === 0 ? 9 : 0
+    }
+  }
+
+  return {
+    variables,
+    values,
+    sampleCounts,
+    missingCounts,
   }
 }
 
@@ -1268,6 +1302,43 @@ scenarios['028_distribution_1m_window_512_bins'] = () => {
   return {
     scenario: '028_distribution_1m_window_512_bins',
     metric: `${(sourceWindowSamples / 1e6).toFixed(0)}M-sample window as ${renderedBinCount.toLocaleString()} distribution bins (${commandCount.toLocaleString()} commands)`,
+    value: Math.round(medianMs * 1000) / 1000,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 029: Correlation matrix render planning ───────
+
+scenarios['029_correlation_matrix_128vars'] = () => {
+  const variableCount = 128
+  const data = generateCorrelationMatrixData(variableCount)
+  const target = 10 // ms for a frozen 128x128 correlation payload
+
+  const warmup = buildCorrelationMatrixRenderPlan(data, { minSampleCount: 100 })
+  const warmupCommands = new RenderCommandList()
+  addCorrelationMatrixToCommandList(warmupCommands, warmup)
+
+  const times: number[] = []
+  let renderedCellCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 7; i++) {
+    const start = performance.now()
+    const plan = buildCorrelationMatrixRenderPlan(data, { minSampleCount: 100 })
+    const commands = new RenderCommandList()
+    addCorrelationMatrixToCommandList(commands, plan)
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    renderedCellCount = plan.renderedCellCount
+    commandCount = commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '029_correlation_matrix_128vars',
+    metric: `${variableCount} variables as ${renderedCellCount.toLocaleString()} correlation cells (${commandCount.toLocaleString()} commands)`,
     value: Math.round(medianMs * 1000) / 1000,
     unit: 'ms',
     target,

@@ -2,6 +2,9 @@ import type { RendererType } from '@pitant/charts'
 import '@pitant/charts/styles/tokens.css'
 import {
   ChartLegend,
+  CorrelationMatrix,
+  type CorrelationMatrixConfig,
+  type CorrelationMatrixData,
   DigitalChannel,
   type DigitalChannelColumnData,
   type DigitalChannelConfig,
@@ -30,9 +33,11 @@ type LoadProfile =
   | 'spectrum'
   | 'spectrogram'
   | 'distribution'
+  | 'correlation'
 
 interface GeneratedData {
   analog: TimeSeriesColumnData
+  correlation: CorrelationMatrixData
   digital: DigitalChannelColumnData
   distribution: DistributionColumnData
   spectrum: SpectrumColumnData
@@ -49,6 +54,7 @@ declare global {
       analogBands: number
       analogAnomalyTracks: number
       analogSpcTracks: number
+      correlationCells: number
       digitalChannels: number
       distributionBins: number
       spectrumBins: number
@@ -67,6 +73,7 @@ const PROFILES: readonly LoadProfile[] = [
   'spectrum',
   'spectrogram',
   'distribution',
+  'correlation',
 ]
 
 const SERIES_CONFIG: TimeSeriesConfig['series'] = [
@@ -328,6 +335,20 @@ const DISTRIBUTION_CONFIG: DistributionConfig = {
   },
 }
 
+const CORRELATION_CONFIG: CorrelationMatrixConfig = {
+  minSampleCount: 100,
+  labels: {
+    visible: true,
+    maxCount: 12,
+  },
+  xAxis: {
+    label: 'Source variable',
+  },
+  yAxis: {
+    label: 'Target variable',
+  },
+}
+
 export function App(): React.JSX.Element {
   const [renderer, setRenderer] = useState<RendererChoice>(() =>
     readChoiceFromQuery('renderer', RENDERERS, 'auto'),
@@ -343,7 +364,8 @@ export function App(): React.JSX.Element {
         : profile === 'spc' ||
             profile === 'spectrum' ||
             profile === 'spectrogram' ||
-            profile === 'distribution'
+            profile === 'distribution' ||
+            profile === 'correlation'
           ? 10_000
           : 12_000
   const generated = useMemo(() => generateData(pointCount, profile), [pointCount, profile])
@@ -385,6 +407,7 @@ export function App(): React.JSX.Element {
       analogBands: profile === 'bands' ? BAND_CONFIG.length : 0,
       analogAnomalyTracks: profile === 'anomaly' ? ANOMALY_TRACK_CONFIG.length : 0,
       analogSpcTracks: profile === 'spc' ? SPC_TRACK_CONFIG.length : 0,
+      correlationCells: profile === 'correlation' ? generated.correlation.values.length : 0,
       digitalChannels: DIGITAL_CONFIG.length,
       distributionBins: profile === 'distribution' ? generated.distribution.binStarts.length : 0,
       spectrumBins: profile === 'spectrum' ? generated.spectrum.frequencies.length : 0,
@@ -396,6 +419,7 @@ export function App(): React.JSX.Element {
   }, [
     generated.spectrogram.frequencyBins.length,
     generated.spectrogram.timeBins.length,
+    generated.correlation.values.length,
     generated.distribution.binStarts.length,
     generated.spectrum.frequencies.length,
     pointCount,
@@ -591,6 +615,35 @@ export function App(): React.JSX.Element {
           </Distribution>
         </section>
       ) : null}
+
+      {profile === 'correlation' ? (
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>Correlation Matrix</h2>
+              <p>Precomputed 128-variable matrix API, lag-disabled default</p>
+            </div>
+          </div>
+          <CorrelationMatrix
+            ariaLabel="Correlation matrix render harness"
+            className="chart-surface correlation"
+            config={{ ...CORRELATION_CONFIG, renderer }}
+            data={generated.correlation}
+          >
+            {(chart) => (
+              <div className="chart-overlay">
+                <CorrelationStatsRow
+                  lowSampleCellCount={chart.stats.lowSampleCellCount}
+                  missingCellCount={chart.stats.missingCellCount}
+                  renderTime={chart.stats.renderTime}
+                  renderedCellCount={chart.stats.renderedCellCount}
+                  visibleVariableCount={chart.stats.visibleVariableCount}
+                />
+              </div>
+            )}
+          </CorrelationMatrix>
+        </section>
+      ) : null}
     </main>
   )
 }
@@ -718,6 +771,42 @@ function DistributionStatsRow(props: {
   )
 }
 
+function CorrelationStatsRow(props: {
+  lowSampleCellCount: number
+  missingCellCount: number
+  renderTime: number
+  renderedCellCount: number
+  visibleVariableCount: number
+}): React.JSX.Element {
+  const {
+    lowSampleCellCount,
+    missingCellCount,
+    renderTime,
+    renderedCellCount,
+    visibleVariableCount,
+  } = props
+  return (
+    <dl className="stats-row">
+      <div>
+        <dt>Cells</dt>
+        <dd>{renderedCellCount.toLocaleString()}</dd>
+      </div>
+      <div>
+        <dt>Vars</dt>
+        <dd>{visibleVariableCount}</dd>
+      </div>
+      <div>
+        <dt>Quality</dt>
+        <dd>{missingCellCount + lowSampleCellCount}</dd>
+      </div>
+      <div>
+        <dt>Render</dt>
+        <dd>{renderTime.toFixed(2)} ms</dd>
+      </div>
+    </dl>
+  )
+}
+
 function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
   const timestamps = new Float64Array(pointCount)
   const temperature = new Float64Array(pointCount)
@@ -771,6 +860,7 @@ function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
       timestamps,
       columns: analogColumns,
     },
+    correlation: generateCorrelationMatrixData(128),
     digital: {
       timestamps,
       columns: {
@@ -782,6 +872,39 @@ function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
     distribution: generateDistributionData(512),
     spectrum: generateSpectrumData(8192),
     spectrogram: generateSpectrogramData(128, 96),
+  }
+}
+
+function generateCorrelationMatrixData(variableCount: number): CorrelationMatrixData {
+  const variables = Array.from({ length: variableCount }, (_, index) => ({
+    key: `var_${index}`,
+    label: `V${index + 1}`,
+  }))
+  const values = new Float32Array(variableCount * variableCount)
+  const sampleCounts = new Uint32Array(variableCount * variableCount)
+  const missingCounts = new Uint32Array(variableCount * variableCount)
+
+  for (let row = 0; row < variableCount; row++) {
+    for (let column = 0; column < variableCount; column++) {
+      const index = row * variableCount + column
+      const distance = Math.abs(row - column)
+      const cluster = Math.floor(row / 16) === Math.floor(column / 16) ? 0.46 : 0
+      const antiCluster = (row + column) % 23 === 0 ? -0.36 : 0
+      const wave = Math.sin((row + 5) * (column + 7) * 0.011) * 0.24
+      values[index] =
+        row === column
+          ? 1
+          : Math.max(-1, Math.min(1, cluster + wave + antiCluster - distance / 900))
+      sampleCounts[index] = 9_000 - ((row * 19 + column * 31) % 220)
+      missingCounts[index] = (row * 11 + column * 13) % 29 === 0 ? 7 : 0
+    }
+  }
+
+  return {
+    variables,
+    values,
+    sampleCounts,
+    missingCounts,
   }
 }
 
