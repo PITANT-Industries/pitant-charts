@@ -829,17 +829,30 @@ async function stopChildren(childrenToStop) {
           }
 
           const forceTimer = setTimeout(() => {
-            child.kill('SIGKILL')
+            killChildTree(child, 'SIGKILL')
+            resolveStop()
           }, 2_000)
 
           child.once('exit', () => {
             clearTimeout(forceTimer)
             resolveStop()
           })
-          child.kill('SIGTERM')
+          killChildTree(child, 'SIGTERM')
         }),
     ),
   )
+}
+
+function killChildTree(child, signal) {
+  if (process.platform === 'win32' && child.pid) {
+    const killer = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
+    killer.once('error', () => {
+      child.kill()
+    })
+    return
+  }
+
+  child.kill(signal)
 }
 
 async function removeWithRetry(path) {

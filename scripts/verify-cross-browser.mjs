@@ -495,14 +495,31 @@ async function stopChildren(children) {
             resolveStop()
             return
           }
-          child.once('exit', resolveStop)
-          child.kill('SIGTERM')
-          setTimeout(() => {
-            if (child.exitCode === null) child.kill('SIGKILL')
-          }, 2_000).unref()
+          const forceTimer = setTimeout(() => {
+            if (child.exitCode === null) killChildTree(child, 'SIGKILL')
+            resolveStop()
+          }, 5_000)
+
+          child.once('exit', () => {
+            clearTimeout(forceTimer)
+            resolveStop()
+          })
+          killChildTree(child, 'SIGTERM')
         }),
     ),
   )
+}
+
+function killChildTree(child, signal) {
+  if (process.platform === 'win32' && child.pid) {
+    const killer = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
+    killer.once('error', () => {
+      child.kill()
+    })
+    return
+  }
+
+  child.kill(signal)
 }
 
 function parseArgs(rawArgs) {

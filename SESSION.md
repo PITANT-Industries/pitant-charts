@@ -4,8 +4,9 @@
 **Current phase:** Phase 5 - Registry, Documentation, Export, Launch
 **Latest action:** Fixed the first PR CI failures found after opening the Phase
 5 release-candidate PR. `harness:build` now rebuilds package declarations on a
-fresh checkout, and CI uses an explicit shared-runner benchmark profile while
-strict local benchmarks remain the release performance gate.
+fresh checkout, the CDP verifier runs under Bun so it has WebSocket support on
+GitHub's Node 20 runners, and CI uses an explicit shared-runner benchmark
+profile while strict local benchmarks remain the release performance gate.
 
 ## What Exists
 
@@ -773,3 +774,9 @@ Run after Phase 5 PR CI-fix slice on 2026-05-19:
   the explicit shared-runner profile.
 - `bun run harness:build`: pass; root script now rebuilds package `dist`
   declarations before compiling `apps/render-harness`.
+- `bun run harness:verify -- --renderers=canvas2d`: pass under Bun-backed CDP
+  verifier.
+- `bun run harness:fps -- --renderers=canvas2d`: pass under Bun-backed CDP
+  verifier.
+- `bun run harness:cross-browser -- --browser=chromium --renderer=canvas2d --profile=compact`:
+  pass after adding Windows process-tree cleanup for the Edge CI path.

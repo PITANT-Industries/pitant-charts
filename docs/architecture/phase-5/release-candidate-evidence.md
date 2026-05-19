@@ -82,6 +82,14 @@ Observed failures and fixes:
   compiled `apps/render-harness` before package `dist` declarations existed.
   The root `harness:build` script now rebuilds `@pitant/charts` and
   `@pitant/charts-react` before compiling the harness.
+- Browser pixel smoke then reached the verifier but failed before rendering
+  because GitHub's shell `node` was v20.20.2 and did not provide global
+  `WebSocket` for the CDP client. The CDP verifier scripts now run under Bun,
+  while the Playwright cross-browser script remains on Node.
+- The Windows Edge job rendered a valid compact Canvas2D chart but stayed alive
+  until run cancellation because the spawned Vite process tree was not torn down
+  on Windows. Browser harness cleanup now uses `taskkill /T /F` for Windows
+  child process trees.
 - The build job failed in `bun run bench` on shared GitHub runners for
   `007_streaming_append`, `016_data_source_live_append_query_4pens`, and
   `019_cursor_propagation_4panels_latency`. The strict local benchmark remains
@@ -97,6 +105,9 @@ bun run typecheck
 bun run bench
 PITANT_BENCH_PROFILE=ci bun run bench
 bun run harness:build
+bun run harness:verify -- --renderers=canvas2d
+bun run harness:fps -- --renderers=canvas2d
+bun run harness:cross-browser -- --browser=chromium --renderer=canvas2d --profile=compact
 ```
 
 All five commands passed on 2026-05-19.
