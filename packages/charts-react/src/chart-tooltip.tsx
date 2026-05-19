@@ -10,6 +10,16 @@ export interface ChartTooltipSeries {
   color: string
   value: number | null
   formatted: string
+  quality?: number | null
+  qualityLabel?: string
+  gap?: boolean
+  provenance?: ChartTooltipProvenance | null
+}
+
+export interface ChartTooltipProvenance {
+  label: string
+  source?: string
+  revision?: string | number
 }
 
 export interface ChartTooltipPayload {
@@ -87,6 +97,13 @@ const valueStyle: CSSProperties = {
   fontWeight: 500,
 }
 
+const metadataStyle: CSSProperties = {
+  color: 'var(--chart-muted-foreground, #71717a)',
+  fontSize: '0.75em',
+  marginLeft: '0.375rem',
+  whiteSpace: 'nowrap',
+}
+
 // ── Positioning ──────────────────────────────────────────────
 
 const OFFSET = 12
@@ -117,19 +134,41 @@ function adjustPosition(
 
 // ── Default content ──────────────────────────────────────────
 
+function seriesMetadata(series: ChartTooltipSeries): string[] {
+  const parts: string[] = []
+  if (series.qualityLabel) {
+    parts.push(series.qualityLabel)
+  } else if (series.quality !== undefined && series.quality !== null) {
+    parts.push(`q${series.quality}`)
+  }
+  if (series.gap === true) parts.push('gap')
+  if (series.provenance?.label) {
+    parts.push(`provenance: ${series.provenance.label}`)
+  }
+  return parts
+}
+
 function DefaultTooltipContent({ payload }: { payload: ChartTooltipPayload }) {
   return (
     <>
       <div style={headerStyle}>{payload.label}</div>
-      {payload.series.map((s) => (
-        <div key={s.key} style={rowStyle}>
-          <span style={labelGroupStyle}>
-            <span style={{ ...swatchStyle, backgroundColor: s.color }} aria-hidden />
-            <span style={seriesLabelStyle}>{s.label}</span>
-          </span>
-          <span style={valueStyle}>{s.value !== null ? s.formatted : '\u2014'}</span>
-        </div>
-      ))}
+      {payload.series.map((s) => {
+        const metadata = seriesMetadata(s)
+        return (
+          <div key={s.key} style={rowStyle}>
+            <span style={labelGroupStyle}>
+              <span style={{ ...swatchStyle, backgroundColor: s.color }} aria-hidden />
+              <span style={seriesLabelStyle}>{s.label}</span>
+            </span>
+            <span style={valueStyle}>
+              {s.value !== null ? s.formatted : '\u2014'}
+              {metadata.length > 0 ? (
+                <span style={metadataStyle}>{metadata.join(' / ')}</span>
+              ) : null}
+            </span>
+          </div>
+        )
+      })}
     </>
   )
 }

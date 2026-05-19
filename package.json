@@ -13,21 +13,52 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
-    "typecheck": "tsc --noEmit -p packages/charts/tsconfig.json && tsc --noEmit -p packages/charts-react/tsconfig.json",
+    "typecheck": "bun run --filter @pitant/charts build && tsc --noEmit -p packages/charts/tsconfig.json && tsc --noEmit -p packages/charts-react/tsconfig.json",
+    "harness:dev": "bun run --filter @pitant/render-harness dev",
+    "harness:build": "bun run build && bun run --filter @pitant/render-harness build",
+    "harness:preview": "bun run --filter @pitant/render-harness preview",
+    "harness:verify": "bun scripts/verify-render-harness.mjs",
+    "harness:fps": "bun scripts/verify-render-harness.mjs --fps",
+    "harness:visual": "bun scripts/verify-render-harness.mjs --visual",
+    "harness:visual:update": "bun scripts/verify-render-harness.mjs --update-visual-baseline",
+    "harness:cross-browser": "node scripts/verify-cross-browser.mjs",
+    "docs:dev": "bun run --filter @pitant/docs-site dev",
+    "docs:build": "bun run --filter @pitant/docs-site build",
+    "docs:preview": "bun run --filter @pitant/docs-site preview",
+    "registry:validate": "node scripts/validate-registry.mjs",
+    "registry:typecheck": "tsc --noEmit -p registry/tsconfig.json",
+    "registry:smoke": "node scripts/smoke-shadcn-registry.mjs",
     "bench": "bun run --filter @pitant/benchmark bench",
+    "pack:dry-run": "bun run build && npm pack --dry-run ./packages/charts && npm pack --dry-run ./packages/charts-react",
+    "release:check": "bun run build && bun run typecheck && bun run lint && bun run test && bun run bench && bun run registry:validate && bun run registry:typecheck && bun run docs:build && bunx size-limit && bun run pack:dry-run",
     "audit:colors": "node scripts/audit-hardcoded-colors.mjs",
     "clean": "rm -rf packages/*/dist apps/*/dist"
   },
+  "size-limit": [
+    {
+      "path": "packages/charts/dist/index.js",
+      "limit": "75 KB"
+    },
+    {
+      "path": "packages/charts-react/dist/index.js",
+      "limit": "130 KB"
+    }
+  ],
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
-    "@webgpu/types": "^0.1.61",
-    "typescript": "^5.8.3",
-    "vitest": "^3.1.1",
+    "@size-limit/file": "^11.2.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
     "@vitest/coverage-v8": "^3.1.1",
-    "tsup": "^8.4.0",
-    "lefthook": "^1.11.0",
+    "@webgpu/types": "^0.1.61",
     "happy-dom": "^17.4.4",
+    "lefthook": "^1.11.0",
+    "playwright": "^1.60.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "size-limit": "^11.2.0",
-    "@size-limit/file": "^11.2.0"
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
   }
 }

@@ -1,0 +1,175 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "pitant-charts",
+  "homepage": "https://charts.pitant.dev",
+  "items": [
+    {
+      "name": "pitant-time-series",
+      "type": "registry:block",
+      "title": "PITANT TimeSeries",
+      "description": "Multi-pen industrial time-series chart with legend, crosshair, wheel zoom, quality, gap, and provenance metadata.",
+      "dependencies": ["@pitant/charts", "@pitant/charts-react"],
+      "files": [
+        {
+          "path": "registry/pitant/time-series/time-series.tsx",
+          "type": "registry:component",
+          "target": "@components/pitant/time-series.tsx"
+        }
+      ],
+      "categories": ["charts", "industrial", "time-series"],
+      "docs": "Import @pitant/charts/styles/tokens.css once in your app shell when you want PITANT chart tokens to override the built-in CSS variable fallbacks.",
+      "meta": {
+        "profile": "plant",
+        "renderer": "auto",
+        "phase": "5"
+      }
+    },
+    {
+      "name": "pitant-digital-channel",
+      "type": "registry:block",
+      "title": "PITANT DigitalChannel",
+      "description": "Stacked digital/state lanes for interlocks, permissives, modes, and alarm state with quality and provenance-aware tooltips.",
+      "dependencies": ["@pitant/charts", "@pitant/charts-react"],
+      "files": [
+        {
+          "path": "registry/pitant/digital-channel/digital-channel.tsx",
+          "type": "registry:component",
+          "target": "@components/pitant/digital-channel.tsx"
+        }
+      ],
+      "categories": ["charts", "industrial", "state"],
+      "docs": "Use this block for discrete state lanes. Use pitant-time-series for continuous analog trends.",
+      "meta": {
+        "profile": "safety_supporting",
+        "renderer": "auto",
+        "phase": "5"
+      }
+    },
+    {
+      "name": "pitant-synchronized-dashboard",
+      "type": "registry:block",
+      "title": "PITANT Synchronized Dashboard",
+      "description": "Dashboard block with synchronized x-range and cursor state across analog and digital panels.",
+      "dependencies": ["@pitant/charts", "@pitant/charts-react"],
+      "files": [
+        {
+          "path": "registry/pitant/synchronized-dashboard/synchronized-dashboard.tsx",
+          "type": "registry:component",
+          "target": "@components/pitant/synchronized-dashboard.tsx"
+        }
+      ],
+      "categories": ["charts", "dashboard", "industrial"],
+      "docs": "Keep one ChartSyncGroup inside one tenant, site, and workflow scope. Do not synchronize panels across evidence or authorization boundaries.",
+      "meta": {
+        "profile": "enterprise",
+        "renderer": "auto",
+        "phase": "5"
+      }
+    },
+    {
+      "name": "pitant-datazoom",
+      "type": "registry:block",
+      "title": "PITANT DataZoom",
+      "description": "TimeSeries block with opt-in DataZoom minimap for high-density viewport navigation.",
+      "dependencies": ["@pitant/charts", "@pitant/charts-react"],
+      "files": [
+        {
+          "path": "registry/pitant/datazoom/datazoom.tsx",
+          "type": "registry:component",
+          "target": "@components/pitant/datazoom.tsx"
+        }
+      ],
+      "categories": ["charts", "navigation", "time-series"],
+      "docs": "Use DataZoom when the user needs overview-plus-detail navigation over a large source window. Leave it off for compact charts.",
+      "meta": {
+        "profile": "plant",
+        "renderer": "auto",
+        "phase": "5"
+      }
+    },
+    {
+      "name": "pitant-streaming-trend",
+      "type": "registry:block",
+      "title": "PITANT Streaming Trend",
+      "description": "Live-edge TimeSeries block that appends typed-array chunks without replacing the full source dataset.",
+      "dependencies": ["@pitant/charts", "@pitant/charts-react"],
+      "files": [
+        {
+          "path": "registry/pitant/streaming-trend/streaming-trend.tsx",
+          "type": "registry:component",
+          "target": "@components/pitant/streaming-trend.tsx"
+        }
+      ],
+      "categories": ["charts", "industrial", "streaming"],
+      "docs": "Use streaming append for live historian tails and lab telemetry. Do not use it for historical backfills that change schema or rewrite earlier timestamps.",
+      "meta": {
+        "profile": "plant",
+        "renderer": "auto",
+        "phase": "5"
+      }
+    },
+    {
+      "name": "pitant-multi-axis",
+      "type": "registry:block",
+      "title": "PITANT Multi-Axis Panels",
+      "description": "Synchronized TimeSeries panels for comparing signals with different units without forcing a false shared y-axis.",
+      "dependencies": ["@pitant/charts", "@pitant/charts-react"],
+      "files": [
+        {
+          "path": "registry/pitant/multi-axis/multi-axis.tsx",
+          "type": "registry:component",
+          "target": "@components/pitant/multi-axis.tsx"
+        }
+      ],
+      "categories": ["charts", "comparison", "multi-axis"],
+      "docs": "Use this block when units need separated y-axis ranges. Do not use it when a single-canvas dual-axis overlay is required; that remains a future explicit chart mode.",
+      "meta": {
+        "profile": "plant",
+        "renderer": "auto",
+        "phase": "5"
+      }
+    },
+    {
+      "name": "pitant-export",
+      "type": "registry:block",
+      "title": "PITANT Export",
+      "description": "TimeSeries block with a PNG export command wired through the public chart export API.",
+      "dependencies": ["@pitant/charts", "@pitant/charts-react"],
+      "files": [
+        {
+          "path": "registry/pitant/export/export.tsx",
+          "type": "registry:component",
+          "target": "@components/pitant/export.tsx"
+        }
+      ],
+      "categories": ["charts", "export", "industrial"],
+      "docs": "Use PNG export for screenshots, reports, and support bundles. Do not use this block as evidence-grade SVG export; true vector export is a separate Phase 5 task.",
+      "meta": {
+        "profile": "enterprise",
+        "renderer": "auto",
+        "phase": "5"
+      }
+    },
+    {
+      "name": "pitant-dashboard-overview",
+      "type": "registry:block",
+      "title": "PITANT Dashboard Overview",
+      "description": "Dense synchronized dashboard overview with production trend, equipment state lanes, and operating envelope panels.",
+      "dependencies": ["@pitant/charts", "@pitant/charts-react"],
+      "files": [
+        {
+          "path": "registry/pitant/dashboard-overview/dashboard-overview.tsx",
+          "type": "registry:component",
+          "target": "@components/pitant/dashboard-overview.tsx"
+        }
+      ],
+      "categories": ["charts", "dashboard", "industrial"],
+      "docs": "Use dashboard overview for one tenant/site/workflow summary. Do not use it to mix tenants, sites, evidence scopes, or authorization boundaries.",
+      "meta": {
+        "profile": "enterprise",
+        "renderer": "auto",
+        "phase": "5"
+      }
+    }
+  ]
+}

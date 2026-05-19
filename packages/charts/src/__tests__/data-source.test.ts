@@ -155,6 +155,68 @@ describe('DataSource', () => {
 
       ds.destroy()
     })
+
+    it('preserves quality flags through viewport query results', async () => {
+      const ds = new DataSource()
+      await ds.load({
+        timestamps: new Float64Array([0, 1000, 2000]),
+        columns: { temp: new Float64Array([20, 21, 22]) },
+        quality: { temp: new Uint8Array([0, 2, 8]) },
+      })
+
+      const result = await ds.query({
+        start: 0,
+        end: 2000,
+        targetPixels: 800,
+        columns: ['temp'],
+      })
+
+      expect(Array.from(result.quality?.['temp'] ?? [])).toEqual([0, 2, 8])
+      ds.destroy()
+    })
+
+    it('preserves appended quality flags through viewport query results', async () => {
+      const ds = new DataSource()
+      await ds.load({
+        timestamps: new Float64Array([0, 1000]),
+        columns: { temp: new Float64Array([20, 21]) },
+        quality: { temp: new Uint8Array([0, 2]) },
+      })
+      await ds.append({
+        timestamps: new Float64Array([2000]),
+        columns: { temp: new Float64Array([22]) },
+        quality: { temp: new Uint8Array([8]) },
+      })
+
+      const result = await ds.query({
+        start: 0,
+        end: 2000,
+        targetPixels: 800,
+        columns: ['temp'],
+      })
+
+      expect(Array.from(result.quality?.['temp'] ?? [])).toEqual([0, 2, 8])
+      ds.destroy()
+    })
+
+    it('preserves gap metadata through viewport query results', async () => {
+      const ds = new DataSource({ ingestOptions: { maxGapDuration: 1_500_000_000n } })
+      await ds.load({
+        timestamps: new Float64Array([0, 1000, 5000, 6000]),
+        columns: { temp: new Float64Array([20, 21, 22, 23]) },
+      })
+
+      const result = await ds.query({
+        start: 0,
+        end: 6000,
+        targetPixels: 800,
+        columns: ['temp'],
+      })
+
+      expect(result.gaps.length).toBe(1)
+      expect(result.gaps[0]).toEqual({ startIndex: 1, endIndex: 2 })
+      ds.destroy()
+    })
   })
 
   // ── getTimeRange ──────────────────────────────────────────

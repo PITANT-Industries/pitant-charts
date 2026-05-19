@@ -25,12 +25,12 @@ inventory into workflow and fixture expectations.
 
 | Workflow | Primary users | Route/component groups | Required UI states |
 |---|---|---|---|
-| Historian trend | Operators, process engineers | `TimeSeries`, `ChartLegend`, `ChartTooltip`, `ChartSyncGroup` | loading, empty, partial-gap, quality-degraded, stale, corrected, live, paused, fallback-renderer, timed-out |
-| Digital channel | Controls engineers | `DigitalChannel`, state labels | loading, empty, stale, unknown-state, transition-dense, fallback-renderer |
+| Historian trend | Operators, process engineers | `TimeSeries`, `ChartLegend`, `ChartTooltip`, `ChartSyncGroup`, `ChartDataZoom` | loading, empty, partial-gap, quality-degraded, stale, corrected, live, paused, panned, keyboard-navigated, touch-panned, pinch-zoomed, datazoom-active, fallback-renderer, timed-out |
+| Digital channel | Controls engineers | `DigitalChannel`, `ChartDataZoom`, state labels | loading, empty, stale, unknown-state, transition-dense, panned, keyboard-navigated, touch-panned, pinch-zoomed, datazoom-active, fallback-renderer |
 | Anomaly review | Reliability, data science | anomaly tracks, root cause overlays | loading, no-evidence, detector-missing, signed-result, model-version-missing, denied |
 | SPC review | Quality engineers | control chart, capability histogram | loading, no-limits, rule-violation, quality-degraded, signed-result, validation-error |
 | Batch profile | Batch engineers | batch profile, golden envelope | loading, no-batch, partial-batch, misaligned-phase, signed-result |
-| Synchronized dashboard | Operators, engineers | `ChartSyncGroup`, DataZoom | loading, partial-panel-fail, sync-conflict, cross-site-denied, high-cost |
+| Synchronized dashboard | Operators, engineers | `ChartSyncGroup`, DataZoom | loading, partial-panel-fail, synced-cursor, synced-range, panned, keyboard-navigated, touch-panned, pinch-zoomed, datazoom-active, sync-conflict, cross-site-denied, high-cost |
 | Export and evidence | Auditors, engineers | export API, replay spec | proof-ready, no-evidence, degraded, denied, regulator-review, export-failed |
 | Migration comparison | Engineers, admins | SciChart/incumbent parity fixture | loading, side-by-side, drift-detected, source-missing, validation-error |
 | Benchmark lab | Maintainers | benchmark app | running, pass, fail, regression, unsupported-browser |

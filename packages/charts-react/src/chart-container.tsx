@@ -16,8 +16,8 @@ export interface ChartContainerProps {
   children?: ReactNode
   /** Aspect ratio constraint (e.g. `16 / 9`). Omit for parent-sized. */
   aspectRatio?: number
-  /** Fired after the container (re)sizes. */
-  onResize?: (width: number, height: number) => void
+  /** Fired after the container or device-pixel-ratio changes. */
+  onResize?: (width: number, height: number, dpr: number) => void
   /** Accessible label for the chart. Defaults to `"Chart"`. */
   ariaLabel?: string
   /** id of an element describing the chart data (e.g. a table). */
@@ -60,17 +60,23 @@ export const ChartContainer = forwardRef<ChartContainerRef, ChartContainerProps>
 
     // Fire onResize whenever dims change
     useEffect(() => {
-      if (dims.width > 0 && dims.height > 0) {
-        onResizeRef.current?.(dims.width, dims.height)
+      if (dims.width > 0 && dims.height > 0 && dims.dpr > 0) {
+        onResizeRef.current?.(dims.width, dims.height, dims.dpr)
       }
-    }, [dims.width, dims.height])
+    }, [dims.width, dims.height, dims.dpr])
 
     // Scale the canvas backing store to match DPR
     useEffect(() => {
       const canvas = canvasRef.current
-      if (!canvas || dims.width === 0) return
-      canvas.width = Math.round(dims.width * dims.dpr)
-      canvas.height = Math.round(dims.height * dims.dpr)
+      if (!canvas || dims.width <= 0 || dims.height <= 0) return
+      const pixelWidth = Math.max(1, Math.round(dims.width * dims.dpr))
+      const pixelHeight = Math.max(1, Math.round(dims.height * dims.dpr))
+      if (canvas.width !== pixelWidth) {
+        canvas.width = pixelWidth
+      }
+      if (canvas.height !== pixelHeight) {
+        canvas.height = pixelHeight
+      }
     }, [dims.width, dims.height, dims.dpr])
 
     const invalidate = useCallback(() => {

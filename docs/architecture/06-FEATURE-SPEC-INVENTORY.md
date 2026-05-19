@@ -59,6 +59,12 @@ Targets are allowed to vary by browser and hardware class, but failures must be
 visible in the benchmark report. A feature cannot become `production` without
 passing the workload rows that apply to it.
 
+Benchmark target policy is two-tiered. `bun run bench` is the strict local and
+release-candidate gate; those targets are the performance contract. GitHub CI
+may run `PITANT_BENCH_PROFILE=ci` for cold shared runners, but that profile is
+only a regression tripwire for runner noise and cannot be used to claim a
+performance milestone or update the benchmark baseline.
+
 ## Performance Maturity Labels
 
 - `perf_unknown`: no benchmark exists.
@@ -75,24 +81,24 @@ Pitant use until it is at least `perf_browser`.
 
 | Section | Implemented | Contract-only | Future | Evidence |
 |---|---:|---:|---:|---|
-| Ingest | 35% | 55% | 10% | `ColumnarData`, `DataSource`, tests |
-| Normalize | 15% | 75% | 10% | validation tests, quality TODO |
+| Ingest | 45% | 45% | 10% | `ColumnarData`, `DataSource`, historian adapter tests |
+| Normalize | 35% | 55% | 10% | validation tests, quality/gap viewport tests |
 | Transform | 65% | 25% | 10% | `LodPyramid`, `DataEngine`, benchmarks |
-| Layout | 5% | 80% | 15% | `ViewTransform` only |
-| Render | 55% | 35% | 10% | WebGPU, Canvas2D, command list |
-| Interact | 5% | 80% | 15% | visible range API only |
+| Layout | 35% | 50% | 15% | `createChartLayout`, plot reservation, axis text tests |
+| Render | 65% | 25% | 10% | WebGPU, Canvas2D, command list, text overlay |
+| Interact | 82% | 6% | 12% | pointer, zoom, pan, keyboard, touch, DataZoom, crosshair, quality/gap/provenance tooltip tests, range-navigation helper tests, live-append interaction regression |
 | Compose | 70% | 25% | 5% | React primitives and tests |
-| Synchronize | 45% | 45% | 10% | `ChartSyncGroup` tests |
+| Synchronize | 65% | 25% | 10% | `ChartSyncGroup`, TimeSeries, DigitalChannel sync tests, cursor propagation benchmark |
 | Theme | 70% | 25% | 5% | token resolver and CSS |
-| Export | 15% | 70% | 15% | canvas `toBlob()` only |
-| Benchmark | 55% | 35% | 10% | benchmark app, no browser FPS yet |
-| Package | 30% | 60% | 10% | workspace packages |
+| Export | 75% | 15% | 10% | explicit PNG export options and true SVG export from command frames |
+| Benchmark | 90% | 3% | 7% | strict benchmark app gate, explicit CI benchmark profile, interaction range stress gate, cursor propagation gate, browser FPS mode, browser screenshot verifier, visual baseline, local Playwright Chromium/Firefox/WebKit smoke matrix |
+| Package | 90% | 0% | 10% | v1 package metadata, README files, package changelogs, MIT licenses, npm publish dry-run, expanded shadcn registry, registry validator, registry typecheck, shadcn smoke, live docs app, quick start |
 | Govern | 20% | 70% | 10% | architecture docs |
-| Performance Contract | 35% | 60% | 5% | LOD benchmarks, no browser FPS yet |
+| Performance Contract | 47% | 48% | 5% | LOD, interaction range, cursor propagation, browser FPS benchmarks, and live-append interaction regression |
 | GPU Hot Path | 35% | 55% | 10% | WebGPU context and shaders |
 | Worker Hot Path | 60% | 35% | 5% | `DataEngine`, `LodPyramid` |
-| Memory Budget | 25% | 65% | 10% | memory overhead benchmark only |
-| Browser Matrix | 0% | 90% | 10% | no browser harness yet |
+| Memory Budget | 30% | 60% | 10% | memory overhead and interaction heap-growth benchmarks |
+| Browser Matrix | 70% | 20% | 10% | Chrome CDP harness plus local Playwright Chromium, Firefox, and WebKit smoke; Edge configured in CI but not locally verified |
 
 ## Performance Workload Model
 
@@ -165,6 +171,7 @@ a feature does not improve or preserve these scenarios, it is not v1 critical.
 - `digital-32-channel-dense`: digital transitions with state labels. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - `live-8pen-1khz`: append stream with live-edge viewport. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - `sync-4panel-1m`: four charts sharing cursor and x-range. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- `interaction-1000-cycle`: deterministic mixed zoom, pan, DataZoom, keyboard-style zoom, touch pinch, and touch pan range updates. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - `evidence-gapped-window`: static signed-style window with gaps, corrections, and quality flags. [Both] {Proof=signed; Workflow=inspect; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
 - `fallback-canvas-200k`: Canvas2D fallback stress fixture. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - `small-dashboard-16charts`: many small charts testing DOM overlay and sync overhead. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
@@ -192,6 +199,7 @@ for v1.
 | Overlay canvas/DOM layer | Cursor, tooltip, selection, or annotation changes should avoid full redraw. | The overlay changes the underlying plotted data or needs export as vector geometry. |
 | Frame scheduler | Multiple data, layout, and interaction events can be coalesced into the next animation frame. | A synchronous API must return a static export artifact or test result. |
 | Live load shedding | Rendering cannot keep up but data must be preserved. | Evidence review or deterministic replay requires every visible state to be stable and reviewable. |
+| Core range-navigation helpers | Any gesture changes only the visible x-window through clamped zoom, pan, reset, DataZoom, keyboard, or touch semantics. | The interaction changes data, y-axis policy, source query identity, evidence custody, or process workflow state. |
 | Sync group | Charts share time/range/cursor context within one tenant/site/evidence scope. | Charts cross tenant, site, sovereignty, or evidence boundaries without explicit permission. |
 | Development performance HUD | Engineers need frame, memory, renderer, and worker diagnostics. | Production regulated workflows where diagnostic overlays could confuse evidence review. |
 | SVG export | The requested output is moderate complexity and needs vector scaling. | The chart has millions of visible vertices; export a decimated/vector-safe view or PNG/replay spec instead. |
@@ -289,7 +297,7 @@ for v1.
 - Object-pool policy for transient render structures. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - No unbounded retained closures in interaction listeners. [Frontend] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Cleanup contract for chart unmount. [Both] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
-- Memory leak benchmark after 1000 zoom/pan cycles. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Memory leak benchmark after 1000 mixed zoom, pan, DataZoom, keyboard-style zoom, and touch range cycles. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Memory leak benchmark after 100 mount/unmount cycles. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Memory pressure degraded mode for live streams. [Both] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 
@@ -315,9 +323,13 @@ for v1.
 - Zoom preview transform without worker round-trip. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Zoom commit worker query after gesture end or debounce. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Pan transform fast path while awaiting precise LOD query. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Shared range-navigation fast path for clamping, pixel panning, value panning, anchor zooming, center zooming, and range equality checks. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- 1000-cycle mixed interaction range benchmark below 2 ms with no measured heap growth above 2 MB. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Sync event payload minimized to range, cursor, source, and generation. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Sync broadcast loop prevention by source chart ID. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Multi-chart cursor propagation below one frame. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Four-panel cursor propagation benchmark below 1 ms per 1000 cursor events with nearest timestamp and quality payload reads. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Live-append interaction continuity gate that appends through `DataSource`, confirms live-edge range movement, then wheel-zooms through the mounted React interaction layer. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 
 ### TimeSeries Performance Surface
 
@@ -374,6 +386,8 @@ for v1.
 ### Browser Matrix and Hardware Classes
 
 - Chrome WebGPU performance lane. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Chrome Canvas2D interaction FPS lane driven by requestAnimationFrame wheel zoom events. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Playwright cross-browser render smoke for Chromium, Firefox, WebKit/Safari runtime, and Microsoft Edge with nonblank canvas pixel gates. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Edge WebGPU performance lane. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Firefox Canvas2D fallback lane until WebGPU profile is production-ready. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Safari Canvas2D fallback lane until WebGPU profile is production-ready. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
@@ -382,6 +396,7 @@ for v1.
 - Low-memory laptop degraded profile. [Both] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Thin-client control-room degraded profile. [Both] {Proof=checksum; Workflow=observe; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Browser capability report attached to benchmark output. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- WebGPU FPS benchmark capability skip when `navigator.gpu` is unavailable. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Unsupported browser production block for high-density profiles. [Frontend] {Proof=checksum; Workflow=approve; Sovereignty=tenant-bound; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 
 ### Performance Observability
@@ -571,6 +586,9 @@ uses `pitant-charts` to show side-by-side visual equivalence and drift.
 - Optional quality flag ingestion. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - ArrayBuffer transfer ingestion. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Historian trend-window adapter. [Both] {Proof=signed; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
+- Historian query-response to TimeSeries columnar adapter. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=confidential; Liability=operational}
+- Historian frontend trend fixture to TimeSeries columnar adapter. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=confidential; Liability=operational}
+- Historian quality-class to compact chart quality-code mapping. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=confidential; Liability=operational}
 - SPC result adapter. [Both] {Proof=signed; Workflow=inspect; Sovereignty=tenant-bound; Autonomy=assisted; Privacy=confidential; Liability=quality-impacting}
 - OEE bucket adapter. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=confidential; Liability=operational}
 - Batch profile adapter. [Both] {Proof=signed; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
@@ -609,6 +627,9 @@ uses `pitant-charts` to show side-by-side visual equivalence and drift.
 - Plot area layout. [Backend/Compute] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Left, right, top, and bottom axis layout. [Backend/Compute] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Grid line layout. [Backend/Compute] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Formatted x-axis and y-axis tick label layout. [Backend/Compute] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Axis title layout for TimeSeries and DigitalChannel views. [Both] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Screen-space text placement independent from data-space transforms. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Multi-panel shared-axis layout. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Overlay lane layout for annotations and anomalies. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=assisted; Privacy=confidential; Liability=engineering-review}
 - Legend reservation and collision avoidance. [Frontend] {Proof=unsigned; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=informational}
@@ -624,24 +645,74 @@ uses `pitant-charts` to show side-by-side visual equivalence and drift.
 - Fill region rendering. [Backend/Compute] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Rectangle and band rendering. [Backend/Compute] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Text rendering. [Backend/Compute] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Canvas2D screen-space text reset for axis labels. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- WebGPU Canvas2D text overlay for tick labels and axis titles. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Clipping and z-layer ordering. [Backend/Compute] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Degraded renderer warning. [Frontend] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Renderer diagnostics panel. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 
 ## Interact Inventory
 
+- Pointer coordinate mapping between browser client pixels, chart pixels, plot ratios, relative x values, absolute x values, and y values. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Plot-boundary detection for pointer interactions. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Optional pointer clamping to nearest plot edge for axis scrubbing and bounded cursor reads. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Data-to-chart reverse mapping for cursor, annotation, and tooltip placement. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Region zoom. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
-- Axis-constrained zoom. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
-- Wheel and trackpad zoom. [Frontend] {Proof=unsigned; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
-- Pan and scroll navigation. [Frontend] {Proof=unsigned; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
-- Keyboard navigation. [Frontend] {Proof=unsigned; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
-- Touch and pinch navigation. [Frontend] {Proof=unsigned; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Plot-bounded region zoom overlay with drag threshold and visual selection band. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Double-click full-range reset for interactive chart components. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Axis-constrained x-range zoom for plot and x-axis gestures. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Core x-window clamping helper that preserves span when panning near source bounds. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Core pixel-to-range pan helper shared by wheel, Alt-drag, touch drag, DataZoom, and benchmarks. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Core anchor and center zoom helpers with minimum-span and full-range clamping. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Core range equality helper for avoiding redundant range propagation and render work. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Cursor-anchored wheel and trackpad zoom with pixel, line, and page delta normalization. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Wheel zoom full-range clamping so zoom-out cannot exceed source data bounds. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- DOM-overlay hover crosshair that moves without renderer redraw. [Frontend] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Binary-search nearest timestamp lookup for cursor and tooltip payloads. [Backend/Compute] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Multi-series TimeSeries tooltip payload with visible-series filtering. [Both] {Proof=checksum; Workflow=observe; Sovereignty=site-local; Autonomy=manual; Privacy=confidential; Liability=operational}
+- DigitalChannel tooltip payload with state-label formatting. [Both] {Proof=checksum; Workflow=observe; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Tooltip quality, gap, and provenance metadata display for degraded historian reads. [Both] {Proof=checksum; Workflow=observe; Sovereignty=site-local; Autonomy=manual; Privacy=confidential; Liability=operational}
+- Coded provenance columns for dense tooltip evidence without per-sample string objects in the source payload. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
+- Pan and scroll navigation. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Horizontal wheel and shifted-scroll x-range panning with full-range clamping. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Alt-drag x-range panning that does not draw a region-selection band. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Keyboard navigation. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Keyboard pan keys: ArrowLeft, ArrowRight, Shift+ArrowLeft, Shift+ArrowRight, PageUp, PageDown. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Keyboard zoom and reset keys: ArrowUp, ArrowDown, +, -, Home, End, 0, Escape. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Touch and pinch navigation. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- One-finger touch drag x-range panning without region-selection overlay. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Two-finger pinch x-range zoom with full-range and minimum-span clamping. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Touch gestures publish through the same x-range callback used by wheel, keyboard, DataZoom, and sync. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Hover crosshair. [Both] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Snap-to-nearest tooltip. [Both] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Persistent data tip. [Both] {Proof=signed; Workflow=approve; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
 - Brush selection. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - DataZoom minimap. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- `ChartDataZoom` opt-in React primitive exported from `@pitant/charts-react`. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Fixed-sample minimap path generation capped by `maxSampleCount` to avoid full-series DOM/SVG work on every render. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- DataZoom track click recentering while preserving current x-window span. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- DataZoom window drag panning through the same x-range callback used by zoom, pan, keyboard, and sync. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- DataZoom start/end handle resizing with full-range and minimum-span clamping. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Undo and redo zoom stack. [Frontend] {Proof=unsigned; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+
+### Interact Use Boundaries
+
+| Interaction | Use when | Do not use when |
+|---|---|---|
+| Region zoom | The user deliberately brackets a time window in the plot to inspect analog or digital history at higher resolution. | The gesture starts outside the plot, is below the drag threshold, or should select records/annotations instead of changing viewport range. |
+| Double-click full-range reset | The user needs to return to the source data window after exploratory zooming. | The chart is pinned to a regulatory evidence window, replay checkpoint, or externally owned viewport that must not be reset locally. |
+| Axis-constrained x-range zoom | The interaction changes visible time/range only while leaving y-scale, lane layout, and source data unchanged. | The workflow needs y-axis rescale, data decimation changes, process action, acknowledgement, or saved-view mutation. |
+| Core range-navigation helpers | React gestures, core consumers, or benchmarks need deterministic range math without allocating DOM or renderer objects. | The behavior depends on visible overlay state, data fetch policy, sync authorization, or workflow approval beyond pure range math. |
+| Wheel and trackpad zoom | The pointer is inside the plot or x-axis area and the user expects cursor-anchored range magnification. | The wheel event belongs to page scroll, sidebar scroll, y-axis scaling, pinch gesture ownership, or an app-level navigation container. |
+| Pan and scroll navigation | The user moves an already selected time window without changing its span; use horizontal wheel, shifted scroll, or Alt-drag inside the plot. | The source query window, replay checkpoint, evidence custody boundary, page scroll container, or app-level navigator owns the movement. |
+| Keyboard navigation | The chart overlay has focus and the user needs accessible range movement, zoom, alignment, or reset without pointer input. | Keystrokes belong to text entry, global app shortcuts, workflow approval commands, or a locked display profile. |
+| Touch and pinch navigation | The chart is used on a tablet or touch panel where pointer drag/wheel is unavailable; use one finger to pan and two fingers to pinch the x-range. | The panel is a locked operator display, HMI action surface, safety-relevant control screen, or a workflow where touch gestures are owned by the app shell. |
+| Hover crosshair | The user is inspecting values without committing a selection or annotation. | Hover is unavailable, the chart is in touch-only mode, or the displayed result needs a persisted evidence artifact. |
+| Snap-to-nearest tooltip | The user needs exact visible-point values, quality, gaps, provenance, and lane state. | The nearest point is outside the current viewport, hidden by pen visibility, or must be calculated by a sibling analytics repo. |
+| Persistent data tip | The user explicitly pins a value or comparison for review, export, or discussion. | The user is only hovering, the feature lacks identity/audit context, or the note belongs in CAPA/compliance workflow. |
+| Brush selection | The user needs a temporary subset for export, compare, or annotation preparation. | The brush would imply deleting data, changing historian state, or approving an operational workflow. |
+| DataZoom minimap | The user needs opt-in overview-plus-detail navigation over a large source window; use it when the fixed-sample overview is enough to orient the current viewport. | The source range is tiny, the minimap would violate frame budget, a high-fidelity overview needs its own LOD track, or the dashboard already owns a shared navigator. |
+| Undo and redo zoom stack | The user needs local navigation recovery during exploratory analysis. | The range is externally synchronized, evidence-pinned, or controlled by replay state from another repo. |
 
 ## Compose Inventory
 
@@ -653,18 +724,40 @@ uses `pitant-charts` to show side-by-side visual equivalence and drift.
 - `useChart()` lifecycle hook. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - `useTimeSeries()` hook. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=confidential; Liability=operational}
 - `TimeSeries` component. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=confidential; Liability=operational}
+- `TimeSeriesChart` imperative core class for non-React consumers. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- `DigitalChannelChart` imperative core class for non-React consumers. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - `DigitalChannel` component. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Accessible data table fallback. [Frontend] {Proof=checksum; Workflow=observe; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- React time-series composition example with legend and tooltip slot. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=informational}
+- React digital-channel composition example with state lanes and legend slot. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=informational}
+- Core imperative chart example for non-React consumers. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=informational}
 
 ## Synchronize Inventory
 
 - Cursor timestamp synchronization. [Frontend] {Proof=checksum; Workflow=observe; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - X-range synchronization. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Zoom synchronization. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Stable `chartKey` participation for TimeSeries and DigitalChannel sync groups. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Source-suppressed x-range propagation to prevent feedback loops between peers. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Source-suppressed cursor tooltip propagation with nearest timestamp payload rebuild on peers. [Frontend] {Proof=checksum; Workflow=observe; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Cursor propagation latency gate for four synchronized panels and four pens per panel. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Synchronized vertical cursor marker for peer charts without local horizontal crosshair fabrication. [Frontend] {Proof=checksum; Workflow=observe; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Series visibility synchronization. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Sync conflict resolution. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Tenant/site sync boundary. [Both] {Proof=signed; Workflow=approve; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
 - Replayable sync state. [Both] {Proof=signed; Workflow=inspect; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
+- Synchronized dashboard example with explicit Phase 4 interaction boundary. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=informational}
+
+### Synchronize Use / Do Not Use Rules
+
+| Feature | Use when | Do not use when |
+|---|---|---|
+| Cursor timestamp synchronization | Peer charts share a time base and a cursor timestamp should select comparable samples. | Peer panels use unrelated clocks, categorical x-axes, replay-pinned evidence windows, or hidden tenant/site scopes. |
+| X-range synchronization | A dashboard should keep every participating chart on the same time window during zoom and reset. | A chart owns an independent analysis window, an evidence-pinned range, or a workflow-level navigator already controls the range. |
+| Stable `chartKey` participation | A chart must publish sync updates and ignore its own echoed updates inside one `ChartSyncGroup`. | The chart is transient, duplicated without a stable identity, or intentionally read-only inside a static export. |
+| Peer cursor marker | A peer chart should show the synchronized timestamp without inventing a local pointer y-position. | The user needs exact local y inspection; require a local hover or keyboard cursor movement instead. |
+| Series visibility synchronization | Shared dashboards need one legend or saved view to hide the same logical series across panels. | Panels compare different assets, units, or semantic lanes where matching names do not imply matching signals. |
+| Tenant/site sync boundary | All participating panels are inside one declared tenant, site, zone, and evidence scope. | Any chart crosses a tenancy, sovereignty, legal-hold, or evidence boundary without explicit workflow approval. |
 
 ## Theme Inventory
 
@@ -696,18 +789,44 @@ uses `pitant-charts` to show side-by-side visual equivalence and drift.
 - Memory overhead benchmark. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - WebGPU FPS benchmark. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Canvas2D fallback FPS benchmark. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- `harness:fps` browser interaction frame-loop benchmark for Canvas2D and WebGPU-capable environments. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Browser FPS report fields: average FPS, minimum FPS, p95 frame time, maximum frame time, dropped frame count, sample count, and target FPS. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Browser visual regression baseline for compact and large chart profiles. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- `harness:cross-browser` smoke verification for Chromium, Firefox, WebKit, and Microsoft Edge compact Canvas2D render output. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Visual baseline update command with explicit reviewer intent. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Interaction latency benchmark. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- `018_interaction_range_1000_cycles` benchmark for 1000 mixed zoom, pan, DataZoom, keyboard-style zoom, and touch range updates. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Interaction heap-growth benchmark for 10000 range updates with a 2 MB gate. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- `019_cursor_propagation_4panels` benchmark for source-suppressed cursor propagation, nearest timestamp lookup, per-pen value reads, and quality reads across synchronized panels. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Export duration benchmark. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
 - Bundle-size benchmark. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Strict local benchmark profile that owns release-candidate performance claims and baseline updates. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- CI hosted-runner benchmark profile that allows bounded scheduler variance while refusing baseline updates. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Fresh-checkout harness build gate that rebuilds package declarations before compiling the browser harness. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 
 ## Package Inventory
 
 - Core npm package. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - React npm package. [Frontend] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- v1.0.0 SemVer package manifests for core and React packages. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- npm public/provenance publish metadata for both packages. [Backend/Compute] {Proof=signed; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- npm publish dry-run evidence for both packages. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Phase 5 release-candidate evidence artifact that records package, registry, publish dry-run, and browser smoke commands. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- npm-safe React peer dependency on `@pitant/charts` without `workspace:*` in publish-facing dependency fields. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Package README files with install, use/do-not-use, typed-array data, PNG/SVG export, and registry block guidance. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=informational}
+- Package changelog and license files included in npm tarballs. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Subpath exports. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - Type declaration output. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 - shadcn registry blocks. [Frontend] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
-- Docs site examples. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=informational}
+- Initial registry items for TimeSeries, DigitalChannel, synchronized dashboard, and DataZoom with shadcn target placeholders. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Expanded registry items for streaming live-edge append, separated-unit multi-axis panels, PNG export command wiring, and dashboard overview. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- Registry validation script for schema URL, item types, dependencies, targets, and referenced files. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Registry block typecheck gate against public `@pitant/charts-react` package types. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Real shadcn CLI smoke gate that builds registry item JSON, initializes a fresh Vite consumer, dry-runs public dependencies, installs all initial blocks through local package tarballs, imports them, typechecks, and bundles. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Live docs app that imports registry block source directly and builds through Vite for all eight installable examples. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=informational}
+- First-run quick start for package install, token import, renderer fallback, typed-array data rules, and registry block selection. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=informational}
+- Examples index with use/do-not-use guidance for each primitive. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=informational}
+- Frontend contract packs for historian trend, digital channel, and synchronized dashboard. [Frontend] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=informational}
 - Migration guide from SciChart. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Package provenance. [Backend/Compute] {Proof=signed; Workflow=approve; Sovereignty=tenant-bound; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
 

@@ -159,7 +159,8 @@ future Playwright canvas checks.
 - [x] Build passes.
 - [x] Unit tests pass.
 - [x] LOD benchmarks pass.
-- [ ] Browser WebGPU and Canvas2D render benchmarks exist.
+- [x] Browser Canvas2D visual regression baseline exists.
+- [x] Browser WebGPU and Canvas2D FPS benchmarks exist.
 
 **Release gate.** Required before real chart types can claim performance.
 
@@ -172,7 +173,8 @@ and initial hook surface.
 
 **Implementation tasks.**
 - Keep primitives headless and CSS-variable driven.
-- Add composed example fixtures.
+- Add composed example fixtures and docs examples for `ChartContainer`,
+  `ChartCanvas`, `ChartLegend`, `ChartTooltip`, and `ChartSyncGroup`.
 - Add accessibility verification for composed examples.
 - Clarify `useChart()` error state and renderer readiness.
 
@@ -181,31 +183,42 @@ and initial hook surface.
 **Definition of Done.**
 - [x] Primitive tests pass.
 - [x] Token tests pass.
-- [ ] Composed browser examples exist.
+- [x] Composed examples and docs examples exist.
 - [ ] Accessibility checks run on examples.
 
 **Release gate.** Required before TimeSeries is exposed to app teams.
 
 ## Phase 3 - TimeSeries and Data Pipeline
 
-**Status.** In progress.
+**Status.** Closed on 2026-05-19.
 
 **Scope.** First concrete chart types: TimeSeries and DigitalChannel. This phase
 does not include the full interaction suite.
 
 **Implementation tasks.**
 - Define `TimeSeriesDataSet`, `TimeSeriesSeries`, and `DigitalChannelSeries`.
-- Wire `useChart().setData()` to `DataEngine.ingest()`.
-- Wire `useChart().append()` to `DataEngine.append()`.
+- Wire concrete `useTimeSeries().setData()` and `useDigitalChannel().setData()`
+  to `DataSource` / `DataEngine` ingestion.
+- Wire concrete `useTimeSeries().append()` and `useDigitalChannel().append()`
+  to `DataSource` / `DataEngine` append paths; keep generic `useChart()` as a
+  renderer/lifecycle primitive with explicit unsupported-data-control errors.
+- Add PITANT historian query and frontend fixture adapters that convert contract
+  rows into TimeSeries-compatible columnar data with quality and gap metadata.
 - Add layout pass for axes, grid, and plot area.
+- Render axis tick labels and axis titles in screen space while preserving
+  data-space transforms for series and grid lines.
 - Generate line commands from LOD query results.
 - Render single-pen and multi-pen TimeSeries.
 - Render DigitalChannel step geometry.
+- Expose thin imperative `TimeSeriesChart` and `DigitalChannelChart` classes
+  for non-React consumers using the same render-plan path as React.
 - Preserve quality and gap markers through query and render.
-- Add examples and tests for visible-series toggles.
+- Add docs examples and tests for visible-series toggles, tooltip slots, sync
+  groups, and non-React imperative chart consumers.
 
 **Tests and Acceptance.** TimeSeries API tests, DigitalChannel tests, LOD
-render tests, 8-pen benchmark, live append benchmark.
+render tests, browser visual regression, 8-pen benchmark, live append
+benchmark.
 
 **Definition of Done.**
 - [ ] Single-pen TimeSeries renders real data.
@@ -218,13 +231,13 @@ render tests, 8-pen benchmark, live append benchmark.
 
 ## Phase 4 - Interactions and Navigation
 
-**Status.** Not started.
+**Status.** Local release candidate complete; GitHub publish dry-run pending.
 
 **Scope.** Region zoom, pan, wheel, keyboard, touch, crosshair, snap tooltip,
 DataZoom, and synchronized cursor/range.
 
 **Implementation tasks.**
-- Implement screen-to-data mapping.
+- Implement screen-to-data mapping with layout-aware pointer utilities.
 - Implement gesture state machines.
 - Add cursor nearest-point lookup.
 - Add DataZoom minimap.
@@ -234,17 +247,67 @@ DataZoom, and synchronized cursor/range.
 **Tests and Acceptance.** Browser interaction tests, mobile/touch checks,
 memory-leak stress test.
 
+**Progress.**
+- [x] Core pointer coordinate mapping converts client coordinates to chart,
+  plot, relative x, absolute x, and y values.
+- [x] Pointer mapping tests cover scaled DOM viewports, clamping, out-of-plot
+  state, and reverse data-to-chart mapping.
+- [x] `ChartRegionZoomLayer` provides plot-bounded region zoom and double-click
+  reset for concrete React chart components.
+- [x] Region zoom tests cover drag threshold, outside-plot ignore, selection
+  overlay, and full-range reset.
+- [x] X-axis wheel/trackpad zoom keeps the cursor anchor stable, normalizes
+  wheel delta modes, and clamps zoom-out to the full source range.
+- [x] Hover crosshair renders in the DOM overlay without forcing chart redraws.
+- [x] Nearest timestamp lookup is a core binary-search helper and feeds
+  TimeSeries/DigitalChannel tooltip payloads with value, quality, and gap
+  metadata.
+- [x] TimeSeries and DigitalChannel publish local x-range changes through
+  `ChartSyncGroup` and apply peer ranges with source-echo suppression.
+- [x] TimeSeries and DigitalChannel publish nearest cursor timestamps through
+  `ChartSyncGroup`; peers show synchronized tooltip payloads and a vertical
+  cursor marker without fabricating a local y-value crosshair.
+- [x] Horizontal wheel, shifted scroll, and Alt-drag pan the current x-window
+  without changing span or forcing a renderer-specific interaction path.
+- [x] Focused chart overlays support keyboard range navigation: Arrow/Page
+  pans, ArrowUp/ArrowDown and +/- zoom, Home/End align, and 0/Escape reset.
+- [x] `ChartDataZoom` provides an opt-in overview-plus-detail minimap for
+  TimeSeries and DigitalChannel, with fixed-sample overview rendering, range
+  recentering, drag panning, and handle resizing through the same x-range path.
+- [x] Touch navigation uses pointer events in the shared interaction layer:
+  one-finger drag pans the x-window and two-finger pinch zooms without drawing a
+  region-selection rectangle.
+- [x] Core range-navigation helpers in `@pitant/charts` now own x-window
+  clamping, pixel/value panning, anchor zooming, center zooming, and equality
+  checks so React gestures and benchmarks share one fast path.
+- [x] Benchmark scenario `018_interaction_range_1000_cycles` covers 1000 mixed
+  wheel zoom, pan, DataZoom, keyboard-style zoom, and touch pinch/pan range
+  updates with a 2 ms/1000 gate and a 2 MB heap-growth gate.
+- [x] Benchmark scenario `019_cursor_propagation_4panels` covers source-echo
+  suppressed cursor propagation across four panels, nearest timestamp lookup,
+  per-pen value reads, and quality reads with a 1 ms/1000 gate.
+- [x] Browser FPS mode in `scripts/verify-render-harness.mjs --fps` dispatches
+  requestAnimationFrame-scheduled wheel zoom events through the analog chart
+  interaction layer and reports average FPS, minimum FPS, p95 frame time, and
+  dropped frames for Canvas2D and WebGPU-capable browsers.
+- [x] `TimeSeries` regression coverage appends through the existing
+  `DataSource`, verifies the live-edge range update, then wheel-zooms through
+  the mounted `ChartRegionZoomLayer` without remounting the chart.
+- [x] Tooltip payloads and default rendering now include provenance state
+  alongside quality and gap state for TimeSeries and DigitalChannel, with coded
+  provenance columns for dense streams and append-preservation coverage.
+
 **Definition of Done.**
-- [ ] Zoom and pan under one-frame budget.
-- [ ] Cursor sync across four charts.
-- [ ] Tooltip includes quality/gap/provenance.
-- [ ] Interactions work during live append.
+- [x] Zoom and pan under one-frame budget.
+- [x] Cursor sync across four charts.
+- [x] Tooltip includes quality/gap/provenance.
+- [x] Interactions work during live append.
 
 **Release gate.** Required before v1 launch packaging.
 
 ## Phase 5 - Registry, Docs, Export, Launch
 
-**Status.** Not started.
+**Status.** Local release candidate complete; PR CI passed; publish workflow dry-run pending.
 
 **Scope.** shadcn registry, docs, PNG/SVG export, npm readiness, cross-browser
 checks, and release gates.
@@ -260,13 +323,72 @@ checks, and release gates.
 **Tests and Acceptance.** Registry install test, npm pack test, export tests,
 browser visual checks.
 
-**Definition of Done.**
-- [ ] New user renders first chart in under five minutes.
-- [ ] Registry blocks install.
-- [ ] PNG and SVG export verified.
-- [ ] npm packages are publishable.
+**Progress.**
+- [x] Root `registry.json` uses the shadcn registry schema and declares initial
+  installable blocks for `pitant-time-series`, `pitant-digital-channel`,
+  `pitant-synchronized-dashboard`, and `pitant-datazoom`.
+- [x] Registry block source files are client components with typed-array demo
+  data, stable memoized config, explicit renderer fallback, and no per-frame row
+  object conversion.
+- [x] `scripts/validate-registry.mjs` verifies registry item names, types,
+  dependencies, target placeholders, and referenced files.
+- [x] `bun run registry:typecheck` typechecks registry source against public
+  package types.
+- [x] `scripts/smoke-shadcn-registry.mjs` runs the real shadcn CLI, builds
+  registry item JSON, initializes a fresh Vite consumer app, dry-runs the public
+  dependency form, installs all initial blocks from local package tarballs,
+  imports them into the app, then typechecks and bundles the consumer.
+- [x] Registry now includes Phase 5 blocks for streaming live-edge append,
+  separated-unit multi-axis comparison, PNG export command wiring, and dense
+  dashboard overview, all covered by `registry:validate`, `registry:typecheck`,
+  and `registry:smoke`.
+- [x] `apps/docs-site` provides a live docs app that imports the registry block
+  source directly, exposes use/do-not-use guidance for all eight blocks, and
+  builds through `bun run docs:build`.
+- [x] `docs/quick-start.md` defines first-run install, token import, renderer
+  fallback, typed-array data rules, and registry block selection rules.
+- [x] PNG export now honors explicit CSS-pixel width, height, background, and
+  pixel-ratio options; concrete chart hooks rerender into an export canvas
+  instead of scaling a stale screenshot.
+- [x] TimeSeries and DigitalChannel expose command-frame builders and SVG
+  export serializes vector command lists with plot clipping, axis text, and
+  no raster image payload.
+- [x] `.github/workflows/publish.yml` provides dry-run and provenance npm
+  publishing gates for both packages.
+- [x] `CHANGELOG.md`, `docs/release-checklist.md`, `pack:dry-run`,
+  `release:check`, and bundle-size limits define the local and CI release
+  evidence path.
+- [x] Package manifests are set to v1.0.0 with npm public/provenance
+  metadata, README files, package changelogs, MIT licenses, npm keywords, and
+  npm-safe `@pitant/charts` peer dependency range for the React package.
+- [x] `docs/release-checklist.md` declares `registry:smoke` as mandatory for
+  maintainer release dry-runs and publish runs, but not part of ordinary PR
+  `release:check` because it uses external shadcn CLI and fresh consumer
+  project installation.
+- [x] `scripts/verify-cross-browser.mjs` and the `cross-browser-smoke` CI job
+  run Playwright render smoke across Chromium, Firefox, WebKit/Safari runtime,
+  and Microsoft Edge with nonblank canvas pixel checks.
+- [x] CI now runs benchmarks, registry validation, registry typecheck, docs
+  build, size-limit, package dry-run, and browser harness renderer smoke/FPS
+  checks.
+- [x] Local npm publish dry-run passes for both v1.0.0 packages with npm-safe
+  repository URLs and no npm package auto-correction warnings.
+- [x] Local Playwright cross-browser smoke passes for Chromium, Firefox, and
+  WebKit compact Canvas2D output; Edge remains configured for Windows CI.
+- [x] `docs/architecture/phase-5/release-candidate-evidence.md` records local
+  package, registry, publish dry-run, and browser evidence plus the remaining
+  external GitHub Actions gate.
 
-**Release gate.** v1 release candidate.
+**Definition of Done.**
+- [x] New user renders first chart in under five minutes.
+- [x] Registry blocks install.
+- [x] PNG and SVG export verified.
+- [x] npm packages are publishable.
+
+**Release gate.** v1 local release candidate. PR CI passed on
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089639951.
+External closure still requires the publish workflow to be dispatched with
+`dry_run=true` after the workflow exists on the default branch.
 
 ## Phase 6 - Post-v1 Industrial Chart Packs
 

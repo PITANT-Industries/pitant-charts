@@ -20,6 +20,40 @@ const singleScenario = positional[0]
 const updateBaseline = flags.has('--update-baseline')
 const jsonOutput = flags.has('--json')
 
+// ── Benchmark Profile ───────────────────────────────────────
+
+type BenchmarkDirection = 'max' | 'min'
+
+interface BenchmarkProfileOverride {
+  target: number
+  direction: BenchmarkDirection
+}
+
+const benchmarkProfile = (process.env['PITANT_BENCH_PROFILE'] ?? 'strict').trim().toLowerCase()
+const ciTargetOverrides: Record<string, BenchmarkProfileOverride> = {
+  // GitHub-hosted runners have noisy CPU scheduling and virtualization overhead.
+  // Keep local/release benches strict; CI only proves that the hot paths are not
+  // catastrophically regressed in a cold, shared runner.
+  '007_streaming_append': { target: 35, direction: 'max' },
+  '016_data_source_live_append_query_4pens': { target: 5, direction: 'max' },
+  '019_cursor_propagation_4panels_latency': { target: 3, direction: 'max' },
+}
+
+function applyBenchmarkProfile(entry: BenchmarkResult): BenchmarkResult {
+  if (benchmarkProfile === 'strict') return entry
+  if (benchmarkProfile !== 'ci') {
+    console.error(`${c.red}✗${c.reset} Unknown benchmark profile "${benchmarkProfile}"`)
+    process.exit(1)
+  }
+
+  const override = ciTargetOverrides[entry.scenario]
+  if (!override) return entry
+
+  const passed =
+    override.direction === 'max' ? entry.value < override.target : entry.value >= override.target
+  return { ...entry, target: override.target, passed }
+}
+
 // ── Colors (ANSI) ────────────────────────────────────────────
 
 const isCI = !!process.env['CI']
@@ -55,6 +89,11 @@ function loadBaseline(): Baseline {
 }
 
 function saveBaseline(results: BenchmarkResult[]): void {
+  if (benchmarkProfile !== 'strict') {
+    console.error(`${c.red}✗${c.reset} Refusing to update baseline outside strict profile`)
+    process.exit(1)
+  }
+
   const baseline: Baseline = {}
   for (const r of results) {
     baseline[r.scenario] = { value: r.value, unit: r.unit, target: r.target }
@@ -65,7 +104,7 @@ function saveBaseline(results: BenchmarkResult[]): void {
 
 // ── Runner ───────────────────────────────────────────────────
 
-function run(): BenchmarkResult[] {
+async function run(): Promise<BenchmarkResult[]> {
   const scenarioKeys = singleScenario
     ? Object.keys(scenarios).filter((k) => k.includes(singleScenario))
     : Object.keys(scenarios).sort()
@@ -79,6 +118,11 @@ function run(): BenchmarkResult[] {
   const baseline = loadBaseline()
 
   console.log(`\n${c.bold}@pitant/charts benchmark${c.reset}`)
+  if (benchmarkProfile !== 'strict') {
+    console.log(
+      `${c.dim}profile: ${benchmarkProfile} (strict local targets remain default)${c.reset}`,
+    )
+  }
   console.log(`${c.dim}${'─'.repeat(72)}${c.reset}\n`)
 
   for (const key of scenarioKeys) {
@@ -87,8 +131,8 @@ function run(): BenchmarkResult[] {
 
     process.stdout.write(`  ${c.cyan}▸${c.reset} ${key} ... `)
     const startMem = process.memoryUsage().heapUsed
-    const result = fn()
-    const entries = Array.isArray(result) ? result : [result]
+    const result = await fn()
+    const entries = (Array.isArray(result) ? result : [result]).map(applyBenchmarkProfile)
     const heapDelta = process.memoryUsage().heapUsed - startMem
 
     for (const entry of entries) {
@@ -98,10 +142,17 @@ function run(): BenchmarkResult[] {
       const baseEntry = baseline[entry.scenario]
       let delta = ''
       if (baseEntry) {
-        const pctChange = ((entry.value - baseEntry.value) / baseEntry.value) * 100
-        const sign = pctChange > 0 ? '+' : ''
-        const color = Math.abs(pctChange) > 10 ? c.yellow : c.dim
-        delta = `  ${color}(${sign}${pctChange.toFixed(1)}% vs baseline)${c.reset}`
+        if (Math.abs(baseEntry.value) <= Number.EPSILON) {
+          delta =
+            Math.abs(entry.value) <= Number.EPSILON
+              ? `  ${c.dim}(no change vs baseline)${c.reset}`
+              : `  ${c.yellow}(baseline was 0)${c.reset}`
+        } else {
+          const pctChange = ((entry.value - baseEntry.value) / baseEntry.value) * 100
+          const sign = pctChange > 0 ? '+' : ''
+          const color = Math.abs(pctChange) > 10 ? c.yellow : c.dim
+          delta = `  ${color}(${sign}${pctChange.toFixed(1)}% vs baseline)${c.reset}`
+        }
       }
 
       console.log(
@@ -118,7 +169,7 @@ function run(): BenchmarkResult[] {
 
 // ── Main ─────────────────────────────────────────────────────
 
-const results = run()
+const results = await run()
 
 const passed = results.filter((r) => r.passed).length
 const failed = results.filter((r) => !r.passed).length

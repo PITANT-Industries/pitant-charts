@@ -4,6 +4,7 @@ import type { RenderContext, RendererType } from '@pitant/charts'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChartContainerRef } from './chart-container.js'
 import type { ChartLegendItem } from './chart-legend.js'
+import { exportCanvasImage } from './chart-runtime.js'
 import type { ChartTooltipPayload } from './chart-tooltip.js'
 
 // ── Chart Configuration ──────────────────────────────────────
@@ -62,7 +63,13 @@ export interface ExportOptions {
 export interface UseChartOptions<TConfig extends ChartConfig = ChartConfig> {
   /** Chart configuration (series definitions, axis config, etc.) */
   config: TConfig
-  /** Initial data — interleaved [timestamp, ...values] per series */
+  /**
+   * Reserved compatibility input for early generic hook callers.
+   *
+   * `useChart()` is renderer/lifecycle-only; concrete chart hooks such as
+   * `useTimeSeries()` and `useDigitalChannel()` own data ingestion, LOD, gaps,
+   * quality columns, and drawing.
+   */
   data?: Float64Array | ArrayBuffer
   /** Container ref — the hook attaches the renderer to this element's canvas */
   containerRef: React.RefObject<ChartContainerRef | null>
@@ -80,9 +87,15 @@ export interface ChartStats {
 }
 
 export interface UseChartReturn<TConfig extends ChartConfig = ChartConfig> {
-  /** Append new data points (interleaved [timestamp, ...values]) */
+  /**
+   * @deprecated Generic `useChart()` does not ingest data. Use concrete chart
+   * hooks (`useTimeSeries()`, `useDigitalChannel()`) for append paths.
+   */
   append: (data: Float64Array | ArrayBuffer) => void
-  /** Replace all data */
+  /**
+   * @deprecated Generic `useChart()` does not ingest data. Use concrete chart
+   * hooks (`useTimeSeries()`, `useDigitalChannel()`) for replacement paths.
+   */
   setData: (data: Float64Array | ArrayBuffer) => void
   /** Current visible range [start, end] in data-space timestamps */
   visibleRange: readonly [number, number]
@@ -102,6 +115,8 @@ export interface UseChartReturn<TConfig extends ChartConfig = ChartConfig> {
   stats: ChartStats
   /** Whether the renderer is initialized and ready */
   ready: boolean
+  /** Renderer or data-engine failure exposed for UI error states */
+  error: Error | null
   /** The resolved config (for type narrowing with generics) */
   config: TConfig
 }
@@ -123,17 +138,20 @@ const DEFAULT_COLORS = [
 
 const EMPTY_RANGE: readonly [number, number] = [0, 0]
 const EMPTY_STATS: ChartStats = { fps: 0, renderTime: 0, pointCount: 0 }
+const GENERIC_DATA_CONTROL_ERROR =
+  'useChart() is renderer/lifecycle-only. Use useTimeSeries() or useDigitalChannel() for data ingestion and rendering.'
 
 // ── Hook ─────────────────────────────────────────────────────
 
 export function useChart<TConfig extends ChartConfig = ChartConfig>(
   options: UseChartOptions<TConfig>,
 ): UseChartReturn<TConfig> {
-  const { config, data, containerRef } = options
+  const { config, containerRef } = options
 
   // ── Renderer state ───────────────────────────────────────
   const renderCtxRef = useRef<RenderContext | null>(null)
   const [ready, setReady] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
   const [stats] = useState<ChartStats>(EMPTY_STATS)
 
   // ── Series visibility ────────────────────────────────────
@@ -155,15 +173,14 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
     y: number
   } | null>(null)
 
-  // ── Data buffer ──────────────────────────────────────────
-  const dataRef = useRef<Float64Array | ArrayBuffer | undefined>(data)
-
   // ── Init renderer lifecycle ──────────────────────────────
   useEffect(() => {
     const container = containerRef.current
     if (!container?.canvas) return
 
     let disposed = false
+    setReady(false)
+    setError(null)
 
     async function init(canvas: HTMLCanvasElement) {
       try {
@@ -177,9 +194,13 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
         }
         renderCtxRef.current = ctx
         setReady(true)
-      } catch {
-        // Renderer init failed — stay in not-ready state
-        // Phase 3 will add proper error reporting
+        setError(null)
+      } catch (err) {
+        if (!disposed) {
+          renderCtxRef.current = null
+          setReady(false)
+          setError(err instanceof Error ? err : new Error(String(err)))
+        }
       }
     }
 
@@ -190,13 +211,9 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
       renderCtxRef.current?.dispose()
       renderCtxRef.current = null
       setReady(false)
+      setError(null)
     }
   }, [containerRef, config.renderer])
-
-  // ── Keep data ref current ────────────────────────────────
-  useEffect(() => {
-    dataRef.current = data
-  }, [data])
 
   // ── Legend items (derived) ───────────────────────────────
   const legendItems: readonly ChartLegendItem[] = useMemo(
@@ -220,14 +237,14 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
 
   // ── append ───────────────────────────────────────────────
   const append = useCallback((newData: Float64Array | ArrayBuffer) => {
-    // Phase 3: forward to data engine worker
-    // For now, store a reference so tests can verify the API
-    dataRef.current = newData
+    void newData
+    setError(new Error(GENERIC_DATA_CONTROL_ERROR))
   }, [])
 
   // ── setData ──────────────────────────────────────────────
   const setData = useCallback((newData: Float64Array | ArrayBuffer) => {
-    dataRef.current = newData
+    void newData
+    setError(new Error(GENERIC_DATA_CONTROL_ERROR))
   }, [])
 
   // ── setVisibleRange ──────────────────────────────────────
@@ -237,33 +254,8 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
 
   // ── exportImage ──────────────────────────────────────────
   const exportImage = useCallback(
-    async (format: 'png' | 'svg', _options?: ExportOptions): Promise<Blob> => {
-      const container = containerRef.current
-      const canvas = container?.canvas
-      if (!canvas) {
-        throw new Error('Chart canvas is not available. Is the container mounted?')
-      }
-
-      const mimeType = format === 'svg' ? 'image/svg+xml' : 'image/png'
-
-      return new Promise<Blob>((resolve, reject) => {
-        try {
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                resolve(blob)
-              } else {
-                reject(new Error('Canvas toBlob returned null'))
-              }
-            },
-            mimeType,
-            1.0,
-          )
-        } catch (err) {
-          reject(err instanceof Error ? err : new Error(String(err)))
-        }
-      })
-    },
+    (format: 'png' | 'svg', exportOptions?: ExportOptions): Promise<Blob> =>
+      exportCanvasImage(containerRef, format, exportOptions),
     [containerRef],
   )
 
@@ -279,6 +271,7 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
     exportImage,
     stats,
     ready,
+    error,
     config,
   } as UseChartReturn<TConfig>
 }

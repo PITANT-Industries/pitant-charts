@@ -32,6 +32,8 @@ tests, fixtures, benchmarks, or CI evidence.
 | [phase-0/README.md](phase-0/README.md) | Phase 0 artifact index |
 | [phase-0/baseline-report.md](phase-0/baseline-report.md) | Captured import, build, test, and benchmark baseline |
 | [phase-0/gap-ledger.md](phase-0/gap-ledger.md) | Initial capability gaps against the architecture set |
+| [phase-5/README.md](phase-5/README.md) | Phase 5 release-candidate artifact index |
+| [phase-5/release-candidate-evidence.md](phase-5/release-candidate-evidence.md) | Local v1 package, registry, publish dry-run, and browser evidence |
 | [../frontend-contracts/README.md](../frontend-contracts/README.md) | Frontend contract-pack template and planned workflow packs |
 
 ## Source of Truth

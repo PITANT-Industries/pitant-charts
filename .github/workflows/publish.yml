@@ -1,0 +1,61 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Run npm publish with --dry-run only
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Release gate
+        run: bun run release:check
+
+      - name: Registry smoke gate
+        run: bun run registry:smoke
+
+      - name: Publish dry run
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true'
+        run: |
+          npm publish ./packages/charts --dry-run --access public
+          npm publish ./packages/charts-react --dry-run --access public
+
+      - name: Publish with npm provenance
+        if: github.event_name == 'release' || inputs.dry_run == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm publish ./packages/charts --provenance --access public
+          npm publish ./packages/charts-react --provenance --access public

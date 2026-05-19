@@ -74,7 +74,7 @@ export interface RenderContext {
   readonly height: number
   readonly dpr: number
 
-  resize(width: number, height: number): void
+  resize(width: number, height: number, dpr?: number): void
   beginFrame(): void
   endFrame(): void
 
