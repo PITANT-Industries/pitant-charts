@@ -15,7 +15,7 @@
     "format": "biome format --write .",
     "typecheck": "bun run --filter @pitant/charts build && tsc --noEmit -p packages/charts/tsconfig.json && tsc --noEmit -p packages/charts-react/tsconfig.json",
     "harness:dev": "bun run --filter @pitant/render-harness dev",
-    "harness:build": "bun run --filter @pitant/render-harness build",
+    "harness:build": "bun run build && bun run --filter @pitant/render-harness build",
     "harness:preview": "bun run --filter @pitant/render-harness preview",
     "harness:verify": "node scripts/verify-render-harness.mjs",
     "harness:fps": "node scripts/verify-render-harness.mjs --fps",

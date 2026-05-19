@@ -1,7 +1,7 @@
 # Phase 5 Release Candidate Evidence
 
 **Date:** 2026-05-19
-**Status:** Local release candidate complete; GitHub Actions evidence pending.
+**Status:** Local release candidate complete; PR CI fix in progress.
 
 ## Package Evidence
 
@@ -70,18 +70,46 @@ committed and pushed.
 ## GitHub Actions Status
 
 `gh auth status` is valid for `github.com` with `repo` and `workflow` scopes.
-`gh workflow list` currently reports only the remote `CI` workflow because
-`.github/workflows/publish.yml` exists locally but has not been committed and
-pushed to `origin/main`.
 
-Do not dispatch the publish dry-run workflow until the local release candidate
-changes are committed and pushed; dispatching now would test the remote branch,
-not this working tree.
+Draft PR: https://github.com/PITANT-Industries/pitant-charts/pull/1
+
+First PR CI run:
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26088799878
+
+Observed failures and fixes:
+
+- Browser harness jobs failed on a fresh checkout because `harness:build`
+  compiled `apps/render-harness` before package `dist` declarations existed.
+  The root `harness:build` script now rebuilds `@pitant/charts` and
+  `@pitant/charts-react` before compiling the harness.
+- The build job failed in `bun run bench` on shared GitHub runners for
+  `007_streaming_append`, `016_data_source_live_append_query_4pens`, and
+  `019_cursor_propagation_4panels_latency`. The strict local benchmark remains
+  the release-candidate performance gate. CI now sets
+  `PITANT_BENCH_PROFILE=ci`, which only relaxes those noisy shared-runner
+  latency gates and refuses baseline updates outside strict mode.
+
+Local verification after the CI-fix patch:
+
+```sh
+bun run lint
+bun run typecheck
+bun run bench
+PITANT_BENCH_PROFILE=ci bun run bench
+bun run harness:build
+```
+
+All five commands passed on 2026-05-19.
+
+`gh workflow list` reports the remote `CI` workflow. The publish workflow exists
+on this PR branch but cannot be manually dispatched from the repository
+workflow list until it is present on the default branch.
 
 ## Remaining External Evidence
 
-- Commit and push the Phase 5 release candidate.
+- Push the CI-fix commit.
 - Confirm the GitHub CI matrix passes, including Firefox, WebKit/Safari
   runtime, and Microsoft Edge.
-- Dispatch `.github/workflows/publish.yml` with `dry_run=true`.
+- Dispatch `.github/workflows/publish.yml` with `dry_run=true` after the
+  workflow exists on the default branch.
 - Attach the GitHub Actions run URL before claiming external Phase 5 closure.

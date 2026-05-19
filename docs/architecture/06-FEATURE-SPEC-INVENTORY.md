@@ -59,6 +59,12 @@ Targets are allowed to vary by browser and hardware class, but failures must be
 visible in the benchmark report. A feature cannot become `production` without
 passing the workload rows that apply to it.
 
+Benchmark target policy is two-tiered. `bun run bench` is the strict local and
+release-candidate gate; those targets are the performance contract. GitHub CI
+may run `PITANT_BENCH_PROFILE=ci` for cold shared runners, but that profile is
+only a regression tripwire for runner noise and cannot be used to claim a
+performance milestone or update the benchmark baseline.
+
 ## Performance Maturity Labels
 
 - `perf_unknown`: no benchmark exists.
@@ -85,7 +91,7 @@ Pitant use until it is at least `perf_browser`.
 | Synchronize | 65% | 25% | 10% | `ChartSyncGroup`, TimeSeries, DigitalChannel sync tests, cursor propagation benchmark |
 | Theme | 70% | 25% | 5% | token resolver and CSS |
 | Export | 75% | 15% | 10% | explicit PNG export options and true SVG export from command frames |
-| Benchmark | 88% | 4% | 8% | benchmark app, interaction range stress gate, cursor propagation gate, browser FPS mode, browser screenshot verifier, visual baseline, local Playwright Chromium/Firefox/WebKit smoke matrix |
+| Benchmark | 90% | 3% | 7% | strict benchmark app gate, explicit CI benchmark profile, interaction range stress gate, cursor propagation gate, browser FPS mode, browser screenshot verifier, visual baseline, local Playwright Chromium/Firefox/WebKit smoke matrix |
 | Package | 90% | 0% | 10% | v1 package metadata, README files, package changelogs, MIT licenses, npm publish dry-run, expanded shadcn registry, registry validator, registry typecheck, shadcn smoke, live docs app, quick start |
 | Govern | 20% | 70% | 10% | architecture docs |
 | Performance Contract | 47% | 48% | 5% | LOD, interaction range, cursor propagation, browser FPS benchmarks, and live-append interaction regression |
@@ -794,6 +800,9 @@ uses `pitant-charts` to show side-by-side visual equivalence and drift.
 - `019_cursor_propagation_4panels` benchmark for source-suppressed cursor propagation, nearest timestamp lookup, per-pen value reads, and quality reads across synchronized panels. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Export duration benchmark. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
 - Bundle-size benchmark. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Strict local benchmark profile that owns release-candidate performance claims and baseline updates. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- CI hosted-runner benchmark profile that allows bounded scheduler variance while refusing baseline updates. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Fresh-checkout harness build gate that rebuilds package declarations before compiling the browser harness. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 
 ## Package Inventory
 

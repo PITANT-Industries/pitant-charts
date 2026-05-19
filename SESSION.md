@@ -2,10 +2,10 @@
 
 **Date:** 2026-05-19
 **Current phase:** Phase 5 - Registry, Documentation, Export, Launch
-**Latest action:** Attached Phase 5 local release-candidate evidence. npm
-publish dry-run now passes cleanly for both v1.0.0 packages, local Playwright
-cross-browser smoke passes for Chromium, Firefox, and WebKit, and Phase 5 has a
-dedicated release-candidate evidence artifact.
+**Latest action:** Fixed the first PR CI failures found after opening the Phase
+5 release-candidate PR. `harness:build` now rebuilds package declarations on a
+fresh checkout, and CI uses an explicit shared-runner benchmark profile while
+strict local benchmarks remain the release performance gate.
 
 ## What Exists
 
@@ -133,11 +133,12 @@ dedicated release-candidate evidence artifact.
 
 Continue Phase 5 implementation:
 
-1. Commit and push the Phase 5 release candidate so `publish.yml` exists on
-   the remote branch.
-2. Run GitHub CI and the publish workflow with `dry_run=true`; capture the run
-   URLs in `docs/architecture/phase-5/release-candidate-evidence.md`.
-3. Start Phase 6 only after the external GitHub evidence is attached or the
+1. Commit and push the CI-fix patch on the Phase 5 release-candidate PR.
+2. Re-run GitHub CI and capture the passing run URL in
+   `docs/architecture/phase-5/release-candidate-evidence.md`.
+3. Run the publish workflow with `dry_run=true` after the workflow is available
+   on the default branch.
+4. Start Phase 6 only after the external GitHub evidence is attached or the
    release owner accepts local release-candidate evidence as sufficient.
 
 Before adding a new visible feature, update or check
@@ -762,3 +763,13 @@ Run after Phase 5 local release-candidate evidence slice on 2026-05-19:
   pass with nonblank canvas checks for all three local engines.
 - `bun run release:check`: pass.
 - `git diff --check`: pass.
+
+Run after Phase 5 PR CI-fix slice on 2026-05-19:
+
+- `bun run lint`: pass, 128 files checked.
+- `bun run typecheck`: pass.
+- `bun run bench`: pass, 14/14 benchmark results under strict local targets.
+- `PITANT_BENCH_PROFILE=ci bun run bench`: pass, 14/14 benchmark results under
+  the explicit shared-runner profile.
+- `bun run harness:build`: pass; root script now rebuilds package `dist`
+  declarations before compiling `apps/render-harness`.
