@@ -21,7 +21,6 @@ and incident investigators.
 ```ts
 <TimeSeries
   ariaLabel="Compressor vibration anomaly review"
-  config={trendConfig}
   data={columnarData}
   config={{
     ...trendConfig,
@@ -45,7 +44,8 @@ and incident investigators.
 
 - Success: `trend-alarm-band-8x1m` and `trend-envelope-band-1m` render through
   `020_time_series_bands_8x1M` without dropping below the accepted Phase 6
-  benchmark budget; `anomaly-score-track-4x1m` remains contract-only.
+  benchmark budget, and through the render harness `bands` browser profile;
+  `anomaly-score-track-4x1m` remains contract-only.
 - Degraded: one overlay has stale limits, one anomaly score lacks confidence,
   and one annotation is pending review.
 - Denied: user can read trend values but lacks `model.review` or

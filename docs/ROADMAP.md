@@ -102,8 +102,8 @@ Completed or present in the imported tree:
 - `DataEngine`, worker protocol, local fast path, min-max `LodPyramid`, gap
   detection, append support, columnar input conversion, and `DataSource`.
 - Render harness app at `apps/render-harness` that exercises the public
-  `TimeSeries` and `DigitalChannel` React APIs against compact and large
-  typed-array datasets.
+  `TimeSeries` and `DigitalChannel` React APIs against compact, large, and
+  overlay-band typed-array datasets.
 - Browser verifier at `scripts/verify-render-harness.mjs` that launches the
   harness in local Chrome, forces Canvas2D, conditionally checks WebGPU when
   available, captures screenshots, and asserts nonblank chart pixels.
@@ -429,6 +429,8 @@ predictable navigation.*
   share the same path.
 - [x] Added `020_time_series_bands_8x1M` benchmark for eight high-density
   trend pens plus alarm/envelope bands.
+- [x] Added a browser render-harness `bands` profile so CI exercises
+  `TimeSeriesConfig.bands[]` through the mounted React chart path.
 
 ## Deliberately Not Building For v1
 

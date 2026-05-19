@@ -16,7 +16,7 @@ const VISUAL_BASELINE_PATH = resolve(HARNESS_DIR, 'visual-baselines.json')
 const VIEWPORT = { width: 1280, height: 900, deviceScaleFactor: 1 }
 const VISUAL_GRID = { columns: 24, rows: 12 }
 const DEFAULT_RENDERERS = ['canvas2d', 'webgpu']
-const DEFAULT_VERIFY_PROFILES = ['compact']
+const DEFAULT_VERIFY_PROFILES = ['compact', 'bands']
 const DEFAULT_VISUAL_PROFILES = ['compact', 'large']
 const DEFAULT_FPS_PROFILES = ['compact']
 const MIN_SIGNIFICANT_PIXELS = 90
@@ -190,6 +190,7 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
   await sleep(900)
 
   const state = await evaluate(tab, 'window.__PITANT_RENDER_HARNESS_STATE__')
+  const stateErrors = validateProfileState(state, profile)
   const rects = await evaluate(
     tab,
     `Array.from(document.querySelectorAll(".chart-surface")).map((element) => {
@@ -226,6 +227,7 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
       : null
   const fpsBenchmark = options.fps ? await runFpsBenchmark(tab, renderer, profile) : null
   const failed =
+    stateErrors.length > 0 ||
     pixelChecks.some((count) => count < MIN_SIGNIFICANT_PIXELS) ||
     visualComparison?.failed === true ||
     fpsBenchmark?.failed === true
@@ -234,12 +236,31 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
     renderer,
     profile,
     state,
+    stateErrors,
     pixelChecks,
     charts,
     visualComparison,
     fpsBenchmark,
     failed,
   }
+}
+
+function validateProfileState(state, profile) {
+  const errors = []
+  if (!state || typeof state !== 'object') {
+    return [`Missing harness state for ${profile}.`]
+  }
+
+  if (profile === 'bands' && state.analogBands !== 2) {
+    errors.push(
+      `Expected bands profile to render 2 analog bands, got ${state.analogBands ?? 'none'}.`,
+    )
+  }
+  if (profile !== 'bands' && state.analogBands !== 0) {
+    errors.push(`Expected ${profile} profile to render 0 analog bands, got ${state.analogBands}.`)
+  }
+
+  return errors
 }
 
 async function runFpsBenchmark(tab, renderer, profile) {
@@ -889,6 +910,9 @@ function printResults(results, options = {}) {
       for (const detail of result.visualComparison.details) {
         console.log(`      ${detail}`)
       }
+    }
+    for (const stateError of result.stateErrors ?? []) {
+      console.log(`      state: ${stateError}`)
     }
     if (result.fpsBenchmark) {
       if (result.fpsBenchmark.reason) {

@@ -11,7 +11,8 @@ release performance gate.
 ## What Exists
 
 - Bun monorepo with `@pitant/charts`, `@pitant/charts-react`, and benchmark app.
-- Render harness app with compact/large data profiles and renderer selection.
+- Render harness app with compact/large/bands data profiles and renderer
+  selection.
 - Core render contexts for WebGPU and Canvas2D.
 - Worker-backed data engine and LOD pyramid.
 - Benchmark suite includes 8-pen TimeSeries and 16-channel DigitalChannel
@@ -132,15 +133,16 @@ release performance gate.
 - Phase 6 TimeSeries value-band and envelope-band support exists in core and
   React config, with SVG export coverage and benchmark scenario
   `020_time_series_bands_8x1M`.
+- The render harness has a `bands` profile that mounts `TimeSeriesConfig.bands[]`
+  with a value band plus an envelope band and is covered by the browser verifier.
 
 ## Next Build Task
 
 Continue Phase 6 implementation:
 
-1. Add browser/render-harness coverage for TimeSeries value/envelope bands.
-2. Decide whether the next v1.1 slice is persistent annotations/rulers or
+1. Decide whether the next v1.1 slice is persistent annotations/rulers or
    derived-series overlays.
-3. Keep SPC, spectrum/spectrogram, correlation, KPI, and PDF packs at
+2. Keep SPC, spectrum/spectrogram, correlation, KPI, and PDF packs at
    contract-only until their benchmark fixtures exist.
 
 Before adding a new visible feature, update or check
@@ -817,3 +819,23 @@ Run after Phase 6 TimeSeries band slice on 2026-05-19:
   pass, 23 focused tests.
 - `bun run --filter @pitant/benchmark bench 020`: pass,
   `020_time_series_bands_8x1M` at 97.6 ms against a 250 ms target.
+
+Run after Phase 6 TimeSeries band harness slice on 2026-05-19:
+
+- `bun run typecheck`: pass.
+- `bun run lint`: pass, 128 files checked.
+- `bun run harness:build`: pass.
+- `bun run harness:verify -- --renderers=canvas2d --profiles=bands`: pass;
+  the CDP browser verifier reports the mounted `bands` profile with 90,000
+  samples.
+- `bun run harness:verify -- --renderers=canvas2d`: pass for compact and bands
+  profiles.
+- `bun run harness:verify`: pass for Canvas2D compact and bands; local WebGPU
+  skipped because `navigator.gpu` is unavailable in this browser environment.
+- `bun run harness:fps -- --renderers=canvas2d`: pass, Canvas2D compact
+  measured 121 fps average against the 55 fps target.
+- `bun run harness:cross-browser -- --browser=chromium --renderer=canvas2d --profile=bands`:
+  pass for the explicit bands browser smoke case.
+- `bun run test`: pass, 29 files / 325 tests.
+- `bun run bench`: pass, 15/15 benchmark scenarios; `020_time_series_bands_8x1M`
+  at 70.41 ms against a 250 ms target.

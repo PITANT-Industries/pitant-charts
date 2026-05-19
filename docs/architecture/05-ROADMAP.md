@@ -413,6 +413,8 @@ packs after v1 field feedback.
 - [x] SVG export includes TimeSeries band fills from command frames.
 - [x] `020_time_series_bands_8x1M` benchmark covers the first Phase 6 overlay
   path.
+- [x] Render harness `bands` profile exercises value/envelope bands through
+  the mounted React browser path.
 
 **Tests and Acceptance.** Pack-specific unit, visual, and performance tests.
 

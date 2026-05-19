@@ -16,6 +16,7 @@ const FPS_FRAME_COUNT = 90
 const DEFAULT_BROWSERS = ['chromium', 'firefox', 'webkit']
 const DEFAULT_RENDERERS = ['canvas2d']
 const DEFAULT_PROFILES = ['compact']
+const SUPPORTED_PROFILES = ['compact', 'large', 'bands']
 
 const args = parseArgs(process.argv.slice(2))
 const browsers = args.browsers ?? DEFAULT_BROWSERS
@@ -106,6 +107,7 @@ async function verifyCase({ baseUrl, browserName, fps, profile, renderer }) {
     await page.waitForTimeout(900)
 
     const state = await page.evaluate('window.__PITANT_RENDER_HARNESS_STATE__')
+    const stateErrors = validateProfileState(state, profile)
     const rects = await page.locator('.chart-surface').evaluateAll((elements) =>
       elements.map((element) => {
         const rect = element.getBoundingClientRect()
@@ -133,6 +135,7 @@ async function verifyCase({ baseUrl, browserName, fps, profile, renderer }) {
     const fpsBenchmark = fps ? await runFpsBenchmark(page, renderer, profile) : null
     const failed =
       pageErrors.length > 0 ||
+      stateErrors.length > 0 ||
       pixelChecks.some((count) => count < MIN_SIGNIFICANT_PIXELS) ||
       fpsBenchmark?.failed === true
 
@@ -141,6 +144,7 @@ async function verifyCase({ baseUrl, browserName, fps, profile, renderer }) {
       renderer,
       profile,
       state,
+      stateErrors,
       charts,
       consoleErrors,
       pageErrors,
@@ -158,6 +162,24 @@ async function verifyCase({ baseUrl, browserName, fps, profile, renderer }) {
   } finally {
     await browser.close()
   }
+}
+
+function validateProfileState(state, profile) {
+  const errors = []
+  if (!state || typeof state !== 'object') {
+    return [`Missing harness state for ${profile}.`]
+  }
+
+  if (profile === 'bands' && state.analogBands !== 2) {
+    errors.push(
+      `Expected bands profile to render 2 analog bands, got ${state.analogBands ?? 'none'}.`,
+    )
+  }
+  if (profile !== 'bands' && state.analogBands !== 0) {
+    errors.push(`Expected ${profile} profile to render 0 analog bands, got ${state.analogBands}.`)
+  }
+
+  return errors
 }
 
 function launchBrowser(browserName, renderer) {
@@ -277,6 +299,9 @@ function printResults(results) {
     }
     for (const consoleError of result.consoleErrors ?? []) {
       console.log(`  console.error: ${consoleError}`)
+    }
+    for (const stateError of result.stateErrors ?? []) {
+      console.log(`  state: ${stateError}`)
     }
   }
   console.log('────────────────────────────────────────────────────────────────────────')
@@ -543,7 +568,7 @@ function parseArgs(rawArgs) {
         'auto',
       ])
     } else if (arg.startsWith('--profile=')) {
-      parsed.profiles = parseListArg(arg.slice('--profile='.length), ['compact', 'large'])
+      parsed.profiles = parseListArg(arg.slice('--profile='.length), SUPPORTED_PROFILES)
     }
   }
   return parsed

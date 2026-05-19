@@ -12,7 +12,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 
 type RendererChoice = RendererType | 'auto'
-type LoadProfile = 'compact' | 'large'
+type LoadProfile = 'compact' | 'large' | 'bands'
 
 interface GeneratedData {
   analog: TimeSeriesColumnData
@@ -26,13 +26,14 @@ declare global {
       profile: LoadProfile
       pointCount: number
       analogSeries: number
+      analogBands: number
       digitalChannels: number
     }
   }
 }
 
 const RENDERERS: readonly RendererChoice[] = ['auto', 'canvas2d', 'webgpu']
-const PROFILES: readonly LoadProfile[] = ['compact', 'large']
+const PROFILES: readonly LoadProfile[] = ['compact', 'large', 'bands']
 
 const SERIES_CONFIG: TimeSeriesConfig['series'] = [
   {
@@ -96,6 +97,29 @@ const DIGITAL_CONFIG: DigitalChannelConfig['channels'] = [
   },
 ]
 
+const BAND_CONFIG: NonNullable<TimeSeriesConfig['bands']> = [
+  {
+    kind: 'value-band',
+    key: 'flow-warning',
+    label: 'Flow warning',
+    yStart: 385,
+    yEnd: 455,
+    fillRgba: [0.86, 0.15, 0.15, 0.13],
+    lineRgba: [0.86, 0.15, 0.15, 0.62],
+    lineWidth: 1,
+  },
+  {
+    kind: 'envelope',
+    key: 'flow-expected',
+    label: 'Expected flow envelope',
+    lowerField: 'flow_low',
+    upperField: 'flow_high',
+    fillRgba: [0.03, 0.58, 0.78, 0.16],
+    lineRgba: [0.03, 0.58, 0.78, 0.5],
+    lineWidth: 1,
+  },
+]
+
 export function App(): React.JSX.Element {
   const [renderer, setRenderer] = useState<RendererChoice>(() =>
     readChoiceFromQuery('renderer', RENDERERS, 'auto'),
@@ -103,10 +127,10 @@ export function App(): React.JSX.Element {
   const [profile, setProfile] = useState<LoadProfile>(() =>
     readChoiceFromQuery('profile', PROFILES, 'large'),
   )
-  const pointCount = profile === 'large' ? 180_000 : 12_000
-  const generated = useMemo(() => generateData(pointCount), [pointCount])
-  const timeSeriesConfig = useMemo<TimeSeriesConfig>(
-    () => ({
+  const pointCount = profile === 'large' ? 180_000 : profile === 'bands' ? 90_000 : 12_000
+  const generated = useMemo(() => generateData(pointCount, profile), [pointCount, profile])
+  const timeSeriesConfig = useMemo<TimeSeriesConfig>(() => {
+    const config: TimeSeriesConfig = {
       series: SERIES_CONFIG,
       renderer,
       xAxis: {
@@ -115,9 +139,10 @@ export function App(): React.JSX.Element {
       yAxis: {
         paddingRatio: 0.08,
       },
-    }),
-    [renderer],
-  )
+    }
+    if (profile === 'bands') config.bands = BAND_CONFIG
+    return config
+  }, [profile, renderer])
   const digitalConfig = useMemo<DigitalChannelConfig>(
     () => ({
       channels: DIGITAL_CONFIG,
@@ -137,6 +162,7 @@ export function App(): React.JSX.Element {
       profile,
       pointCount,
       analogSeries: SERIES_CONFIG.length,
+      analogBands: profile === 'bands' ? BAND_CONFIG.length : 0,
       digitalChannels: DIGITAL_CONFIG.length,
     }
   }, [pointCount, profile, renderer])
@@ -277,12 +303,14 @@ function StatsRow(props: {
   )
 }
 
-function generateData(pointCount: number): GeneratedData {
+function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
   const timestamps = new Float64Array(pointCount)
   const temperature = new Float64Array(pointCount)
   const pressure = new Float64Array(pointCount)
   const vibration = new Float64Array(pointCount)
   const flow = new Float64Array(pointCount)
+  const flowLow = profile === 'bands' ? new Float64Array(pointCount) : undefined
+  const flowHigh = profile === 'bands' ? new Float64Array(pointCount) : undefined
   const running = new Float64Array(pointCount)
   const fault = new Float64Array(pointCount)
   const manual = new Float64Array(pointCount)
@@ -294,21 +322,39 @@ function generateData(pointCount: number): GeneratedData {
     temperature[i] = 65 + Math.sin(i / 180) * 14 + Math.sin(i / 28) * 1.5
     pressure[i] = 110 + Math.cos(i / 240) * 24 + trend * 12
     vibration[i] = 3 + Math.abs(Math.sin(i / 37)) * 5 + (i % 6000 === 0 ? 8 : 0)
-    flow[i] = 420 + Math.sin(i / 320) * 55 + Math.cos(i / 71) * 12
+    const flowValue = 420 + Math.sin(i / 320) * 55 + Math.cos(i / 71) * 12
+    flow[i] = flowValue
+    if (flowLow && flowHigh) {
+      const envelopeWidth = 26 + Math.abs(Math.sin(i / 900)) * 10
+      flowLow[i] = flowValue - envelopeWidth
+      flowHigh[i] = flowValue + envelopeWidth
+    }
     running[i] = i % 18_000 < 15_500 ? 1 : 0
     fault[i] = i % 45_000 > 43_500 ? 1 : 0
     manual[i] = i % 60_000 > 48_000 ? 1 : 0
   }
 
+  const analogColumns: TimeSeriesColumnData['columns'] =
+    flowLow && flowHigh
+      ? {
+          temperature,
+          pressure,
+          vibration,
+          flow,
+          flow_low: flowLow,
+          flow_high: flowHigh,
+        }
+      : {
+          temperature,
+          pressure,
+          vibration,
+          flow,
+        }
+
   return {
     analog: {
       timestamps,
-      columns: {
-        temperature,
-        pressure,
-        vibration,
-        flow,
-      },
+      columns: analogColumns,
     },
     digital: {
       timestamps,

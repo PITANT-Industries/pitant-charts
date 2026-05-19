@@ -9,6 +9,8 @@ here. Versions follow SemVer once the packages are published.
 
 - TimeSeries value-band and envelope-band support in the core render plan,
   React config, command-frame SVG export, and benchmark suite.
+- Browser render-harness `bands` profile for mounted React TimeSeries
+  value/envelope band verification.
 
 ## 1.0.0 - 2026-05-19
 

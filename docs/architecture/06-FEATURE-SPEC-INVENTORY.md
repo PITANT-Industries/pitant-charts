@@ -91,14 +91,14 @@ Pitant use until it is at least `perf_browser`.
 | Synchronize | 65% | 25% | 10% | `ChartSyncGroup`, TimeSeries, DigitalChannel sync tests, cursor propagation benchmark |
 | Theme | 70% | 25% | 5% | token resolver and CSS |
 | Export | 75% | 15% | 10% | explicit PNG export options and true SVG export from command frames |
-| Benchmark | 91% | 2% | 7% | strict benchmark app gate, explicit CI benchmark profile, interaction range stress gate, cursor propagation gate, TimeSeries band benchmark, browser FPS mode, browser screenshot verifier, visual baseline, local Playwright Chromium/Firefox/WebKit smoke matrix |
+| Benchmark | 92% | 2% | 6% | strict benchmark app gate, explicit CI benchmark profile, interaction range stress gate, cursor propagation gate, TimeSeries band benchmark, browser FPS mode, browser screenshot verifier, TimeSeries bands harness profile, visual baseline, local Playwright Chromium/Firefox/WebKit smoke matrix |
 | Package | 90% | 0% | 10% | v1 package metadata, README files, package changelogs, MIT licenses, npm publish dry-run, expanded shadcn registry, registry validator, registry typecheck, shadcn smoke, live docs app, quick start |
 | Govern | 20% | 70% | 10% | architecture docs |
 | Performance Contract | 50% | 45% | 5% | LOD, interaction range, cursor propagation, TimeSeries band, browser FPS benchmarks, and live-append interaction regression |
 | GPU Hot Path | 35% | 55% | 10% | WebGPU context and shaders |
 | Worker Hot Path | 60% | 35% | 5% | `DataEngine`, `LodPyramid` |
 | Memory Budget | 30% | 60% | 10% | memory overhead and interaction heap-growth benchmarks |
-| Browser Matrix | 70% | 20% | 10% | Chrome CDP harness plus local Playwright Chromium, Firefox, and WebKit smoke; Edge configured in CI but not locally verified |
+| Browser Matrix | 72% | 18% | 10% | Chrome CDP harness plus local Playwright Chromium, Firefox, and WebKit smoke; TimeSeries bands profile covered in harness; Edge configured in CI but not locally verified |
 
 ## Performance Workload Model
 
@@ -205,8 +205,8 @@ validation states, and the performance budget owner has accepted the benchmark.
 - `evidence-gapped-window`: static signed-style window with gaps, corrections, and quality flags. [Both] {Proof=signed; Workflow=inspect; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
 - `fallback-canvas-200k`: Canvas2D fallback stress fixture. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - `small-dashboard-16charts`: many small charts testing DOM overlay and sync overhead. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
-- `trend-alarm-band-8x1m`: eight high-density trend pens with warning/trip/permit bands, band labels, and visibility toggles, covered by `020_time_series_bands_8x1M`. [Both] {Proof=signed; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
-- `trend-envelope-band-1m`: one million point signal with model, recipe, tolerance, and golden-run envelope variants, covered by `020_time_series_bands_8x1M`. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=assisted; Privacy=telemetry-only; Liability=engineering-review}
+- `trend-alarm-band-8x1m`: eight high-density trend pens with warning/trip/permit bands, band labels, and visibility toggles, covered by `020_time_series_bands_8x1M` and the browser harness `bands` profile. [Both] {Proof=signed; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=operational}
+- `trend-envelope-band-1m`: one million point signal with model, recipe, tolerance, and golden-run envelope variants, covered by `020_time_series_bands_8x1M` and the browser harness `bands` profile. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=assisted; Privacy=telemetry-only; Liability=engineering-review}
 - `anomaly-score-track-4x1m`: four synchronized trends plus model-versioned anomaly score lanes and reviewer states. [Both] {Proof=signed; Workflow=approve; Sovereignty=tenant-bound; Autonomy=assisted; Privacy=confidential; Liability=engineering-review}
 - `trend-event-marker-10k`: sparse and bursty alarm, batch, comment, hold, correction, and investigation markers on one time axis. [Both] {Proof=signed; Workflow=inspect; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=operational}
 - `annotation-ruler-review`: persistent rulers, region notes, reviewer initials, custody labels, and hidden/visible annotation states. [Frontend] {Proof=signed; Workflow=approve; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=engineering-review}
@@ -838,6 +838,7 @@ uses `pitant-charts` to show side-by-side visual equivalence and drift.
 - `harness:fps` browser interaction frame-loop benchmark for Canvas2D and WebGPU-capable environments. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Browser FPS report fields: average FPS, minimum FPS, p95 frame time, maximum frame time, dropped frame count, sample count, and target FPS. [Backend/Compute] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Browser visual regression baseline for compact and large chart profiles. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
+- Browser render-harness `bands` profile for mounted React TimeSeries value-band and envelope-band rendering. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - `harness:cross-browser` smoke verification for Chromium, Firefox, WebKit, and Microsoft Edge compact Canvas2D render output. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Visual baseline update command with explicit reviewer intent. [Backend/Compute] {Proof=checksum; Workflow=approve; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
 - Interaction latency benchmark. [Both] {Proof=checksum; Workflow=inspect; Sovereignty=local-only; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review}
