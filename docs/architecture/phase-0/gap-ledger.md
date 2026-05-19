@@ -4,7 +4,7 @@
 |---|---|---|---|
 | No concrete TimeSeries chart | Render / Compose | High | Phase 3 |
 | No DigitalChannel chart | Render / Compose | High | Phase 3 |
-| `useChart().setData()` does not ingest into `DataEngine` | Ingest / Transform | High | Phase 3 |
+| Generic `useChart().setData()` / `append()` ambiguity | Ingest / Transform | Closed | Concrete hooks own ingestion; generic hook fails unsupported data controls explicitly |
 | No chart layout engine | Layout | High | Phase 3 |
 | No zoom/pan/crosshair/DataZoom | Interact | High | Phase 4 |
 | No browser render screenshots or FPS checks | Benchmark | High | Phase 1/3 |

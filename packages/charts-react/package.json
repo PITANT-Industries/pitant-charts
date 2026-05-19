@@ -1,14 +1,22 @@
 {
   "name": "@pitant/charts-react",
-  "version": "0.0.1",
-  "description": "React 19 bindings for @pitant/charts",
+  "version": "1.0.0",
+  "description": "React 19 components for high-density PITANT industrial charts",
   "type": "module",
   "license": "MIT",
   "author": "Ali",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pitant/charts",
+    "url": "git+https://github.com/PITANT-Industries/pitant-charts.git",
     "directory": "packages/charts-react"
+  },
+  "homepage": "https://charts.pitant.dev",
+  "bugs": {
+    "url": "https://github.com/PITANT-Industries/pitant-charts/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "sideEffects": false,
   "exports": {
@@ -22,6 +30,7 @@
   "files": [
     "dist",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
@@ -32,12 +41,12 @@
     "test:watch": "vitest"
   },
   "peerDependencies": {
-    "@pitant/charts": "workspace:*",
+    "@pitant/charts": "^1.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@pitant/charts": "workspace:*",
+    "@pitant/charts": "1.0.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.1.0",
@@ -47,10 +56,19 @@
   },
   "keywords": [
     "charts",
+    "canvas",
+    "canvas2d",
+    "historian",
+    "industrial",
+    "line-chart",
+    "performance",
+    "plant-physics",
     "react",
-    "webgpu",
+    "scichart-alternative",
+    "scientific",
     "timeseries",
-    "scientific"
+    "visualization",
+    "webgpu"
   ],
   "engines": {
     "node": ">=22"

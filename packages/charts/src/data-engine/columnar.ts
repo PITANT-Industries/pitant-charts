@@ -16,6 +16,8 @@ export interface ColumnarData {
   timestamps: Float64Array
   /** Named value columns keyed by field name. */
   columns: Record<string, Float64Array>
+  /** Optional OPC/industrial quality flags keyed by field name. 0 = good by convention. */
+  quality?: Record<string, Uint8Array>
   /** Time unit. Default: 'ms'. */
   timeUnit?: 'ms' | 'us' | 'ns'
 }
@@ -65,6 +67,8 @@ export interface ViewportResult {
   timestamps: Float64Array
   /** Decimated values per column (matches query columns). */
   columns: Record<string, Float64Array>
+  /** Decimated quality flags per column (matches returned timestamps when available). */
+  quality?: Record<string, Uint8Array>
   /** LOD level used (0 = raw, higher = more decimated). */
   lodLevel: number
   /** Total point count in this range at LOD 0 (raw). */
@@ -78,7 +82,13 @@ export interface ViewportResult {
 // ── Validation ───────────────────────────────────────────────
 
 export interface ValidationIssue {
-  type: 'not-ascending' | 'duplicate-timestamp' | 'nan-value' | 'nan-timestamp' | 'length-mismatch'
+  type:
+    | 'not-ascending'
+    | 'duplicate-timestamp'
+    | 'nan-value'
+    | 'nan-timestamp'
+    | 'length-mismatch'
+    | 'quality-length-mismatch'
   /** Human-readable description. */
   message: string
   /** Index in the data where the issue was detected. */
@@ -146,6 +156,17 @@ export function validateColumnar(data: ColumnarData): ValidationIssue[] {
           column: name,
         })
       }
+    }
+  }
+
+  // Check quality lengths.
+  for (const [name, quality] of Object.entries(data.quality ?? {})) {
+    if (quality.length !== n) {
+      issues.push({
+        type: 'quality-length-mismatch',
+        message: `Quality column "${name}" length (${quality.length}) does not match timestamps length (${n})`,
+        column: name,
+      })
     }
   }
 

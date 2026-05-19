@@ -70,7 +70,7 @@ export class WebGPURenderContext implements RenderContext {
     this._context = context
     this._format = format
     this._pipelineManager = new GPUPipelineManager(device, format)
-    this._dpr = globalThis.devicePixelRatio ?? 1
+    this._dpr = devicePixelRatio()
     this._width = canvas.width / this._dpr
     this._height = canvas.height / this._dpr
 
@@ -99,9 +99,8 @@ export class WebGPURenderContext implements RenderContext {
     const format = navigator.gpu.getPreferredCanvasFormat()
     context.configure({ device, format, alphaMode: 'premultiplied' })
 
-    const dpr = globalThis.devicePixelRatio ?? 1
-    canvas.width = canvas.clientWidth * dpr
-    canvas.height = canvas.clientHeight * dpr
+    const dpr = devicePixelRatio()
+    resizeCanvasBackingStore(canvas, canvas.clientWidth, canvas.clientHeight, dpr)
 
     return new WebGPURenderContext(canvas, device, context, format)
   }
@@ -131,12 +130,11 @@ export class WebGPURenderContext implements RenderContext {
     this._onDeviceLost = cb
   }
 
-  resize(width: number, height: number): void {
+  resize(width: number, height: number, dpr = devicePixelRatio()): void {
     this._width = width
     this._height = height
-    this._dpr = globalThis.devicePixelRatio ?? 1
-    this.canvas.width = width * this._dpr
-    this.canvas.height = height * this._dpr
+    this._dpr = normalizeDpr(dpr)
+    resizeCanvasBackingStore(this.canvas, width, height, this._dpr)
 
     this._context.configure({
       device: this._device,
@@ -384,11 +382,13 @@ export class WebGPURenderContext implements RenderContext {
 
   private _flushTextOverlay(): void {
     const ctx = this._textOverlayCtx
-    if (!ctx || this._pendingTexts.length === 0) return
+    if (!ctx) return
 
     const overlay = this._textOverlayCanvas
     if (!overlay) return
     ctx.clearRect(0, 0, overlay.width, overlay.height)
+    if (this._pendingTexts.length === 0) return
+
     ctx.save()
     ctx.scale(this._dpr, this._dpr)
 
@@ -404,4 +404,28 @@ export class WebGPURenderContext implements RenderContext {
     ctx.restore()
     this._pendingTexts.length = 0
   }
+}
+
+function resizeCanvasBackingStore(
+  canvas: HTMLCanvasElement,
+  width: number,
+  height: number,
+  dpr: number,
+): void {
+  const pixelWidth = Math.max(1, Math.round(width * dpr))
+  const pixelHeight = Math.max(1, Math.round(height * dpr))
+  if (canvas.width !== pixelWidth) {
+    canvas.width = pixelWidth
+  }
+  if (canvas.height !== pixelHeight) {
+    canvas.height = pixelHeight
+  }
+}
+
+function devicePixelRatio(): number {
+  return normalizeDpr(globalThis.devicePixelRatio ?? 1)
+}
+
+function normalizeDpr(dpr: number): number {
+  return Number.isFinite(dpr) && dpr > 0 ? dpr : 1
 }

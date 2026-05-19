@@ -1,4 +1,4 @@
-import { cleanup, render } from '@testing-library/react'
+import { act, cleanup, render, waitFor } from '@testing-library/react'
 import { createRef } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ChartContainerRef } from '../chart-container.js'
@@ -6,14 +6,29 @@ import { ChartContainer } from '../chart-container.js'
 
 afterEach(() => {
   cleanup()
+  MockResizeObserver.instances.length = 0
+  Object.defineProperty(window, 'devicePixelRatio', { configurable: true, value: 1 })
 })
 
 // ── ResizeObserver mock ──────────────────────────────────────
 
 class MockResizeObserver {
+  static instances: MockResizeObserver[] = []
+
+  private readonly callback: ResizeObserverCallback
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback
+    MockResizeObserver.instances.push(this)
+  }
+
   observe() {}
   unobserve() {}
   disconnect() {}
+
+  trigger() {
+    this.callback([], this as unknown as ResizeObserver)
+  }
 }
 
 vi.stubGlobal('ResizeObserver', MockResizeObserver)
@@ -105,6 +120,39 @@ describe('ChartContainer', () => {
     const ref = createRef<ChartContainerRef>()
     render(<ChartContainer ref={ref} />)
     expect(() => ref.current!.invalidate()).not.toThrow()
+  })
+
+  it('sizes the backing store with DPR and reports DPR on resize', async () => {
+    Object.defineProperty(window, 'devicePixelRatio', { configurable: true, value: 2 })
+    const ref = createRef<ChartContainerRef>()
+    const onResize = vi.fn()
+    const { container } = render(<ChartContainer ref={ref} onResize={onResize} />)
+    const wrapper = container.firstElementChild as HTMLElement
+    const canvas = wrapper.querySelector('canvas') as HTMLCanvasElement
+
+    wrapper.getBoundingClientRect = () =>
+      ({
+        width: 320,
+        height: 180,
+        top: 0,
+        right: 320,
+        bottom: 180,
+        left: 0,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+
+    await act(async () => {
+      MockResizeObserver.instances[0]?.trigger()
+    })
+
+    await waitFor(() => {
+      expect(ref.current!.dimensions).toEqual({ width: 320, height: 180, dpr: 2 })
+      expect(canvas.width).toBe(640)
+      expect(canvas.height).toBe(360)
+      expect(onResize).toHaveBeenCalledWith(320, 180, 2)
+    })
   })
 })
 

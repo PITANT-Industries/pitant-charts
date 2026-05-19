@@ -38,5 +38,82 @@ jobs:
       - name: Test
         run: bun run test:coverage
 
+      - name: Bench
+        run: bun run bench
+
+      - name: Registry validate
+        run: bun run registry:validate
+
+      - name: Registry typecheck
+        run: bun run registry:typecheck
+
+      - name: Docs build
+        run: bun run docs:build
+
       - name: Check bundle size
         run: bunx size-limit
+
+      - name: Package dry run
+        run: npm pack --dry-run ./packages/charts && npm pack --dry-run ./packages/charts-react
+
+  browser-smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        renderer: [canvas2d, webgpu]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build harness
+        run: bun run harness:build
+
+      - name: Browser pixel smoke
+        run: bun run harness:verify -- --renderers=${{ matrix.renderer }}
+
+      - name: Browser FPS smoke
+        run: bun run harness:fps -- --renderers=${{ matrix.renderer }}
+
+  cross-browser-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            browser: chromium
+            install-browser: chromium
+          - os: ubuntu-latest
+            browser: firefox
+            install-browser: firefox
+          - os: ubuntu-latest
+            browser: webkit
+            install-browser: webkit
+          - os: windows-latest
+            browser: edge
+            install-browser: ""
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright browser
+        if: matrix.install-browser != ''
+        run: bunx playwright install --with-deps ${{ matrix.install-browser }}
+
+      - name: Build harness
+        run: bun run harness:build
+
+      - name: Cross-browser render smoke
+        run: bun run harness:cross-browser -- --browser=${{ matrix.browser }} --renderer=canvas2d --profile=compact

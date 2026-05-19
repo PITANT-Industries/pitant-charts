@@ -65,7 +65,7 @@ function saveBaseline(results: BenchmarkResult[]): void {
 
 // ── Runner ───────────────────────────────────────────────────
 
-function run(): BenchmarkResult[] {
+async function run(): Promise<BenchmarkResult[]> {
   const scenarioKeys = singleScenario
     ? Object.keys(scenarios).filter((k) => k.includes(singleScenario))
     : Object.keys(scenarios).sort()
@@ -87,7 +87,7 @@ function run(): BenchmarkResult[] {
 
     process.stdout.write(`  ${c.cyan}▸${c.reset} ${key} ... `)
     const startMem = process.memoryUsage().heapUsed
-    const result = fn()
+    const result = await fn()
     const entries = Array.isArray(result) ? result : [result]
     const heapDelta = process.memoryUsage().heapUsed - startMem
 
@@ -98,10 +98,17 @@ function run(): BenchmarkResult[] {
       const baseEntry = baseline[entry.scenario]
       let delta = ''
       if (baseEntry) {
-        const pctChange = ((entry.value - baseEntry.value) / baseEntry.value) * 100
-        const sign = pctChange > 0 ? '+' : ''
-        const color = Math.abs(pctChange) > 10 ? c.yellow : c.dim
-        delta = `  ${color}(${sign}${pctChange.toFixed(1)}% vs baseline)${c.reset}`
+        if (Math.abs(baseEntry.value) <= Number.EPSILON) {
+          delta =
+            Math.abs(entry.value) <= Number.EPSILON
+              ? `  ${c.dim}(no change vs baseline)${c.reset}`
+              : `  ${c.yellow}(baseline was 0)${c.reset}`
+        } else {
+          const pctChange = ((entry.value - baseEntry.value) / baseEntry.value) * 100
+          const sign = pctChange > 0 ? '+' : ''
+          const color = Math.abs(pctChange) > 10 ? c.yellow : c.dim
+          delta = `  ${color}(${sign}${pctChange.toFixed(1)}% vs baseline)${c.reset}`
+        }
       }
 
       console.log(
@@ -118,7 +125,7 @@ function run(): BenchmarkResult[] {
 
 // ── Main ─────────────────────────────────────────────────────
 
-const results = run()
+const results = await run()
 
 const passed = results.filter((r) => r.passed).length
 const failed = results.filter((r) => !r.passed).length

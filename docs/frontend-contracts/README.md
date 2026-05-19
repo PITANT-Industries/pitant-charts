@@ -20,12 +20,12 @@ Each pack must include:
 
 | Workflow | File | Status |
 |---|---|---|
-| Historian trend | `historian-trend.md` | pending |
-| Digital channel | `digital-channel.md` | pending |
+| Historian trend | `historian-trend.md` | initial pack |
+| Digital channel | `digital-channel.md` | initial pack |
 | Anomaly review | `anomaly-review.md` | pending |
 | SPC review | `spc-review.md` | pending |
 | Batch profile | `batch-profile.md` | pending |
-| Synchronized dashboard | `synchronized-dashboard.md` | pending |
+| Synchronized dashboard | `synchronized-dashboard.md` | initial pack |
 | Export and evidence | `export-evidence.md` | pending |
 | Migration comparison | `migration-comparison.md` | pending |
 | Benchmark lab | `benchmark-lab.md` | pending |

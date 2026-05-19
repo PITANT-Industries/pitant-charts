@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "noEmit": true,
+    "paths": {
+      "@pitant/charts": ["packages/charts/src/index.ts"],
+      "@pitant/charts-react": ["packages/charts-react/src/index.ts"]
+    },
+    "typeRoots": ["../packages/charts-react/node_modules/@types", "../node_modules"]
+  },
+  "include": ["pitant/**/*.tsx"]
+}

@@ -17,10 +17,13 @@ export {
 
 export type { ChartCanvasProps } from './chart-canvas.js'
 export { ChartCanvas } from './chart-canvas.js'
-
 // Container
 export type { ChartContainerProps, ChartContainerRef } from './chart-container.js'
 export { ChartContainer } from './chart-container.js'
+export type { ChartDataZoomProps } from './chart-data-zoom.js'
+export { ChartDataZoom } from './chart-data-zoom.js'
+export type { ChartRegionZoomLayerProps } from './chart-interactions.js'
+export { ChartRegionZoomLayer } from './chart-interactions.js'
 // Legend
 export type { ChartLegendItem, ChartLegendProps } from './chart-legend.js'
 export { ChartLegend } from './chart-legend.js'
@@ -35,9 +38,38 @@ export { ChartSyncGroup, useChartSync } from './chart-sync-group.js'
 export type {
   ChartTooltipPayload,
   ChartTooltipProps,
+  ChartTooltipProvenance,
   ChartTooltipSeries,
 } from './chart-tooltip.js'
 export { ChartTooltip } from './chart-tooltip.js'
+export type {
+  ColumnarTooltipProvenanceColumn,
+  ColumnarTooltipProvenanceField,
+  ColumnarTooltipProvenanceMap,
+  ColumnarTooltipProvenanceValue,
+} from './chart-tooltip-data.js'
+// Digital channel
+export type {
+  DigitalChannelColumnData,
+  DigitalChannelConfig,
+  DigitalChannelConfigSeries,
+  DigitalChannelProps,
+  DigitalChannelStats,
+  UseDigitalChannelOptions,
+  UseDigitalChannelReturn,
+} from './digital-channel.js'
+export { DigitalChannel, useDigitalChannel } from './digital-channel.js'
+// Time series
+export type {
+  TimeSeriesColumnData,
+  TimeSeriesConfig,
+  TimeSeriesProps,
+  TimeSeriesSeriesConfig,
+  TimeSeriesStats,
+  UseTimeSeriesOptions,
+  UseTimeSeriesReturn,
+} from './time-series.js'
+export { TimeSeries, useTimeSeries } from './time-series.js'
 // Chart hook
 export type {
   AxisConfig,

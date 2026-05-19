@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "updatedAt": "2026-05-18T23:40:58.924Z",
+  "viewport": {
+    "width": 1280,
+    "height": 900,
+    "deviceScaleFactor": 1
+  },
+  "grid": {
+    "columns": 24,
+    "rows": 12
+  },
+  "cases": {
+    "canvas2d:compact": {
+      "renderer": "canvas2d",
+      "profile": "compact",
+      "pointCount": 12000,
+      "charts": {
+        "analog": {
+          "significantPixels": 234576,
+          "averageR": 158,
+          "averageG": 166,
+          "averageB": 176,
+          "averageA": 255,
+          "fingerprintHash": "dfa6deb63626dc5b7a856ee3",
+          "fingerprint": "lZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2omaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGr////////////////////////////////////////////////////////////////////////////////////////////////"
+        },
+        "digital": {
+          "significantPixels": 106428,
+          "averageR": 166,
+          "averageG": 173,
+          "averageB": 182,
+          "averageA": 255,
+          "fingerprintHash": "72391a4350cefe4522d7958a",
+          "fingerprint": "lZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2o8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz////////////////////////////////////////////////////////////////////////////////////////////////"
+        }
+      }
+    },
+    "canvas2d:large": {
+      "renderer": "canvas2d",
+      "profile": "large",
+      "pointCount": 180000,
+      "charts": {
+        "analog": {
+          "significantPixels": 234576,
+          "averageR": 158,
+          "averageG": 166,
+          "averageB": 176,
+          "averageA": 255,
+          "fingerprintHash": "dfa6deb63626dc5b7a856ee3",
+          "fingerprint": "lZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2omaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGrmaGr////////////////////////////////////////////////////////////////////////////////////////////////"
+        },
+        "digital": {
+          "significantPixels": 106428,
+          "averageR": 166,
+          "averageG": 173,
+          "averageB": 182,
+          "averageA": 255,
+          "fingerprintHash": "72391a4350cefe4522d7958a",
+          "fingerprint": "lZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2olZ2o8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz8fLz////////////////////////////////////////////////////////////////////////////////////////////////"
+        }
+      }
+    }
+  }
+}

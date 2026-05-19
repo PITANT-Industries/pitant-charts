@@ -251,6 +251,16 @@ describe('validateColumnar', () => {
     expect(issues.some((i) => i.type === 'length-mismatch')).toBe(true)
   })
 
+  it('detects quality length mismatch', () => {
+    const data: ColumnarData = {
+      timestamps: new Float64Array([1, 2, 3]),
+      columns: { a: new Float64Array([10, 20, 30]) },
+      quality: { a: new Uint8Array([0, 1]) },
+    }
+    const issues = validateColumnar(data)
+    expect(issues.some((i) => i.type === 'quality-length-mismatch')).toBe(true)
+  })
+
   it('reports multiple issues at once', () => {
     const data: ColumnarData = {
       timestamps: new Float64Array([2, 1, Number.NaN]),

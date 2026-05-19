@@ -28,11 +28,10 @@ export class Canvas2DRenderContext implements RenderContext {
       throw new Error('@pitant/charts: Failed to get Canvas2D context')
     }
     this._ctx = ctx
-    this._dpr = globalThis.devicePixelRatio ?? 1
-    canvas.width = canvas.clientWidth * this._dpr
-    canvas.height = canvas.clientHeight * this._dpr
+    this._dpr = devicePixelRatio()
     this._width = canvas.clientWidth
     this._height = canvas.clientHeight
+    this._resizeBackingStore(this._width, this._height, this._dpr)
   }
 
   get width(): number {
@@ -45,19 +44,18 @@ export class Canvas2DRenderContext implements RenderContext {
     return this._dpr
   }
 
-  resize(width: number, height: number): void {
+  resize(width: number, height: number, dpr = devicePixelRatio()): void {
     this._width = width
     this._height = height
-    this._dpr = globalThis.devicePixelRatio ?? 1
-    this.canvas.width = width * this._dpr
-    this.canvas.height = height * this._dpr
-    this._ctx.scale(this._dpr, this._dpr)
+    this._dpr = normalizeDpr(dpr)
+    this._resizeBackingStore(width, height, this._dpr)
   }
 
   beginFrame(): void {
+    this._ctx.setTransform(1, 0, 0, 1, 0, 0)
     this._ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
     this._ctx.save()
-    this._ctx.scale(this._dpr, this._dpr)
+    this._ctx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0)
 
     // Apply data→pixel transform if set
     if (this._transform) {
@@ -138,11 +136,14 @@ export class Canvas2DRenderContext implements RenderContext {
   drawText(text: string, x: number, y: number, options: TextOptions): void {
     const ctx = this._ctx
     const [r, g, b, a] = options.color
+    ctx.save()
+    ctx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0)
     ctx.fillStyle = `rgba(${r * 255},${g * 255},${b * 255},${a})`
     ctx.font = `${options.fontSize ?? 12}px ${options.font ?? 'sans-serif'}`
     ctx.textAlign = options.align ?? 'left'
     ctx.textBaseline = options.baseline ?? 'top'
     ctx.fillText(text, x, y)
+    ctx.restore()
   }
 
   setTransform(transform: ViewTransform): void {
@@ -161,4 +162,23 @@ export class Canvas2DRenderContext implements RenderContext {
   dispose(): void {
     // Canvas2D doesn't need explicit GPU cleanup
   }
+
+  private _resizeBackingStore(width: number, height: number, dpr: number): void {
+    const pixelWidth = Math.max(1, Math.round(width * dpr))
+    const pixelHeight = Math.max(1, Math.round(height * dpr))
+    if (this.canvas.width !== pixelWidth) {
+      this.canvas.width = pixelWidth
+    }
+    if (this.canvas.height !== pixelHeight) {
+      this.canvas.height = pixelHeight
+    }
+  }
+}
+
+function devicePixelRatio(): number {
+  return normalizeDpr(globalThis.devicePixelRatio ?? 1)
+}
+
+function normalizeDpr(dpr: number): number {
+  return Number.isFinite(dpr) && dpr > 0 ? dpr : 1
 }

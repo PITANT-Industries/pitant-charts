@@ -2,9 +2,25 @@
  * Benchmark scenarios for @pitant/charts.
  *
  * Scenarios 1-4, 8-9 require a browser (WebGPU/Canvas2D).
- * Scenarios 5-7, 10 are pure-compute (data engine).
+ * Scenarios 5-7 and 10-19 are pure-compute/package-level gates.
  * Bundle-size scenario runs via size-limit.
  */
+import {
+  addDigitalChannelToCommandList,
+  addTimeSeriesToCommandList,
+  buildDigitalChannelRenderPlan,
+  buildTimeSeriesRenderPlan,
+  clampRangeToBounds,
+  DataSource,
+  type DigitalChannelSeries,
+  findNearestTimestampIndex,
+  panRangeByPixels,
+  panRangeByValue,
+  RenderCommandList,
+  type TimeSeriesSeries,
+  zoomRangeAroundAnchor,
+  zoomRangeAroundCenter,
+} from '@pitant/charts'
 import { LodPyramid } from '@pitant/charts/data-engine'
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -20,6 +36,106 @@ function generateData(n: number): { timestamps: BigInt64Array; values: Float64Ar
   return { timestamps, values }
 }
 
+function generateFloatTimestamps(n: number, offset = 0): Float64Array {
+  const timestamps = new Float64Array(n)
+  const baseTime = 1_700_000_000_000
+  for (let i = 0; i < n; i++) {
+    timestamps[i] = baseTime + (offset + i) * 1000
+  }
+  return timestamps
+}
+
+function generateMultiPenData(
+  pointCount: number,
+  penCount: number,
+  timestampOffset = 0,
+): {
+  timestamps: Float64Array
+  columns: Record<string, Float64Array>
+  series: TimeSeriesSeries[]
+} {
+  const timestamps = generateFloatTimestamps(pointCount, timestampOffset)
+  const columns: Record<string, Float64Array> = {}
+  const series: TimeSeriesSeries[] = []
+
+  for (let pen = 0; pen < penCount; pen++) {
+    const field = `pen_${pen}`
+    const values = new Float64Array(pointCount)
+    const fastPeriod = 23 + pen * 3
+    const slowPeriod = 700 + pen * 29
+    const offset = pen * 12
+
+    for (let i = 0; i < pointCount; i++) {
+      values[i] = offset + Math.sin(i / fastPeriod) * 8 + Math.cos(i / slowPeriod) * 34
+    }
+
+    columns[field] = values
+    series.push({
+      key: field,
+      label: `Pen ${pen + 1}`,
+      field,
+      lineWidth: 1,
+    })
+  }
+
+  return { timestamps, columns, series }
+}
+
+function generateDigitalChannelData(
+  pointCount: number,
+  channelCount: number,
+  timestampOffset = 0,
+): {
+  timestamps: Float64Array
+  columns: Record<string, Float64Array>
+  channels: DigitalChannelSeries[]
+} {
+  const timestamps = generateFloatTimestamps(pointCount, timestampOffset)
+  const columns: Record<string, Float64Array> = {}
+  const channels: DigitalChannelSeries[] = []
+
+  for (let channel = 0; channel < channelCount; channel++) {
+    const field = `channel_${channel}`
+    const values = new Float64Array(pointCount)
+    const highWindow = 80 + channel * 11
+    const cycle = highWindow + 60 + channel * 7
+
+    for (let i = 0; i < pointCount; i++) {
+      values[i] = (i + channel * 17) % cycle < highWindow ? 1 : 0
+    }
+
+    columns[field] = values
+    channels.push({
+      key: field,
+      label: `Channel ${channel + 1}`,
+      field,
+      lineWidth: 1,
+      stateLabels: { 0: 'Low', 1: 'High' },
+    })
+  }
+
+  return { timestamps, columns, channels }
+}
+
+function addQualityFlags<T extends { columns: Record<string, Float64Array> }>(
+  data: T,
+): T & { quality: Record<string, Uint8Array> } {
+  const quality: Record<string, Uint8Array> = {}
+  for (const [field, values] of Object.entries(data.columns)) {
+    const flags = new Uint8Array(values.length)
+    for (let i = 0; i < values.length; i++) {
+      flags[i] = i % 997 === 0 ? 8 : i % 251 === 0 ? 2 : 0
+    }
+    quality[field] = flags
+  }
+  return { ...data, quality }
+}
+
+function median(values: number[]): number {
+  values.sort((a, b) => a - b)
+  return values[Math.floor(values.length / 2)] as number
+}
+
 export interface BenchmarkResult {
   scenario: string
   metric: string
@@ -29,7 +145,10 @@ export interface BenchmarkResult {
   passed: boolean
 }
 
-type ScenarioFn = () => BenchmarkResult | BenchmarkResult[]
+type ScenarioFn = () =>
+  | BenchmarkResult
+  | BenchmarkResult[]
+  | Promise<BenchmarkResult | BenchmarkResult[]>
 
 // ── Scenario Registry ────────────────────────────────────────
 
@@ -268,4 +387,333 @@ scenarios['013_ingestion_throughput'] = () => {
     target,
     passed: ptsPerSec >= target,
   }
+}
+
+// ── SCENARIO 014: 8-pen TimeSeries render-plan generation ───
+
+scenarios['014_time_series_plan_8x1M'] = () => {
+  const pointCount = 1_000_000
+  const penCount = 8
+  const data = generateMultiPenData(pointCount, penCount)
+  const target = 150 // ms for 8M source samples to command buffers
+
+  const warmup = buildTimeSeriesRenderPlan(data, { gapThreshold: 0 })
+  const warmupCommands = new RenderCommandList()
+  addTimeSeriesToCommandList(warmupCommands, warmup)
+
+  const times: number[] = []
+  let renderedPointCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 3; i++) {
+    const start = performance.now()
+    const plan = buildTimeSeriesRenderPlan(data, { gapThreshold: 0 })
+    const commands = new RenderCommandList()
+    addTimeSeriesToCommandList(commands, plan)
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    renderedPointCount = plan.renderedPointCount
+    commandCount = commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '014_time_series_plan_8x1M',
+    metric: `${penCount} pens x ${(pointCount / 1e6).toFixed(0)}M pts (${renderedPointCount.toLocaleString()} rendered, ${commandCount} commands)`,
+    value: Math.round(medianMs * 100) / 100,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 015: 16-channel digital render-plan generation ─
+
+scenarios['015_digital_channel_plan_16x250K'] = () => {
+  const pointCount = 250_000
+  const channelCount = 16
+  const data = generateDigitalChannelData(pointCount, channelCount)
+  const target = 100 // ms for 4M source samples with step expansion
+
+  const warmup = buildDigitalChannelRenderPlan(data, { gapThreshold: 0 })
+  const warmupCommands = new RenderCommandList()
+  addDigitalChannelToCommandList(warmupCommands, warmup)
+
+  const times: number[] = []
+  let renderedPointCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 3; i++) {
+    const start = performance.now()
+    const plan = buildDigitalChannelRenderPlan(data, { gapThreshold: 0 })
+    const commands = new RenderCommandList()
+    addDigitalChannelToCommandList(commands, plan)
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    renderedPointCount = plan.renderedPointCount
+    commandCount = commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '015_digital_channel_plan_16x250K',
+    metric: `${channelCount} channels x ${pointCount.toLocaleString()} pts (${renderedPointCount.toLocaleString()} rendered, ${commandCount} commands)`,
+    value: Math.round(medianMs * 100) / 100,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 016: DataSource live append + viewport query ───
+
+scenarios['016_data_source_live_append_query_4pens'] = async () => {
+  const basePointCount = 100_000
+  const penCount = 4
+  const appendBatch = 250
+  const appendIterations = 100
+  const target = 2 // ms per append + visible-window query
+  const base = generateMultiPenData(basePointCount, penCount)
+  const batches = Array.from({ length: appendIterations }, (_, index) =>
+    generateMultiPenData(appendBatch, penCount, basePointCount + index * appendBatch),
+  )
+  const source = new DataSource({ strict: false })
+  const fields = Object.keys(base.columns)
+
+  await source.load({ timestamps: base.timestamps, columns: base.columns })
+
+  const start = performance.now()
+  for (const batch of batches) {
+    await source.append({ timestamps: batch.timestamps, columns: batch.columns })
+    const end = batch.timestamps[batch.timestamps.length - 1] as number
+    await source.query({
+      start: end - 20_000 * 1000,
+      end,
+      targetPixels: 1200,
+      columns: fields,
+    })
+  }
+  const totalMs = performance.now() - start
+  const avgPerBatch = totalMs / appendIterations
+  source.destroy()
+
+  return {
+    scenario: '016_data_source_live_append_query_4pens',
+    metric: `${penCount} pens append ${appendBatch} pts + viewport query (${appendIterations} batches)`,
+    value: Math.round(avgPerBatch * 1000) / 1000,
+    unit: 'ms/batch',
+    target,
+    passed: avgPerBatch < target,
+  }
+}
+
+// ── SCENARIO 017: Quality-preserving viewport query ─────────
+
+scenarios['017_data_source_quality_query_4pens'] = async () => {
+  const pointCount = 200_000
+  const penCount = 4
+  const queryIterations = 100
+  const target = 1 // ms per 4-pen query with quality mapping
+  const data = addQualityFlags(generateMultiPenData(pointCount, penCount))
+  const fields = Object.keys(data.columns)
+  const source = new DataSource({ strict: false })
+
+  await source.load({
+    timestamps: data.timestamps,
+    columns: data.columns,
+    quality: data.quality,
+  })
+
+  const start = performance.now()
+  for (let i = 0; i < queryIterations; i++) {
+    const windowStart = (i * 977) % (pointCount - 20_000)
+    await source.query({
+      start: data.timestamps[windowStart] as number,
+      end: data.timestamps[windowStart + 20_000] as number,
+      targetPixels: 1200,
+      columns: fields,
+    })
+  }
+  const totalMs = performance.now() - start
+  const avgPerQuery = totalMs / queryIterations
+  source.destroy()
+
+  return {
+    scenario: '017_data_source_quality_query_4pens',
+    metric: `${penCount} pens quality-preserving viewport query (${queryIterations} windows)`,
+    value: Math.round(avgPerQuery * 1000) / 1000,
+    unit: 'ms/query',
+    target,
+    passed: avgPerQuery < target,
+  }
+}
+
+// ── SCENARIO 018: Interaction range stress ─────────────────
+
+scenarios['018_interaction_range_1000_cycles'] = () => {
+  const iterations = 1_000
+  const runs = 10
+  const latencyTarget = 2 // ms for one frame-safe burst of 1000 range updates
+  const heapTarget = 2 // MB after 10k range updates
+  const bounds: readonly [number, number] = [0, 86_400_000]
+  const plotWidth = 1200
+  const initialRange: readonly [number, number] = [18_000_000, 24_000_000]
+
+  runInteractionRangeCycle(initialRange, bounds, plotWidth, iterations)
+
+  const heapStart = process.memoryUsage().heapUsed
+  const times: number[] = []
+  let finalRange = initialRange
+  for (let i = 0; i < runs; i++) {
+    const start = performance.now()
+    finalRange = runInteractionRangeCycle(finalRange, bounds, plotWidth, iterations)
+    times.push(performance.now() - start)
+  }
+  const heapDeltaMb = Math.max(0, process.memoryUsage().heapUsed - heapStart) / 1024 / 1024
+  const medianMs = median(times)
+  const finite = Number.isFinite(finalRange[0]) && Number.isFinite(finalRange[1])
+
+  return [
+    {
+      scenario: '018_interaction_range_1000_cycles_latency',
+      metric: `${iterations} zoom/pan/DataZoom/touch range updates`,
+      value: Math.round(medianMs * 1000) / 1000,
+      unit: 'ms/1000',
+      target: latencyTarget,
+      passed: finite && medianMs < latencyTarget,
+    },
+    {
+      scenario: '018_interaction_range_1000_cycles_heap',
+      metric: `${runs * iterations} range updates heap delta`,
+      value: Math.round(heapDeltaMb * 1000) / 1000,
+      unit: 'MB',
+      target: heapTarget,
+      passed: finite && heapDeltaMb < heapTarget,
+    },
+  ]
+}
+
+function runInteractionRangeCycle(
+  startRange: readonly [number, number],
+  bounds: readonly [number, number],
+  plotWidth: number,
+  iterations: number,
+): readonly [number, number] {
+  let range = startRange
+
+  for (let i = 0; i < iterations; i++) {
+    switch (i % 6) {
+      case 0:
+        range = zoomRangeAroundAnchor({
+          range,
+          anchor: range[0] + (range[1] - range[0]) * ((i % 11) / 10),
+          factor: Math.exp(-80 * 0.002),
+          bounds,
+        })
+        break
+      case 1:
+        range = panRangeByPixels({
+          range,
+          deltaPixels: ((i % 17) - 8) * 7,
+          plotWidth,
+          bounds,
+        })
+        break
+      case 2:
+        range = zoomRangeAroundCenter(range, i % 4 === 0 ? 0.8 : 1.25, bounds)
+        break
+      case 3: {
+        const span = range[1] - range[0]
+        const center = bounds[0] + (bounds[1] - bounds[0]) * ((i % 997) / 996)
+        range = clampRangeToBounds([center - span / 2, center + span / 2], bounds)
+        break
+      }
+      case 4:
+        range = panRangeByValue(range, ((i % 23) - 11) * 250, bounds)
+        break
+      default:
+        range = zoomRangeAroundAnchor({
+          range,
+          anchor: (range[0] + range[1]) / 2,
+          factor: i % 2 === 0 ? 0.92 : 1.08,
+          bounds,
+        })
+        break
+    }
+  }
+
+  return range
+}
+
+// ── SCENARIO 019: Cursor propagation latency ───────────────
+
+scenarios['019_cursor_propagation_4panels'] = () => {
+  const panelCount = 4
+  const penCount = 4
+  const pointCount = 100_000
+  const cursorEvents = 1_000
+  const runs = 10
+  const target = 1 // ms per 1000 cursor propagations; far below one frame
+  const panels = Array.from({ length: panelCount }, (_, panelIndex) =>
+    addQualityFlags(generateMultiPenData(pointCount, penCount, panelIndex * 3)),
+  )
+  const cursorTargets = new Float64Array(cursorEvents)
+  for (let i = 0; i < cursorTargets.length; i++) {
+    cursorTargets[i] = 1_700_000_000_000 + ((i * 977) % pointCount) * 1000 + 250
+  }
+
+  runCursorPropagationCycle(panels, cursorTargets)
+
+  const times: number[] = []
+  let checksum = 0
+  for (let run = 0; run < runs; run++) {
+    const start = performance.now()
+    checksum += runCursorPropagationCycle(panels, cursorTargets)
+    times.push(performance.now() - start)
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '019_cursor_propagation_4panels_latency',
+    metric: `${panelCount} panels x ${penCount} pens cursor propagation (${cursorEvents} events)`,
+    value: Math.round(medianMs * 1000) / 1000,
+    unit: 'ms/1000',
+    target,
+    passed: checksum > 0 && medianMs < target,
+  }
+}
+
+function runCursorPropagationCycle(
+  panels: Array<ReturnType<typeof generateMultiPenData> & { quality: Record<string, Uint8Array> }>,
+  cursorTargets: Float64Array,
+): number {
+  let checksum = 0
+
+  for (let eventIndex = 0; eventIndex < cursorTargets.length; eventIndex++) {
+    const sourcePanel = eventIndex % panels.length
+    const cursorTimestamp = cursorTargets[eventIndex]
+    if (cursorTimestamp === undefined) continue
+
+    for (let panelIndex = 0; panelIndex < panels.length; panelIndex++) {
+      if (panelIndex === sourcePanel) continue
+
+      const panel = panels[panelIndex]
+      if (!panel) continue
+
+      const nearest = findNearestTimestampIndex(panel.timestamps, cursorTimestamp)
+      if (!nearest) continue
+
+      checksum += nearest.index
+      for (const series of panel.series) {
+        const value = panel.columns[series.field]?.[nearest.index]
+        const quality = panel.quality[series.field]?.[nearest.index] ?? 0
+        if (Number.isFinite(value)) {
+          checksum += Math.trunc((value as number) * 1000) + quality
+        }
+      }
+    }
+  }
+
+  return checksum
 }

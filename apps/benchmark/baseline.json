@@ -33,5 +33,40 @@
     "value": 52063471,
     "unit": "pts/sec",
     "target": 5000000
+  },
+  "014_time_series_plan_8x1M": {
+    "value": 50.97,
+    "unit": "ms",
+    "target": 150
+  },
+  "015_digital_channel_plan_16x250K": {
+    "value": 24.6,
+    "unit": "ms",
+    "target": 100
+  },
+  "016_data_source_live_append_query_4pens": {
+    "value": 0.421,
+    "unit": "ms/batch",
+    "target": 2
+  },
+  "017_data_source_quality_query_4pens": {
+    "value": 0.191,
+    "unit": "ms/query",
+    "target": 1
+  },
+  "018_interaction_range_1000_cycles_latency": {
+    "value": 0.225,
+    "unit": "ms/1000",
+    "target": 2
+  },
+  "018_interaction_range_1000_cycles_heap": {
+    "value": 0,
+    "unit": "MB",
+    "target": 2
+  },
+  "019_cursor_propagation_4panels_latency": {
+    "value": 0.712,
+    "unit": "ms/1000",
+    "target": 1
   }
 }

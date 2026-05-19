@@ -1,7 +1,8 @@
-import { cleanup, render, renderHook, screen } from '@testing-library/react'
-import { type ReactNode, useRef } from 'react'
+import { act, cleanup, render, renderHook, screen, waitFor } from '@testing-library/react'
+import { type ReactNode, type RefObject, useRef } from 'react'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { ChartContainerRef } from '../chart-container.js'
+import { resolveExportOptions } from '../chart-runtime.js'
 import type { ChartConfig } from '../use-chart.js'
 import { useChart } from '../use-chart.js'
 
@@ -14,6 +15,17 @@ const BASE_CONFIG: ChartConfig = {
     { key: 'temp', label: 'Temperature', color: 'red' },
     { key: 'pressure', label: 'Pressure' },
   ],
+}
+
+function createContainerRef(canvas = document.createElement('canvas')) {
+  return {
+    current: {
+      canvas,
+      dimensions: { width: 320, height: 180, dpr: 1 },
+      toDataURL: () => '',
+      invalidate: () => undefined,
+    },
+  } satisfies RefObject<ChartContainerRef | null>
 }
 
 /** Wrapper that provides a containerRef for testing */
@@ -49,6 +61,7 @@ describe('useChart', () => {
     expect(ret.tooltipPosition).toBeNull()
     expect(ret.stats).toEqual({ fps: 0, renderTime: 0, pointCount: 0 })
     expect(ret.ready).toBe(false)
+    expect(ret.error).toBeNull()
     expect(ret.config).toBe(BASE_CONFIG)
   })
 
@@ -161,6 +174,19 @@ describe('useChart', () => {
     })
 
     expect(result.current.ready).toBe(false)
+    expect(result.current.error).toBeNull()
+  })
+
+  it('exposes renderer initialization failures through error state', async () => {
+    const containerRef = createContainerRef()
+    const config: ChartConfig = { ...BASE_CONFIG, renderer: 'webgpu' }
+    const { result } = renderHook(() => useChart({ config, containerRef }))
+
+    await waitFor(() => {
+      expect(result.current.error?.message).toContain('WebGPU is not available')
+    })
+
+    expect(result.current.ready).toBe(false)
   })
 
   it('exportImage throws when canvas is not available', async () => {
@@ -170,6 +196,53 @@ describe('useChart', () => {
     })
 
     await expect(result.current.exportImage('png')).rejects.toThrow('Chart canvas is not available')
+  })
+
+  it('generic SVG export requires a vector renderer', async () => {
+    const containerRef = createContainerRef()
+    const { result } = renderHook(() => useChart({ config: BASE_CONFIG, containerRef }))
+
+    await expect(result.current.exportImage('svg')).rejects.toThrow('SVG export requires')
+  })
+
+  it('resolves explicit export dimensions, background, and pixel ratio', () => {
+    const containerRef = createContainerRef()
+
+    expect(
+      resolveExportOptions(containerRef.current, {
+        width: 640,
+        height: 360,
+        background: '#ffffff',
+        pixelRatio: 3,
+      }),
+    ).toEqual({
+      width: 640,
+      height: 360,
+      background: '#ffffff',
+      pixelRatio: 3,
+    })
+  })
+
+  it('fails generic data controls explicitly instead of silently swallowing data', () => {
+    const { result } = renderHook(() => {
+      const containerRef = useRef<ChartContainerRef | null>(null)
+      return useChart({ config: BASE_CONFIG, containerRef })
+    })
+
+    act(() => {
+      result.current.append(new Float64Array([1, 2, 3]))
+    })
+
+    expect(result.current.error?.message).toContain('useChart() is renderer/lifecycle-only')
+    expect(result.current.error?.message).toContain('useTimeSeries()')
+    expect(result.current.stats.pointCount).toBe(0)
+
+    act(() => {
+      result.current.setData(new ArrayBuffer(8))
+    })
+
+    expect(result.current.error?.message).toContain('useDigitalChannel()')
+    expect(result.current.stats.pointCount).toBe(0)
   })
 
   it('returns the config for type narrowing', () => {
@@ -214,9 +287,12 @@ describe('use client directives', () => {
     'accessibility',
     'chart-canvas',
     'chart-container',
+    'chart-runtime',
+    'digital-channel',
     'chart-legend',
     'chart-sync-group',
     'chart-tooltip',
+    'time-series',
     'use-chart',
     'use-chart-tokens',
     'use-dimensions',
@@ -227,13 +303,15 @@ describe('use client directives', () => {
       const fs = await import('node:fs')
       const path = await import('node:path')
       const actualExt =
-        file === 'use-chart'
+        file === 'chart-runtime'
           ? '.ts'
-          : file === 'use-chart-tokens'
+          : file === 'use-chart'
             ? '.ts'
-            : file === 'use-dimensions'
+            : file === 'use-chart-tokens'
               ? '.ts'
-              : '.tsx'
+              : file === 'use-dimensions'
+                ? '.ts'
+                : '.tsx'
       const filePath = path.resolve(import.meta.dirname, '..', `${file}${actualExt}`)
       const content = fs.readFileSync(filePath, 'utf-8')
       expect(content.startsWith("'use client'")).toBe(true)

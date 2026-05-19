@@ -129,6 +129,33 @@ describe('ChartTooltip', () => {
     expect(tooltip.textContent).toContain('\u2014')
   })
 
+  it('shows quality, gap, and provenance metadata when present', () => {
+    const metadataPayload: ChartTooltipPayload = {
+      ...payload,
+      series: [
+        {
+          key: 'temp',
+          label: 'Temperature',
+          color: 'red',
+          value: 12,
+          formatted: '12 C',
+          quality: 1,
+          qualityLabel: 'uncertain',
+          gap: true,
+          provenance: { label: 'manual correction', source: 'audit-log' },
+        },
+      ],
+    }
+
+    render(
+      <Wrapper>
+        <ChartTooltip payload={metadataPayload} position={position} />
+      </Wrapper>,
+    )
+
+    expect(screen.getByText('uncertain / gap / provenance: manual correction')).toBeTruthy()
+  })
+
   it('renders series color swatches with aria-hidden', () => {
     const { container } = render(
       <Wrapper>

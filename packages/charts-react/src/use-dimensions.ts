@@ -25,6 +25,8 @@ export function useDimensions(ref: RefObject<HTMLElement | null>): Dimensions {
     const el = ref.current
     if (!el) return
 
+    let media: MediaQueryList | null = null
+
     const update = () => {
       const rect = el.getBoundingClientRect()
       const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
@@ -42,8 +44,20 @@ export function useDimensions(ref: RefObject<HTMLElement | null>): Dimensions {
     observer.observe(el)
     update() // initial read
 
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', update)
+      if (typeof window.matchMedia === 'function') {
+        media = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`)
+        media.addEventListener?.('change', update)
+      }
+    }
+
     return () => {
       observer.disconnect()
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', update)
+      }
+      media?.removeEventListener?.('change', update)
     }
   }, [ref])
 
