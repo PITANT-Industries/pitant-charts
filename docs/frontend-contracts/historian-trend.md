@@ -13,6 +13,7 @@ reliability engineers, and PITANT application teams embedding the trend surface.
 | React hook | `useTimeSeries()` from `@pitant/charts-react` | Compose Inventory |
 | React config | `TimeSeriesConfig.derivedSeries[]` from `@pitant/charts-react` | Transform Inventory |
 | React config | `TimeSeriesConfig.annotations[]` from `@pitant/charts-react` | Render Inventory |
+| React config | `TimeSeriesConfig.eventMarkers[]` from `@pitant/charts-react` | Render Inventory |
 | Core adapter | `historianQueryToTimeSeries()` from `@pitant/charts` | Ingest Inventory |
 | Core transform | `addTimeSeriesDerivedColumns()` from `@pitant/charts` | Transform Inventory |
 | Core chart class | `TimeSeriesChart` from `@pitant/charts` | Compose Inventory |
@@ -52,6 +53,36 @@ const timeSeriesConfig = {
       kind: 'rate-of-change',
       sourceField: 'temp',
       per: 1000,
+    },
+  ],
+}
+```
+
+Sparse event overlays use `config.eventMarkers[]` when the chart consumer needs
+start, stop, alarm, comment, batch, hold, investigation, correction, or
+maintenance ticks aligned to the trend time axis. They must not be used for a
+dense event table, alarm lifecycle workflow, batch genealogy, audit log,
+e-signature record, or any state transition whose source of truth belongs to a
+sibling repo.
+
+```ts
+const timeSeriesConfig = {
+  series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+  eventMarkers: [
+    {
+      key: 'batch-42-start',
+      label: 'B42',
+      x: 1_700_000_000_000,
+      eventType: 'batch',
+      placement: 'top-tick',
+      labelVisible: true,
+    },
+    {
+      key: 'alarm-hi-temp',
+      label: 'HI TEMP',
+      x: 1_700_000_040_000,
+      eventType: 'alarm',
+      placement: 'full-height',
     },
   ],
 }
@@ -104,6 +135,8 @@ const timeSeriesConfig = {
   metadata.
 - Persistent annotations appear in the render plan, command frame, SVG/PNG
   export path, and label/text path without changing the raw series data.
+- Sparse event markers appear in the render plan, command frame, SVG/PNG export
+  path, and optional label/text path without becoming an event workflow store.
 - Horizontal wheel, shifted scroll, and Alt-drag move the current x-range
   without changing its span or exceeding the source data bounds.
 - Focused chart navigation supports Arrow/Page panning, ArrowUp/ArrowDown and
@@ -119,12 +152,14 @@ const timeSeriesConfig = {
 
 - Success: two continuous analog tags, good quality, no gaps, tooltip values
   for both visible tags, one moving-average overlay, one rate-of-change overlay,
+  one batch-start event marker, one alarm event marker,
   one x-line annotation, one y-line annotation, one region annotation, one
   ruler annotation, panned/keyboard navigation states, and opt-in
   DataZoom/touch interaction.
 - Degraded: one uncertain segment, one explicit gap, one stale value, one
   provenance label such as `historian backfill`, one missing-source derived
-  overlay rendered as calculated `NaN`, one hidden annotation, one out-of-range
+  overlay rendered as calculated `NaN`, one hidden event marker, one
+  out-of-range event marker warning, one hidden annotation, one out-of-range
   annotation warning, and tooltip metadata showing the degraded state.
 - Denied: package consumer receives a 403 or app-level gate before chart props
   are constructed; chart package does not implement authorization.

@@ -13,6 +13,7 @@ describe('public API', () => {
     expect(api.buildTimeSeriesRenderPlan).toBeDefined()
     expect(api.addTimeSeriesAnnotationsToCommandList).toBeDefined()
     expect(api.addTimeSeriesBandsToCommandList).toBeDefined()
+    expect(api.addTimeSeriesEventMarkersToCommandList).toBeDefined()
     expect(api.addTimeSeriesDerivedColumns).toBeDefined()
     expect(api.buildDigitalChannelRenderPlan).toBeDefined()
     expect(api.TimeSeriesChart).toBeDefined()

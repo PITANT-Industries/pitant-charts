@@ -82,6 +82,22 @@ const data = {
       yEnd: 1.8,
     },
   ],
+  eventMarkers: [
+    {
+      key: 'batch-start',
+      label: 'B42',
+      x: timestamps[1]!,
+      eventType: 'batch',
+      labelVisible: true,
+    },
+    {
+      key: 'pressure-alarm',
+      label: 'HI',
+      x: timestamps[2]!,
+      eventType: 'alarm',
+      placement: 'full-height',
+    },
+  ],
 }
 
 const canvas = document.querySelector('canvas')!
@@ -115,6 +131,10 @@ const svg = commandFrameToSvg(frame, {
 - Use `annotations` for reviewed reference lines, region highlights, and
   rulers that must export with the chart. Do not use annotations for dense
   event history, control instructions, or audit-record storage.
+- Use `eventMarkers` for sparse starts, stops, alarms, comments, batches,
+  holds, corrections, maintenance events, and investigation pins aligned to a
+  trend. Do not use event markers as a dense event table or as the workflow
+  state owner.
 - Prefer `renderer: 'auto'`; do not force WebGPU in production apps.
 
 ## Use When

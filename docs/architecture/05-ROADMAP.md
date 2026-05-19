@@ -425,6 +425,13 @@ packs after v1 field feedback.
   the core render plan and SVG/PNG export path.
 - [x] `022_time_series_annotations_8x1M` benchmark covers eight high-density
   trend pens plus one thousand persistent annotation/ruler overlays.
+- [x] Sparse event markers support start, stop, alarm, comment, batch, hold,
+  investigation, correction, and maintenance ticks in the core TimeSeries
+  command-frame path.
+- [x] React `TimeSeriesConfig.eventMarkers[]` passes sparse event markers into
+  the core render plan and SVG/PNG export path.
+- [x] `023_time_series_event_markers_8x1M` benchmark covers eight high-density
+  trend pens plus ten thousand sparse event markers.
 
 **Tests and Acceptance.** Pack-specific unit, visual, and performance tests.
 

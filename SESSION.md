@@ -145,14 +145,19 @@ release performance gate.
   the TimeSeries command-frame/SVG path. Benchmark scenario
   `022_time_series_annotations_8x1M` covers eight high-density trend pens plus
   one thousand persistent overlays.
+- Phase 6 sparse event marker overlays exist in core and React config, with
+  start, stop, alarm, comment, batch, hold, investigation, correction, and
+  maintenance ticks rendered through the TimeSeries command-frame/SVG path.
+  Benchmark scenario `023_time_series_event_markers_8x1M` covers eight
+  high-density trend pens plus ten thousand sparse event markers.
 
 ## Next Build Task
 
 Continue Phase 6 implementation:
 
-1. Build event markers or anomaly score tracks next, using the same rule: no
-   visible runtime claim without a fixture, a contract-pack update, and a
-   benchmark or browser-harness state.
+1. Build anomaly score tracks next, using the same rule: no visible runtime
+   claim without a fixture, a contract-pack update, and a benchmark or
+   browser-harness state.
 2. Keep SPC, spectrum/spectrogram, correlation, KPI, and PDF packs at
    contract-only until their benchmark fixtures exist.
 
@@ -255,6 +260,21 @@ Run after Phase 6 annotation/ruler overlay slice on 2026-05-19:
   a 250 ms target
 - `bun run --filter @pitant/benchmark bench 022`: pass,
   `022_time_series_annotations_8x1M` at 55.04 ms against a 250 ms target
+- `bun run harness:build`: pass
+- `bun run harness:verify`: pass for Canvas2D compact and bands profiles;
+  WebGPU profiles skipped because `navigator.gpu` is unavailable locally
+- `git diff --check`: pass
+
+Run after Phase 6 sparse event-marker overlay slice on 2026-05-19:
+
+- `bun run typecheck`: pass
+- `bun run lint`: pass, 130 files checked
+- `bun run test`: pass, 30 files / 337 tests
+- `bun run bench`: pass, 18/18 benchmark scenarios;
+  `023_time_series_event_markers_8x1M` measured 49.89 ms in the full run
+  against a 250 ms target
+- `bun run --filter @pitant/benchmark bench 023`: pass,
+  `023_time_series_event_markers_8x1M` at 57.41 ms against a 250 ms target
 - `bun run harness:build`: pass
 - `bun run harness:verify`: pass for Canvas2D compact and bands profiles;
   WebGPU profiles skipped because `navigator.gpu` is unavailable locally

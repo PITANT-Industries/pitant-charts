@@ -442,6 +442,11 @@ predictable navigation.*
 - [x] Added `022_time_series_annotations_8x1M` benchmark for eight
   high-density trend pens plus one thousand persistent annotation/ruler
   overlays.
+- [x] Added `TimeSeriesConfig.eventMarkers[]` for sparse start, stop, alarm,
+  comment, batch, hold, investigation, correction, and maintenance markers
+  rendered through the core command-frame path.
+- [x] Added `023_time_series_event_markers_8x1M` benchmark for eight
+  high-density trend pens plus ten thousand sparse event markers.
 
 ## Deliberately Not Building For v1
 

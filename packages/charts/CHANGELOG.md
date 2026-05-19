@@ -9,6 +9,9 @@
 - Added TimeSeries persistent annotation/ruler render-plan support for x-lines,
   y-lines, x-ranges, y-ranges, and rulers with command-frame/SVG output and a
   high-density benchmark gate.
+- Added TimeSeries sparse event marker render-plan support for start, stop,
+  alarm, comment, batch, hold, investigation, correction, and maintenance ticks
+  with command-frame/SVG output and a high-density benchmark gate.
 
 ## 1.0.0 - 2026-05-19
 

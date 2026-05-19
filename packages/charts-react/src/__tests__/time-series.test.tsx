@@ -275,6 +275,41 @@ describe('useTimeSeries', () => {
     expect(result.current.renderPlan.annotations[2]?.fillSegments).toHaveLength(1)
   })
 
+  it('passes sparse event markers into the core render plan', () => {
+    const config: TimeSeriesConfig = {
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+      eventMarkers: [
+        {
+          key: 'batch-start',
+          label: 'Batch start',
+          x: 1010,
+          eventType: 'batch',
+          placement: 'top-tick',
+          labelVisible: true,
+        },
+        {
+          key: 'alarm',
+          label: 'Alarm',
+          x: 1020,
+          eventType: 'alarm',
+          placement: 'full-height',
+        },
+      ],
+    }
+    const { result } = renderHook(() => {
+      const containerRef = useRef<ChartContainerRef | null>(null)
+      return useTimeSeries({ config, data: DATA, containerRef })
+    })
+
+    expect(result.current.renderPlan.eventMarkers.map((marker) => marker.key)).toEqual([
+      'batch-start',
+      'alarm',
+    ])
+    expect(result.current.renderPlan.eventMarkers[0]?.eventType).toBe('batch')
+    expect(result.current.renderPlan.eventMarkers[0]?.labelVisible).toBe(true)
+    expect(result.current.renderPlan.eventMarkers[1]?.placement).toBe('full-height')
+  })
+
   it('expands derived series into legend, render plan, and tooltip metadata', () => {
     const data: TimeSeriesColumnData = {
       timestamps: new Float64Array([1000, 1010, 1020]),

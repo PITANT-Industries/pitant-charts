@@ -85,6 +85,22 @@ export function PressureTrend() {
           yEnd: 1.8,
         },
       ],
+      eventMarkers: [
+        {
+          key: 'batch-start',
+          label: 'B42',
+          x: 1_000,
+          eventType: 'batch' as const,
+          labelVisible: true,
+        },
+        {
+          key: 'pressure-alarm',
+          label: 'HI',
+          x: 2_000,
+          eventType: 'alarm' as const,
+          placement: 'full-height' as const,
+        },
+      ],
       xAxis: {
         label: 'Time',
         formatValue: (value: number) => new Date(value).toLocaleTimeString(),
@@ -170,6 +186,9 @@ installs every block, typechecks, and bundles the consumer.
   high-density TimeSeries command path as the base trend.
 - Reviewed reference lines, region highlights, and rulers must render and
   export with the chart without becoming React DOM overlays.
+- Sparse starts, stops, alarms, comments, batches, holds, corrections,
+  maintenance events, and investigation pins must align to the trend time axis
+  without becoming a dense event table.
 
 ## Do Not Use When
 
@@ -179,5 +198,7 @@ installs every block, typechecks, and bundles the consumer.
   trend.
 - Notes are operational instructions, dense event timelines, or authoritative
   audit records that belong to an application workflow or sibling repo.
+- Event state owns workflow lifecycle, acknowledgement, signatures, or
+  genealogy that belongs to alarm, batch, audit, or compliance repos.
 - The export must be a signed regulator record. Use future compliance/evidence
   handoff surfaces for that path.

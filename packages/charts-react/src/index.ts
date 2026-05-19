@@ -67,6 +67,7 @@ export type {
   TimeSeriesConfig,
   TimeSeriesDerivedSeriesConfig,
   TimeSeriesEnvelopeBandConfig,
+  TimeSeriesEventMarkerConfig,
   TimeSeriesProps,
   TimeSeriesRulerAnnotationConfig,
   TimeSeriesSeriesConfig,

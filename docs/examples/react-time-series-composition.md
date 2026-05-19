@@ -71,6 +71,22 @@ export function HistorianTrend() {
           yEnd: 92.0,
         },
       ],
+      eventMarkers: [
+        {
+          key: 'batch-start',
+          label: 'B42',
+          x: 1_000,
+          eventType: 'batch' as const,
+          labelVisible: true,
+        },
+        {
+          key: 'hi-temp-alarm',
+          label: 'HI',
+          x: 3_000,
+          eventType: 'alarm' as const,
+          placement: 'full-height' as const,
+        },
+      ],
       xAxis: {
         label: 'Time',
         gapThreshold: 90_000,
@@ -129,5 +145,8 @@ export function HistorianTrend() {
   frame, not as per-point React elements.
 - `config.annotations` renders reviewed reference lines, region highlights, and
   rulers inside the core command frame so export uses the same geometry.
+- `config.eventMarkers` renders sparse starts, stops, alarms, comments,
+  batches, holds, corrections, maintenance events, and investigation pins as
+  time-axis ticks inside the core command frame.
 - Quality and gap arrays stay in the data object so degraded states can be
   surfaced by overlays and future evidence exports.

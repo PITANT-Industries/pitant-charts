@@ -10,6 +10,9 @@
 - Added `TimeSeriesConfig.annotations[]` for persistent x-line, y-line,
   x-range, y-range, and ruler overlays through the core TimeSeries
   command-frame path.
+- Added `TimeSeriesConfig.eventMarkers[]` for sparse start, stop, alarm,
+  comment, batch, hold, investigation, correction, and maintenance event ticks
+  through the core TimeSeries command-frame path.
 
 ## 1.0.0 - 2026-05-19
 

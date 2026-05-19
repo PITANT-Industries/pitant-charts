@@ -2,7 +2,7 @@
  * Benchmark scenarios for @pitant/charts.
  *
  * Scenarios 1-4, 8-9 require a browser (WebGPU/Canvas2D).
- * Scenarios 5-7 and 10-22 are pure-compute/package-level gates.
+ * Scenarios 5-7 and 10-23 are pure-compute/package-level gates.
  * Bundle-size scenario runs via size-limit.
  */
 import {
@@ -22,6 +22,7 @@ import {
   RenderCommandList,
   type TimeSeriesAnnotation,
   type TimeSeriesDerivedColumn,
+  type TimeSeriesEventMarker,
   type TimeSeriesSeries,
   zoomRangeAroundAnchor,
   zoomRangeAroundCenter,
@@ -728,6 +729,77 @@ scenarios['022_time_series_annotations_8x1M'] = () => {
   return {
     scenario: '022_time_series_annotations_8x1M',
     metric: `${penCount} pens x ${(pointCount / 1e6).toFixed(0)}M pts plus ${annotations.length.toLocaleString()} annotations (${annotationPointCount.toLocaleString()} annotation pts, ${commandCount} commands)`,
+    value: Math.round(medianMs * 100) / 100,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 023: Sparse event marker overlay generation ───
+
+scenarios['023_time_series_event_markers_8x1M'] = () => {
+  const pointCount = 1_000_000
+  const penCount = 8
+  const markerCount = 10_000
+  const data = generateMultiPenData(pointCount, penCount)
+  const xStart = data.timestamps[0]
+  const xEnd = data.timestamps[data.timestamps.length - 1]
+  if (xStart === undefined || xEnd === undefined) {
+    throw new Error('benchmark fixture missing timestamps')
+  }
+
+  const span = xEnd - xStart
+  const eventTypes = [
+    'start',
+    'stop',
+    'alarm',
+    'comment',
+    'batch',
+    'hold',
+    'investigation',
+    'correction',
+    'maintenance',
+  ] as const
+  const eventMarkers: TimeSeriesEventMarker[] = []
+  for (let i = 0; i < markerCount; i++) {
+    eventMarkers.push({
+      key: `event-${i}`,
+      label: `E${i}`,
+      x: xStart + (span * (i + 1)) / (markerCount + 1),
+      eventType: eventTypes[i % eventTypes.length],
+      placement: i % 17 === 0 ? 'full-height' : i % 3 === 0 ? 'bottom-tick' : 'top-tick',
+      labelVisible: i % 250 === 0,
+    })
+  }
+
+  const dataWithEvents = { ...data, eventMarkers } as const
+  const target = 250 // ms for 8M trend samples plus 10k sparse event markers
+
+  const warmup = buildTimeSeriesRenderPlan(dataWithEvents, { gapThreshold: 0 })
+  buildTimeSeriesCommandFrame(warmup, 1280, 720, { guides: false })
+
+  const times: number[] = []
+  let markerPointCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 3; i++) {
+    const start = performance.now()
+    const plan = buildTimeSeriesRenderPlan(dataWithEvents, { gapThreshold: 0 })
+    const frame = buildTimeSeriesCommandFrame(plan, 1280, 720, { guides: false })
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    markerPointCount = plan.eventMarkers.reduce(
+      (total, marker) => total + marker.renderedPointCount,
+      0,
+    )
+    commandCount = frame.commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '023_time_series_event_markers_8x1M',
+    metric: `${penCount} pens x ${(pointCount / 1e6).toFixed(0)}M pts plus ${eventMarkers.length.toLocaleString()} event markers (${markerPointCount.toLocaleString()} marker pts, ${commandCount} commands)`,
     value: Math.round(medianMs * 100) / 100,
     unit: 'ms',
     target,

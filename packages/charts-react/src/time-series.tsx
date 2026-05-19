@@ -9,6 +9,7 @@ import {
   type TimeSeriesAnnotation as CoreTimeSeriesAnnotation,
   type TimeSeriesBand as CoreTimeSeriesBand,
   type TimeSeriesDerivedColumn as CoreTimeSeriesDerivedColumn,
+  type TimeSeriesEventMarker as CoreTimeSeriesEventMarker,
   type TimeSeriesSeries as CoreTimeSeriesSeries,
   commandFrameToSvg,
   createChartLayout,
@@ -17,6 +18,8 @@ import {
   type RgbaColor,
   renderTimeSeriesPlan,
   type TimeSeriesDerivedColumnKind,
+  type TimeSeriesEventMarkerPlacement,
+  type TimeSeriesEventMarkerType,
   type TimeSeriesInterpolation,
   type TimeSeriesRenderOptions,
   type TimeSeriesRenderPlan,
@@ -177,11 +180,24 @@ export type TimeSeriesAnnotationConfig =
   | TimeSeriesYRangeAnnotationConfig
   | TimeSeriesRulerAnnotationConfig
 
+export interface TimeSeriesEventMarkerConfig {
+  key: string
+  x: number
+  label?: string
+  eventType?: TimeSeriesEventMarkerType
+  placement?: TimeSeriesEventMarkerPlacement
+  rgba?: RgbaColor
+  lineWidth?: number
+  visible?: boolean
+  labelVisible?: boolean
+}
+
 export interface TimeSeriesConfig {
   series: TimeSeriesSeriesConfig[]
   derivedSeries?: TimeSeriesDerivedSeriesConfig[]
   bands?: TimeSeriesBandConfig[]
   annotations?: TimeSeriesAnnotationConfig[]
+  eventMarkers?: TimeSeriesEventMarkerConfig[]
   xAxis?: AxisConfig & {
     gapThreshold?: number
   }
@@ -325,6 +341,10 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     () => (config.annotations ?? []).map(toCoreTimeSeriesAnnotation),
     [config.annotations],
   )
+  const planEventMarkers: CoreTimeSeriesEventMarker[] = useMemo(
+    () => (config.eventMarkers ?? []).map(toCoreTimeSeriesEventMarker),
+    [config.eventMarkers],
+  )
 
   const activeXRange =
     visibleRange[0] < visibleRange[1] ? (visibleRange as readonly [number, number]) : undefined
@@ -374,6 +394,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
         series: planSeries,
         bands: planBands,
         annotations: planAnnotations,
+        eventMarkers: planEventMarkers,
       },
       renderOptions,
     )
@@ -385,6 +406,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     config.yAxis?.paddingRatio,
     planAnnotations,
     planBands,
+    planEventMarkers,
     planSeries,
     viewport.data,
   ])
@@ -762,6 +784,23 @@ function assignCommonAnnotationConfig(
     coreAnnotation.includeInYRange = annotation.includeInYRange
   }
   if (annotation.labelVisible !== undefined) coreAnnotation.labelVisible = annotation.labelVisible
+}
+
+function toCoreTimeSeriesEventMarker(
+  marker: TimeSeriesEventMarkerConfig,
+): CoreTimeSeriesEventMarker {
+  const coreMarker: CoreTimeSeriesEventMarker = {
+    key: marker.key,
+    x: marker.x,
+  }
+  if (marker.label !== undefined) coreMarker.label = marker.label
+  if (marker.eventType !== undefined) coreMarker.eventType = marker.eventType
+  if (marker.placement !== undefined) coreMarker.placement = marker.placement
+  if (marker.rgba !== undefined) coreMarker.color = marker.rgba
+  if (marker.lineWidth !== undefined) coreMarker.lineWidth = marker.lineWidth
+  if (marker.visible !== undefined) coreMarker.visible = marker.visible
+  if (marker.labelVisible !== undefined) coreMarker.labelVisible = marker.labelVisible
+  return coreMarker
 }
 
 function createTimeSeriesLayout(

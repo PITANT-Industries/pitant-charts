@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addTimeSeriesAnnotationsToCommandList,
   addTimeSeriesBandsToCommandList,
+  addTimeSeriesEventMarkersToCommandList,
   addTimeSeriesToCommandList,
   buildTimeSeriesCommandFrame,
   buildTimeSeriesRenderPlan,
@@ -255,6 +256,67 @@ describe('time-series chart planning', () => {
     expect(commands.some((command) => command.kind === 'text')).toBe(true)
     expect(svg).toContain('Startup')
     expect(svg).toContain('<path')
+  })
+
+  it('plans event markers as sparse tick geometry with opt-in labels', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([1000, 1010, 1020]),
+        columns: {
+          temp: new Float64Array([10, 12, 11]),
+        },
+        series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+        eventMarkers: [
+          {
+            key: 'batch-start',
+            x: 1010,
+            label: 'Batch start',
+            eventType: 'batch',
+            labelVisible: true,
+          },
+          {
+            key: 'alarm-out-of-view',
+            x: 1200,
+            eventType: 'alarm',
+          },
+        ],
+      },
+      { yRange: [0, 100] },
+    )
+
+    expect(plan.eventMarkers).toHaveLength(1)
+    expect(plan.eventMarkers[0]?.lineSegments[0]?.buffer).toEqual(
+      new Float32Array([10, 90, 10, 100]),
+    )
+    expect(plan.eventMarkers[0]?.labelVisible).toBe(true)
+    expect(plan.warnings).toContain(
+      'Event marker "alarm-out-of-view" has no geometry inside the visible range.',
+    )
+
+    const commands = new RenderCommandList()
+    addTimeSeriesEventMarkersToCommandList(commands, plan)
+    expect(commands.sorted().map((command) => command.kind)).toEqual(['line'])
+  })
+
+  it('exports visible event marker labels through the command frame', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 10, 20]),
+        columns: {
+          temp: new Float64Array([10, 12, 11]),
+        },
+        series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+        eventMarkers: [
+          { key: 'hold-start', x: 10, label: 'Hold start', eventType: 'hold', labelVisible: true },
+        ],
+      },
+      { yRange: [0, 20] },
+    )
+    const frame = buildTimeSeriesCommandFrame(plan, 320, 180)
+    const svg = commandFrameToSvg(frame, { title: 'Trend' })
+
+    expect(frame.commands.sorted().some((command) => command.kind === 'text')).toBe(true)
+    expect(svg).toContain('Hold start')
   })
 
   it('creates a transform that maps rebased data to pixels', () => {

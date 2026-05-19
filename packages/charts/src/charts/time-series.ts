@@ -121,12 +121,38 @@ export type TimeSeriesAnnotation =
   | TimeSeriesYRangeAnnotation
   | TimeSeriesRulerAnnotation
 
+export type TimeSeriesEventMarkerType =
+  | 'start'
+  | 'stop'
+  | 'alarm'
+  | 'comment'
+  | 'batch'
+  | 'hold'
+  | 'investigation'
+  | 'correction'
+  | 'maintenance'
+
+export type TimeSeriesEventMarkerPlacement = 'top-tick' | 'bottom-tick' | 'full-height'
+
+export interface TimeSeriesEventMarker {
+  key: string
+  x: number
+  label?: string
+  eventType?: TimeSeriesEventMarkerType
+  placement?: TimeSeriesEventMarkerPlacement
+  color?: RgbaColor
+  lineWidth?: number
+  visible?: boolean
+  labelVisible?: boolean
+}
+
 export interface TimeSeriesDataSet {
   timestamps: Float64Array
   columns: Record<string, Float64Array>
   series: readonly TimeSeriesSeries[]
   bands?: readonly TimeSeriesBand[]
   annotations?: readonly TimeSeriesAnnotation[]
+  eventMarkers?: readonly TimeSeriesEventMarker[]
 }
 
 export interface TimeSeriesRenderOptions {
@@ -144,9 +170,14 @@ export interface TimeSeriesRenderOptions {
   defaultAnnotationLineColor?: RgbaColor
   defaultAnnotationLineWidth?: number
   defaultAnnotationTextColor?: RgbaColor
+  defaultEventMarkerColor?: RgbaColor
+  defaultEventMarkerLineWidth?: number
+  defaultEventMarkerTextColor?: RgbaColor
+  eventMarkerTickRatio?: number
   includeHidden?: boolean
   includeHiddenBands?: boolean
   includeHiddenAnnotations?: boolean
+  includeHiddenEventMarkers?: boolean
   yPaddingRatio?: number
 }
 
@@ -213,6 +244,25 @@ export interface TimeSeriesPlannedAnnotation {
   labelVisible: boolean
 }
 
+export interface TimeSeriesEventMarkerStyle {
+  line: LineOptions
+  text?: TextOptions
+}
+
+export interface TimeSeriesPlannedEventMarker {
+  key: string
+  label: string
+  eventType: TimeSeriesEventMarkerType
+  placement: TimeSeriesEventMarkerPlacement
+  style: TimeSeriesEventMarkerStyle
+  lineSegments: readonly TimeSeriesLineSegment[]
+  sourcePointCount: number
+  includedSampleCount: number
+  renderedPointCount: number
+  droppedPointCount: number
+  labelVisible: boolean
+}
+
 export interface TimeSeriesRenderPlan {
   kind: 'time-series'
   xRange: NumericRange
@@ -222,6 +272,7 @@ export interface TimeSeriesRenderPlan {
   series: readonly TimeSeriesPlannedSeries[]
   bands: readonly TimeSeriesPlannedBand[]
   annotations: readonly TimeSeriesPlannedAnnotation[]
+  eventMarkers: readonly TimeSeriesPlannedEventMarker[]
   sourcePointCount: number
   includedSampleCount: number
   renderedPointCount: number
@@ -267,6 +318,13 @@ interface AnnotationBuildResult {
   renderedPointCount: number
 }
 
+interface EventMarkerBuildResult {
+  lineSegments: TimeSeriesLineSegment[]
+  sourcePointCount: number
+  includedSampleCount: number
+  renderedPointCount: number
+}
+
 export function buildTimeSeriesRenderPlan(
   data: TimeSeriesDataSet,
   options: TimeSeriesRenderOptions = {},
@@ -278,6 +336,7 @@ export function buildTimeSeriesRenderPlan(
   const plannedSeries: TimeSeriesPlannedSeries[] = []
   const plannedBands: TimeSeriesPlannedBand[] = []
   const plannedAnnotations: TimeSeriesPlannedAnnotation[] = []
+  const plannedEventMarkers: TimeSeriesPlannedEventMarker[] = []
   const warnings: string[] = []
   let minY = Number.POSITIVE_INFINITY
   let maxY = Number.NEGATIVE_INFINITY
@@ -432,6 +491,39 @@ export function buildTimeSeriesRenderPlan(
     })
   }
 
+  const eventMarkers = data.eventMarkers ?? []
+  const eventMarkerTickRatio = options.eventMarkerTickRatio ?? 0.1
+  for (let markerIndex = 0; markerIndex < eventMarkers.length; markerIndex++) {
+    const marker = eventMarkers[markerIndex] as TimeSeriesEventMarker
+    if (marker.visible === false && options.includeHiddenEventMarkers !== true) continue
+
+    const build = buildEventMarkerSegments(marker, {
+      xRange,
+      xOrigin,
+      yRange,
+      tickRatio: eventMarkerTickRatio,
+    })
+
+    if (build.includedSampleCount === 0) {
+      warnings.push(`Event marker "${marker.key}" has no geometry inside the visible range.`)
+      continue
+    }
+
+    plannedEventMarkers.push({
+      key: marker.key,
+      label: marker.label ?? marker.key,
+      eventType: marker.eventType ?? 'comment',
+      placement: marker.placement ?? 'top-tick',
+      style: resolveEventMarkerStyle(marker, markerIndex, options),
+      lineSegments: build.lineSegments,
+      sourcePointCount: build.sourcePointCount,
+      includedSampleCount: build.includedSampleCount,
+      renderedPointCount: build.renderedPointCount,
+      droppedPointCount: build.sourcePointCount - build.includedSampleCount,
+      labelVisible: marker.labelVisible === true,
+    })
+  }
+
   return {
     kind: 'time-series',
     xRange,
@@ -441,6 +533,7 @@ export function buildTimeSeriesRenderPlan(
     series: plannedSeries,
     bands: plannedBands,
     annotations: plannedAnnotations,
+    eventMarkers: plannedEventMarkers,
     sourcePointCount,
     includedSampleCount,
     renderedPointCount,
@@ -486,6 +579,18 @@ export function addTimeSeriesAnnotationsToCommandList(
   }
 }
 
+export function addTimeSeriesEventMarkersToCommandList(
+  commands: RenderCommandList,
+  plan: TimeSeriesRenderPlan,
+  z: ZLayer = ZLayer.Overlay,
+): void {
+  for (const marker of plan.eventMarkers) {
+    for (const segment of marker.lineSegments) {
+      commands.addLine(segment.buffer, marker.style.line, z)
+    }
+  }
+}
+
 export function addTimeSeriesToCommandList(
   commands: RenderCommandList,
   plan: TimeSeriesRenderPlan,
@@ -523,7 +628,14 @@ export function buildTimeSeriesCommandFrame(
   addTimeSeriesBandsToCommandList(commands, plan)
   addTimeSeriesAnnotationsToCommandList(commands, plan)
   addTimeSeriesToCommandList(commands, plan)
+  addTimeSeriesEventMarkersToCommandList(commands, plan)
   addTimeSeriesAnnotationLabelsToCommandList(
+    commands,
+    plan,
+    transform,
+    layout?.plotArea ?? { x: 0, y: 0, width, height },
+  )
+  addTimeSeriesEventMarkerLabelsToCommandList(
     commands,
     plan,
     transform,
@@ -677,6 +789,53 @@ function emptyAnnotationBuildResult(sourcePointCount: number): AnnotationBuildRe
   }
 }
 
+function buildEventMarkerSegments(
+  marker: TimeSeriesEventMarker,
+  options: {
+    xRange: NumericRange
+    xOrigin: number
+    yRange: NumericRange
+    tickRatio: number
+  },
+): EventMarkerBuildResult {
+  if (!isFiniteNumber(marker.x) || !valueInRange(marker.x, options.xRange)) {
+    return emptyEventMarkerBuildResult()
+  }
+
+  const x = marker.x - options.xOrigin
+  const ySpan = options.yRange[1] - options.yRange[0]
+  const tickSpan = Math.max(Number.EPSILON, ySpan * clampNumber(options.tickRatio, 0.02, 1))
+  const placement = marker.placement ?? 'top-tick'
+  const yStart =
+    placement === 'full-height'
+      ? options.yRange[0]
+      : placement === 'bottom-tick'
+        ? options.yRange[0]
+        : options.yRange[1] - tickSpan
+  const yEnd =
+    placement === 'full-height'
+      ? options.yRange[1]
+      : placement === 'bottom-tick'
+        ? options.yRange[0] + tickSpan
+        : options.yRange[1]
+
+  return {
+    lineSegments: [{ buffer: new Float32Array([x, yStart, x, yEnd]), pointCount: 2 }],
+    sourcePointCount: 1,
+    includedSampleCount: 1,
+    renderedPointCount: 2,
+  }
+}
+
+function emptyEventMarkerBuildResult(): EventMarkerBuildResult {
+  return {
+    lineSegments: [],
+    sourcePointCount: 1,
+    includedSampleCount: 0,
+    renderedPointCount: 0,
+  }
+}
+
 function annotationYExtent(annotation: TimeSeriesAnnotation): NumericRange | null {
   switch (annotation.kind) {
     case 'y-line':
@@ -747,6 +906,50 @@ function annotationTextColor(
   return annotation.color ?? defaultLineColor
 }
 
+function resolveEventMarkerStyle(
+  marker: TimeSeriesEventMarker,
+  index: number,
+  options: TimeSeriesRenderOptions,
+): TimeSeriesEventMarkerStyle {
+  const color =
+    marker.color ??
+    options.defaultEventMarkerColor ??
+    eventMarkerDefaultColor(marker.eventType ?? 'comment', index)
+  return {
+    line: {
+      color,
+      width: marker.lineWidth ?? options.defaultEventMarkerLineWidth ?? 1,
+    },
+    text: {
+      color: options.defaultEventMarkerTextColor ?? color,
+      fontSize: 11,
+    },
+  }
+}
+
+function eventMarkerDefaultColor(type: TimeSeriesEventMarkerType, index: number): RgbaColor {
+  switch (type) {
+    case 'alarm':
+      return [0.9, 0.12, 0.08, 0.85]
+    case 'batch':
+      return [0.1, 0.35, 0.9, 0.85]
+    case 'hold':
+      return [0.95, 0.62, 0.05, 0.85]
+    case 'investigation':
+      return [0.56, 0.22, 0.86, 0.85]
+    case 'correction':
+      return [0.02, 0.62, 0.45, 0.85]
+    case 'maintenance':
+      return [0.45, 0.45, 0.45, 0.85]
+    case 'start':
+      return [0.1, 0.65, 0.25, 0.85]
+    case 'stop':
+      return [0.78, 0.12, 0.12, 0.85]
+    case 'comment':
+      return getDefaultColor(index, [0.25, 0.25, 0.25, 0.8])
+  }
+}
+
 function addTimeSeriesAnnotationLabelsToCommandList(
   commands: RenderCommandList,
   plan: TimeSeriesRenderPlan,
@@ -768,6 +971,42 @@ function addTimeSeriesAnnotationLabelsToCommandList(
         ...annotation.style.text,
         align: anchor.align,
         baseline: anchor.baseline,
+      },
+      ZLayer.Text,
+    )
+  }
+}
+
+function addTimeSeriesEventMarkerLabelsToCommandList(
+  commands: RenderCommandList,
+  plan: TimeSeriesRenderPlan,
+  transform: ViewTransform,
+  plotArea: ChartRect,
+): void {
+  for (const marker of plan.eventMarkers) {
+    if (!marker.labelVisible || !marker.label || !marker.style.text) continue
+    const segment = marker.lineSegments[0]
+    const x = segment?.buffer[0]
+    const y0 = segment?.buffer[1]
+    const y1 = segment?.buffer[3]
+    if (x === undefined || y0 === undefined || y1 === undefined) continue
+
+    const anchorY = marker.placement === 'bottom-tick' ? y0 : y1
+    const point = transform.dataToPixel(x, anchorY)
+    const xPixel = clampNumber(point.x + 4, plotArea.x + 4, plotArea.x + plotArea.width - 4)
+    const yPixel = clampNumber(
+      point.y + (marker.placement === 'bottom-tick' ? -4 : 4),
+      plotArea.y + 4,
+      plotArea.y + plotArea.height - 4,
+    )
+    commands.addText(
+      marker.label,
+      xPixel,
+      yPixel,
+      {
+        ...marker.style.text,
+        align: 'left',
+        baseline: marker.placement === 'bottom-tick' ? 'bottom' : 'top',
       },
       ZLayer.Text,
     )
