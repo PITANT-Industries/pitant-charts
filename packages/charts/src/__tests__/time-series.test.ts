@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   addTimeSeriesAnnotationsToCommandList,
+  addTimeSeriesAnomalyTracksToCommandList,
   addTimeSeriesBandsToCommandList,
   addTimeSeriesEventMarkersToCommandList,
   addTimeSeriesToCommandList,
@@ -296,6 +297,80 @@ describe('time-series chart planning', () => {
     const commands = new RenderCommandList()
     addTimeSeriesEventMarkersToCommandList(commands, plan)
     expect(commands.sorted().map((command) => command.kind)).toEqual(['line'])
+  })
+
+  it('plans anomaly score tracks as bounded score lanes', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([1000, 1010, 1020]),
+        columns: {
+          temp: new Float64Array([10, 12, 11]),
+          anomaly: new Float64Array([0.1, 0.5, 0.9]),
+        },
+        series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+        anomalyTracks: [
+          {
+            key: 'model-a',
+            label: 'Model A',
+            scoreField: 'anomaly',
+            threshold: 0.6,
+            modelVersion: 'v2026.05',
+            reviewerState: 'review-pending',
+            lineColor: [0.8, 0.1, 0.1, 0.8],
+          },
+        ],
+      },
+      { yRange: [0, 100] },
+    )
+
+    expect(plan.anomalyTracks).toHaveLength(1)
+    expect(plan.anomalyTracks[0]?.modelVersion).toBe('v2026.05')
+    expect(plan.anomalyTracks[0]?.reviewerState).toBe('review-pending')
+    expect(plan.anomalyTracks[0]?.laneRange).toEqual([0, 12])
+    expect(plan.anomalyTracks[0]?.scoreRange).toEqual([0.1, 0.9])
+    expect(plan.anomalyTracks[0]?.fillSegments[0]?.lower).toEqual(
+      new Float32Array([0, 0, 10, 0, 20, 0]),
+    )
+    expect(plan.anomalyTracks[0]?.fillSegments[0]?.upper).toEqual(
+      new Float32Array([0, 1.2, 10, 6, 20, 10.8]),
+    )
+    expect(plan.anomalyTracks[0]?.thresholdSegments[0]?.buffer).toEqual(
+      new Float32Array([0, 7.2, 20, 7.2]),
+    )
+
+    const commands = new RenderCommandList()
+    addTimeSeriesAnomalyTracksToCommandList(commands, plan)
+    expect(commands.sorted().map((command) => command.kind)).toEqual(['fill', 'line', 'line'])
+  })
+
+  it('exports anomaly score tracks through the command frame', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 10, 20]),
+        columns: {
+          temp: new Float64Array([10, 12, 11]),
+          anomaly: new Float64Array([0.2, 0.8, 0.4]),
+        },
+        series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+        anomalyTracks: [
+          {
+            key: 'score',
+            label: 'Score',
+            scoreField: 'anomaly',
+            threshold: 0.75,
+            fillColor: [0.9, 0.1, 0.1, 0.18],
+            lineColor: [0.9, 0.1, 0.1, 0.8],
+          },
+        ],
+      },
+      { yRange: [0, 100] },
+    )
+    const frame = buildTimeSeriesCommandFrame(plan, 320, 180)
+    const svg = commandFrameToSvg(frame, { title: 'Anomaly trend' })
+
+    expect(frame.commands.sorted().some((command) => command.kind === 'fill')).toBe(true)
+    expect(svg).toContain('Anomaly trend')
+    expect(svg).toContain('<path')
   })
 
   it('exports visible event marker labels through the command frame', () => {

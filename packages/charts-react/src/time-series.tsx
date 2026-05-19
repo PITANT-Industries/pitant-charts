@@ -7,6 +7,7 @@ import {
   type ChartLayout,
   type ChartPointerCoordinates,
   type TimeSeriesAnnotation as CoreTimeSeriesAnnotation,
+  type TimeSeriesAnomalyTrack as CoreTimeSeriesAnomalyTrack,
   type TimeSeriesBand as CoreTimeSeriesBand,
   type TimeSeriesDerivedColumn as CoreTimeSeriesDerivedColumn,
   type TimeSeriesEventMarker as CoreTimeSeriesEventMarker,
@@ -17,6 +18,8 @@ import {
   mapDataPointToChartPoint,
   type RgbaColor,
   renderTimeSeriesPlan,
+  type TimeSeriesAnomalyTrackPlacement,
+  type TimeSeriesAnomalyTrackReviewerState,
   type TimeSeriesDerivedColumnKind,
   type TimeSeriesEventMarkerPlacement,
   type TimeSeriesEventMarkerType,
@@ -192,12 +195,31 @@ export interface TimeSeriesEventMarkerConfig {
   labelVisible?: boolean
 }
 
+export interface TimeSeriesAnomalyTrackConfig {
+  key: string
+  label?: string
+  scoreField: string
+  threshold?: number
+  modelVersion?: string
+  reviewerState?: TimeSeriesAnomalyTrackReviewerState
+  placement?: TimeSeriesAnomalyTrackPlacement
+  laneHeightRatio?: number
+  laneOffsetRatio?: number
+  fillRgba?: RgbaColor
+  lineRgba?: RgbaColor
+  thresholdRgba?: RgbaColor
+  lineWidth?: number
+  gapThreshold?: number
+  visible?: boolean
+}
+
 export interface TimeSeriesConfig {
   series: TimeSeriesSeriesConfig[]
   derivedSeries?: TimeSeriesDerivedSeriesConfig[]
   bands?: TimeSeriesBandConfig[]
   annotations?: TimeSeriesAnnotationConfig[]
   eventMarkers?: TimeSeriesEventMarkerConfig[]
+  anomalyTracks?: TimeSeriesAnomalyTrackConfig[]
   xAxis?: AxisConfig & {
     gapThreshold?: number
   }
@@ -345,6 +367,10 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     () => (config.eventMarkers ?? []).map(toCoreTimeSeriesEventMarker),
     [config.eventMarkers],
   )
+  const planAnomalyTracks: CoreTimeSeriesAnomalyTrack[] = useMemo(
+    () => (config.anomalyTracks ?? []).map(toCoreTimeSeriesAnomalyTrack),
+    [config.anomalyTracks],
+  )
 
   const activeXRange =
     visibleRange[0] < visibleRange[1] ? (visibleRange as readonly [number, number]) : undefined
@@ -359,8 +385,12 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
       fields.add(band.lowerField)
       fields.add(band.upperField)
     }
+    for (const track of planAnomalyTracks) {
+      if (track.visible === false) continue
+      fields.add(track.scoreField)
+    }
     return Array.from(fields)
-  }, [planBands, planSeries])
+  }, [planAnomalyTracks, planBands, planSeries])
   const targetPixels = useMemo(() => {
     void resizeKey
     return Math.max(
@@ -395,6 +425,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
         bands: planBands,
         annotations: planAnnotations,
         eventMarkers: planEventMarkers,
+        anomalyTracks: planAnomalyTracks,
       },
       renderOptions,
     )
@@ -405,6 +436,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     config.xAxis?.gapThreshold,
     config.yAxis?.paddingRatio,
     planAnnotations,
+    planAnomalyTracks,
     planBands,
     planEventMarkers,
     planSeries,
@@ -801,6 +833,29 @@ function toCoreTimeSeriesEventMarker(
   if (marker.visible !== undefined) coreMarker.visible = marker.visible
   if (marker.labelVisible !== undefined) coreMarker.labelVisible = marker.labelVisible
   return coreMarker
+}
+
+function toCoreTimeSeriesAnomalyTrack(
+  track: TimeSeriesAnomalyTrackConfig,
+): CoreTimeSeriesAnomalyTrack {
+  const coreTrack: CoreTimeSeriesAnomalyTrack = {
+    key: track.key,
+    scoreField: track.scoreField,
+  }
+  if (track.label !== undefined) coreTrack.label = track.label
+  if (track.threshold !== undefined) coreTrack.threshold = track.threshold
+  if (track.modelVersion !== undefined) coreTrack.modelVersion = track.modelVersion
+  if (track.reviewerState !== undefined) coreTrack.reviewerState = track.reviewerState
+  if (track.placement !== undefined) coreTrack.placement = track.placement
+  if (track.laneHeightRatio !== undefined) coreTrack.laneHeightRatio = track.laneHeightRatio
+  if (track.laneOffsetRatio !== undefined) coreTrack.laneOffsetRatio = track.laneOffsetRatio
+  if (track.fillRgba !== undefined) coreTrack.fillColor = track.fillRgba
+  if (track.lineRgba !== undefined) coreTrack.lineColor = track.lineRgba
+  if (track.thresholdRgba !== undefined) coreTrack.thresholdColor = track.thresholdRgba
+  if (track.lineWidth !== undefined) coreTrack.lineWidth = track.lineWidth
+  if (track.gapThreshold !== undefined) coreTrack.gapThreshold = track.gapThreshold
+  if (track.visible !== undefined) coreTrack.visible = track.visible
+  return coreTrack
 }
 
 function createTimeSeriesLayout(

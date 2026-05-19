@@ -2,11 +2,12 @@
  * Benchmark scenarios for @pitant/charts.
  *
  * Scenarios 1-4, 8-9 require a browser (WebGPU/Canvas2D).
- * Scenarios 5-7 and 10-23 are pure-compute/package-level gates.
+ * Scenarios 5-7 and 10-24 are pure-compute/package-level gates.
  * Bundle-size scenario runs via size-limit.
  */
 import {
   addDigitalChannelToCommandList,
+  addTimeSeriesAnomalyTracksToCommandList,
   addTimeSeriesBandsToCommandList,
   addTimeSeriesDerivedColumns,
   addTimeSeriesToCommandList,
@@ -21,6 +22,7 @@ import {
   panRangeByValue,
   RenderCommandList,
   type TimeSeriesAnnotation,
+  type TimeSeriesAnomalyTrack,
   type TimeSeriesDerivedColumn,
   type TimeSeriesEventMarker,
   type TimeSeriesSeries,
@@ -800,6 +802,88 @@ scenarios['023_time_series_event_markers_8x1M'] = () => {
   return {
     scenario: '023_time_series_event_markers_8x1M',
     metric: `${penCount} pens x ${(pointCount / 1e6).toFixed(0)}M pts plus ${eventMarkers.length.toLocaleString()} event markers (${markerPointCount.toLocaleString()} marker pts, ${commandCount} commands)`,
+    value: Math.round(medianMs * 100) / 100,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 024: Anomaly score tracks ─────────────────────
+
+scenarios['024_time_series_anomaly_tracks_4x1M'] = () => {
+  const pointCount = 1_000_000
+  const penCount = 4
+  const trackCount = 4
+  const data = generateMultiPenData(pointCount, penCount)
+  const anomalyColumns: Record<string, Float64Array> = {}
+  const anomalyTracks: TimeSeriesAnomalyTrack[] = []
+
+  for (let track = 0; track < trackCount; track++) {
+    const field = `anomaly_${track}`
+    const scores = new Float64Array(pointCount)
+    const fastPeriod = 97 + track * 13
+    const slowPeriod = 21_000 + track * 2500
+    for (let i = 0; i < pointCount; i++) {
+      const fast = Math.abs(Math.sin(i / fastPeriod))
+      const slow = Math.max(0, Math.sin(i / slowPeriod))
+      const pulse = i % (80_000 + track * 8_000) < 2_500 ? 0.45 : 0
+      scores[i] = Math.min(1, fast * 0.35 + slow * 0.45 + pulse)
+    }
+    anomalyColumns[field] = scores
+    anomalyTracks.push({
+      key: field,
+      label: `Model ${track + 1}`,
+      scoreField: field,
+      threshold: 0.72,
+      modelVersion: `v2026.05.${track + 1}`,
+      reviewerState: track % 2 === 0 ? 'review-pending' : 'approved',
+      placement: track % 2 === 0 ? 'bottom' : 'top',
+      laneHeightRatio: 0.08,
+      fillColor: [0.86, 0.15, 0.15, 0.14],
+      lineColor: [0.86, 0.15, 0.15, 0.72],
+      thresholdColor: [0.12, 0.12, 0.12, 0.65],
+    })
+  }
+
+  const dataWithAnomalyTracks = {
+    ...data,
+    columns: {
+      ...data.columns,
+      ...anomalyColumns,
+    },
+    anomalyTracks,
+  } as const
+  const target = 250 // ms for 4M trend samples plus 4M anomaly score samples
+
+  const warmup = buildTimeSeriesRenderPlan(dataWithAnomalyTracks, { gapThreshold: 0 })
+  const warmupCommands = new RenderCommandList()
+  addTimeSeriesAnomalyTracksToCommandList(warmupCommands, warmup)
+  addTimeSeriesToCommandList(warmupCommands, warmup)
+
+  const times: number[] = []
+  let anomalyPointCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 3; i++) {
+    const start = performance.now()
+    const plan = buildTimeSeriesRenderPlan(dataWithAnomalyTracks, { gapThreshold: 0 })
+    const commands = new RenderCommandList()
+    addTimeSeriesAnomalyTracksToCommandList(commands, plan)
+    addTimeSeriesToCommandList(commands, plan)
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    anomalyPointCount = plan.anomalyTracks.reduce(
+      (total, track) => total + track.renderedPointCount,
+      0,
+    )
+    commandCount = commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '024_time_series_anomaly_tracks_4x1M',
+    metric: `${penCount} pens x ${(pointCount / 1e6).toFixed(0)}M pts plus ${trackCount} anomaly tracks (${anomalyPointCount.toLocaleString()} anomaly pts, ${commandCount} commands)`,
     value: Math.round(medianMs * 100) / 100,
     unit: 'ms',
     target,

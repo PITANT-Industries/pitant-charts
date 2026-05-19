@@ -310,6 +310,45 @@ describe('useTimeSeries', () => {
     expect(result.current.renderPlan.eventMarkers[1]?.placement).toBe('full-height')
   })
 
+  it('passes anomaly score tracks into the core render plan', () => {
+    const data: TimeSeriesColumnData = {
+      timestamps: new Float64Array([1000, 1010, 1020]),
+      columns: {
+        temp: new Float64Array([10, 12, 11]),
+        anomaly: new Float64Array([0.2, 0.75, 0.45]),
+      },
+    }
+    const config: TimeSeriesConfig = {
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+      anomalyTracks: [
+        {
+          key: 'model-score',
+          label: 'Model score',
+          scoreField: 'anomaly',
+          threshold: 0.7,
+          modelVersion: 'model-17',
+          reviewerState: 'approved',
+          placement: 'bottom',
+          fillRgba: [0.9, 0.1, 0.1, 0.18],
+          lineRgba: [0.9, 0.1, 0.1, 0.82],
+          thresholdRgba: [0.1, 0.1, 0.1, 0.72],
+        },
+      ],
+    }
+    const { result } = renderHook(() => {
+      const containerRef = useRef<ChartContainerRef | null>(null)
+      return useTimeSeries({ config, data, containerRef })
+    })
+
+    expect(result.current.renderPlan.anomalyTracks.map((track) => track.key)).toEqual([
+      'model-score',
+    ])
+    expect(result.current.renderPlan.anomalyTracks[0]?.modelVersion).toBe('model-17')
+    expect(result.current.renderPlan.anomalyTracks[0]?.reviewerState).toBe('approved')
+    expect(result.current.renderPlan.anomalyTracks[0]?.threshold).toBe(0.7)
+    expect(result.current.renderPlan.anomalyTracks[0]?.fillSegments).toHaveLength(1)
+  })
+
   it('expands derived series into legend, render plan, and tooltip metadata', () => {
     const data: TimeSeriesColumnData = {
       timestamps: new Float64Array([1000, 1010, 1020]),

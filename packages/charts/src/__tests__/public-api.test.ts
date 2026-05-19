@@ -12,6 +12,7 @@ describe('public API', () => {
     expect(api.createPlotViewportTransform).toBeDefined()
     expect(api.buildTimeSeriesRenderPlan).toBeDefined()
     expect(api.addTimeSeriesAnnotationsToCommandList).toBeDefined()
+    expect(api.addTimeSeriesAnomalyTracksToCommandList).toBeDefined()
     expect(api.addTimeSeriesBandsToCommandList).toBeDefined()
     expect(api.addTimeSeriesEventMarkersToCommandList).toBeDefined()
     expect(api.addTimeSeriesDerivedColumns).toBeDefined()

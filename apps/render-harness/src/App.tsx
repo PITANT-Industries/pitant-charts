@@ -12,7 +12,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 
 type RendererChoice = RendererType | 'auto'
-type LoadProfile = 'compact' | 'large' | 'bands'
+type LoadProfile = 'compact' | 'large' | 'bands' | 'anomaly'
 
 interface GeneratedData {
   analog: TimeSeriesColumnData
@@ -27,13 +27,14 @@ declare global {
       pointCount: number
       analogSeries: number
       analogBands: number
+      analogAnomalyTracks: number
       digitalChannels: number
     }
   }
 }
 
 const RENDERERS: readonly RendererChoice[] = ['auto', 'canvas2d', 'webgpu']
-const PROFILES: readonly LoadProfile[] = ['compact', 'large', 'bands']
+const PROFILES: readonly LoadProfile[] = ['compact', 'large', 'bands', 'anomaly']
 
 const SERIES_CONFIG: TimeSeriesConfig['series'] = [
   {
@@ -120,6 +121,35 @@ const BAND_CONFIG: NonNullable<TimeSeriesConfig['bands']> = [
   },
 ]
 
+const ANOMALY_TRACK_CONFIG: NonNullable<TimeSeriesConfig['anomalyTracks']> = [
+  {
+    key: 'model-a',
+    label: 'Model A',
+    scoreField: 'anomaly_a',
+    threshold: 0.72,
+    modelVersion: 'v2026.05-a',
+    reviewerState: 'review-pending',
+    placement: 'bottom',
+    laneHeightRatio: 0.1,
+    fillRgba: [0.86, 0.15, 0.15, 0.16],
+    lineRgba: [0.86, 0.15, 0.15, 0.78],
+    thresholdRgba: [0.12, 0.12, 0.12, 0.62],
+  },
+  {
+    key: 'model-b',
+    label: 'Model B',
+    scoreField: 'anomaly_b',
+    threshold: 0.68,
+    modelVersion: 'v2026.05-b',
+    reviewerState: 'approved',
+    placement: 'top',
+    laneHeightRatio: 0.1,
+    fillRgba: [0.48, 0.23, 0.93, 0.14],
+    lineRgba: [0.48, 0.23, 0.93, 0.72],
+    thresholdRgba: [0.12, 0.12, 0.12, 0.62],
+  },
+]
+
 export function App(): React.JSX.Element {
   const [renderer, setRenderer] = useState<RendererChoice>(() =>
     readChoiceFromQuery('renderer', RENDERERS, 'auto'),
@@ -127,7 +157,8 @@ export function App(): React.JSX.Element {
   const [profile, setProfile] = useState<LoadProfile>(() =>
     readChoiceFromQuery('profile', PROFILES, 'large'),
   )
-  const pointCount = profile === 'large' ? 180_000 : profile === 'bands' ? 90_000 : 12_000
+  const pointCount =
+    profile === 'large' ? 180_000 : profile === 'bands' || profile === 'anomaly' ? 90_000 : 12_000
   const generated = useMemo(() => generateData(pointCount, profile), [pointCount, profile])
   const timeSeriesConfig = useMemo<TimeSeriesConfig>(() => {
     const config: TimeSeriesConfig = {
@@ -141,6 +172,7 @@ export function App(): React.JSX.Element {
       },
     }
     if (profile === 'bands') config.bands = BAND_CONFIG
+    if (profile === 'anomaly') config.anomalyTracks = ANOMALY_TRACK_CONFIG
     return config
   }, [profile, renderer])
   const digitalConfig = useMemo<DigitalChannelConfig>(
@@ -163,6 +195,7 @@ export function App(): React.JSX.Element {
       pointCount,
       analogSeries: SERIES_CONFIG.length,
       analogBands: profile === 'bands' ? BAND_CONFIG.length : 0,
+      analogAnomalyTracks: profile === 'anomaly' ? ANOMALY_TRACK_CONFIG.length : 0,
       digitalChannels: DIGITAL_CONFIG.length,
     }
   }, [pointCount, profile, renderer])
@@ -311,6 +344,8 @@ function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
   const flow = new Float64Array(pointCount)
   const flowLow = profile === 'bands' ? new Float64Array(pointCount) : undefined
   const flowHigh = profile === 'bands' ? new Float64Array(pointCount) : undefined
+  const anomalyA = profile === 'anomaly' ? new Float64Array(pointCount) : undefined
+  const anomalyB = profile === 'anomaly' ? new Float64Array(pointCount) : undefined
   const running = new Float64Array(pointCount)
   const fault = new Float64Array(pointCount)
   const manual = new Float64Array(pointCount)
@@ -329,27 +364,25 @@ function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
       flowLow[i] = flowValue - envelopeWidth
       flowHigh[i] = flowValue + envelopeWidth
     }
+    if (anomalyA && anomalyB) {
+      const pressureSpike = i % 22_000 < 900 ? 0.42 : 0
+      const vibrationSpike = i % 31_000 > 29_500 ? 0.38 : 0
+      anomalyA[i] = Math.min(1, Math.abs(Math.sin(i / 89)) * 0.32 + pressureSpike)
+      anomalyB[i] = Math.min(1, Math.max(0, Math.sin(i / 12_000)) * 0.48 + vibrationSpike)
+    }
     running[i] = i % 18_000 < 15_500 ? 1 : 0
     fault[i] = i % 45_000 > 43_500 ? 1 : 0
     manual[i] = i % 60_000 > 48_000 ? 1 : 0
   }
 
-  const analogColumns: TimeSeriesColumnData['columns'] =
-    flowLow && flowHigh
-      ? {
-          temperature,
-          pressure,
-          vibration,
-          flow,
-          flow_low: flowLow,
-          flow_high: flowHigh,
-        }
-      : {
-          temperature,
-          pressure,
-          vibration,
-          flow,
-        }
+  const analogColumns = {
+    temperature,
+    pressure,
+    vibration,
+    flow,
+    ...(flowLow && flowHigh ? { flow_low: flowLow, flow_high: flowHigh } : {}),
+    ...(anomalyA && anomalyB ? { anomaly_a: anomalyA, anomaly_b: anomalyB } : {}),
+  } satisfies TimeSeriesColumnData['columns']
 
   return {
     analog: {

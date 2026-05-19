@@ -146,6 +146,32 @@ export interface TimeSeriesEventMarker {
   labelVisible?: boolean
 }
 
+export type TimeSeriesAnomalyTrackPlacement = 'bottom' | 'top'
+
+export type TimeSeriesAnomalyTrackReviewerState =
+  | 'unreviewed'
+  | 'review-pending'
+  | 'approved'
+  | 'rejected'
+
+export interface TimeSeriesAnomalyTrack {
+  key: string
+  label?: string
+  scoreField: string
+  threshold?: number
+  modelVersion?: string
+  reviewerState?: TimeSeriesAnomalyTrackReviewerState
+  placement?: TimeSeriesAnomalyTrackPlacement
+  laneHeightRatio?: number
+  laneOffsetRatio?: number
+  fillColor?: RgbaColor
+  lineColor?: RgbaColor
+  thresholdColor?: RgbaColor
+  lineWidth?: number
+  gapThreshold?: number
+  visible?: boolean
+}
+
 export interface TimeSeriesDataSet {
   timestamps: Float64Array
   columns: Record<string, Float64Array>
@@ -153,6 +179,7 @@ export interface TimeSeriesDataSet {
   bands?: readonly TimeSeriesBand[]
   annotations?: readonly TimeSeriesAnnotation[]
   eventMarkers?: readonly TimeSeriesEventMarker[]
+  anomalyTracks?: readonly TimeSeriesAnomalyTrack[]
 }
 
 export interface TimeSeriesRenderOptions {
@@ -173,11 +200,16 @@ export interface TimeSeriesRenderOptions {
   defaultEventMarkerColor?: RgbaColor
   defaultEventMarkerLineWidth?: number
   defaultEventMarkerTextColor?: RgbaColor
+  defaultAnomalyTrackFillColor?: RgbaColor
+  defaultAnomalyTrackLineColor?: RgbaColor
+  defaultAnomalyTrackThresholdColor?: RgbaColor
+  defaultAnomalyTrackLineWidth?: number
   eventMarkerTickRatio?: number
   includeHidden?: boolean
   includeHiddenBands?: boolean
   includeHiddenAnnotations?: boolean
   includeHiddenEventMarkers?: boolean
+  includeHiddenAnomalyTracks?: boolean
   yPaddingRatio?: number
 }
 
@@ -263,6 +295,32 @@ export interface TimeSeriesPlannedEventMarker {
   labelVisible: boolean
 }
 
+export interface TimeSeriesAnomalyTrackStyle {
+  fill: FillOptions
+  line?: LineOptions
+  threshold?: LineOptions
+}
+
+export interface TimeSeriesPlannedAnomalyTrack {
+  key: string
+  label: string
+  scoreField: string
+  threshold?: number
+  modelVersion?: string
+  reviewerState: TimeSeriesAnomalyTrackReviewerState
+  placement: TimeSeriesAnomalyTrackPlacement
+  style: TimeSeriesAnomalyTrackStyle
+  fillSegments: readonly TimeSeriesBandSegment[]
+  lineSegments: readonly TimeSeriesLineSegment[]
+  thresholdSegments: readonly TimeSeriesLineSegment[]
+  laneRange: NumericRange
+  scoreRange: NumericRange
+  sourcePointCount: number
+  includedSampleCount: number
+  renderedPointCount: number
+  droppedPointCount: number
+}
+
 export interface TimeSeriesRenderPlan {
   kind: 'time-series'
   xRange: NumericRange
@@ -273,6 +331,7 @@ export interface TimeSeriesRenderPlan {
   bands: readonly TimeSeriesPlannedBand[]
   annotations: readonly TimeSeriesPlannedAnnotation[]
   eventMarkers: readonly TimeSeriesPlannedEventMarker[]
+  anomalyTracks: readonly TimeSeriesPlannedAnomalyTrack[]
   sourcePointCount: number
   includedSampleCount: number
   renderedPointCount: number
@@ -325,6 +384,17 @@ interface EventMarkerBuildResult {
   renderedPointCount: number
 }
 
+interface AnomalyTrackBuildResult {
+  fillSegments: TimeSeriesBandSegment[]
+  lineSegments: TimeSeriesLineSegment[]
+  thresholdSegments: TimeSeriesLineSegment[]
+  laneRange: NumericRange
+  scoreRange: NumericRange
+  sourcePointCount: number
+  includedSampleCount: number
+  renderedPointCount: number
+}
+
 export function buildTimeSeriesRenderPlan(
   data: TimeSeriesDataSet,
   options: TimeSeriesRenderOptions = {},
@@ -337,6 +407,7 @@ export function buildTimeSeriesRenderPlan(
   const plannedBands: TimeSeriesPlannedBand[] = []
   const plannedAnnotations: TimeSeriesPlannedAnnotation[] = []
   const plannedEventMarkers: TimeSeriesPlannedEventMarker[] = []
+  const plannedAnomalyTracks: TimeSeriesPlannedAnomalyTrack[] = []
   const warnings: string[] = []
   let minY = Number.POSITIVE_INFINITY
   let maxY = Number.NEGATIVE_INFINITY
@@ -524,6 +595,65 @@ export function buildTimeSeriesRenderPlan(
     })
   }
 
+  const anomalyTracks = data.anomalyTracks ?? []
+  const trackOffsets = {
+    bottom: 0,
+    top: 0,
+  }
+  for (let trackIndex = 0; trackIndex < anomalyTracks.length; trackIndex++) {
+    const track = anomalyTracks[trackIndex] as TimeSeriesAnomalyTrack
+    if (track.visible === false && options.includeHiddenAnomalyTracks !== true) continue
+
+    const values = data.columns[track.scoreField]
+    if (!values) {
+      warnings.push(
+        `Anomaly track "${track.key}" skipped because column "${track.scoreField}" is missing.`,
+      )
+      continue
+    }
+
+    const placement = track.placement ?? 'bottom'
+    const laneHeightRatio = clampNumber(track.laneHeightRatio ?? 0.12, 0.02, 0.45)
+    const laneOffsetRatio =
+      track.laneOffsetRatio ?? trackOffsets[placement] * (laneHeightRatio + 0.015)
+    trackOffsets[placement] += 1
+
+    const build = buildAnomalyTrackSegments(data.timestamps, values, track, {
+      xRange,
+      xOrigin,
+      yRange,
+      placement,
+      laneHeightRatio,
+      laneOffsetRatio,
+      gapThreshold: track.gapThreshold ?? options.gapThreshold ?? 0,
+    })
+
+    if (build.includedSampleCount === 0) {
+      warnings.push(`Anomaly track "${track.key}" has no samples inside the visible x-range.`)
+      continue
+    }
+
+    plannedAnomalyTracks.push({
+      key: track.key,
+      label: track.label ?? track.key,
+      scoreField: track.scoreField,
+      ...(track.threshold !== undefined ? { threshold: clampNumber(track.threshold, 0, 1) } : {}),
+      ...(track.modelVersion !== undefined ? { modelVersion: track.modelVersion } : {}),
+      reviewerState: track.reviewerState ?? 'unreviewed',
+      placement,
+      style: resolveAnomalyTrackStyle(track, trackIndex, options),
+      fillSegments: build.fillSegments,
+      lineSegments: build.lineSegments,
+      thresholdSegments: build.thresholdSegments,
+      laneRange: build.laneRange,
+      scoreRange: build.scoreRange,
+      sourcePointCount: build.sourcePointCount,
+      includedSampleCount: build.includedSampleCount,
+      renderedPointCount: build.renderedPointCount,
+      droppedPointCount: build.sourcePointCount - build.includedSampleCount,
+    })
+  }
+
   return {
     kind: 'time-series',
     xRange,
@@ -534,6 +664,7 @@ export function buildTimeSeriesRenderPlan(
     bands: plannedBands,
     annotations: plannedAnnotations,
     eventMarkers: plannedEventMarkers,
+    anomalyTracks: plannedAnomalyTracks,
     sourcePointCount,
     includedSampleCount,
     renderedPointCount,
@@ -591,6 +722,29 @@ export function addTimeSeriesEventMarkersToCommandList(
   }
 }
 
+export function addTimeSeriesAnomalyTracksToCommandList(
+  commands: RenderCommandList,
+  plan: TimeSeriesRenderPlan,
+  fillZ: ZLayer = ZLayer.Fill,
+  lineZ: ZLayer = ZLayer.Overlay,
+): void {
+  for (const track of plan.anomalyTracks) {
+    for (const segment of track.fillSegments) {
+      commands.addFill(segment.upper, segment.lower, track.style.fill, fillZ)
+    }
+    if (track.style.line) {
+      for (const segment of track.lineSegments) {
+        commands.addLine(segment.buffer, track.style.line, lineZ)
+      }
+    }
+    if (track.style.threshold) {
+      for (const segment of track.thresholdSegments) {
+        commands.addLine(segment.buffer, track.style.threshold, lineZ)
+      }
+    }
+  }
+}
+
 export function addTimeSeriesToCommandList(
   commands: RenderCommandList,
   plan: TimeSeriesRenderPlan,
@@ -627,6 +781,7 @@ export function buildTimeSeriesCommandFrame(
   }
   addTimeSeriesBandsToCommandList(commands, plan)
   addTimeSeriesAnnotationsToCommandList(commands, plan)
+  addTimeSeriesAnomalyTracksToCommandList(commands, plan)
   addTimeSeriesToCommandList(commands, plan)
   addTimeSeriesEventMarkersToCommandList(commands, plan)
   addTimeSeriesAnnotationLabelsToCommandList(
@@ -836,6 +991,134 @@ function emptyEventMarkerBuildResult(): EventMarkerBuildResult {
   }
 }
 
+function buildAnomalyTrackSegments(
+  timestamps: Float64Array,
+  scores: Float64Array,
+  track: TimeSeriesAnomalyTrack,
+  options: {
+    xRange: NumericRange
+    xOrigin: number
+    yRange: NumericRange
+    placement: TimeSeriesAnomalyTrackPlacement
+    laneHeightRatio: number
+    laneOffsetRatio: number
+    gapThreshold: number
+  },
+): AnomalyTrackBuildResult {
+  const pointCount = Math.min(timestamps.length, scores.length)
+  const fillUpperScratch = new Float32Array(pointCount * 2)
+  const fillLowerScratch = new Float32Array(pointCount * 2)
+  const lineScratch = new Float32Array(pointCount * 2)
+  const fillSegments: TimeSeriesBandSegment[] = []
+  const lineSegments: TimeSeriesLineSegment[] = []
+  let write = 0
+  let segmentStart = 0
+  let segmentPointCount = 0
+  let includedSampleCount = 0
+  let renderedPointCount = 0
+  let minScore = Number.POSITIVE_INFINITY
+  let maxScore = Number.NEGATIVE_INFINITY
+  let previousTimestamp = 0
+
+  const ySpan = Math.max(Number.EPSILON, options.yRange[1] - options.yRange[0])
+  const laneHeight = ySpan * options.laneHeightRatio
+  const laneOffset = ySpan * clampNumber(options.laneOffsetRatio, 0, 0.9)
+  const laneRange: NumericRange =
+    options.placement === 'top'
+      ? [options.yRange[1] - laneOffset - laneHeight, options.yRange[1] - laneOffset]
+      : [options.yRange[0] + laneOffset, options.yRange[0] + laneOffset + laneHeight]
+  const laneBase = laneRange[0]
+
+  const pushSegment = () => {
+    if (segmentPointCount >= 2) {
+      fillSegments.push({
+        upper: fillUpperScratch.subarray(segmentStart, write),
+        lower: fillLowerScratch.subarray(segmentStart, write),
+        pointCount: segmentPointCount,
+      })
+      lineSegments.push({
+        buffer: lineScratch.subarray(segmentStart, write),
+        pointCount: segmentPointCount,
+      })
+      renderedPointCount += segmentPointCount * 2
+    }
+    segmentPointCount = 0
+    segmentStart = write
+  }
+
+  const appendPoint = (x: number, score: number) => {
+    const y = laneBase + score * laneHeight
+    fillLowerScratch[write] = x
+    fillLowerScratch[write + 1] = laneBase
+    fillUpperScratch[write] = x
+    fillUpperScratch[write + 1] = y
+    lineScratch[write] = x
+    lineScratch[write + 1] = y
+    write += 2
+    segmentPointCount += 1
+  }
+
+  for (let i = 0; i < pointCount; i++) {
+    const timestamp = timestamps[i]
+    const rawScore = scores[i]
+    if (
+      !isFiniteNumber(timestamp) ||
+      !isFiniteNumber(rawScore) ||
+      timestamp < options.xRange[0] ||
+      timestamp > options.xRange[1]
+    ) {
+      pushSegment()
+      continue
+    }
+
+    const gapBreak =
+      segmentPointCount > 0 &&
+      options.gapThreshold > 0 &&
+      timestamp - previousTimestamp > options.gapThreshold
+    if (gapBreak) {
+      pushSegment()
+    }
+
+    if (segmentPointCount === 0) segmentStart = write
+
+    const score = clampNumber(rawScore, 0, 1)
+    appendPoint(timestamp - options.xOrigin, score)
+    includedSampleCount += 1
+    minScore = Math.min(minScore, score)
+    maxScore = Math.max(maxScore, score)
+    previousTimestamp = timestamp
+  }
+
+  pushSegment()
+
+  const thresholdSegments: TimeSeriesLineSegment[] = []
+  const threshold = track.threshold === undefined ? undefined : clampNumber(track.threshold, 0, 1)
+  if (threshold !== undefined && isFiniteNumber(threshold)) {
+    const y = laneBase + threshold * laneHeight
+    thresholdSegments.push({
+      buffer: new Float32Array([
+        options.xRange[0] - options.xOrigin,
+        y,
+        options.xRange[1] - options.xOrigin,
+        y,
+      ]),
+      pointCount: 2,
+    })
+    renderedPointCount += 2
+  }
+
+  return {
+    fillSegments,
+    lineSegments,
+    thresholdSegments,
+    laneRange,
+    scoreRange: includedSampleCount === 0 ? [0, 0] : [minScore, maxScore],
+    sourcePointCount: pointCount,
+    includedSampleCount,
+    renderedPointCount,
+  }
+}
+
 function annotationYExtent(annotation: TimeSeriesAnnotation): NumericRange | null {
   switch (annotation.kind) {
     case 'y-line':
@@ -925,6 +1208,34 @@ function resolveEventMarkerStyle(
       fontSize: 11,
     },
   }
+}
+
+function resolveAnomalyTrackStyle(
+  track: TimeSeriesAnomalyTrack,
+  index: number,
+  options: TimeSeriesRenderOptions,
+): TimeSeriesAnomalyTrackStyle {
+  const base = getDefaultColor(index, options.defaultAnomalyTrackLineColor)
+  const fillColor = track.fillColor ??
+    options.defaultAnomalyTrackFillColor ?? [base[0], base[1], base[2], Math.min(base[3], 0.2)]
+  const lineColor = track.lineColor ?? options.defaultAnomalyTrackLineColor ?? base
+  const thresholdColor = track.thresholdColor ??
+    options.defaultAnomalyTrackThresholdColor ?? [0.82, 0.12, 0.08, 0.82]
+  const width = track.lineWidth ?? options.defaultAnomalyTrackLineWidth ?? 1
+  const style: TimeSeriesAnomalyTrackStyle = {
+    fill: { color: fillColor },
+    line: {
+      color: lineColor,
+      width,
+    },
+  }
+  if (track.threshold !== undefined) {
+    style.threshold = {
+      color: thresholdColor,
+      width: Math.max(1, width),
+    }
+  }
+  return style
 }
 
 function eventMarkerDefaultColor(type: TimeSeriesEventMarkerType, index: number): RgbaColor {

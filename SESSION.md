@@ -2,11 +2,11 @@
 
 **Date:** 2026-05-19
 **Current phase:** Phase 6 - Post-v1 Industrial Chart Packs
-**Latest action:** Closed Phase 5 externally. PR #1 was merged to `main`, main
-CI passed, `.github/workflows/publish.yml` became available on the default
-branch, and the publish workflow dry-run passed after aligning its hosted-runner
-benchmark profile with CI while preserving strict local benchmarks as the
-release performance gate.
+**Latest action:** Continued Phase 6 with TimeSeries anomaly score tracks in the
+core engine, React API, render harness, benchmark suite, frontend contract pack,
+and multi-axis demo. The demo now turns the anomaly overlay into a real
+`TimeSeriesConfig.anomalyTracks[]` lane so it stays attached to the package
+engine instead of a bespoke SVG-only visualization.
 
 ## What Exists
 
@@ -150,15 +150,25 @@ release performance gate.
   maintenance ticks rendered through the TimeSeries command-frame/SVG path.
   Benchmark scenario `023_time_series_event_markers_8x1M` covers eight
   high-density trend pens plus ten thousand sparse event markers.
+- Phase 6 anomaly score tracks exist in core and React config, with bounded
+  top/bottom score lanes, threshold lines, model-version metadata, reviewer
+  state metadata, command-frame/SVG export coverage, browser harness `anomaly`
+  profile coverage, and benchmark scenario
+  `024_time_series_anomaly_tracks_4x1M`.
+- The multi-axis demo's PITANT TimeSeries engine panel now derives an
+  `anomaly_score` typed-array column and renders it through
+  `TimeSeriesConfig.anomalyTracks[]` when the abnormal-areas overlay is enabled.
 
 ## Next Build Task
 
 Continue Phase 6 implementation:
 
-1. Build anomaly score tracks next, using the same rule: no visible runtime
-   claim without a fixture, a contract-pack update, and a benchmark or
-   browser-harness state.
-2. Keep SPC, spectrum/spectrogram, correlation, KPI, and PDF packs at
+1. Build the next concrete post-v1 industrial pack with the same rule: no
+   visible runtime claim without a fixture, a contract-pack update, and a
+   benchmark or browser-harness state.
+2. Prioritize SPC/control-limit tracks next unless a higher-value demo need
+   appears first.
+3. Keep spectrum/spectrogram, correlation, KPI, and PDF packs at
    contract-only until their benchmark fixtures exist.
 
 Before adding a new visible feature, update or check
@@ -279,6 +289,28 @@ Run after Phase 6 sparse event-marker overlay slice on 2026-05-19:
 - `bun run harness:verify`: pass for Canvas2D compact and bands profiles;
   WebGPU profiles skipped because `navigator.gpu` is unavailable locally
 - `git diff --check`: pass
+
+Run after Phase 6 anomaly score-track slice on 2026-05-19:
+
+- `bun run lint`: pass, 130 files checked
+- `bun run typecheck`: pass
+- `bun run build`: pass
+- `bun run test`: pass, 30 files / 340 tests
+- `bun run bench`: pass, 19/19 benchmark scenarios;
+  `024_time_series_anomaly_tracks_4x1M` measured 55.01 ms in the full run
+  against a 250 ms target
+- Focused tests for TimeSeries core, public API, and React TimeSeries: pass,
+  3 files / 36 tests
+- `bun run --filter @pitant/benchmark bench 024`: pass,
+  `024_time_series_anomaly_tracks_4x1M` at 68.87 ms against a 250 ms target
+- `bun run --filter @pitant/render-harness build`: pass
+- `bun run --filter @pitant/multiaxis-demo build`: pass
+- `bun run harness:verify -- --renderers=canvas2d --profiles=anomaly`: pass,
+  Canvas2D anomaly profile produced significant chart pixels with 90,000
+  samples
+- Playwright local demo smoke against `http://127.0.0.1:5174/`: pass; selecting
+  `Alarm Review` enables the TimeSeries engine score lane and reports
+  `calc / 1 scores`
 
 Run after Phase 3 high-DPI resize slice on 2026-05-19:
 

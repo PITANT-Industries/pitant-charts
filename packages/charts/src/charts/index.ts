@@ -76,6 +76,10 @@ export { commandFrameToSvg } from './svg-export.js'
 export type {
   TimeSeriesAnnotation,
   TimeSeriesAnnotationStyle,
+  TimeSeriesAnomalyTrack,
+  TimeSeriesAnomalyTrackPlacement,
+  TimeSeriesAnomalyTrackReviewerState,
+  TimeSeriesAnomalyTrackStyle,
   TimeSeriesBand,
   TimeSeriesBandSegment,
   TimeSeriesCommandFrame,
@@ -89,6 +93,7 @@ export type {
   TimeSeriesInterpolation,
   TimeSeriesLineSegment,
   TimeSeriesPlannedAnnotation,
+  TimeSeriesPlannedAnomalyTrack,
   TimeSeriesPlannedBand,
   TimeSeriesPlannedEventMarker,
   TimeSeriesPlannedSeries,
@@ -104,6 +109,7 @@ export type {
 } from './time-series.js'
 export {
   addTimeSeriesAnnotationsToCommandList,
+  addTimeSeriesAnomalyTracksToCommandList,
   addTimeSeriesBandsToCommandList,
   addTimeSeriesEventMarkersToCommandList,
   addTimeSeriesToCommandList,

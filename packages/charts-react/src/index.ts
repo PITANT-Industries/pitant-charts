@@ -62,6 +62,7 @@ export { DigitalChannel, useDigitalChannel } from './digital-channel.js'
 // Time series
 export type {
   TimeSeriesAnnotationConfig,
+  TimeSeriesAnomalyTrackConfig,
   TimeSeriesBandConfig,
   TimeSeriesColumnData,
   TimeSeriesConfig,

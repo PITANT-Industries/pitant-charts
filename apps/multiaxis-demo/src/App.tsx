@@ -5017,7 +5017,8 @@ function barStyle(width: number, color: string): CSSProperties {
 
 type PitantEventMarkerType = NonNullable<TimeSeriesEventMarkerConfig['eventType']>
 type PitantEventMarkerPlacement = NonNullable<TimeSeriesEventMarkerConfig['placement']>
-type PitantEngineColumnMap = Record<SeriesId, Float64Array>
+type PitantEngineField = SeriesId | 'anomaly_score'
+type PitantEngineColumnMap = Record<PitantEngineField, Float64Array>
 
 interface PitantTimeSeriesEnginePanelProps {
   activeSeries: SeriesConfig
@@ -5034,6 +5035,7 @@ function createPitantEngineColumns(length: number): PitantEngineColumnMap {
     vibration: new Float64Array(length),
     cycleState: new Float64Array(length),
     lubrication: new Float64Array(length),
+    anomaly_score: new Float64Array(length),
   }
 }
 
@@ -5100,6 +5102,24 @@ function writePitantEngineSample(
       cycle,
     )
   }
+  columns.anomaly_score[writeIndex] = pitantEngineAnomalyScore(columns, writeIndex)
+}
+
+function pitantEngineAnomalyScore(columns: PitantEngineColumnMap, index: number): number {
+  let score = 0
+  for (const series of numericSeries()) {
+    const value = columns[series.id][index] ?? 0
+    const status = statusForValue(value, series)
+    if (status === 'warning') score = Math.max(score, 0.38)
+    if (status === 'anomaly') score = Math.max(score, 0.68)
+    if (status === 'alarm') score = Math.max(score, 0.94)
+  }
+
+  const vibration = columns.vibration[index] ?? 0
+  const lubrication = columns.lubrication[index] ?? 0
+  const vibrationFactor = clamp((vibration - 5) / 8, 0, 1) * 0.35
+  const lubricationFactor = lubrication < 22 ? (22 - lubrication) / 22 : 0
+  return clamp(Math.max(score, vibrationFactor + lubricationFactor * 0.45), 0, 1)
 }
 
 function buildPitantTimeSeriesData(samples: readonly Sample[]): TimeSeriesColumnData {
@@ -5398,6 +5418,23 @@ function buildPitantTimeSeriesConfig(
     bands: buildPitantBands(activeSeries, overlays),
     annotations: buildPitantAnnotations(activeSeries, displaySamples, selected),
     eventMarkers: buildPitantEventMarkers(displaySamples, overlays),
+    anomalyTracks: overlays.anomalyBands
+      ? [
+          {
+            key: 'demo-anomaly-score',
+            label: 'Anomaly score',
+            scoreField: 'anomaly_score',
+            threshold: 0.7,
+            modelVersion: 'demo-rule-v1',
+            reviewerState: 'review-pending',
+            placement: 'bottom',
+            laneHeightRatio: 0.11,
+            fillRgba: toRgba('#be123c', 0.16),
+            lineRgba: toRgba('#be123c', 0.78),
+            thresholdRgba: toRgba('#111827', 0.62),
+          },
+        ]
+      : [],
     xAxis: {
       label: 'Cycle',
       formatValue: formatCycleTick,
@@ -5431,6 +5468,7 @@ function PitantTimeSeriesEnginePanel({
   const bandCount = config.bands?.length ?? 0
   const annotationCount = config.annotations?.length ?? 0
   const eventCount = config.eventMarkers?.length ?? 0
+  const anomalyTrackCount = config.anomalyTracks?.length ?? 0
 
   return (
     <section className="pitant-engine-panel" aria-label="PITANT TimeSeries engine">
@@ -5452,7 +5490,7 @@ function PitantTimeSeriesEnginePanel({
             <dt>Layers</dt>
             <dd>
               {bandCount} bands / {annotationCount} notes / {eventCount} events / {derivedCount}{' '}
-              calc
+              calc / {anomalyTrackCount} scores
             </dd>
           </div>
         </dl>

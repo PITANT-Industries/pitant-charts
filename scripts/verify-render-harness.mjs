@@ -16,7 +16,7 @@ const VISUAL_BASELINE_PATH = resolve(HARNESS_DIR, 'visual-baselines.json')
 const VIEWPORT = { width: 1280, height: 900, deviceScaleFactor: 1 }
 const VISUAL_GRID = { columns: 24, rows: 12 }
 const DEFAULT_RENDERERS = ['canvas2d', 'webgpu']
-const DEFAULT_VERIFY_PROFILES = ['compact', 'bands']
+const DEFAULT_VERIFY_PROFILES = ['compact', 'bands', 'anomaly']
 const DEFAULT_VISUAL_PROFILES = ['compact', 'large']
 const DEFAULT_FPS_PROFILES = ['compact']
 const MIN_SIGNIFICANT_PIXELS = 90
@@ -258,6 +258,16 @@ function validateProfileState(state, profile) {
   }
   if (profile !== 'bands' && state.analogBands !== 0) {
     errors.push(`Expected ${profile} profile to render 0 analog bands, got ${state.analogBands}.`)
+  }
+  if (profile === 'anomaly' && state.analogAnomalyTracks !== 2) {
+    errors.push(
+      `Expected anomaly profile to render 2 anomaly tracks, got ${state.analogAnomalyTracks ?? 'none'}.`,
+    )
+  }
+  if (profile !== 'anomaly' && state.analogAnomalyTracks !== 0) {
+    errors.push(
+      `Expected ${profile} profile to render 0 anomaly tracks, got ${state.analogAnomalyTracks}.`,
+    )
   }
 
   return errors

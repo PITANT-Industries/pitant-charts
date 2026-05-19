@@ -16,7 +16,7 @@ const FPS_FRAME_COUNT = 90
 const DEFAULT_BROWSERS = ['chromium', 'firefox', 'webkit']
 const DEFAULT_RENDERERS = ['canvas2d']
 const DEFAULT_PROFILES = ['compact']
-const SUPPORTED_PROFILES = ['compact', 'large', 'bands']
+const SUPPORTED_PROFILES = ['compact', 'large', 'bands', 'anomaly']
 
 const args = parseArgs(process.argv.slice(2))
 const browsers = args.browsers ?? DEFAULT_BROWSERS
@@ -177,6 +177,16 @@ function validateProfileState(state, profile) {
   }
   if (profile !== 'bands' && state.analogBands !== 0) {
     errors.push(`Expected ${profile} profile to render 0 analog bands, got ${state.analogBands}.`)
+  }
+  if (profile === 'anomaly' && state.analogAnomalyTracks !== 2) {
+    errors.push(
+      `Expected anomaly profile to render 2 anomaly tracks, got ${state.analogAnomalyTracks ?? 'none'}.`,
+    )
+  }
+  if (profile !== 'anomaly' && state.analogAnomalyTracks !== 0) {
+    errors.push(
+      `Expected ${profile} profile to render 0 anomaly tracks, got ${state.analogAnomalyTracks}.`,
+    )
   }
 
   return errors
