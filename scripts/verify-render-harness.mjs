@@ -25,6 +25,7 @@ const DEFAULT_VERIFY_PROFILES = [
   'spectrogram',
   'distribution',
   'correlation',
+  'kpi',
 ]
 const DEFAULT_VISUAL_PROFILES = ['compact', 'large']
 const DEFAULT_FPS_PROFILES = ['compact']
@@ -325,6 +326,12 @@ function validateProfileState(state, profile) {
       `Expected ${profile} profile to render 0 correlation cells, got ${state.correlationCells}.`,
     )
   }
+  if (profile === 'kpi' && state.kpiItems !== 256) {
+    errors.push(`Expected kpi profile to render 256 KPI items, got ${state.kpiItems ?? 'none'}.`)
+  }
+  if (profile !== 'kpi' && state.kpiItems !== 0) {
+    errors.push(`Expected ${profile} profile to render 0 KPI items, got ${state.kpiItems}.`)
+  }
 
   return errors
 }
@@ -333,7 +340,8 @@ function expectedChartSurfaceCount(profile) {
   return profile === 'spectrum' ||
     profile === 'spectrogram' ||
     profile === 'distribution' ||
-    profile === 'correlation'
+    profile === 'correlation' ||
+    profile === 'kpi'
     ? 3
     : 2
 }

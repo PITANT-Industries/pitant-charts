@@ -11,6 +11,10 @@ import {
   Distribution,
   type DistributionColumnData,
   type DistributionConfig,
+  KpiStrip,
+  type KpiStripConfig,
+  type KpiStripData,
+  type KpiStripItemData,
   Spectrogram,
   type SpectrogramConfig,
   type SpectrogramMatrixData,
@@ -34,12 +38,14 @@ type LoadProfile =
   | 'spectrogram'
   | 'distribution'
   | 'correlation'
+  | 'kpi'
 
 interface GeneratedData {
   analog: TimeSeriesColumnData
   correlation: CorrelationMatrixData
   digital: DigitalChannelColumnData
   distribution: DistributionColumnData
+  kpi: KpiStripData
   spectrum: SpectrumColumnData
   spectrogram: SpectrogramMatrixData
 }
@@ -57,6 +63,7 @@ declare global {
       correlationCells: number
       digitalChannels: number
       distributionBins: number
+      kpiItems: number
       spectrumBins: number
       spectrogramTiles: number
     }
@@ -74,6 +81,7 @@ const PROFILES: readonly LoadProfile[] = [
   'spectrogram',
   'distribution',
   'correlation',
+  'kpi',
 ]
 
 const SERIES_CONFIG: TimeSeriesConfig['series'] = [
@@ -349,6 +357,17 @@ const CORRELATION_CONFIG: CorrelationMatrixConfig = {
   },
 }
 
+const KPI_STRIP_CONFIG: KpiStripConfig = {
+  columns: 16,
+  labels: {
+    visible: false,
+    maxCount: 32,
+  },
+  sparklinePointLimit: 48,
+  cardGapRatio: 0.05,
+  cardPaddingRatio: 0.1,
+}
+
 export function App(): React.JSX.Element {
   const [renderer, setRenderer] = useState<RendererChoice>(() =>
     readChoiceFromQuery('renderer', RENDERERS, 'auto'),
@@ -365,7 +384,8 @@ export function App(): React.JSX.Element {
             profile === 'spectrum' ||
             profile === 'spectrogram' ||
             profile === 'distribution' ||
-            profile === 'correlation'
+            profile === 'correlation' ||
+            profile === 'kpi'
           ? 10_000
           : 12_000
   const generated = useMemo(() => generateData(pointCount, profile), [pointCount, profile])
@@ -410,6 +430,7 @@ export function App(): React.JSX.Element {
       correlationCells: profile === 'correlation' ? generated.correlation.values.length : 0,
       digitalChannels: DIGITAL_CONFIG.length,
       distributionBins: profile === 'distribution' ? generated.distribution.binStarts.length : 0,
+      kpiItems: profile === 'kpi' ? generated.kpi.items.length : 0,
       spectrumBins: profile === 'spectrum' ? generated.spectrum.frequencies.length : 0,
       spectrogramTiles:
         profile === 'spectrogram'
@@ -421,6 +442,7 @@ export function App(): React.JSX.Element {
     generated.spectrogram.timeBins.length,
     generated.correlation.values.length,
     generated.distribution.binStarts.length,
+    generated.kpi.items.length,
     generated.spectrum.frequencies.length,
     pointCount,
     profile,
@@ -644,6 +666,35 @@ export function App(): React.JSX.Element {
           </CorrelationMatrix>
         </section>
       ) : null}
+
+      {profile === 'kpi' ? (
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>KPI Strip</h2>
+              <p>Precomputed 256-asset compact status and sparkline API</p>
+            </div>
+          </div>
+          <KpiStrip
+            ariaLabel="KPI strip render harness"
+            className="chart-surface kpi"
+            config={{ ...KPI_STRIP_CONFIG, renderer }}
+            data={generated.kpi}
+          >
+            {(chart) => (
+              <div className="chart-overlay">
+                <KpiStatsRow
+                  alarmCount={chart.stats.alarmCount}
+                  renderTime={chart.stats.renderTime}
+                  renderedItemCount={chart.stats.renderedItemCount}
+                  sparklinePointCount={chart.stats.sparklinePointCount}
+                  warningCount={chart.stats.warningCount}
+                />
+              </div>
+            )}
+          </KpiStrip>
+        </section>
+      ) : null}
     </main>
   )
 }
@@ -807,6 +858,36 @@ function CorrelationStatsRow(props: {
   )
 }
 
+function KpiStatsRow(props: {
+  alarmCount: number
+  renderTime: number
+  renderedItemCount: number
+  sparklinePointCount: number
+  warningCount: number
+}): React.JSX.Element {
+  const { alarmCount, renderTime, renderedItemCount, sparklinePointCount, warningCount } = props
+  return (
+    <dl className="stats-row">
+      <div>
+        <dt>Assets</dt>
+        <dd>{renderedItemCount.toLocaleString()}</dd>
+      </div>
+      <div>
+        <dt>Spark</dt>
+        <dd>{sparklinePointCount.toLocaleString()}</dd>
+      </div>
+      <div>
+        <dt>Alerts</dt>
+        <dd>{alarmCount + warningCount}</dd>
+      </div>
+      <div>
+        <dt>Render</dt>
+        <dd>{renderTime.toFixed(2)} ms</dd>
+      </div>
+    </dl>
+  )
+}
+
 function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
   const timestamps = new Float64Array(pointCount)
   const temperature = new Float64Array(pointCount)
@@ -870,9 +951,46 @@ function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
       },
     },
     distribution: generateDistributionData(512),
+    kpi: generateKpiStripData(256, 96),
     spectrum: generateSpectrumData(8192),
     spectrogram: generateSpectrogramData(128, 96),
   }
+}
+
+function generateKpiStripData(itemCount: number, sparklinePoints: number): KpiStripData {
+  const statuses = ['normal', 'warning', 'alarm', 'stale', 'offline'] as const
+  const items = Array.from({ length: itemCount }, (_, index) => {
+    const values = new Float32Array(sparklinePoints)
+    const center = 72 + (index % 13) * 1.8
+    const drift = ((index % 17) - 8) * 0.018
+    for (let sample = 0; sample < sparklinePoints; sample++) {
+      values[sample] =
+        center +
+        Math.sin(sample / 6 + index * 0.11) * 7 +
+        Math.cos(sample / 17 + index * 0.07) * 2.5 +
+        sample * drift
+    }
+
+    const item: KpiStripItemData = {
+      key: `asset_${index}`,
+      label: `Asset ${index + 1}`,
+      value: values[sparklinePoints - 1] ?? center,
+      unit: '%',
+      status: statuses[(index * 7) % statuses.length] ?? 'unknown',
+      freshnessSeconds: (index * 11) % 900,
+      quality: 0.82 + ((index * 19) % 18) / 100,
+      sparkline: {
+        values,
+        valueRange: [40, 105] as const,
+      },
+      target: 88,
+      lowerLimit: 62,
+      upperLimit: 98,
+    }
+    return item
+  })
+
+  return { items }
 }
 
 function generateCorrelationMatrixData(variableCount: number): CorrelationMatrixData {

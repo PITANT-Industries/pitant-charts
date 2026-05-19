@@ -1,4 +1,4 @@
-import type { RgbaColor } from '@pitant/charts'
+import type { KpiStatus, RgbaColor } from '@pitant/charts'
 import {
   CorrelationMatrix,
   type CorrelationMatrixConfig,
@@ -6,6 +6,10 @@ import {
   Distribution,
   type DistributionColumnData,
   type DistributionConfig,
+  KpiStrip,
+  type KpiStripConfig,
+  type KpiStripData,
+  type KpiStripItemData,
   Spectrogram,
   type SpectrogramConfig,
   type SpectrogramMatrixData,
@@ -5872,6 +5876,71 @@ function PitantCorrelationEnginePanel({
   )
 }
 
+interface PitantKpiStripEnginePanelProps {
+  displaySamples: readonly Sample[]
+}
+
+function PitantKpiStripEnginePanel({
+  displaySamples,
+}: PitantKpiStripEnginePanelProps): React.JSX.Element {
+  const kpiData = useMemo(() => buildPitantKpiStripData(displaySamples), [displaySamples])
+  const kpiConfig = useMemo(() => buildPitantKpiStripConfig(), [])
+
+  return (
+    <section className="pitant-kpi-panel" aria-label="PITANT KPI strip engine">
+      <div className="pitant-kpi-header">
+        <div>
+          <p className="eyebrow">Dashboard renderer</p>
+          <h3>KPI Strip path</h3>
+        </div>
+        <dl className="pitant-kpi-readout">
+          <div>
+            <dt>Mode</dt>
+            <dd>frozen metrics</dd>
+          </div>
+          <div>
+            <dt>Assets</dt>
+            <dd>{kpiData.items.length}</dd>
+          </div>
+          <div>
+            <dt>Window</dt>
+            <dd>{displaySamples.length} cycles</dd>
+          </div>
+        </dl>
+      </div>
+      <KpiStrip
+        ariaLabel="Multi-axis KPI strip rendered by PITANT KpiStrip"
+        aspectRatio={19 / 5}
+        className="pitant-kpi-surface"
+        config={kpiConfig}
+        data={kpiData}
+        renderer="canvas2d"
+      >
+        {(chart) => (
+          <dl className="pitant-kpi-stats" aria-label="KPI render statistics">
+            <div>
+              <dt>Path</dt>
+              <dd>PITANT KPI</dd>
+            </div>
+            <div>
+              <dt>Items</dt>
+              <dd>{chart.stats.renderedItemCount}</dd>
+            </div>
+            <div>
+              <dt>Spark</dt>
+              <dd>{chart.stats.sparklinePointCount}</dd>
+            </div>
+            <div>
+              <dt>Render</dt>
+              <dd>{chart.stats.renderTime.toFixed(1)} ms</dd>
+            </div>
+          </dl>
+        )}
+      </KpiStrip>
+    </section>
+  )
+}
+
 function App(): React.JSX.Element {
   const samples = useMemo(() => generateSamples(), [])
   const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode)
@@ -6195,6 +6264,8 @@ function App(): React.JSX.Element {
         />
 
         <PitantCorrelationEnginePanel displaySamples={displaySamples} />
+
+        <PitantKpiStripEnginePanel displaySamples={displaySamples} />
 
         {overlays.legend ? (
           <ScientificLegend
@@ -8327,6 +8398,69 @@ function PitantCorrelationMatrixSurface(props: {
       )}
     </CorrelationMatrix>
   )
+}
+
+function buildPitantKpiStripData(samples: readonly Sample[]): KpiStripData {
+  const sourceSamples = samples.length > 0 ? samples : [generateSamples()[0] as Sample]
+  const sparklineCount = Math.min(96, sourceSamples.length)
+  const startIndex = Math.max(0, sourceSamples.length - sparklineCount)
+  const items = SERIES.map((series) => {
+    const values = new Float32Array(sparklineCount)
+    for (let index = 0; index < sparklineCount; index++) {
+      const sample = sourceSamples[startIndex + index] ?? sourceSamples[sourceSamples.length - 1]
+      values[index] = sample ? valueFor(sample, series.id) : 0
+    }
+    const latestSample = sourceSamples[sourceSamples.length - 1]
+    const latestValue = latestSample ? valueFor(latestSample, series.id) : 0
+    const status = toKpiStatus(statusForValue(latestValue, series))
+
+    const item: KpiStripItemData = {
+      key: series.id,
+      label: series.shortLabel,
+      value: latestValue,
+      unit: series.unit,
+      status,
+      freshnessSeconds: Math.max(0, sourceSamples.length - sparklineCount),
+      quality: status === 'normal' ? 0.99 : status === 'warning' ? 0.92 : 0.84,
+      sparkline: {
+        values,
+        valueRange: series.domain,
+        rgba: hexToRgba(series.color, 0.92),
+      },
+    }
+    if (series.thresholds?.target !== undefined) item.target = series.thresholds.target
+    if (series.thresholds?.warning[0] !== undefined) item.lowerLimit = series.thresholds.warning[0]
+    if (series.thresholds?.warning[1] !== undefined) item.upperLimit = series.thresholds.warning[1]
+    return item
+  })
+
+  return { items }
+}
+
+function buildPitantKpiStripConfig(): KpiStripConfig {
+  return {
+    columns: 3,
+    labels: {
+      visible: true,
+      maxCount: 8,
+    },
+    sparklinePointLimit: 48,
+    cardGapRatio: 0.06,
+    cardPaddingRatio: 0.11,
+  }
+}
+
+function toKpiStatus(status: SignalStatus): KpiStatus {
+  if (status === 'alarm' || status === 'anomaly') return 'alarm'
+  if (status === 'warning') return 'warning'
+  return 'normal'
+}
+
+function hexToRgba(hex: string, alpha: number): RgbaColor {
+  const normalized = hex.replace('#', '')
+  const value = Number.parseInt(normalized, 16)
+  if (!Number.isFinite(value)) return [0.15, 0.39, 0.92, alpha]
+  return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255, alpha]
 }
 
 function maxFiniteValue(values: Float32Array | Float64Array): number {

@@ -543,7 +543,8 @@ h2 {
 .pitant-spectrum-panel,
 .pitant-spectrogram-panel,
 .pitant-distribution-panel,
-.pitant-correlation-panel {
+.pitant-correlation-panel,
+.pitant-kpi-panel {
   display: grid;
   gap: 8px;
   min-width: 0;
@@ -558,7 +559,8 @@ h2 {
 .pitant-spectrum-header,
 .pitant-spectrogram-header,
 .pitant-distribution-header,
-.pitant-correlation-header {
+.pitant-correlation-header,
+.pitant-kpi-header {
   display: grid;
   grid-template-columns: minmax(156px, 0.3fr) minmax(0, 1fr);
   gap: 8px;
@@ -570,7 +572,8 @@ h2 {
 .pitant-spectrum-header h3,
 .pitant-spectrogram-header h3,
 .pitant-distribution-header h3,
-.pitant-correlation-header h3 {
+.pitant-correlation-header h3,
+.pitant-kpi-header h3 {
   min-width: 0;
   margin: 0;
   color: #111827;
@@ -588,7 +591,9 @@ h2 {
 .pitant-distribution-readout,
 .pitant-distribution-stats,
 .pitant-correlation-readout,
-.pitant-correlation-stats {
+.pitant-correlation-stats,
+.pitant-kpi-readout,
+.pitant-kpi-stats {
   margin: 0;
 }
 
@@ -596,7 +601,8 @@ h2 {
 .pitant-spectrum-readout,
 .pitant-spectrogram-readout,
 .pitant-distribution-readout,
-.pitant-correlation-readout {
+.pitant-correlation-readout,
+.pitant-kpi-readout {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
@@ -608,7 +614,8 @@ h2 {
 .pitant-spectrum-readout div,
 .pitant-spectrogram-readout div,
 .pitant-distribution-readout div,
-.pitant-correlation-readout div {
+.pitant-correlation-readout div,
+.pitant-kpi-readout div {
   min-width: 0;
   padding: 6px 7px;
   border: 1px solid #e1e6ee;
@@ -620,7 +627,8 @@ h2 {
 .pitant-spectrum-readout dt,
 .pitant-spectrogram-readout dt,
 .pitant-distribution-readout dt,
-.pitant-correlation-readout dt {
+.pitant-correlation-readout dt,
+.pitant-kpi-readout dt {
   color: #667085;
   font-size: 0.59rem;
   font-weight: 800;
@@ -633,7 +641,8 @@ h2 {
 .pitant-spectrum-readout dd,
 .pitant-spectrogram-readout dd,
 .pitant-distribution-readout dd,
-.pitant-correlation-readout dd {
+.pitant-correlation-readout dd,
+.pitant-kpi-readout dd {
   min-width: 0;
   margin: 3px 0 0;
   color: #101828;
@@ -647,7 +656,8 @@ h2 {
 .pitant-spectrum-chart,
 .pitant-spectrogram-chart,
 .pitant-distribution-chart,
-.pitant-correlation-surface {
+.pitant-correlation-surface,
+.pitant-kpi-surface {
   min-width: 0;
   min-height: 256px;
   border: 1px solid #e1e6ee;
@@ -658,20 +668,23 @@ h2 {
 .pitant-spectrum-chart,
 .pitant-spectrogram-chart,
 .pitant-distribution-chart,
-.pitant-correlation-surface {
+.pitant-correlation-surface,
+.pitant-kpi-surface {
   min-height: 196px;
 }
 
 .pitant-spectrum-engine,
 .pitant-distribution-engine,
-.pitant-correlation-engine {
+.pitant-correlation-engine,
+.pitant-kpi-engine {
   min-width: 0;
   margin: 0 0 8px;
 }
 
 .pitant-spectrum-surface,
 .pitant-distribution-surface,
-.pitant-correlation-surface {
+.pitant-correlation-surface,
+.pitant-kpi-surface {
   min-width: 0;
   min-height: 176px;
   border: 1px solid #e1e6ee;
@@ -692,7 +705,8 @@ h2 {
 .pitant-spectrum-stats,
 .pitant-spectrogram-stats,
 .pitant-distribution-stats,
-.pitant-correlation-stats {
+.pitant-correlation-stats,
+.pitant-kpi-stats {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -713,7 +727,8 @@ h2 {
 .pitant-spectrum-stats div,
 .pitant-spectrogram-stats div,
 .pitant-distribution-stats div,
-.pitant-correlation-stats div {
+.pitant-correlation-stats div,
+.pitant-kpi-stats div {
   min-width: 0;
   padding: 5px 6px;
   border: 1px solid #d8dee7;
@@ -725,7 +740,8 @@ h2 {
 .pitant-spectrum-stats dt,
 .pitant-spectrogram-stats dt,
 .pitant-distribution-stats dt,
-.pitant-correlation-stats dt {
+.pitant-correlation-stats dt,
+.pitant-kpi-stats dt {
   color: #667085;
   font-size: 0.56rem;
   font-weight: 800;
@@ -734,7 +750,8 @@ h2 {
 .pitant-spectrum-stats dd,
 .pitant-spectrogram-stats dd,
 .pitant-distribution-stats dd,
-.pitant-correlation-stats dd {
+.pitant-correlation-stats dd,
+.pitant-kpi-stats dd {
   min-width: 0;
   margin: 2px 0 0;
   color: #101828;
@@ -1853,7 +1870,8 @@ h2 {
   .pitant-spectrum-header,
   .pitant-spectrogram-header,
   .pitant-distribution-header,
-  .pitant-correlation-header {
+  .pitant-correlation-header,
+  .pitant-kpi-header {
     grid-template-columns: 1fr;
   }
 
@@ -1901,7 +1919,8 @@ h2 {
   .pitant-spectrum-panel,
   .pitant-spectrogram-panel,
   .pitant-distribution-panel,
-  .pitant-correlation-panel {
+  .pitant-correlation-panel,
+  .pitant-kpi-panel {
     inline-size: min(100%, calc(100vw - 50px));
   }
 
@@ -1909,7 +1928,8 @@ h2 {
   .pitant-spectrum-readout,
   .pitant-spectrogram-readout,
   .pitant-distribution-readout,
-  .pitant-correlation-readout {
+  .pitant-correlation-readout,
+  .pitant-kpi-readout {
     grid-template-columns: 1fr;
   }
 
@@ -1917,7 +1937,8 @@ h2 {
   .pitant-spectrum-chart,
   .pitant-spectrogram-chart,
   .pitant-distribution-chart,
-  .pitant-correlation-surface {
+  .pitant-correlation-surface,
+  .pitant-kpi-surface {
     min-height: 238px;
   }
 
@@ -1932,7 +1953,8 @@ h2 {
   .pitant-spectrum-stats,
   .pitant-spectrogram-stats,
   .pitant-distribution-stats,
-  .pitant-correlation-stats {
+  .pitant-correlation-stats,
+  .pitant-kpi-stats {
     top: auto;
     right: auto;
     bottom: 8px;

@@ -26,6 +26,7 @@ Each pack must include:
 | SPC review | `spc-review.md` | initial control-limit pack |
 | Scientific analysis | `scientific-analysis.md` | initial Spectrum, Spectrogram, and Distribution pack |
 | Correlation workbench | `correlation-workbench.md` | initial CorrelationMatrix pack |
+| KPI dashboard | `kpi-dashboard.md` | initial KpiStrip pack |
 | Batch profile | `batch-profile.md` | pending |
 | Synchronized dashboard | `synchronized-dashboard.md` | initial pack |
 | Export and evidence | `export-evidence.md` | contract-only pack |

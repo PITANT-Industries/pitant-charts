@@ -7,6 +7,8 @@ import {
   DistributionChart,
   type DistributionDataSet,
   type FillOptions,
+  KpiStripChart,
+  type KpiStripDataSet,
   type LineOptions,
   type RectOptions,
   type RenderContext,
@@ -136,6 +138,35 @@ const CORRELATION_DATA: CorrelationMatrixDataSet = {
     { key: 'temperature', label: 'Temperature' },
   ],
   values: new Float32Array([1, 0.82, -0.2, 0.82, 1, 0.34, -0.2, 0.34, 1]),
+}
+
+const KPI_STRIP_DATA: KpiStripDataSet = {
+  items: [
+    {
+      key: 'oee',
+      label: 'OEE',
+      value: 91.3,
+      unit: '%',
+      status: 'normal',
+      sparkline: {
+        values: new Float32Array([88, 89, 91, 91.3]),
+        valueRange: [70, 100],
+      },
+      target: 90,
+    },
+    {
+      key: 'rejects',
+      label: 'Rejects',
+      value: 3.7,
+      unit: '%',
+      status: 'warning',
+      sparkline: {
+        values: new Float32Array([2.8, 3.1, 3.4, 3.7]),
+        valueRange: [0, 8],
+      },
+      upperLimit: 5,
+    },
+  ],
 }
 
 describe('imperative chart classes', () => {
@@ -275,5 +306,24 @@ describe('imperative chart classes', () => {
 
     chart.dispose()
     expect(() => chart.render()).toThrow('CorrelationMatrixChart has been disposed')
+  })
+
+  it('renders KpiStripChart through the existing render-plan path', () => {
+    const context = new FakeRenderContext()
+    const chart = new KpiStripChart(context, { data: KPI_STRIP_DATA })
+
+    expect(chart.renderPlan.kind).toBe('kpi-strip')
+    expect(chart.renderPlan.renderedItemCount).toBe(2)
+    expect(context.beginCount).toBe(1)
+    expect(context.endCount).toBe(1)
+    expect(context.rectCount).toBe(4)
+    expect(context.lineCount).toBeGreaterThanOrEqual(3)
+
+    chart.setRenderOptions({ columns: 1 })
+    expect(chart.renderPlan.columns).toBe(1)
+    expect(context.beginCount).toBe(2)
+
+    chart.dispose()
+    expect(() => chart.render()).toThrow('KpiStripChart has been disposed')
   })
 })

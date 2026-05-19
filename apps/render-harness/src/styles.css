@@ -123,7 +123,8 @@ select {
 
 .chart-surface.spectrogram,
 .chart-surface.distribution,
-.chart-surface.correlation {
+.chart-surface.correlation,
+.chart-surface.kpi {
   min-height: 300px;
 }
 

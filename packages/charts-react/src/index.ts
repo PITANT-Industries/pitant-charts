@@ -83,6 +83,18 @@ export type {
   UseDistributionReturn,
 } from './distribution.js'
 export { Distribution, useDistribution } from './distribution.js'
+// KPI strip
+export type {
+  KpiSparklineConfig,
+  KpiStripConfig,
+  KpiStripData,
+  KpiStripItemData,
+  KpiStripProps,
+  KpiStripStats,
+  UseKpiStripOptions,
+  UseKpiStripReturn,
+} from './kpi-strip.js'
+export { KpiStrip, useKpiStrip } from './kpi-strip.js'
 // Spectrogram
 export type {
   SpectrogramColorStopConfig,

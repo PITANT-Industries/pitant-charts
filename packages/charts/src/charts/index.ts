@@ -96,6 +96,29 @@ export type {
 } from './distribution-chart.js'
 export { DistributionChart } from './distribution-chart.js'
 export type {
+  KpiPlannedItem,
+  KpiSparkline,
+  KpiStatus,
+  KpiStripCommandFrame,
+  KpiStripDataSet,
+  KpiStripFrameOptions,
+  KpiStripItem,
+  KpiStripRenderOptions,
+  KpiStripRenderPlan,
+} from './kpi-strip.js'
+export {
+  addKpiStripToCommandList,
+  buildKpiStripCommandFrame,
+  buildKpiStripRenderPlan,
+  createKpiStripViewTransform,
+  renderKpiStripPlan,
+} from './kpi-strip.js'
+export type {
+  KpiStripChartCreateOptions,
+  KpiStripChartOptions,
+} from './kpi-strip-chart.js'
+export { KpiStripChart } from './kpi-strip-chart.js'
+export type {
   ChartClientPoint,
   ChartDataPoint,
   ChartPoint,

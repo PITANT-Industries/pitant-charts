@@ -2,7 +2,7 @@
  * Benchmark scenarios for @pitant/charts.
  *
  * Scenarios 1-4, 8-9 require a browser (WebGPU/Canvas2D).
- * Scenarios 5-7 and 10-29 are pure-compute/package-level gates.
+ * Scenarios 5-7 and 10-30 are pure-compute/package-level gates.
  * Bundle-size scenario runs via size-limit.
  */
 import {
@@ -10,6 +10,7 @@ import {
   addDigitalChannelToCommandList,
   addDistributionMarkersToCommandList,
   addDistributionToCommandList,
+  addKpiStripToCommandList,
   addSpectrogramToCommandList,
   addSpectrumBandsToCommandList,
   addSpectrumPeakMarkersToCommandList,
@@ -22,6 +23,7 @@ import {
   buildCorrelationMatrixRenderPlan,
   buildDigitalChannelRenderPlan,
   buildDistributionRenderPlan,
+  buildKpiStripRenderPlan,
   buildSpectrogramRenderPlan,
   buildSpectrumRenderPlan,
   buildTimeSeriesCommandFrame,
@@ -32,6 +34,7 @@ import {
   type DigitalChannelSeries,
   type DistributionDataSet,
   findNearestTimestampIndex,
+  type KpiStripDataSet,
   panRangeByPixels,
   panRangeByValue,
   RenderCommandList,
@@ -326,6 +329,41 @@ function generateCorrelationMatrixData(variableCount: number): CorrelationMatrix
     sampleCounts,
     missingCounts,
   }
+}
+
+function generateKpiStripData(itemCount: number, sparklinePoints: number): KpiStripDataSet {
+  const statuses = ['normal', 'warning', 'alarm', 'stale', 'offline'] as const
+  const items = Array.from({ length: itemCount }, (_, index) => {
+    const values = new Float32Array(sparklinePoints)
+    const center = 72 + (index % 13) * 1.8
+    const drift = ((index % 17) - 8) * 0.018
+    for (let sample = 0; sample < sparklinePoints; sample++) {
+      values[sample] =
+        center +
+        Math.sin(sample / 6 + index * 0.11) * 7 +
+        Math.cos(sample / 17 + index * 0.07) * 2.5 +
+        sample * drift
+    }
+
+    return {
+      key: `asset_${index}`,
+      label: `Asset ${index + 1}`,
+      value: values[sparklinePoints - 1] ?? center,
+      unit: '%',
+      status: statuses[(index * 7) % statuses.length],
+      freshnessSeconds: (index * 11) % 900,
+      quality: 0.82 + ((index * 19) % 18) / 100,
+      sparkline: {
+        values,
+        valueRange: [40, 105] as const,
+      },
+      target: 88,
+      lowerLimit: 62,
+      upperLimit: 98,
+    }
+  })
+
+  return { items }
 }
 
 function gaussian(value: number, center: number, width: number): number {
@@ -1339,6 +1377,52 @@ scenarios['029_correlation_matrix_128vars'] = () => {
   return {
     scenario: '029_correlation_matrix_128vars',
     metric: `${variableCount} variables as ${renderedCellCount.toLocaleString()} correlation cells (${commandCount.toLocaleString()} commands)`,
+    value: Math.round(medianMs * 1000) / 1000,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 030: KPI strip render planning ────────────────
+
+scenarios['030_kpi_strip_256_assets'] = () => {
+  const itemCount = 256
+  const sparklinePoints = 96
+  const data = generateKpiStripData(itemCount, sparklinePoints)
+  const target = 8 // ms for a 256-asset dashboard strip with bounded sparklines
+
+  const warmup = buildKpiStripRenderPlan(data, {
+    columns: 16,
+    sparklinePointLimit: 48,
+  })
+  const warmupCommands = new RenderCommandList()
+  addKpiStripToCommandList(warmupCommands, warmup)
+
+  const times: number[] = []
+  let renderedItemCount = 0
+  let sparklinePointCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 7; i++) {
+    const start = performance.now()
+    const plan = buildKpiStripRenderPlan(data, {
+      columns: 16,
+      sparklinePointLimit: 48,
+    })
+    const commands = new RenderCommandList()
+    addKpiStripToCommandList(commands, plan)
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    renderedItemCount = plan.renderedItemCount
+    sparklinePointCount = plan.sparklinePointCount
+    commandCount = commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '030_kpi_strip_256_assets',
+    metric: `${renderedItemCount} assets with ${sparklinePointCount.toLocaleString()} sparkline points (${commandCount.toLocaleString()} commands)`,
     value: Math.round(medianMs * 1000) / 1000,
     unit: 'ms',
     target,

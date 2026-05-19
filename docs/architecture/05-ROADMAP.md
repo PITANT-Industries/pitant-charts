@@ -484,6 +484,16 @@ packs after v1 field feedback.
   correlation matrix.
 - [x] Render harness `correlation` profile and the multi-axis demo exercise the
   public `CorrelationMatrix` package path.
+- [x] Precomputed-item `KpiStrip` / `KpiStripChart` support renders frozen KPI
+  values, status rails, freshness/quality metadata, target/limit lines, and
+  bounded sparklines without making the chart package responsible for OEE, SPC,
+  reliability, or loss-classification computation.
+- [x] React `KpiStrip` passes item values, status, freshness, quality, and
+  sparkline controls into the core render plan and SVG/PNG export path.
+- [x] `030_kpi_strip_256_assets` benchmark covers a 256-asset compact
+  dashboard strip with bounded sparkline samples.
+- [x] Render harness `kpi` profile and the multi-axis demo exercise the public
+  `KpiStrip` package path.
 
 **Tests and Acceptance.** Pack-specific unit, visual, and performance tests.
 
