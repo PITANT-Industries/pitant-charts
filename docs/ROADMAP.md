@@ -436,6 +436,12 @@ predictable navigation.*
   they reuse the existing LOD, tooltip, export, and append paths.
 - [x] Added `021_time_series_derived_8x1M` benchmark for eight high-density
   trend pens plus eight derived overlays.
+- [x] Added `TimeSeriesConfig.annotations[]` for persistent x-line, y-line,
+  x-range, y-range, and ruler overlays rendered through the core command-frame
+  path.
+- [x] Added `022_time_series_annotations_8x1M` benchmark for eight
+  high-density trend pens plus one thousand persistent annotation/ruler
+  overlays.
 
 ## Deliberately Not Building For v1
 

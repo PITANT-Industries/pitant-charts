@@ -6,6 +6,9 @@
   command-frame/SVG output and a high-density benchmark gate.
 - Added `addTimeSeriesDerivedColumns()` for visual-only scale/offset, delta,
   rate-of-change, and moving-average overlays with benchmark coverage.
+- Added TimeSeries persistent annotation/ruler render-plan support for x-lines,
+  y-lines, x-ranges, y-ranges, and rulers with command-frame/SVG output and a
+  high-density benchmark gate.
 
 ## 1.0.0 - 2026-05-19
 

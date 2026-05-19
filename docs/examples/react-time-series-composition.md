@@ -54,6 +54,23 @@ export function HistorianTrend() {
           fillRgba: [0.1, 0.4, 1, 0.1],
         },
       ],
+      annotations: [
+        {
+          kind: 'x-line' as const,
+          key: 'batch-start',
+          label: 'Batch start',
+          x: 1_000,
+        },
+        {
+          kind: 'ruler' as const,
+          key: 'reactor-ramp',
+          label: 'Ramp',
+          xStart: 1_000,
+          xEnd: 4_000,
+          yStart: 91.4,
+          yEnd: 92.0,
+        },
+      ],
       xAxis: {
         label: 'Time',
         gapThreshold: 90_000,
@@ -110,5 +127,7 @@ export function HistorianTrend() {
   not pay draw cost.
 - `config.bands` renders value bands and envelope bands inside the core command
   frame, not as per-point React elements.
+- `config.annotations` renders reviewed reference lines, region highlights, and
+  rulers inside the core command frame so export uses the same geometry.
 - Quality and gap arrays stay in the data object so degraded states can be
   surfaced by overlays and future evidence exports.

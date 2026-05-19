@@ -6,6 +6,7 @@ import {
   buildTimeSeriesRenderPlan,
   type ChartLayout,
   type ChartPointerCoordinates,
+  type TimeSeriesAnnotation as CoreTimeSeriesAnnotation,
   type TimeSeriesBand as CoreTimeSeriesBand,
   type TimeSeriesDerivedColumn as CoreTimeSeriesDerivedColumn,
   type TimeSeriesSeries as CoreTimeSeriesSeries,
@@ -119,10 +120,68 @@ export interface TimeSeriesEnvelopeBandConfig {
 
 export type TimeSeriesBandConfig = TimeSeriesValueBandConfig | TimeSeriesEnvelopeBandConfig
 
+interface TimeSeriesBaseAnnotationConfig {
+  key: string
+  label?: string
+  visible?: boolean
+  includeInYRange?: boolean
+  labelVisible?: boolean
+}
+
+export interface TimeSeriesXLineAnnotationConfig extends TimeSeriesBaseAnnotationConfig {
+  kind: 'x-line'
+  x: number
+  rgba?: RgbaColor
+  lineWidth?: number
+}
+
+export interface TimeSeriesYLineAnnotationConfig extends TimeSeriesBaseAnnotationConfig {
+  kind: 'y-line'
+  y: number
+  rgba?: RgbaColor
+  lineWidth?: number
+}
+
+export interface TimeSeriesXRangeAnnotationConfig extends TimeSeriesBaseAnnotationConfig {
+  kind: 'x-range'
+  xStart: number
+  xEnd: number
+  fillRgba?: RgbaColor
+  lineRgba?: RgbaColor
+  lineWidth?: number
+}
+
+export interface TimeSeriesYRangeAnnotationConfig extends TimeSeriesBaseAnnotationConfig {
+  kind: 'y-range'
+  yStart: number
+  yEnd: number
+  fillRgba?: RgbaColor
+  lineRgba?: RgbaColor
+  lineWidth?: number
+}
+
+export interface TimeSeriesRulerAnnotationConfig extends TimeSeriesBaseAnnotationConfig {
+  kind: 'ruler'
+  xStart: number
+  xEnd: number
+  yStart: number
+  yEnd: number
+  rgba?: RgbaColor
+  lineWidth?: number
+}
+
+export type TimeSeriesAnnotationConfig =
+  | TimeSeriesXLineAnnotationConfig
+  | TimeSeriesYLineAnnotationConfig
+  | TimeSeriesXRangeAnnotationConfig
+  | TimeSeriesYRangeAnnotationConfig
+  | TimeSeriesRulerAnnotationConfig
+
 export interface TimeSeriesConfig {
   series: TimeSeriesSeriesConfig[]
   derivedSeries?: TimeSeriesDerivedSeriesConfig[]
   bands?: TimeSeriesBandConfig[]
+  annotations?: TimeSeriesAnnotationConfig[]
   xAxis?: AxisConfig & {
     gapThreshold?: number
   }
@@ -262,6 +321,10 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     () => (config.bands ?? []).map(toCoreTimeSeriesBand),
     [config.bands],
   )
+  const planAnnotations: CoreTimeSeriesAnnotation[] = useMemo(
+    () => (config.annotations ?? []).map(toCoreTimeSeriesAnnotation),
+    [config.annotations],
+  )
 
   const activeXRange =
     visibleRange[0] < visibleRange[1] ? (visibleRange as readonly [number, number]) : undefined
@@ -310,6 +373,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
         columns: viewport.data.columns,
         series: planSeries,
         bands: planBands,
+        annotations: planAnnotations,
       },
       renderOptions,
     )
@@ -319,6 +383,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     config.interpolation,
     config.xAxis?.gapThreshold,
     config.yAxis?.paddingRatio,
+    planAnnotations,
     planBands,
     planSeries,
     viewport.data,
@@ -616,6 +681,87 @@ function toCoreTimeSeriesBand(band: TimeSeriesBandConfig): CoreTimeSeriesBand {
   if (band.visible !== undefined) coreBand.visible = band.visible
   if (band.includeInYRange !== undefined) coreBand.includeInYRange = band.includeInYRange
   return coreBand
+}
+
+function toCoreTimeSeriesAnnotation(
+  annotation: TimeSeriesAnnotationConfig,
+): CoreTimeSeriesAnnotation {
+  if (annotation.kind === 'x-line') {
+    const coreAnnotation: CoreTimeSeriesAnnotation = {
+      kind: 'x-line',
+      key: annotation.key,
+      x: annotation.x,
+    }
+    assignCommonAnnotationConfig(coreAnnotation, annotation)
+    if (annotation.rgba !== undefined) coreAnnotation.color = annotation.rgba
+    if (annotation.lineWidth !== undefined) coreAnnotation.lineWidth = annotation.lineWidth
+    return coreAnnotation
+  }
+
+  if (annotation.kind === 'y-line') {
+    const coreAnnotation: CoreTimeSeriesAnnotation = {
+      kind: 'y-line',
+      key: annotation.key,
+      y: annotation.y,
+    }
+    assignCommonAnnotationConfig(coreAnnotation, annotation)
+    if (annotation.rgba !== undefined) coreAnnotation.color = annotation.rgba
+    if (annotation.lineWidth !== undefined) coreAnnotation.lineWidth = annotation.lineWidth
+    return coreAnnotation
+  }
+
+  if (annotation.kind === 'x-range') {
+    const coreAnnotation: CoreTimeSeriesAnnotation = {
+      kind: 'x-range',
+      key: annotation.key,
+      xStart: annotation.xStart,
+      xEnd: annotation.xEnd,
+    }
+    assignCommonAnnotationConfig(coreAnnotation, annotation)
+    if (annotation.fillRgba !== undefined) coreAnnotation.fillColor = annotation.fillRgba
+    if (annotation.lineRgba !== undefined) coreAnnotation.lineColor = annotation.lineRgba
+    if (annotation.lineWidth !== undefined) coreAnnotation.lineWidth = annotation.lineWidth
+    return coreAnnotation
+  }
+
+  if (annotation.kind === 'y-range') {
+    const coreAnnotation: CoreTimeSeriesAnnotation = {
+      kind: 'y-range',
+      key: annotation.key,
+      yStart: annotation.yStart,
+      yEnd: annotation.yEnd,
+    }
+    assignCommonAnnotationConfig(coreAnnotation, annotation)
+    if (annotation.fillRgba !== undefined) coreAnnotation.fillColor = annotation.fillRgba
+    if (annotation.lineRgba !== undefined) coreAnnotation.lineColor = annotation.lineRgba
+    if (annotation.lineWidth !== undefined) coreAnnotation.lineWidth = annotation.lineWidth
+    return coreAnnotation
+  }
+
+  const coreAnnotation: CoreTimeSeriesAnnotation = {
+    kind: 'ruler',
+    key: annotation.key,
+    xStart: annotation.xStart,
+    xEnd: annotation.xEnd,
+    yStart: annotation.yStart,
+    yEnd: annotation.yEnd,
+  }
+  assignCommonAnnotationConfig(coreAnnotation, annotation)
+  if (annotation.rgba !== undefined) coreAnnotation.color = annotation.rgba
+  if (annotation.lineWidth !== undefined) coreAnnotation.lineWidth = annotation.lineWidth
+  return coreAnnotation
+}
+
+function assignCommonAnnotationConfig(
+  coreAnnotation: CoreTimeSeriesAnnotation,
+  annotation: TimeSeriesAnnotationConfig,
+): void {
+  if (annotation.label !== undefined) coreAnnotation.label = annotation.label
+  if (annotation.visible !== undefined) coreAnnotation.visible = annotation.visible
+  if (annotation.includeInYRange !== undefined) {
+    coreAnnotation.includeInYRange = annotation.includeInYRange
+  }
+  if (annotation.labelVisible !== undefined) coreAnnotation.labelVisible = annotation.labelVisible
 }
 
 function createTimeSeriesLayout(

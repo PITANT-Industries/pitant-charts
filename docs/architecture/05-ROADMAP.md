@@ -419,6 +419,12 @@ packs after v1 field feedback.
   rate-of-change, and scale/offset columns before DataSource ingestion.
 - [x] `021_time_series_derived_8x1M` benchmark covers eight high-density trend
   pens plus eight derived overlays.
+- [x] Persistent annotation/ruler overlays support x-line, y-line, x-range,
+  y-range, and ruler geometry in the core TimeSeries command-frame path.
+- [x] React `TimeSeriesConfig.annotations[]` passes persistent annotations into
+  the core render plan and SVG/PNG export path.
+- [x] `022_time_series_annotations_8x1M` benchmark covers eight high-density
+  trend pens plus one thousand persistent annotation/ruler overlays.
 
 **Tests and Acceptance.** Pack-specific unit, visual, and performance tests.
 

@@ -64,6 +64,24 @@ const data = {
       fillColor: [0.1, 0.4, 1, 0.1],
     },
   ],
+  annotations: [
+    {
+      kind: 'x-line',
+      key: 'batch-start',
+      label: 'Batch start',
+      x: timestamps[1]!,
+      color: [0.1, 0.3, 0.9, 0.8],
+    },
+    {
+      kind: 'ruler',
+      key: 'pressure-ramp',
+      label: 'Ramp',
+      xStart: timestamps[1]!,
+      xEnd: timestamps[3]!,
+      yStart: 1.4,
+      yEnd: 1.8,
+    },
+  ],
 }
 
 const canvas = document.querySelector('canvas')!
@@ -94,6 +112,9 @@ const svg = commandFrameToSvg(frame, {
 - Use `bands` for alarm ranges, static limits, and model envelopes when the
   band changes interpretation of an existing trend. Do not use bands for dense
   event timelines or unsupported control advice.
+- Use `annotations` for reviewed reference lines, region highlights, and
+  rulers that must export with the chart. Do not use annotations for dense
+  event history, control instructions, or audit-record storage.
 - Prefer `renderer: 'auto'`; do not force WebGPU in production apps.
 
 ## Use When

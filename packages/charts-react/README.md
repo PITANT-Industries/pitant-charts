@@ -67,6 +67,24 @@ export function PressureTrend() {
           fillRgba: [0.1, 0.4, 1, 0.1],
         },
       ],
+      annotations: [
+        {
+          kind: 'x-line' as const,
+          key: 'batch-start',
+          label: 'Batch start',
+          x: 1_000,
+          rgba: [0.1, 0.3, 0.9, 0.8],
+        },
+        {
+          kind: 'ruler' as const,
+          key: 'pressure-ramp',
+          label: 'Ramp',
+          xStart: 1_000,
+          xEnd: 3_000,
+          yStart: 1.4,
+          yEnd: 1.8,
+        },
+      ],
       xAxis: {
         label: 'Time',
         formatValue: (value: number) => new Date(value).toLocaleTimeString(),
@@ -150,6 +168,8 @@ installs every block, typechecks, and bundles the consumer.
   owned by the chart component.
 - Alarm/value bands and model envelopes need to be rendered inside the same
   high-density TimeSeries command path as the base trend.
+- Reviewed reference lines, region highlights, and rulers must render and
+  export with the chart without becoming React DOM overlays.
 
 ## Do Not Use When
 
@@ -157,5 +177,7 @@ installs every block, typechecks, and bundles the consumer.
 - A workflow needs direct PLC/DCS/SIS write authority.
 - Overlay data is decorative, unverified, or dense enough to obscure the base
   trend.
+- Notes are operational instructions, dense event timelines, or authoritative
+  audit records that belong to an application workflow or sibling repo.
 - The export must be a signed regulator record. Use future compliance/evidence
   handoff surfaces for that path.

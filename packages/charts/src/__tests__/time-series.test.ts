@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  addTimeSeriesAnnotationsToCommandList,
   addTimeSeriesBandsToCommandList,
   addTimeSeriesToCommandList,
+  buildTimeSeriesCommandFrame,
   buildTimeSeriesRenderPlan,
+  commandFrameToSvg,
   createTimeSeriesViewTransform,
   RenderCommandList,
 } from '../index.js'
@@ -155,6 +158,103 @@ describe('time-series chart planning', () => {
     expect(plan.bands[0]?.segments[0]?.upper).toEqual(new Float32Array([0, 14, 1, 15, 2, 14]))
     expect(plan.bands[0]?.includedSampleCount).toBe(4)
     expect(plan.bands[0]?.renderedPointCount).toBe(3)
+  })
+
+  it('plans x/y annotations and rulers as data-space command geometry', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([1000, 1010, 1020]),
+        columns: {
+          temp: new Float64Array([10, 12, 11]),
+        },
+        series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+        annotations: [
+          { kind: 'x-line', key: 'batch-start', x: 1010, label: 'Batch start' },
+          { kind: 'y-line', key: 'setpoint', y: 11, label: 'Setpoint' },
+          {
+            kind: 'ruler',
+            key: 'ramp',
+            label: 'Ramp',
+            xStart: 1000,
+            xEnd: 1020,
+            yStart: 10,
+            yEnd: 12,
+          },
+        ],
+      },
+      { yRange: [9, 13] },
+    )
+
+    expect(plan.annotations.map((annotation) => annotation.key)).toEqual([
+      'batch-start',
+      'setpoint',
+      'ramp',
+    ])
+    expect(plan.annotations[0]?.lineSegments[0]?.buffer).toEqual(new Float32Array([10, 9, 10, 13]))
+    expect(plan.annotations[1]?.lineSegments[0]?.buffer).toEqual(new Float32Array([0, 11, 20, 11]))
+    expect(plan.annotations[2]?.lineSegments[0]?.buffer).toEqual(new Float32Array([0, 10, 20, 12]))
+
+    const commands = new RenderCommandList()
+    addTimeSeriesAnnotationsToCommandList(commands, plan)
+    expect(commands.sorted().map((command) => command.kind)).toEqual(['line', 'line', 'line'])
+  })
+
+  it('plans x/y range annotations as fill geometry without expanding y range by default', () => {
+    const plan = buildTimeSeriesRenderPlan({
+      timestamps: new Float64Array([0, 10, 20]),
+      columns: {
+        temp: new Float64Array([10, 12, 11]),
+      },
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+      annotations: [
+        {
+          kind: 'x-range',
+          key: 'hold',
+          xStart: 5,
+          xEnd: 15,
+          fillColor: [1, 0.8, 0, 0.15],
+          lineColor: [1, 0.8, 0, 0.8],
+        },
+        {
+          kind: 'y-range',
+          key: 'target',
+          yStart: 20,
+          yEnd: 25,
+          includeInYRange: false,
+        },
+      ],
+    })
+
+    expect(plan.yRange[1]).toBeLessThan(20)
+    expect(plan.annotations.map((annotation) => annotation.key)).toEqual(['hold'])
+    expect(plan.annotations[0]?.fillSegments[0]?.lower).toEqual(
+      new Float32Array([5, plan.yRange[0], 15, plan.yRange[0]]),
+    )
+
+    const commands = new RenderCommandList()
+    addTimeSeriesAnnotationsToCommandList(commands, plan)
+    expect(commands.sorted().map((command) => command.kind)).toEqual(['fill', 'line', 'line'])
+  })
+
+  it('includes annotation labels in the command frame and SVG export', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 10, 20]),
+        columns: {
+          temp: new Float64Array([10, 12, 11]),
+        },
+        series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+        annotations: [{ kind: 'x-line', key: 'startup', label: 'Startup', x: 10 }],
+      },
+      { yRange: [9, 13] },
+    )
+    const frame = buildTimeSeriesCommandFrame(plan, 320, 180)
+    const commands = frame.commands.sorted()
+    const svg = commandFrameToSvg(frame, { title: 'Trend' })
+
+    expect(commands.some((command) => command.kind === 'text')).toBe(true)
+    expect(svg).toContain('Startup')
+    expect(svg).toContain('<path')
   })
 
   it('creates a transform that maps rebased data to pixels', () => {

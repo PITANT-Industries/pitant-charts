@@ -74,6 +74,8 @@ export {
 export type { CommandFrameSvgInput, CommandFrameSvgOptions } from './svg-export.js'
 export { commandFrameToSvg } from './svg-export.js'
 export type {
+  TimeSeriesAnnotation,
+  TimeSeriesAnnotationStyle,
   TimeSeriesBand,
   TimeSeriesBandSegment,
   TimeSeriesCommandFrame,
@@ -82,14 +84,21 @@ export type {
   TimeSeriesFrameOptions,
   TimeSeriesInterpolation,
   TimeSeriesLineSegment,
+  TimeSeriesPlannedAnnotation,
   TimeSeriesPlannedBand,
   TimeSeriesPlannedSeries,
   TimeSeriesRenderOptions,
   TimeSeriesRenderPlan,
+  TimeSeriesRulerAnnotation,
   TimeSeriesSeries,
   TimeSeriesValueBand,
+  TimeSeriesXLineAnnotation,
+  TimeSeriesXRangeAnnotation,
+  TimeSeriesYLineAnnotation,
+  TimeSeriesYRangeAnnotation,
 } from './time-series.js'
 export {
+  addTimeSeriesAnnotationsToCommandList,
   addTimeSeriesBandsToCommandList,
   addTimeSeriesToCommandList,
   buildTimeSeriesCommandFrame,

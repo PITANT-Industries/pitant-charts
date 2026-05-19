@@ -1,11 +1,12 @@
 import { RenderCommandList, ZLayer } from '../renderer/render-command-list.js'
-import type { FillOptions, LineOptions, RenderContext } from '../renderer/types.js'
+import type { FillOptions, LineOptions, RenderContext, TextOptions } from '../renderer/types.js'
 import type { ViewTransform } from '../renderer/view-transform.js'
 import {
   addChartGuidesToCommandList,
   type ChartGuideOptions,
   type ChartLayout,
   type ChartLayoutOptions,
+  type ChartRect,
   createPlotViewportTransform,
   createViewportTransform,
   drawCommandList,
@@ -63,11 +64,69 @@ export interface TimeSeriesEnvelopeBand {
 
 export type TimeSeriesBand = TimeSeriesValueBand | TimeSeriesEnvelopeBand
 
+export interface TimeSeriesBaseAnnotation {
+  key: string
+  label?: string
+  visible?: boolean
+  includeInYRange?: boolean
+  labelVisible?: boolean
+}
+
+export interface TimeSeriesXLineAnnotation extends TimeSeriesBaseAnnotation {
+  kind: 'x-line'
+  x: number
+  color?: RgbaColor
+  lineWidth?: number
+}
+
+export interface TimeSeriesYLineAnnotation extends TimeSeriesBaseAnnotation {
+  kind: 'y-line'
+  y: number
+  color?: RgbaColor
+  lineWidth?: number
+}
+
+export interface TimeSeriesXRangeAnnotation extends TimeSeriesBaseAnnotation {
+  kind: 'x-range'
+  xStart: number
+  xEnd: number
+  fillColor?: RgbaColor
+  lineColor?: RgbaColor
+  lineWidth?: number
+}
+
+export interface TimeSeriesYRangeAnnotation extends TimeSeriesBaseAnnotation {
+  kind: 'y-range'
+  yStart: number
+  yEnd: number
+  fillColor?: RgbaColor
+  lineColor?: RgbaColor
+  lineWidth?: number
+}
+
+export interface TimeSeriesRulerAnnotation extends TimeSeriesBaseAnnotation {
+  kind: 'ruler'
+  xStart: number
+  xEnd: number
+  yStart: number
+  yEnd: number
+  color?: RgbaColor
+  lineWidth?: number
+}
+
+export type TimeSeriesAnnotation =
+  | TimeSeriesXLineAnnotation
+  | TimeSeriesYLineAnnotation
+  | TimeSeriesXRangeAnnotation
+  | TimeSeriesYRangeAnnotation
+  | TimeSeriesRulerAnnotation
+
 export interface TimeSeriesDataSet {
   timestamps: Float64Array
   columns: Record<string, Float64Array>
   series: readonly TimeSeriesSeries[]
   bands?: readonly TimeSeriesBand[]
+  annotations?: readonly TimeSeriesAnnotation[]
 }
 
 export interface TimeSeriesRenderOptions {
@@ -80,8 +139,14 @@ export interface TimeSeriesRenderOptions {
   defaultBandFillColor?: RgbaColor
   defaultBandLineColor?: RgbaColor
   defaultBandLineWidth?: number
+  defaultAnnotationColor?: RgbaColor
+  defaultAnnotationFillColor?: RgbaColor
+  defaultAnnotationLineColor?: RgbaColor
+  defaultAnnotationLineWidth?: number
+  defaultAnnotationTextColor?: RgbaColor
   includeHidden?: boolean
   includeHiddenBands?: boolean
+  includeHiddenAnnotations?: boolean
   yPaddingRatio?: number
 }
 
@@ -127,6 +192,27 @@ export interface TimeSeriesPlannedBand {
   includeInYRange: boolean
 }
 
+export interface TimeSeriesAnnotationStyle {
+  line?: LineOptions
+  fill?: FillOptions
+  text?: TextOptions
+}
+
+export interface TimeSeriesPlannedAnnotation {
+  kind: TimeSeriesAnnotation['kind']
+  key: string
+  label: string
+  style: TimeSeriesAnnotationStyle
+  lineSegments: readonly TimeSeriesLineSegment[]
+  fillSegments: readonly TimeSeriesBandSegment[]
+  sourcePointCount: number
+  includedSampleCount: number
+  renderedPointCount: number
+  droppedPointCount: number
+  includeInYRange: boolean
+  labelVisible: boolean
+}
+
 export interface TimeSeriesRenderPlan {
   kind: 'time-series'
   xRange: NumericRange
@@ -135,6 +221,7 @@ export interface TimeSeriesRenderPlan {
   yRange: NumericRange
   series: readonly TimeSeriesPlannedSeries[]
   bands: readonly TimeSeriesPlannedBand[]
+  annotations: readonly TimeSeriesPlannedAnnotation[]
   sourcePointCount: number
   includedSampleCount: number
   renderedPointCount: number
@@ -172,6 +259,14 @@ interface BandBuildResult {
   maxY: number
 }
 
+interface AnnotationBuildResult {
+  lineSegments: TimeSeriesLineSegment[]
+  fillSegments: TimeSeriesBandSegment[]
+  sourcePointCount: number
+  includedSampleCount: number
+  renderedPointCount: number
+}
+
 export function buildTimeSeriesRenderPlan(
   data: TimeSeriesDataSet,
   options: TimeSeriesRenderOptions = {},
@@ -182,6 +277,7 @@ export function buildTimeSeriesRenderPlan(
   const yPaddingRatio = options.yPaddingRatio ?? 0.05
   const plannedSeries: TimeSeriesPlannedSeries[] = []
   const plannedBands: TimeSeriesPlannedBand[] = []
+  const plannedAnnotations: TimeSeriesPlannedAnnotation[] = []
   const warnings: string[] = []
   let minY = Number.POSITIVE_INFINITY
   let maxY = Number.NEGATIVE_INFINITY
@@ -288,9 +384,53 @@ export function buildTimeSeriesRenderPlan(
     plannedBands.push(plannedBand)
   }
 
+  const annotations = data.annotations ?? []
+  for (const annotation of annotations) {
+    if (annotation.visible === false && options.includeHiddenAnnotations !== true) continue
+    if (annotation.includeInYRange === true) {
+      const extent = annotationYExtent(annotation)
+      if (extent) {
+        minY = Math.min(minY, extent[0])
+        maxY = Math.max(maxY, extent[1])
+      }
+    }
+  }
+
   const inferredYRange: NumericRange =
     minY === Number.POSITIVE_INFINITY ? [0, 1] : expandRange([minY, maxY], yPaddingRatio)
   const yRange = options.yRange ? normalizeRange(options.yRange) : inferredYRange
+
+  for (let annotationIndex = 0; annotationIndex < annotations.length; annotationIndex++) {
+    const annotation = annotations[annotationIndex] as TimeSeriesAnnotation
+    if (annotation.visible === false && options.includeHiddenAnnotations !== true) continue
+
+    const build = buildAnnotationSegments(annotation, {
+      xRange,
+      xOrigin,
+      xRelativeRange,
+      yRange,
+    })
+
+    if (build.includedSampleCount === 0) {
+      warnings.push(`Annotation "${annotation.key}" has no geometry inside the visible range.`)
+      continue
+    }
+
+    plannedAnnotations.push({
+      kind: annotation.kind,
+      key: annotation.key,
+      label: annotation.label ?? annotation.key,
+      style: resolveAnnotationStyle(annotation, annotationIndex, options),
+      lineSegments: build.lineSegments,
+      fillSegments: build.fillSegments,
+      sourcePointCount: build.sourcePointCount,
+      includedSampleCount: build.includedSampleCount,
+      renderedPointCount: build.renderedPointCount,
+      droppedPointCount: build.sourcePointCount - build.includedSampleCount,
+      includeInYRange: annotation.includeInYRange === true,
+      labelVisible: annotation.labelVisible !== false,
+    })
+  }
 
   return {
     kind: 'time-series',
@@ -300,6 +440,7 @@ export function buildTimeSeriesRenderPlan(
     yRange,
     series: plannedSeries,
     bands: plannedBands,
+    annotations: plannedAnnotations,
     sourcePointCount,
     includedSampleCount,
     renderedPointCount,
@@ -320,6 +461,26 @@ export function addTimeSeriesBandsToCommandList(
       if (band.style.boundary) {
         commands.addLine(segment.upper, band.style.boundary, boundaryZ)
         commands.addLine(segment.lower, band.style.boundary, boundaryZ)
+      }
+    }
+  }
+}
+
+export function addTimeSeriesAnnotationsToCommandList(
+  commands: RenderCommandList,
+  plan: TimeSeriesRenderPlan,
+  fillZ: ZLayer = ZLayer.Fill,
+  lineZ: ZLayer = ZLayer.Overlay,
+): void {
+  for (const annotation of plan.annotations) {
+    if (annotation.style.fill) {
+      for (const segment of annotation.fillSegments) {
+        commands.addFill(segment.upper, segment.lower, annotation.style.fill, fillZ)
+      }
+    }
+    if (annotation.style.line) {
+      for (const segment of annotation.lineSegments) {
+        commands.addLine(segment.buffer, annotation.style.line, lineZ)
       }
     }
   }
@@ -352,27 +513,339 @@ export function buildTimeSeriesCommandFrame(
   options: TimeSeriesFrameOptions = {},
 ): TimeSeriesCommandFrame {
   const layout = resolveChartLayout(options.layout, width, height, plan.xRelativeRange, plan.yRange)
+  const transform = layout
+    ? createPlotViewportTransform(plan.xRelativeRange, plan.yRange, width, height, layout.plotArea)
+    : createTimeSeriesViewTransform(plan, width, height)
   const commands = new RenderCommandList()
   if (layout && options.guides !== false) {
     addChartGuidesToCommandList(commands, layout, plan.xRelativeRange, plan.yRange, options.guides)
   }
   addTimeSeriesBandsToCommandList(commands, plan)
+  addTimeSeriesAnnotationsToCommandList(commands, plan)
   addTimeSeriesToCommandList(commands, plan)
+  addTimeSeriesAnnotationLabelsToCommandList(
+    commands,
+    plan,
+    transform,
+    layout?.plotArea ?? { x: 0, y: 0, width, height },
+  )
 
   return {
     width,
     height,
     layout,
     commands,
-    transform: layout
-      ? createPlotViewportTransform(
-          plan.xRelativeRange,
-          plan.yRange,
-          width,
-          height,
-          layout.plotArea,
-        )
-      : createTimeSeriesViewTransform(plan, width, height),
+    transform,
+  }
+}
+
+function buildAnnotationSegments(
+  annotation: TimeSeriesAnnotation,
+  options: {
+    xRange: NumericRange
+    xOrigin: number
+    xRelativeRange: NumericRange
+    yRange: NumericRange
+  },
+): AnnotationBuildResult {
+  switch (annotation.kind) {
+    case 'x-line': {
+      if (!isFiniteNumber(annotation.x) || !valueInRange(annotation.x, options.xRange)) {
+        return emptyAnnotationBuildResult(2)
+      }
+      const x = annotation.x - options.xOrigin
+      return lineAnnotationBuildResult(
+        new Float32Array([x, options.yRange[0], x, options.yRange[1]]),
+      )
+    }
+    case 'y-line': {
+      if (!isFiniteNumber(annotation.y) || !valueInRange(annotation.y, options.yRange)) {
+        return emptyAnnotationBuildResult(2)
+      }
+      return lineAnnotationBuildResult(
+        new Float32Array([
+          options.xRelativeRange[0],
+          annotation.y,
+          options.xRelativeRange[1],
+          annotation.y,
+        ]),
+      )
+    }
+    case 'x-range': {
+      const xRange = normalizeFiniteRange(annotation.xStart, annotation.xEnd)
+      if (!xRange) return emptyAnnotationBuildResult(2)
+      const visibleRange = intersectRanges(xRange, options.xRange)
+      if (!visibleRange) return emptyAnnotationBuildResult(2)
+      const xStart = visibleRange[0] - options.xOrigin
+      const xEnd = visibleRange[1] - options.xOrigin
+      const lower = new Float32Array([xStart, options.yRange[0], xEnd, options.yRange[0]])
+      const upper = new Float32Array([xStart, options.yRange[1], xEnd, options.yRange[1]])
+      return rangeAnnotationBuildResult(upper, lower, [
+        new Float32Array([xStart, options.yRange[0], xStart, options.yRange[1]]),
+        new Float32Array([xEnd, options.yRange[0], xEnd, options.yRange[1]]),
+      ])
+    }
+    case 'y-range': {
+      const yRange = normalizeFiniteRange(annotation.yStart, annotation.yEnd)
+      if (!yRange) return emptyAnnotationBuildResult(2)
+      const visibleRange = intersectRanges(yRange, options.yRange)
+      if (!visibleRange) return emptyAnnotationBuildResult(2)
+      const lower = new Float32Array([
+        options.xRelativeRange[0],
+        visibleRange[0],
+        options.xRelativeRange[1],
+        visibleRange[0],
+      ])
+      const upper = new Float32Array([
+        options.xRelativeRange[0],
+        visibleRange[1],
+        options.xRelativeRange[1],
+        visibleRange[1],
+      ])
+      return rangeAnnotationBuildResult(upper, lower, [
+        new Float32Array([
+          options.xRelativeRange[0],
+          visibleRange[0],
+          options.xRelativeRange[1],
+          visibleRange[0],
+        ]),
+        new Float32Array([
+          options.xRelativeRange[0],
+          visibleRange[1],
+          options.xRelativeRange[1],
+          visibleRange[1],
+        ]),
+      ])
+    }
+    case 'ruler': {
+      if (
+        !isFiniteNumber(annotation.xStart) ||
+        !isFiniteNumber(annotation.xEnd) ||
+        !isFiniteNumber(annotation.yStart) ||
+        !isFiniteNumber(annotation.yEnd)
+      ) {
+        return emptyAnnotationBuildResult(2)
+      }
+      const xRange = normalizeRange([annotation.xStart, annotation.xEnd])
+      const yRange = normalizeRange([annotation.yStart, annotation.yEnd])
+      if (!intersectRanges(xRange, options.xRange) || !intersectRanges(yRange, options.yRange)) {
+        return emptyAnnotationBuildResult(2)
+      }
+      return lineAnnotationBuildResult(
+        new Float32Array([
+          annotation.xStart - options.xOrigin,
+          annotation.yStart,
+          annotation.xEnd - options.xOrigin,
+          annotation.yEnd,
+        ]),
+      )
+    }
+  }
+}
+
+function lineAnnotationBuildResult(buffer: Float32Array): AnnotationBuildResult {
+  return {
+    lineSegments: [{ buffer, pointCount: 2 }],
+    fillSegments: [],
+    sourcePointCount: 2,
+    includedSampleCount: 2,
+    renderedPointCount: 2,
+  }
+}
+
+function rangeAnnotationBuildResult(
+  upper: Float32Array,
+  lower: Float32Array,
+  boundaries: readonly Float32Array[],
+): AnnotationBuildResult {
+  return {
+    lineSegments: boundaries.map((buffer) => ({ buffer, pointCount: 2 })),
+    fillSegments: [{ upper, lower, pointCount: 2 }],
+    sourcePointCount: 2,
+    includedSampleCount: 2,
+    renderedPointCount: 2 + boundaries.length * 2,
+  }
+}
+
+function emptyAnnotationBuildResult(sourcePointCount: number): AnnotationBuildResult {
+  return {
+    lineSegments: [],
+    fillSegments: [],
+    sourcePointCount,
+    includedSampleCount: 0,
+    renderedPointCount: 0,
+  }
+}
+
+function annotationYExtent(annotation: TimeSeriesAnnotation): NumericRange | null {
+  switch (annotation.kind) {
+    case 'y-line':
+      return isFiniteNumber(annotation.y) ? [annotation.y, annotation.y] : null
+    case 'y-range':
+      return normalizeFiniteRange(annotation.yStart, annotation.yEnd)
+    case 'ruler':
+      return normalizeFiniteRange(annotation.yStart, annotation.yEnd)
+    case 'x-line':
+    case 'x-range':
+      return null
+  }
+}
+
+function resolveAnnotationStyle(
+  annotation: TimeSeriesAnnotation,
+  index: number,
+  options: TimeSeriesRenderOptions,
+): TimeSeriesAnnotationStyle {
+  const base = getDefaultColor(index, options.defaultAnnotationColor)
+  const defaultLineColor = options.defaultAnnotationLineColor ?? base
+  const defaultFillColor = options.defaultAnnotationFillColor ?? [
+    base[0],
+    base[1],
+    base[2],
+    Math.min(base[3], 0.1),
+  ]
+  const width = annotation.lineWidth ?? options.defaultAnnotationLineWidth ?? 1
+  const style: TimeSeriesAnnotationStyle = {
+    text: {
+      color:
+        options.defaultAnnotationTextColor ??
+        annotationTextColor(annotation, defaultLineColor, defaultFillColor),
+      fontSize: 11,
+    },
+  }
+
+  if (annotation.kind === 'x-range' || annotation.kind === 'y-range') {
+    style.fill = { color: annotation.fillColor ?? defaultFillColor }
+    const lineColor = annotation.lineColor ?? options.defaultAnnotationLineColor
+    if (lineColor) {
+      style.line = {
+        color: lineColor,
+        width,
+      }
+    }
+    return style
+  }
+
+  style.line = {
+    color: annotation.color ?? defaultLineColor,
+    width,
+  }
+  return style
+}
+
+function annotationTextColor(
+  annotation: TimeSeriesAnnotation,
+  defaultLineColor: RgbaColor,
+  defaultFillColor: RgbaColor,
+): RgbaColor {
+  if (annotation.kind === 'x-range' || annotation.kind === 'y-range') {
+    return (
+      annotation.lineColor ??
+      annotation.fillColor ?? [defaultFillColor[0], defaultFillColor[1], defaultFillColor[2], 1]
+    )
+  }
+  return annotation.color ?? defaultLineColor
+}
+
+function addTimeSeriesAnnotationLabelsToCommandList(
+  commands: RenderCommandList,
+  plan: TimeSeriesRenderPlan,
+  transform: ViewTransform,
+  plotArea: ChartRect,
+): void {
+  for (const annotation of plan.annotations) {
+    if (!annotation.labelVisible || !annotation.label || !annotation.style.text) continue
+    const anchor = annotationLabelAnchor(annotation, plan)
+    if (!anchor) continue
+    const point = transform.dataToPixel(anchor.x, anchor.y)
+    const x = clampNumber(point.x + anchor.dx, plotArea.x + 4, plotArea.x + plotArea.width - 4)
+    const y = clampNumber(point.y + anchor.dy, plotArea.y + 4, plotArea.y + plotArea.height - 4)
+    commands.addText(
+      annotation.label,
+      x,
+      y,
+      {
+        ...annotation.style.text,
+        align: anchor.align,
+        baseline: anchor.baseline,
+      },
+      ZLayer.Text,
+    )
+  }
+}
+
+interface AnnotationLabelAnchor {
+  x: number
+  y: number
+  dx: number
+  dy: number
+  align: NonNullable<TextOptions['align']>
+  baseline: NonNullable<TextOptions['baseline']>
+}
+
+function annotationLabelAnchor(
+  annotation: TimeSeriesPlannedAnnotation,
+  plan: TimeSeriesRenderPlan,
+): AnnotationLabelAnchor | null {
+  switch (annotation.kind) {
+    case 'x-line': {
+      const segment = annotation.lineSegments[0]
+      const x = segment?.buffer[0]
+      if (x === undefined) return null
+      return { x, y: plan.yRange[1], dx: 4, dy: 4, align: 'left', baseline: 'top' }
+    }
+    case 'y-line': {
+      const segment = annotation.lineSegments[0]
+      const y = segment?.buffer[1]
+      if (y === undefined) return null
+      return { x: plan.xRelativeRange[0], y, dx: 4, dy: -4, align: 'left', baseline: 'bottom' }
+    }
+    case 'x-range': {
+      const segment = annotation.fillSegments[0]
+      const xStart = segment?.upper[0]
+      const xEnd = segment?.upper[2]
+      if (xStart === undefined || xEnd === undefined) return null
+      return {
+        x: (xStart + xEnd) / 2,
+        y: plan.yRange[1],
+        dx: 0,
+        dy: 4,
+        align: 'center',
+        baseline: 'top',
+      }
+    }
+    case 'y-range': {
+      const segment = annotation.fillSegments[0]
+      const yLow = segment?.lower[1]
+      const yHigh = segment?.upper[1]
+      if (yLow === undefined || yHigh === undefined) return null
+      return {
+        x: plan.xRelativeRange[0],
+        y: (yLow + yHigh) / 2,
+        dx: 4,
+        dy: 0,
+        align: 'left',
+        baseline: 'middle',
+      }
+    }
+    case 'ruler': {
+      const segment = annotation.lineSegments[0]
+      const x0 = segment?.buffer[0]
+      const y0 = segment?.buffer[1]
+      const x1 = segment?.buffer[2]
+      const y1 = segment?.buffer[3]
+      if (x0 === undefined || y0 === undefined || x1 === undefined || y1 === undefined) {
+        return null
+      }
+      return {
+        x: (x0 + x1) / 2,
+        y: (y0 + y1) / 2,
+        dx: 4,
+        dy: -4,
+        align: 'left',
+        baseline: 'bottom',
+      }
+    }
   }
 }
 
@@ -653,4 +1126,24 @@ function buildSeriesSegments(
     minY,
     maxY,
   }
+}
+
+function normalizeFiniteRange(start: number, end: number): NumericRange | null {
+  if (!isFiniteNumber(start) || !isFiniteNumber(end)) return null
+  return normalizeRange([start, end])
+}
+
+function valueInRange(value: number, range: NumericRange): boolean {
+  return value >= range[0] && value <= range[1]
+}
+
+function intersectRanges(left: NumericRange, right: NumericRange): NumericRange | null {
+  const start = Math.max(left[0], right[0])
+  const end = Math.min(left[1], right[1])
+  return start <= end ? [start, end] : null
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min
+  return Math.max(min, Math.min(max, value))
 }

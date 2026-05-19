@@ -2,7 +2,7 @@
  * Benchmark scenarios for @pitant/charts.
  *
  * Scenarios 1-4, 8-9 require a browser (WebGPU/Canvas2D).
- * Scenarios 5-7 and 10-21 are pure-compute/package-level gates.
+ * Scenarios 5-7 and 10-22 are pure-compute/package-level gates.
  * Bundle-size scenario runs via size-limit.
  */
 import {
@@ -11,6 +11,7 @@ import {
   addTimeSeriesDerivedColumns,
   addTimeSeriesToCommandList,
   buildDigitalChannelRenderPlan,
+  buildTimeSeriesCommandFrame,
   buildTimeSeriesRenderPlan,
   clampRangeToBounds,
   DataSource,
@@ -19,6 +20,7 @@ import {
   panRangeByPixels,
   panRangeByValue,
   RenderCommandList,
+  type TimeSeriesAnnotation,
   type TimeSeriesDerivedColumn,
   type TimeSeriesSeries,
   zoomRangeAroundAnchor,
@@ -616,6 +618,116 @@ scenarios['021_time_series_derived_8x1M'] = () => {
   return {
     scenario: '021_time_series_derived_8x1M',
     metric: `${penCount} pens x ${(pointCount / 1e6).toFixed(0)}M pts plus ${derivedColumns.length} derived overlays (${renderedPointCount.toLocaleString()} rendered, ${commandCount} commands)`,
+    value: Math.round(medianMs * 100) / 100,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 022: Persistent annotation/ruler overlays ─────
+
+scenarios['022_time_series_annotations_8x1M'] = () => {
+  const pointCount = 1_000_000
+  const penCount = 8
+  const annotationCount = 1_000
+  const data = generateMultiPenData(pointCount, penCount)
+  const xStart = data.timestamps[0]
+  const xEnd = data.timestamps[data.timestamps.length - 1]
+  if (xStart === undefined || xEnd === undefined) {
+    throw new Error('benchmark fixture missing timestamps')
+  }
+
+  const span = xEnd - xStart
+  const annotations: TimeSeriesAnnotation[] = []
+  for (let i = 0; i < annotationCount; i++) {
+    const center = xStart + (span * (i + 1)) / (annotationCount + 1)
+    const width = Math.max(1000, span / 10_000)
+    const lowY = -20 + (i % 40)
+    const highY = lowY + 8
+    switch (i % 5) {
+      case 0:
+        annotations.push({
+          kind: 'x-line',
+          key: `batch-${i}`,
+          label: `B${i}`,
+          x: center,
+          color: [0.1, 0.3, 0.9, 0.75],
+        })
+        break
+      case 1:
+        annotations.push({
+          kind: 'y-line',
+          key: `limit-${i}`,
+          label: `L${i}`,
+          y: lowY,
+          color: [0.8, 0.2, 0.1, 0.75],
+        })
+        break
+      case 2:
+        annotations.push({
+          kind: 'x-range',
+          key: `hold-${i}`,
+          label: `H${i}`,
+          xStart: center - width,
+          xEnd: center + width,
+          fillColor: [1, 0.75, 0.1, 0.08],
+          lineColor: [1, 0.75, 0.1, 0.25],
+        })
+        break
+      case 3:
+        annotations.push({
+          kind: 'y-range',
+          key: `target-${i}`,
+          label: `T${i}`,
+          yStart: lowY,
+          yEnd: highY,
+          fillColor: [0.1, 0.7, 0.4, 0.08],
+          lineColor: [0.1, 0.7, 0.4, 0.25],
+        })
+        break
+      default:
+        annotations.push({
+          kind: 'ruler',
+          key: `ruler-${i}`,
+          label: `R${i}`,
+          xStart: center - width,
+          xEnd: center + width,
+          yStart: lowY,
+          yEnd: highY,
+          color: [0.15, 0.15, 0.15, 0.8],
+        })
+        break
+    }
+  }
+
+  const dataWithAnnotations = { ...data, annotations } as const
+  const target = 250 // ms for 8M trend samples plus 1000 persistent overlays
+
+  const warmup = buildTimeSeriesRenderPlan(dataWithAnnotations, { gapThreshold: 0 })
+  buildTimeSeriesCommandFrame(warmup, 1280, 720, { guides: false })
+
+  const times: number[] = []
+  let annotationPointCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 3; i++) {
+    const start = performance.now()
+    const plan = buildTimeSeriesRenderPlan(dataWithAnnotations, { gapThreshold: 0 })
+    const frame = buildTimeSeriesCommandFrame(plan, 1280, 720, { guides: false })
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    annotationPointCount = plan.annotations.reduce(
+      (total, annotation) => total + annotation.renderedPointCount,
+      0,
+    )
+    commandCount = frame.commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '022_time_series_annotations_8x1M',
+    metric: `${penCount} pens x ${(pointCount / 1e6).toFixed(0)}M pts plus ${annotations.length.toLocaleString()} annotations (${annotationPointCount.toLocaleString()} annotation pts, ${commandCount} commands)`,
     value: Math.round(medianMs * 100) / 100,
     unit: 'ms',
     target,

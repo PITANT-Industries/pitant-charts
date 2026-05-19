@@ -140,14 +140,19 @@ release performance gate.
   computed before DataSource ingestion so they reuse LOD, tooltip, export, and
   append paths. Benchmark scenario `021_time_series_derived_8x1M` covers eight
   high-density trend pens plus eight derived overlays.
+- Phase 6 persistent annotation/ruler overlays exist in core and React config,
+  with x-line, y-line, x-range, y-range, and ruler geometry rendered through
+  the TimeSeries command-frame/SVG path. Benchmark scenario
+  `022_time_series_annotations_8x1M` covers eight high-density trend pens plus
+  one thousand persistent overlays.
 
 ## Next Build Task
 
 Continue Phase 6 implementation:
 
-1. Build persistent annotations/rulers next, using the same rule: no visible
-   runtime claim without a fixture, a contract-pack update, and a benchmark or
-   browser-harness state.
+1. Build event markers or anomaly score tracks next, using the same rule: no
+   visible runtime claim without a fixture, a contract-pack update, and a
+   benchmark or browser-harness state.
 2. Keep SPC, spectrum/spectrogram, correlation, KPI, and PDF packs at
    contract-only until their benchmark fixtures exist.
 
@@ -235,6 +240,21 @@ Run after Phase 6 derived-series overlay slice on 2026-05-19:
 - `bun run --filter @pitant/benchmark bench 021`: pass,
   `021_time_series_derived_8x1M` at 184.48 ms on focused run and 171.64 ms in
   full run against a 350 ms target
+- `bun run harness:build`: pass
+- `bun run harness:verify`: pass for Canvas2D compact and bands profiles;
+  WebGPU profiles skipped because `navigator.gpu` is unavailable locally
+- `git diff --check`: pass
+
+Run after Phase 6 annotation/ruler overlay slice on 2026-05-19:
+
+- `bun run typecheck`: pass
+- `bun run lint`: pass, 130 files checked
+- `bun run test`: pass, 30 files / 334 tests
+- `bun run bench`: pass, 17/17 benchmark scenarios;
+  `022_time_series_annotations_8x1M` measured 52.71 ms in the full run against
+  a 250 ms target
+- `bun run --filter @pitant/benchmark bench 022`: pass,
+  `022_time_series_annotations_8x1M` at 55.04 ms against a 250 ms target
 - `bun run harness:build`: pass
 - `bun run harness:verify`: pass for Canvas2D compact and bands profiles;
   WebGPU profiles skipped because `navigator.gpu` is unavailable locally

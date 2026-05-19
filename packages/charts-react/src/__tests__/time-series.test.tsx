@@ -227,6 +227,54 @@ describe('useTimeSeries', () => {
     )
   })
 
+  it('passes persistent annotations and rulers into the core render plan', () => {
+    const config: TimeSeriesConfig = {
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+      annotations: [
+        { kind: 'x-line', key: 'batch-start', label: 'Batch start', x: 1010 },
+        { kind: 'y-line', key: 'setpoint', label: 'Setpoint', y: 11 },
+        {
+          kind: 'x-range',
+          key: 'hold-window',
+          label: 'Hold',
+          xStart: 1005,
+          xEnd: 1015,
+          fillRgba: [1, 0.8, 0, 0.12],
+        },
+        {
+          kind: 'ruler',
+          key: 'ramp-ruler',
+          label: 'Ramp',
+          xStart: 1000,
+          xEnd: 1020,
+          yStart: 10,
+          yEnd: 12,
+          rgba: [0.2, 0.2, 0.2, 1],
+        },
+      ],
+    }
+    const { result } = renderHook(() => {
+      const containerRef = useRef<ChartContainerRef | null>(null)
+      return useTimeSeries({ config, data: DATA, containerRef })
+    })
+
+    expect(result.current.renderPlan.annotations.map((annotation) => annotation.key)).toEqual([
+      'batch-start',
+      'setpoint',
+      'hold-window',
+      'ramp-ruler',
+    ])
+    expect(result.current.renderPlan.annotations[0]?.lineSegments[0]?.buffer).toEqual(
+      new Float32Array([
+        10,
+        result.current.renderPlan.yRange[0],
+        10,
+        result.current.renderPlan.yRange[1],
+      ]),
+    )
+    expect(result.current.renderPlan.annotations[2]?.fillSegments).toHaveLength(1)
+  })
+
   it('expands derived series into legend, render plan, and tooltip metadata', () => {
     const data: TimeSeriesColumnData = {
       timestamps: new Float64Array([1000, 1010, 1020]),
