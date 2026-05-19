@@ -396,8 +396,8 @@ https://github.com/PITANT-Industries/pitant-charts/actions/runs/26090262210.
 
 **Status.** In progress.
 
-**Scope.** Overlay, spectral, SPC, distribution, correlation, anomaly, and KPI
-packs after v1 field feedback.
+**Scope.** Overlay, spectral, SPC, distribution, correlation, scatter, anomaly,
+and KPI packs after v1 field feedback.
 
 **Implementation tasks.**
 - Add AlarmBand, EnvelopeBand, AnomalyScoreTrack.
@@ -494,6 +494,18 @@ packs after v1 field feedback.
   dashboard strip with bounded sparkline samples.
 - [x] Render harness `kpi` profile and the multi-axis demo exercise the public
   `KpiStrip` package path.
+- [x] Precomputed-point `ScatterPlot` / `ScatterPlotChart` support renders
+  frozen x/y payloads in bounded point mode for small sets and density-cell
+  mode above the configured point-command cap without making the chart package
+  responsible for causality, lag discovery, or authoritative relationship
+  scoring.
+- [x] React `ScatterPlot` passes x/y field mappings, series visibility, axis
+  ranges, and density fallback controls into the core render plan and SVG/PNG
+  export path.
+- [x] `031_scatter_500k_density` benchmark covers 500k frozen scatter points
+  represented as bounded density cells.
+- [x] Render harness `scatter` profile and the multi-axis demo exercise the
+  public `ScatterPlot` package path.
 
 **Tests and Acceptance.** Pack-specific unit, visual, and performance tests.
 

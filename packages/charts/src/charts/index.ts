@@ -145,6 +145,32 @@ export {
   zoomRangeAroundCenter,
 } from './range-navigation.js'
 export type {
+  ScatterDensityCell,
+  ScatterPlannedPoint,
+  ScatterPlannedSeries,
+  ScatterPlotCommandFrame,
+  ScatterPlotDataSet,
+  ScatterPlotDensityOptions,
+  ScatterPlotFrameOptions,
+  ScatterPlotMode,
+  ScatterPlotRenderOptions,
+  ScatterPlotRenderPlan,
+  ScatterPlotSeries,
+  ScatterVector,
+} from './scatter-plot.js'
+export {
+  addScatterPlotToCommandList,
+  buildScatterPlotCommandFrame,
+  buildScatterPlotRenderPlan,
+  createScatterPlotViewTransform,
+  renderScatterPlotPlan,
+} from './scatter-plot.js'
+export type {
+  ScatterPlotChartCreateOptions,
+  ScatterPlotChartOptions,
+} from './scatter-plot-chart.js'
+export { ScatterPlotChart } from './scatter-plot-chart.js'
+export type {
   SpectrogramColorStop,
   SpectrogramCommandFrame,
   SpectrogramDataSet,

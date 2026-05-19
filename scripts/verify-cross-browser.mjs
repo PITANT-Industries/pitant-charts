@@ -27,6 +27,7 @@ const SUPPORTED_PROFILES = [
   'distribution',
   'correlation',
   'kpi',
+  'scatter',
 ]
 
 const args = parseArgs(process.argv.slice(2))
@@ -256,6 +257,16 @@ function validateProfileState(state, profile) {
   if (profile !== 'kpi' && state.kpiItems !== 0) {
     errors.push(`Expected ${profile} profile to render 0 KPI items, got ${state.kpiItems}.`)
   }
+  if (profile === 'scatter' && state.scatterPoints !== 150000) {
+    errors.push(
+      `Expected scatter profile to render 150000 scatter source points, got ${state.scatterPoints ?? 'none'}.`,
+    )
+  }
+  if (profile !== 'scatter' && state.scatterPoints !== 0) {
+    errors.push(
+      `Expected ${profile} profile to render 0 scatter source points, got ${state.scatterPoints}.`,
+    )
+  }
 
   return errors
 }
@@ -279,7 +290,8 @@ function expectedChartSurfaceCount(profile) {
     profile === 'spectrogram' ||
     profile === 'distribution' ||
     profile === 'correlation' ||
-    profile === 'kpi'
+    profile === 'kpi' ||
+    profile === 'scatter'
     ? 3
     : 2
 }

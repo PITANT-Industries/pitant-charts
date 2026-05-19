@@ -2,19 +2,19 @@
 
 **Date:** 2026-05-19
 **Current phase:** Phase 6 - Post-v1 Industrial Chart Packs
-**Latest action:** Continued Phase 6 with the initial frozen-KPI `KpiStrip`
-pack in the core engine, imperative API, React API, render harness, benchmark
-suite, frontend contract packs, and multi-axis demo. The demo now mounts
-visible PITANT Spectrum, Spectrogram, Distribution, CorrelationMatrix, and KPI
-Strip panels from the package APIs, so industrial chart rendering stays
-continuously exercised through shared engine code instead of bespoke demo-only
-SVG/bars.
+**Latest action:** Continued Phase 6 with the initial high-density
+`ScatterPlot` pack in the core engine, imperative API, React API, render
+harness, benchmark suite, frontend contract packs, and multi-axis demo. The
+demo now mounts visible PITANT Spectrum, Spectrogram, Distribution,
+CorrelationMatrix, KPI Strip, and ScatterPlot panels from the package APIs, so
+industrial chart rendering stays continuously exercised through shared engine
+code instead of bespoke demo-only SVG/bars.
 
 ## What Exists
 
 - Bun monorepo with `@pitant/charts`, `@pitant/charts-react`, and benchmark app.
 - Render harness app with
-  compact/large/bands/anomaly/spc/spectrum/spectrogram/distribution/correlation/kpi
+  compact/large/bands/anomaly/spc/spectrum/spectrogram/distribution/correlation/kpi/scatter
   data profiles and renderer selection.
 - Core render contexts for WebGPU and Canvas2D.
 - Worker-backed data engine and LOD pyramid.
@@ -39,8 +39,8 @@ SVG/bars.
   columnar data without pulling in a runtime dependency on `pitant-historian`.
 - Non-React consumers can use `TimeSeriesChart`, `DigitalChannelChart`,
   `SpectrumChart`, `SpectrogramChart`, `DistributionChart`,
-  `CorrelationMatrixChart`, and `KpiStripChart` directly against a
-  `RenderContext` or create them from a canvas.
+  `CorrelationMatrixChart`, `KpiStripChart`, and `ScatterPlotChart` directly
+  against a `RenderContext` or create them from a canvas.
 - Docs examples now cover React trend composition, digital channel lanes,
   synchronized dashboards, and core imperative chart usage.
 - Initial frontend contract packs exist for historian trends, digital channels,
@@ -217,6 +217,15 @@ SVG/bars.
   chart stack, while OEE/SPC/reliability siblings retain ownership of
   authoritative metric computation, loss classification, and reviewed KPI
   evidence.
+- Phase 6 initial ScatterPlot support exists in core, imperative, and React
+  config, with frozen upstream x/y payloads, point mode below the configured
+  command cap, density-cell fallback above the cap, command-frame/SVG/PNG export
+  coverage, browser harness `scatter` profile coverage, and benchmark scenario
+  `031_scatter_500k_density`.
+- The multi-axis demo now mounts the public `ScatterPlot` component in the
+  default chart stack, while analytics/model siblings retain ownership of
+  causality, lag discovery, model explanation, and authoritative relationship
+  scoring.
 
 ## Next Build Task
 
@@ -225,16 +234,35 @@ Continue Phase 6 implementation:
 1. Build the next concrete post-v1 industrial pack with the same rule: no
    visible runtime claim without a fixture, a contract-pack update, and a
    benchmark or browser-harness state.
-2. Prioritize PDF evidence export or scatter/parallel coordinates next unless a
+2. Prioritize PDF evidence export or parallel coordinates next unless a
    higher-value demo need appears first.
-3. Keep PDF packs and unimplemented scatter/parallel/correlation-analysis
-   variants at contract-only until their benchmark fixtures exist.
+3. Keep PDF packs and unimplemented parallel/correlation-analysis variants at
+   contract-only until their benchmark fixtures exist.
 
 Before adding a new visible feature, update or check
 `docs/architecture/06-FEATURE-SPEC-INVENTORY.md` and the relevant frontend
 contract pack under `docs/frontend-contracts/`.
 
 ## Verification Status
+
+Run after Phase 6 ScatterPlot slice on 2026-05-19:
+
+- `bun run lint`: pass
+- `bun run typecheck`: pass
+- `bun run build`: pass
+- `bun run test`: pass, 42 files / 393 tests
+- `bun run bench`: pass, 26/26 benchmark scenarios
+- `bun run --filter @pitant/render-harness build`: pass; Vite still reports
+  the existing mixed static/dynamic import chunking warning.
+- `bun run --filter @pitant/multiaxis-demo build`: pass; Vite still reports
+  the existing mixed static/dynamic import chunking warning.
+- `bun run harness:verify -- --renderers=canvas2d --profiles=scatter`: pass,
+  significant pixels across all three scatter harness surfaces.
+- Playwright smoke against `http://127.0.0.1:5174/`: pass for
+  `.pitant-scatter-surface canvas` nonblank rendering with no console errors
+  (`1032 x 401`, 49,420 significant pixels).
+- Focused performance evidence: `031_scatter_500k_density` passed at 11.358 ms
+  in the full benchmark run against a 16 ms target.
 
 Run after Phase 6 KPI Strip slice on 2026-05-19:
 

@@ -2,7 +2,7 @@
  * Benchmark scenarios for @pitant/charts.
  *
  * Scenarios 1-4, 8-9 require a browser (WebGPU/Canvas2D).
- * Scenarios 5-7 and 10-30 are pure-compute/package-level gates.
+ * Scenarios 5-7 and 10-31 are pure-compute/package-level gates.
  * Bundle-size scenario runs via size-limit.
  */
 import {
@@ -11,6 +11,7 @@ import {
   addDistributionMarkersToCommandList,
   addDistributionToCommandList,
   addKpiStripToCommandList,
+  addScatterPlotToCommandList,
   addSpectrogramToCommandList,
   addSpectrumBandsToCommandList,
   addSpectrumPeakMarkersToCommandList,
@@ -24,6 +25,7 @@ import {
   buildDigitalChannelRenderPlan,
   buildDistributionRenderPlan,
   buildKpiStripRenderPlan,
+  buildScatterPlotRenderPlan,
   buildSpectrogramRenderPlan,
   buildSpectrumRenderPlan,
   buildTimeSeriesCommandFrame,
@@ -38,6 +40,7 @@ import {
   panRangeByPixels,
   panRangeByValue,
   RenderCommandList,
+  type ScatterPlotDataSet,
   type SpectrogramDataSet,
   type SpectrumFrequencyBand,
   type SpectrumPeakMarker,
@@ -364,6 +367,32 @@ function generateKpiStripData(itemCount: number, sparklinePoints: number): KpiSt
   })
 
   return { items }
+}
+
+function generateScatterPlotData(pointCount: number): ScatterPlotDataSet {
+  const x = new Float32Array(pointCount)
+  const y = new Float32Array(pointCount)
+
+  for (let index = 0; index < pointCount; index++) {
+    const cluster = index % 4
+    const centerX = cluster === 0 ? 18 : cluster === 1 ? 46 : cluster === 2 ? 68 : 83
+    const centerY = cluster === 0 ? 34 : cluster === 1 ? 72 : cluster === 2 ? 52 : 24
+    const ring = (index % 997) / 997
+    x[index] = centerX + Math.sin(index / 17) * (4 + ring * 8) + Math.cos(index / 131) * 2.4
+    y[index] = centerY + Math.cos(index / 23) * (5 + ring * 9) + Math.sin(index / 89) * 3.2
+  }
+
+  return {
+    series: [
+      {
+        key: 'pressure-torque-cloud',
+        label: 'Pressure vs torque cloud',
+        x,
+        y,
+        color: [0.15, 0.39, 0.92, 1],
+      },
+    ],
+  }
 }
 
 function gaussian(value: number, center: number, width: number): number {
@@ -1423,6 +1452,59 @@ scenarios['030_kpi_strip_256_assets'] = () => {
   return {
     scenario: '030_kpi_strip_256_assets',
     metric: `${renderedItemCount} assets with ${sparklinePointCount.toLocaleString()} sparkline points (${commandCount.toLocaleString()} commands)`,
+    value: Math.round(medianMs * 1000) / 1000,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 031: Scatter plot density fallback ─────────────
+
+scenarios['031_scatter_500k_density'] = () => {
+  const pointCount = 500_000
+  const data = generateScatterPlotData(pointCount)
+  const density = {
+    columns: 192,
+    rows: 128,
+  }
+  const target = 16 // ms for 500k frozen points binned to density commands
+
+  const warmup = buildScatterPlotRenderPlan(data, {
+    xRange: [0, 100],
+    yRange: [0, 100],
+    maxRenderedPoints: 20_000,
+    density,
+  })
+  const warmupCommands = new RenderCommandList()
+  addScatterPlotToCommandList(warmupCommands, warmup)
+
+  const times: number[] = []
+  let filteredPointCount = 0
+  let densityCellCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 7; i++) {
+    const start = performance.now()
+    const plan = buildScatterPlotRenderPlan(data, {
+      xRange: [0, 100],
+      yRange: [0, 100],
+      maxRenderedPoints: 20_000,
+      density,
+    })
+    const commands = new RenderCommandList()
+    addScatterPlotToCommandList(commands, plan)
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    filteredPointCount = plan.filteredPointCount
+    densityCellCount = plan.densityCellCount
+    commandCount = commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '031_scatter_500k_density',
+    metric: `${filteredPointCount.toLocaleString()} frozen scatter points as ${densityCellCount.toLocaleString()} density cells (${commandCount.toLocaleString()} commands)`,
     value: Math.round(medianMs * 1000) / 1000,
     unit: 'ms',
     target,

@@ -95,6 +95,17 @@ export type {
   UseKpiStripReturn,
 } from './kpi-strip.js'
 export { KpiStrip, useKpiStrip } from './kpi-strip.js'
+// Scatter plot
+export type {
+  ScatterPlotColumnData,
+  ScatterPlotConfig,
+  ScatterPlotProps,
+  ScatterPlotSeriesConfig,
+  ScatterPlotStats,
+  UseScatterPlotOptions,
+  UseScatterPlotReturn,
+} from './scatter-plot.js'
+export { ScatterPlot, useScatterPlot } from './scatter-plot.js'
 // Spectrogram
 export type {
   SpectrogramColorStopConfig,

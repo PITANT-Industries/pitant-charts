@@ -13,6 +13,8 @@ import {
   type RectOptions,
   type RenderContext,
   type RendererCapabilities,
+  ScatterPlotChart,
+  type ScatterPlotDataSet,
   SpectrogramChart,
   type SpectrogramDataSet,
   SpectrumChart,
@@ -165,6 +167,17 @@ const KPI_STRIP_DATA: KpiStripDataSet = {
         valueRange: [0, 8],
       },
       upperLimit: 5,
+    },
+  ],
+}
+
+const SCATTER_DATA: ScatterPlotDataSet = {
+  series: [
+    {
+      key: 'pressure-torque',
+      label: 'Pressure vs torque',
+      x: new Float32Array([80, 84, 92, 100, 108, 120]),
+      y: new Float32Array([12, 14, 16, 20, 24, 31]),
     },
   ],
 }
@@ -325,5 +338,34 @@ describe('imperative chart classes', () => {
 
     chart.dispose()
     expect(() => chart.render()).toThrow('KpiStripChart has been disposed')
+  })
+
+  it('renders ScatterPlotChart through the existing render-plan path', () => {
+    const context = new FakeRenderContext()
+    const chart = new ScatterPlotChart(context, {
+      data: SCATTER_DATA,
+      render: {
+        xRange: [70, 130],
+        yRange: [0, 40],
+      },
+    })
+
+    expect(chart.renderPlan.kind).toBe('scatter-plot')
+    expect(chart.renderPlan.mode).toBe('points')
+    expect(chart.renderPlan.renderedPointCount).toBe(6)
+    expect(context.beginCount).toBe(1)
+    expect(context.endCount).toBe(1)
+    expect(context.rectCount).toBe(6)
+
+    chart.setRenderOptions({
+      xRange: [70, 130],
+      yRange: [0, 40],
+      density: { enabled: true, minPointCount: 1, columns: 8, rows: 6 },
+    })
+    expect(chart.renderPlan.mode).toBe('density')
+    expect(context.beginCount).toBe(2)
+
+    chart.dispose()
+    expect(() => chart.render()).toThrow('ScatterPlotChart has been disposed')
   })
 })

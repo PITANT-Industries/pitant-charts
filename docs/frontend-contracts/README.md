@@ -25,7 +25,7 @@ Each pack must include:
 | Anomaly review | `anomaly-review.md` | initial score-lane pack |
 | SPC review | `spc-review.md` | initial control-limit pack |
 | Scientific analysis | `scientific-analysis.md` | initial Spectrum, Spectrogram, and Distribution pack |
-| Correlation workbench | `correlation-workbench.md` | initial CorrelationMatrix pack |
+| Correlation workbench | `correlation-workbench.md` | initial CorrelationMatrix and ScatterPlot packs |
 | KPI dashboard | `kpi-dashboard.md` | initial KpiStrip pack |
 | Batch profile | `batch-profile.md` | pending |
 | Synchronized dashboard | `synchronized-dashboard.md` | initial pack |

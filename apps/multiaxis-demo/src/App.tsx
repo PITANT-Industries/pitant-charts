@@ -10,6 +10,9 @@ import {
   type KpiStripConfig,
   type KpiStripData,
   type KpiStripItemData,
+  ScatterPlot,
+  type ScatterPlotColumnData,
+  type ScatterPlotConfig,
   Spectrogram,
   type SpectrogramConfig,
   type SpectrogramMatrixData,
@@ -5941,6 +5944,71 @@ function PitantKpiStripEnginePanel({
   )
 }
 
+interface PitantScatterEnginePanelProps {
+  displaySamples: readonly Sample[]
+}
+
+function PitantScatterEnginePanel({
+  displaySamples,
+}: PitantScatterEnginePanelProps): React.JSX.Element {
+  const scatterData = useMemo(() => buildPitantScatterPlotData(displaySamples), [displaySamples])
+  const scatterConfig = useMemo(() => buildPitantScatterPlotConfig(), [])
+
+  return (
+    <section className="pitant-scatter-panel" aria-label="PITANT Scatter plot engine">
+      <div className="pitant-scatter-header">
+        <div>
+          <p className="eyebrow">Scientific renderer</p>
+          <h3>Scatter density path</h3>
+        </div>
+        <dl className="pitant-scatter-readout">
+          <div>
+            <dt>Mode</dt>
+            <dd>density fallback</dd>
+          </div>
+          <div>
+            <dt>Pairs</dt>
+            <dd>{scatterConfig.series.length}</dd>
+          </div>
+          <div>
+            <dt>Samples</dt>
+            <dd>{displaySamples.length}</dd>
+          </div>
+        </dl>
+      </div>
+      <ScatterPlot
+        ariaLabel="Multi-axis scatter density rendered by PITANT ScatterPlot"
+        aspectRatio={18 / 7}
+        className="pitant-scatter-surface"
+        config={scatterConfig}
+        data={scatterData}
+        renderer="canvas2d"
+      >
+        {(chart) => (
+          <dl className="pitant-scatter-stats" aria-label="Scatter render statistics">
+            <div>
+              <dt>Path</dt>
+              <dd>PITANT Scatter</dd>
+            </div>
+            <div>
+              <dt>Mode</dt>
+              <dd>{chart.stats.mode}</dd>
+            </div>
+            <div>
+              <dt>Cells</dt>
+              <dd>{chart.stats.densityCellCount || chart.stats.renderedPointCount}</dd>
+            </div>
+            <div>
+              <dt>Render</dt>
+              <dd>{chart.stats.renderTime.toFixed(1)} ms</dd>
+            </div>
+          </dl>
+        )}
+      </ScatterPlot>
+    </section>
+  )
+}
+
 function App(): React.JSX.Element {
   const samples = useMemo(() => generateSamples(), [])
   const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode)
@@ -6266,6 +6334,8 @@ function App(): React.JSX.Element {
         <PitantCorrelationEnginePanel displaySamples={displaySamples} />
 
         <PitantKpiStripEnginePanel displaySamples={displaySamples} />
+
+        <PitantScatterEnginePanel displaySamples={displaySamples} />
 
         {overlays.legend ? (
           <ScientificLegend
@@ -8447,6 +8517,81 @@ function buildPitantKpiStripConfig(): KpiStripConfig {
     sparklinePointLimit: 48,
     cardGapRatio: 0.06,
     cardPaddingRatio: 0.11,
+  }
+}
+
+function buildPitantScatterPlotData(samples: readonly Sample[]): ScatterPlotColumnData {
+  const sourceSamples = samples.length > 0 ? samples : [generateSamples()[0] as Sample]
+  const pressure = getSeriesById('pressure')
+  const torque = getSeriesById('torque')
+  const temperature = getSeriesById('temperature')
+  const vibration = getSeriesById('vibration')
+  const pressureNorm = new Float32Array(sourceSamples.length)
+  const torqueNorm = new Float32Array(sourceSamples.length)
+  const temperatureNorm = new Float32Array(sourceSamples.length)
+  const vibrationNorm = new Float32Array(sourceSamples.length)
+
+  for (let index = 0; index < sourceSamples.length; index++) {
+    const sample = sourceSamples[index] ?? sourceSamples[sourceSamples.length - 1]
+    pressureNorm[index] = sample
+      ? clamp(normalizeValue(sample.pressure, pressure.domain), 0, 100)
+      : 0
+    torqueNorm[index] = sample ? clamp(normalizeValue(sample.torque, torque.domain), 0, 100) : 0
+    temperatureNorm[index] = sample
+      ? clamp(normalizeValue(sample.temperature, temperature.domain), 0, 100)
+      : 0
+    vibrationNorm[index] = sample
+      ? clamp(normalizeValue(sample.vibration, vibration.domain), 0, 100)
+      : 0
+  }
+
+  return {
+    columns: {
+      pressure_norm: pressureNorm,
+      torque_norm: torqueNorm,
+      temperature_norm: temperatureNorm,
+      vibration_norm: vibrationNorm,
+    },
+  }
+}
+
+function buildPitantScatterPlotConfig(): ScatterPlotConfig {
+  return {
+    series: [
+      {
+        key: 'pressure-torque',
+        label: 'Pressure vs torque',
+        xField: 'pressure_norm',
+        yField: 'torque_norm',
+        color: getSeriesById('pressure').color,
+        rgba: hexToRgba(getSeriesById('pressure').color, 0.88),
+      },
+      {
+        key: 'temperature-vibration',
+        label: 'Temp vs vibration',
+        xField: 'temperature_norm',
+        yField: 'vibration_norm',
+        color: getSeriesById('vibration').color,
+        rgba: hexToRgba(getSeriesById('vibration').color, 0.78),
+      },
+    ],
+    xAxis: {
+      label: 'Normalized input',
+      range: [0, 100],
+      formatValue: (value) => `${value.toFixed(0)}%`,
+    },
+    yAxis: {
+      label: 'Normalized output',
+      range: [0, 100],
+      formatValue: (value) => `${value.toFixed(0)}%`,
+    },
+    maxRenderedPoints: 1_500,
+    density: {
+      enabled: true,
+      minPointCount: 1,
+      columns: 96,
+      rows: 64,
+    },
   }
 }
 

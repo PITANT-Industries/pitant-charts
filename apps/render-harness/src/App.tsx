@@ -15,6 +15,9 @@ import {
   type KpiStripConfig,
   type KpiStripData,
   type KpiStripItemData,
+  ScatterPlot,
+  type ScatterPlotColumnData,
+  type ScatterPlotConfig,
   Spectrogram,
   type SpectrogramConfig,
   type SpectrogramMatrixData,
@@ -39,6 +42,7 @@ type LoadProfile =
   | 'distribution'
   | 'correlation'
   | 'kpi'
+  | 'scatter'
 
 interface GeneratedData {
   analog: TimeSeriesColumnData
@@ -46,6 +50,7 @@ interface GeneratedData {
   digital: DigitalChannelColumnData
   distribution: DistributionColumnData
   kpi: KpiStripData
+  scatter: ScatterPlotColumnData
   spectrum: SpectrumColumnData
   spectrogram: SpectrogramMatrixData
 }
@@ -64,6 +69,8 @@ declare global {
       digitalChannels: number
       distributionBins: number
       kpiItems: number
+      scatterDensityCells: number
+      scatterPoints: number
       spectrumBins: number
       spectrogramTiles: number
     }
@@ -82,6 +89,7 @@ const PROFILES: readonly LoadProfile[] = [
   'distribution',
   'correlation',
   'kpi',
+  'scatter',
 ]
 
 const SERIES_CONFIG: TimeSeriesConfig['series'] = [
@@ -368,6 +376,44 @@ const KPI_STRIP_CONFIG: KpiStripConfig = {
   cardPaddingRatio: 0.1,
 }
 
+const SCATTER_POINT_FIELD = 'pressure'
+
+const SCATTER_CONFIG: ScatterPlotConfig = {
+  series: [
+    {
+      key: 'pressure-torque',
+      label: 'Pressure vs torque',
+      xField: 'pressure',
+      yField: 'torque',
+      color: 'var(--chart-1)',
+      rgba: [0.15, 0.39, 0.92, 1],
+    },
+    {
+      key: 'temperature-vibration',
+      label: 'Temperature vs vibration',
+      xField: 'temperature',
+      yField: 'vibration',
+      color: 'var(--chart-4)',
+      rgba: [0.86, 0.15, 0.15, 0.86],
+    },
+  ],
+  xAxis: {
+    label: 'Process input',
+    range: [0, 120],
+    formatValue: (value) => value.toFixed(0),
+  },
+  yAxis: {
+    label: 'Process output',
+    range: [0, 120],
+    formatValue: (value) => value.toFixed(0),
+  },
+  maxRenderedPoints: 18_000,
+  density: {
+    columns: 192,
+    rows: 128,
+  },
+}
+
 export function App(): React.JSX.Element {
   const [renderer, setRenderer] = useState<RendererChoice>(() =>
     readChoiceFromQuery('renderer', RENDERERS, 'auto'),
@@ -385,7 +431,8 @@ export function App(): React.JSX.Element {
             profile === 'spectrogram' ||
             profile === 'distribution' ||
             profile === 'correlation' ||
-            profile === 'kpi'
+            profile === 'kpi' ||
+            profile === 'scatter'
           ? 10_000
           : 12_000
   const generated = useMemo(() => generateData(pointCount, profile), [pointCount, profile])
@@ -431,6 +478,9 @@ export function App(): React.JSX.Element {
       digitalChannels: DIGITAL_CONFIG.length,
       distributionBins: profile === 'distribution' ? generated.distribution.binStarts.length : 0,
       kpiItems: profile === 'kpi' ? generated.kpi.items.length : 0,
+      scatterDensityCells: 0,
+      scatterPoints:
+        profile === 'scatter' ? (generated.scatter.columns[SCATTER_POINT_FIELD]?.length ?? 0) : 0,
       spectrumBins: profile === 'spectrum' ? generated.spectrum.frequencies.length : 0,
       spectrogramTiles:
         profile === 'spectrogram'
@@ -443,6 +493,7 @@ export function App(): React.JSX.Element {
     generated.correlation.values.length,
     generated.distribution.binStarts.length,
     generated.kpi.items.length,
+    generated.scatter.columns[SCATTER_POINT_FIELD],
     generated.spectrum.frequencies.length,
     pointCount,
     profile,
@@ -695,6 +746,39 @@ export function App(): React.JSX.Element {
           </KpiStrip>
         </section>
       ) : null}
+
+      {profile === 'scatter' ? (
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>Scatter Density</h2>
+              <p>150k frozen point relationship view with automatic density fallback</p>
+            </div>
+          </div>
+          <ScatterPlot
+            ariaLabel="Scatter density render harness"
+            className="chart-surface scatter"
+            config={{ ...SCATTER_CONFIG, renderer }}
+            data={generated.scatter}
+          >
+            {(chart) => (
+              <div className="chart-overlay">
+                <ChartLegend
+                  items={[...chart.legendItems]}
+                  onToggle={(key) => chart.toggleSeries(key)}
+                />
+                <ScatterStatsRow
+                  densityCellCount={chart.stats.densityCellCount}
+                  filteredPointCount={chart.stats.filteredPointCount}
+                  mode={chart.stats.mode}
+                  renderTime={chart.stats.renderTime}
+                  sourcePointCount={chart.stats.sourcePointCount}
+                />
+              </div>
+            )}
+          </ScatterPlot>
+        </section>
+      ) : null}
     </main>
   )
 }
@@ -888,6 +972,36 @@ function KpiStatsRow(props: {
   )
 }
 
+function ScatterStatsRow(props: {
+  densityCellCount: number
+  filteredPointCount: number
+  mode: string
+  renderTime: number
+  sourcePointCount: number
+}): React.JSX.Element {
+  const { densityCellCount, filteredPointCount, mode, renderTime, sourcePointCount } = props
+  return (
+    <dl className="stats-row">
+      <div>
+        <dt>Source</dt>
+        <dd>{sourcePointCount.toLocaleString()}</dd>
+      </div>
+      <div>
+        <dt>Filtered</dt>
+        <dd>{filteredPointCount.toLocaleString()}</dd>
+      </div>
+      <div>
+        <dt>{mode === 'density' ? 'Cells' : 'Mode'}</dt>
+        <dd>{mode === 'density' ? densityCellCount.toLocaleString() : mode}</dd>
+      </div>
+      <div>
+        <dt>Render</dt>
+        <dd>{renderTime.toFixed(2)} ms</dd>
+      </div>
+    </dl>
+  )
+}
+
 function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
   const timestamps = new Float64Array(pointCount)
   const temperature = new Float64Array(pointCount)
@@ -952,8 +1066,39 @@ function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
     },
     distribution: generateDistributionData(512),
     kpi: generateKpiStripData(256, 96),
+    scatter: generateScatterPlotData(150_000),
     spectrum: generateSpectrumData(8192),
     spectrogram: generateSpectrogramData(128, 96),
+  }
+}
+
+function generateScatterPlotData(pointCount: number): ScatterPlotColumnData {
+  const pressure = new Float32Array(pointCount)
+  const torque = new Float32Array(pointCount)
+  const temperature = new Float32Array(pointCount)
+  const vibration = new Float32Array(pointCount)
+
+  for (let index = 0; index < pointCount; index++) {
+    const cluster = index % 4
+    const centerPressure = cluster === 0 ? 22 : cluster === 1 ? 48 : cluster === 2 ? 71 : 88
+    const centerTorque = cluster === 0 ? 34 : cluster === 1 ? 74 : cluster === 2 ? 52 : 24
+    const ring = (index % 997) / 997
+    pressure[index] =
+      centerPressure + Math.sin(index / 17) * (4 + ring * 8) + Math.cos(index / 131) * 2.4
+    torque[index] =
+      centerTorque + Math.cos(index / 23) * (5 + ring * 9) + Math.sin(index / 89) * 3.2
+    temperature[index] = 58 + cluster * 9 + Math.sin(index / 53) * 11 + Math.cos(index / 211) * 4
+    vibration[index] =
+      18 + cluster * 8 + Math.abs(Math.sin(index / 37)) * 34 + Math.cos(index / 157) * 3
+  }
+
+  return {
+    columns: {
+      pressure,
+      torque,
+      temperature,
+      vibration,
+    },
   }
 }
 

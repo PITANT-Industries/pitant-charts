@@ -10,7 +10,7 @@ data scientists, reliability engineers, and model-prep reviewers.
 
 | Surface | Path or symbol | 06 section |
 |---|---|---|
-| Future chart | `ScatterPlot` | Phase 6 Chart Family Use / Do Not Use Catalog |
+| Package API | `ScatterPlot`, `useScatterPlot`, `ScatterPlotChart` | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Package API | `CorrelationMatrix`, `useCorrelationMatrix`, `CorrelationMatrixChart` | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Future chart | `ParallelCoordinates` | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Handoff owner | `pitant-model-registry` for model features | Whole-PITANT Composition Model |
@@ -24,6 +24,25 @@ data scientists, reliability engineers, and model-prep reviewers.
   sampleSet={sampleSet}
   brushing={brushingState}
   linkedTimeRange={linkedTimeRange}
+/>
+
+<ScatterPlot
+  ariaLabel="500k operating-state scatter density"
+  config={{
+    series: [
+      {
+        key: 'pressure-torque',
+        label: 'Pressure vs torque',
+        xField: 'pressure',
+        yField: 'torque'
+      }
+    ],
+    xAxis: { label: 'Pressure', range: [0, 100] },
+    yAxis: { label: 'Torque', range: [0, 100] },
+    maxRenderedPoints: 20000,
+    density: { columns: 192, rows: 128 }
+  }}
+  data={{ columns: { pressure, torque } }}
 />
 
 <CorrelationMatrix
@@ -46,8 +65,9 @@ data scientists, reliability engineers, and model-prep reviewers.
 
 ## Success State Shape
 
-- Scatter plots support brushing, density fallback, selection summaries, and
-  linked trend handoff.
+- Initial ScatterPlot renders frozen upstream x/y payloads, point mode below
+  the cap, density-cell fallback above the cap, SVG export, PNG export, and
+  selection handoff without implying causality or lag discovery.
 - Initial CorrelationMatrix renders frozen upstream coefficients, missing-data
   state, low-sample state, masked cells, labels, SVG export, and refuses to
   imply causality or lag discovery.
@@ -59,8 +79,9 @@ data scientists, reliability engineers, and model-prep reviewers.
 
 - Success: `correlation-matrix-128vars` renders through `CorrelationMatrix`,
   benchmark `029_correlation_matrix_128vars`, and browser harness profile
-  `correlation`; `scatter-500k-brush` and `parallel-coordinates-20k` remain
-  contract-only.
+  `correlation`; `scatter-500k-brush` renders through `ScatterPlot`,
+  benchmark `031_scatter_500k_density`, and browser harness profile
+  `scatter`; `parallel-coordinates-20k` remains contract-only.
 - Degraded: missing values, mixed units, sampled rows, and density fallback are
   visible.
 - Denied: user lacks access to one or more variables in the requested matrix.
@@ -79,10 +100,10 @@ data scientists, reliability engineers, and model-prep reviewers.
 
 ## Profile Gating
 
-Initial CorrelationMatrix is enabled for `enterprise`, `ai_ready`, and
-`premium`, with plant profiles allowed for bounded engineering review. Scatter
-and parallel-coordinate surfaces remain pilot-only until their fixtures move
-beyond `contract_only`.
+Initial CorrelationMatrix and ScatterPlot are enabled for `enterprise`,
+`ai_ready`, and `premium`, with plant profiles allowed for bounded engineering
+review. Parallel-coordinate surfaces remain pilot-only until their fixtures
+move beyond `contract_only`.
 
 ## Mode Vector Summary
 
