@@ -72,6 +72,8 @@ export type {
   TimeSeriesProps,
   TimeSeriesRulerAnnotationConfig,
   TimeSeriesSeriesConfig,
+  TimeSeriesSpcRuleMarkerConfig,
+  TimeSeriesSpcTrackConfig,
   TimeSeriesStats,
   TimeSeriesValueBandConfig,
   TimeSeriesXLineAnnotationConfig,

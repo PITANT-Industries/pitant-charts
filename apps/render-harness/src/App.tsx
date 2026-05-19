@@ -12,7 +12,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 
 type RendererChoice = RendererType | 'auto'
-type LoadProfile = 'compact' | 'large' | 'bands' | 'anomaly'
+type LoadProfile = 'compact' | 'large' | 'bands' | 'anomaly' | 'spc'
 
 interface GeneratedData {
   analog: TimeSeriesColumnData
@@ -28,13 +28,14 @@ declare global {
       analogSeries: number
       analogBands: number
       analogAnomalyTracks: number
+      analogSpcTracks: number
       digitalChannels: number
     }
   }
 }
 
 const RENDERERS: readonly RendererChoice[] = ['auto', 'canvas2d', 'webgpu']
-const PROFILES: readonly LoadProfile[] = ['compact', 'large', 'bands', 'anomaly']
+const PROFILES: readonly LoadProfile[] = ['compact', 'large', 'bands', 'anomaly', 'spc']
 
 const SERIES_CONFIG: TimeSeriesConfig['series'] = [
   {
@@ -150,6 +151,41 @@ const ANOMALY_TRACK_CONFIG: NonNullable<TimeSeriesConfig['anomalyTracks']> = [
   },
 ]
 
+const SPC_TRACK_CONFIG: NonNullable<TimeSeriesConfig['spcTracks']> = [
+  {
+    key: 'temperature-xbar',
+    label: 'Temperature Xbar',
+    chartKind: 'xbar',
+    centerLine: 65,
+    upperControlLimit: 84,
+    lowerControlLimit: 46,
+    upperWarningLimit: 78,
+    lowerWarningLimit: 52,
+    zoneFillRgba: [0.15, 0.39, 0.92, 0.07],
+    warningFillRgba: [0.93, 0.47, 0.09, 0.12],
+    centerLineRgba: [0.1, 0.1, 0.1, 0.72],
+    controlLineRgba: [0.82, 0.12, 0.08, 0.78],
+    warningLineRgba: [0.93, 0.47, 0.09, 0.72],
+    markers: [
+      {
+        key: 'we-1-temp',
+        label: 'WE-1',
+        rule: 'Western Electric 1',
+        x: 1_700_000_000_000 + 3_200 * 1000,
+        severity: 'violation',
+        labelVisible: true,
+      },
+      {
+        key: 'we-2-temp',
+        label: 'WE-2',
+        rule: 'Western Electric 2',
+        x: 1_700_000_000_000 + 7_600 * 1000,
+        severity: 'warning',
+      },
+    ],
+  },
+]
+
 export function App(): React.JSX.Element {
   const [renderer, setRenderer] = useState<RendererChoice>(() =>
     readChoiceFromQuery('renderer', RENDERERS, 'auto'),
@@ -158,7 +194,13 @@ export function App(): React.JSX.Element {
     readChoiceFromQuery('profile', PROFILES, 'large'),
   )
   const pointCount =
-    profile === 'large' ? 180_000 : profile === 'bands' || profile === 'anomaly' ? 90_000 : 12_000
+    profile === 'large'
+      ? 180_000
+      : profile === 'bands' || profile === 'anomaly'
+        ? 90_000
+        : profile === 'spc'
+          ? 10_000
+          : 12_000
   const generated = useMemo(() => generateData(pointCount, profile), [pointCount, profile])
   const timeSeriesConfig = useMemo<TimeSeriesConfig>(() => {
     const config: TimeSeriesConfig = {
@@ -173,6 +215,7 @@ export function App(): React.JSX.Element {
     }
     if (profile === 'bands') config.bands = BAND_CONFIG
     if (profile === 'anomaly') config.anomalyTracks = ANOMALY_TRACK_CONFIG
+    if (profile === 'spc') config.spcTracks = SPC_TRACK_CONFIG
     return config
   }, [profile, renderer])
   const digitalConfig = useMemo<DigitalChannelConfig>(
@@ -196,6 +239,7 @@ export function App(): React.JSX.Element {
       analogSeries: SERIES_CONFIG.length,
       analogBands: profile === 'bands' ? BAND_CONFIG.length : 0,
       analogAnomalyTracks: profile === 'anomaly' ? ANOMALY_TRACK_CONFIG.length : 0,
+      analogSpcTracks: profile === 'spc' ? SPC_TRACK_CONFIG.length : 0,
       digitalChannels: DIGITAL_CONFIG.length,
     }
   }, [pointCount, profile, renderer])

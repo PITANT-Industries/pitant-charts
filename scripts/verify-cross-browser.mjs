@@ -16,7 +16,7 @@ const FPS_FRAME_COUNT = 90
 const DEFAULT_BROWSERS = ['chromium', 'firefox', 'webkit']
 const DEFAULT_RENDERERS = ['canvas2d']
 const DEFAULT_PROFILES = ['compact']
-const SUPPORTED_PROFILES = ['compact', 'large', 'bands', 'anomaly']
+const SUPPORTED_PROFILES = ['compact', 'large', 'bands', 'anomaly', 'spc']
 
 const args = parseArgs(process.argv.slice(2))
 const browsers = args.browsers ?? DEFAULT_BROWSERS
@@ -187,6 +187,14 @@ function validateProfileState(state, profile) {
     errors.push(
       `Expected ${profile} profile to render 0 anomaly tracks, got ${state.analogAnomalyTracks}.`,
     )
+  }
+  if (profile === 'spc' && state.analogSpcTracks !== 1) {
+    errors.push(
+      `Expected spc profile to render 1 SPC track, got ${state.analogSpcTracks ?? 'none'}.`,
+    )
+  }
+  if (profile !== 'spc' && state.analogSpcTracks !== 0) {
+    errors.push(`Expected ${profile} profile to render 0 SPC tracks, got ${state.analogSpcTracks}.`)
   }
 
   return errors

@@ -7,6 +7,7 @@ import {
   type TimeSeriesConfig,
   type TimeSeriesDerivedSeriesConfig,
   type TimeSeriesEventMarkerConfig,
+  type TimeSeriesSpcTrackConfig,
 } from '@pitant/charts-react'
 import { type CSSProperties, type PointerEvent, useMemo, useState } from 'react'
 
@@ -5396,6 +5397,61 @@ function buildPitantEventMarkers(
   )
 }
 
+function buildPitantSpcTracks(
+  activeSeries: SeriesConfig,
+  displaySamples: readonly Sample[],
+  overlays: Record<OverlayId, boolean>,
+): TimeSeriesSpcTrackConfig[] {
+  if (!overlays.alarmBands || !overlays.statusPoints || activeSeries.stepped) return []
+
+  const values = displaySamples.map((sample) => valueFor(sample, activeSeries.id))
+  if (values.length < 8) return []
+
+  const mean = average(values)
+  const sigma = Math.max(0.0001, standardDeviation(values))
+  const ucl = mean + 3 * sigma
+  const lcl = mean - 3 * sigma
+  const upperWarning = mean + 2 * sigma
+  const lowerWarning = mean - 2 * sigma
+  const markers: TimeSeriesSpcTrackConfig['markers'] = displaySamples
+    .filter((sample) => {
+      const value = valueFor(sample, activeSeries.id)
+      return value > ucl || value < lcl
+    })
+    .slice(0, 12)
+    .map((sample, index) => {
+      const marker: NonNullable<TimeSeriesSpcTrackConfig['markers']>[number] = {
+        key: `${activeSeries.id}-spc-rule-${sample.cycle}`,
+        rule: 'Western Electric 1',
+        x: sample.cycle,
+        severity: 'violation',
+        labelVisible: index === 0,
+      }
+      if (index === 0) marker.label = 'WE-1'
+      return marker
+    })
+
+  return [
+    {
+      key: `${activeSeries.id}-spc-control`,
+      label: `${activeSeries.shortLabel} SPC limits`,
+      chartKind: 'individual',
+      centerLine: mean,
+      upperControlLimit: ucl,
+      lowerControlLimit: lcl,
+      upperWarningLimit: upperWarning,
+      lowerWarningLimit: lowerWarning,
+      zoneFillRgba: toRgba(activeSeries.color, 0.06),
+      warningFillRgba: toRgba('#d95319', 0.1),
+      centerLineRgba: toRgba('#111827', 0.58),
+      controlLineRgba: toRgba('#d92d20', 0.76),
+      warningLineRgba: toRgba('#d95319', 0.66),
+      markerRgba: toRgba('#d92d20', 0.82),
+      markers,
+    },
+  ]
+}
+
 function buildPitantTimeSeriesConfig(
   activeSeries: SeriesConfig,
   displaySamples: readonly Sample[],
@@ -5418,6 +5474,7 @@ function buildPitantTimeSeriesConfig(
     bands: buildPitantBands(activeSeries, overlays),
     annotations: buildPitantAnnotations(activeSeries, displaySamples, selected),
     eventMarkers: buildPitantEventMarkers(displaySamples, overlays),
+    spcTracks: buildPitantSpcTracks(activeSeries, displaySamples, overlays),
     anomalyTracks: overlays.anomalyBands
       ? [
           {
@@ -5469,6 +5526,7 @@ function PitantTimeSeriesEnginePanel({
   const annotationCount = config.annotations?.length ?? 0
   const eventCount = config.eventMarkers?.length ?? 0
   const anomalyTrackCount = config.anomalyTracks?.length ?? 0
+  const spcTrackCount = config.spcTracks?.length ?? 0
 
   return (
     <section className="pitant-engine-panel" aria-label="PITANT TimeSeries engine">
@@ -5490,7 +5548,7 @@ function PitantTimeSeriesEnginePanel({
             <dt>Layers</dt>
             <dd>
               {bandCount} bands / {annotationCount} notes / {eventCount} events / {derivedCount}{' '}
-              calc / {anomalyTrackCount} scores
+              calc / {anomalyTrackCount} scores / {spcTrackCount} spc
             </dd>
           </div>
         </dl>

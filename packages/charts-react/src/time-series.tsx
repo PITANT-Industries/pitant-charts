@@ -12,6 +12,8 @@ import {
   type TimeSeriesDerivedColumn as CoreTimeSeriesDerivedColumn,
   type TimeSeriesEventMarker as CoreTimeSeriesEventMarker,
   type TimeSeriesSeries as CoreTimeSeriesSeries,
+  type TimeSeriesSpcRuleMarker as CoreTimeSeriesSpcRuleMarker,
+  type TimeSeriesSpcTrack as CoreTimeSeriesSpcTrack,
   commandFrameToSvg,
   createChartLayout,
   DEFAULT_CHART_COLORS,
@@ -26,6 +28,8 @@ import {
   type TimeSeriesInterpolation,
   type TimeSeriesRenderOptions,
   type TimeSeriesRenderPlan,
+  type TimeSeriesSpcChartKind,
+  type TimeSeriesSpcRuleSeverity,
 } from '@pitant/charts'
 import {
   type JSX,
@@ -213,6 +217,41 @@ export interface TimeSeriesAnomalyTrackConfig {
   visible?: boolean
 }
 
+export interface TimeSeriesSpcRuleMarkerConfig {
+  key: string
+  x: number
+  label?: string
+  rule?: string
+  severity?: TimeSeriesSpcRuleSeverity
+  rgba?: RgbaColor
+  lineWidth?: number
+  visible?: boolean
+  labelVisible?: boolean
+}
+
+export interface TimeSeriesSpcTrackConfig {
+  key: string
+  label?: string
+  chartKind?: TimeSeriesSpcChartKind
+  centerLine: number
+  upperControlLimit?: number
+  lowerControlLimit?: number
+  upperWarningLimit?: number
+  lowerWarningLimit?: number
+  xRange?: readonly [number, number]
+  zoneFillRgba?: RgbaColor
+  warningFillRgba?: RgbaColor
+  centerLineRgba?: RgbaColor
+  controlLineRgba?: RgbaColor
+  warningLineRgba?: RgbaColor
+  markerRgba?: RgbaColor
+  markerLineWidth?: number
+  lineWidth?: number
+  markers?: readonly TimeSeriesSpcRuleMarkerConfig[]
+  visible?: boolean
+  includeInYRange?: boolean
+}
+
 export interface TimeSeriesConfig {
   series: TimeSeriesSeriesConfig[]
   derivedSeries?: TimeSeriesDerivedSeriesConfig[]
@@ -220,6 +259,7 @@ export interface TimeSeriesConfig {
   annotations?: TimeSeriesAnnotationConfig[]
   eventMarkers?: TimeSeriesEventMarkerConfig[]
   anomalyTracks?: TimeSeriesAnomalyTrackConfig[]
+  spcTracks?: TimeSeriesSpcTrackConfig[]
   xAxis?: AxisConfig & {
     gapThreshold?: number
   }
@@ -371,6 +411,10 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     () => (config.anomalyTracks ?? []).map(toCoreTimeSeriesAnomalyTrack),
     [config.anomalyTracks],
   )
+  const planSpcTracks: CoreTimeSeriesSpcTrack[] = useMemo(
+    () => (config.spcTracks ?? []).map(toCoreTimeSeriesSpcTrack),
+    [config.spcTracks],
+  )
 
   const activeXRange =
     visibleRange[0] < visibleRange[1] ? (visibleRange as readonly [number, number]) : undefined
@@ -426,6 +470,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
         annotations: planAnnotations,
         eventMarkers: planEventMarkers,
         anomalyTracks: planAnomalyTracks,
+        spcTracks: planSpcTracks,
       },
       renderOptions,
     )
@@ -439,6 +484,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     planAnomalyTracks,
     planBands,
     planEventMarkers,
+    planSpcTracks,
     planSeries,
     viewport.data,
   ])
@@ -855,6 +901,51 @@ function toCoreTimeSeriesAnomalyTrack(
   if (track.lineWidth !== undefined) coreTrack.lineWidth = track.lineWidth
   if (track.gapThreshold !== undefined) coreTrack.gapThreshold = track.gapThreshold
   if (track.visible !== undefined) coreTrack.visible = track.visible
+  return coreTrack
+}
+
+function toCoreTimeSeriesSpcRuleMarker(
+  marker: TimeSeriesSpcRuleMarkerConfig,
+): CoreTimeSeriesSpcRuleMarker {
+  const coreMarker: CoreTimeSeriesSpcRuleMarker = {
+    key: marker.key,
+    x: marker.x,
+  }
+  if (marker.label !== undefined) coreMarker.label = marker.label
+  if (marker.rule !== undefined) coreMarker.rule = marker.rule
+  if (marker.severity !== undefined) coreMarker.severity = marker.severity
+  if (marker.rgba !== undefined) coreMarker.color = marker.rgba
+  if (marker.lineWidth !== undefined) coreMarker.lineWidth = marker.lineWidth
+  if (marker.visible !== undefined) coreMarker.visible = marker.visible
+  if (marker.labelVisible !== undefined) coreMarker.labelVisible = marker.labelVisible
+  return coreMarker
+}
+
+function toCoreTimeSeriesSpcTrack(track: TimeSeriesSpcTrackConfig): CoreTimeSeriesSpcTrack {
+  const coreTrack: CoreTimeSeriesSpcTrack = {
+    key: track.key,
+    centerLine: track.centerLine,
+  }
+  if (track.label !== undefined) coreTrack.label = track.label
+  if (track.chartKind !== undefined) coreTrack.chartKind = track.chartKind
+  if (track.upperControlLimit !== undefined) coreTrack.upperControlLimit = track.upperControlLimit
+  if (track.lowerControlLimit !== undefined) coreTrack.lowerControlLimit = track.lowerControlLimit
+  if (track.upperWarningLimit !== undefined) coreTrack.upperWarningLimit = track.upperWarningLimit
+  if (track.lowerWarningLimit !== undefined) coreTrack.lowerWarningLimit = track.lowerWarningLimit
+  if (track.xRange !== undefined) coreTrack.xRange = [track.xRange[0], track.xRange[1]]
+  if (track.zoneFillRgba !== undefined) coreTrack.zoneFillColor = track.zoneFillRgba
+  if (track.warningFillRgba !== undefined) coreTrack.warningFillColor = track.warningFillRgba
+  if (track.centerLineRgba !== undefined) coreTrack.centerLineColor = track.centerLineRgba
+  if (track.controlLineRgba !== undefined) coreTrack.controlLineColor = track.controlLineRgba
+  if (track.warningLineRgba !== undefined) coreTrack.warningLineColor = track.warningLineRgba
+  if (track.markerRgba !== undefined) coreTrack.markerColor = track.markerRgba
+  if (track.markerLineWidth !== undefined) coreTrack.markerLineWidth = track.markerLineWidth
+  if (track.lineWidth !== undefined) coreTrack.lineWidth = track.lineWidth
+  if (track.markers !== undefined) {
+    coreTrack.markers = track.markers.map(toCoreTimeSeriesSpcRuleMarker)
+  }
+  if (track.visible !== undefined) coreTrack.visible = track.visible
+  if (track.includeInYRange !== undefined) coreTrack.includeInYRange = track.includeInYRange
   return coreTrack
 }
 

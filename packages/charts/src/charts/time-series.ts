@@ -172,6 +172,54 @@ export interface TimeSeriesAnomalyTrack {
   visible?: boolean
 }
 
+export type TimeSeriesSpcChartKind =
+  | 'individual'
+  | 'moving-range'
+  | 'xbar'
+  | 'range'
+  | 's'
+  | 'p'
+  | 'np'
+  | 'c'
+  | 'u'
+
+export type TimeSeriesSpcRuleSeverity = 'warning' | 'violation'
+
+export interface TimeSeriesSpcRuleMarker {
+  key: string
+  x: number
+  label?: string
+  rule?: string
+  severity?: TimeSeriesSpcRuleSeverity
+  color?: RgbaColor
+  lineWidth?: number
+  visible?: boolean
+  labelVisible?: boolean
+}
+
+export interface TimeSeriesSpcTrack {
+  key: string
+  label?: string
+  chartKind?: TimeSeriesSpcChartKind
+  centerLine: number
+  upperControlLimit?: number
+  lowerControlLimit?: number
+  upperWarningLimit?: number
+  lowerWarningLimit?: number
+  xRange?: NumericRange
+  zoneFillColor?: RgbaColor
+  warningFillColor?: RgbaColor
+  centerLineColor?: RgbaColor
+  controlLineColor?: RgbaColor
+  warningLineColor?: RgbaColor
+  markerColor?: RgbaColor
+  markerLineWidth?: number
+  lineWidth?: number
+  markers?: readonly TimeSeriesSpcRuleMarker[]
+  visible?: boolean
+  includeInYRange?: boolean
+}
+
 export interface TimeSeriesDataSet {
   timestamps: Float64Array
   columns: Record<string, Float64Array>
@@ -180,6 +228,7 @@ export interface TimeSeriesDataSet {
   annotations?: readonly TimeSeriesAnnotation[]
   eventMarkers?: readonly TimeSeriesEventMarker[]
   anomalyTracks?: readonly TimeSeriesAnomalyTrack[]
+  spcTracks?: readonly TimeSeriesSpcTrack[]
 }
 
 export interface TimeSeriesRenderOptions {
@@ -204,12 +253,23 @@ export interface TimeSeriesRenderOptions {
   defaultAnomalyTrackLineColor?: RgbaColor
   defaultAnomalyTrackThresholdColor?: RgbaColor
   defaultAnomalyTrackLineWidth?: number
+  defaultSpcZoneFillColor?: RgbaColor
+  defaultSpcWarningFillColor?: RgbaColor
+  defaultSpcCenterLineColor?: RgbaColor
+  defaultSpcControlLineColor?: RgbaColor
+  defaultSpcWarningLineColor?: RgbaColor
+  defaultSpcMarkerColor?: RgbaColor
+  defaultSpcLineWidth?: number
+  defaultSpcMarkerLineWidth?: number
+  defaultSpcTextColor?: RgbaColor
   eventMarkerTickRatio?: number
+  spcMarkerTickRatio?: number
   includeHidden?: boolean
   includeHiddenBands?: boolean
   includeHiddenAnnotations?: boolean
   includeHiddenEventMarkers?: boolean
   includeHiddenAnomalyTracks?: boolean
+  includeHiddenSpcTracks?: boolean
   yPaddingRatio?: number
 }
 
@@ -321,6 +381,57 @@ export interface TimeSeriesPlannedAnomalyTrack {
   droppedPointCount: number
 }
 
+export interface TimeSeriesSpcRuleMarkerStyle {
+  line: LineOptions
+  text?: TextOptions
+}
+
+export interface TimeSeriesSpcPlannedRuleMarker {
+  key: string
+  label: string
+  rule?: string
+  severity: TimeSeriesSpcRuleSeverity
+  x: number
+  style: TimeSeriesSpcRuleMarkerStyle
+  lineSegments: readonly TimeSeriesLineSegment[]
+  sourcePointCount: number
+  includedSampleCount: number
+  renderedPointCount: number
+  droppedPointCount: number
+  labelVisible: boolean
+}
+
+export interface TimeSeriesSpcTrackStyle {
+  zoneFill?: FillOptions
+  warningFill?: FillOptions
+  centerLine: LineOptions
+  controlLine?: LineOptions
+  warningLine?: LineOptions
+}
+
+export interface TimeSeriesPlannedSpcTrack {
+  key: string
+  label: string
+  chartKind: TimeSeriesSpcChartKind
+  centerLine: number
+  upperControlLimit?: number
+  lowerControlLimit?: number
+  upperWarningLimit?: number
+  lowerWarningLimit?: number
+  style: TimeSeriesSpcTrackStyle
+  zoneSegments: readonly TimeSeriesBandSegment[]
+  warningZoneSegments: readonly TimeSeriesBandSegment[]
+  centerLineSegments: readonly TimeSeriesLineSegment[]
+  controlLimitSegments: readonly TimeSeriesLineSegment[]
+  warningLimitSegments: readonly TimeSeriesLineSegment[]
+  markers: readonly TimeSeriesSpcPlannedRuleMarker[]
+  sourcePointCount: number
+  includedSampleCount: number
+  renderedPointCount: number
+  droppedPointCount: number
+  includeInYRange: boolean
+}
+
 export interface TimeSeriesRenderPlan {
   kind: 'time-series'
   xRange: NumericRange
@@ -332,6 +443,7 @@ export interface TimeSeriesRenderPlan {
   annotations: readonly TimeSeriesPlannedAnnotation[]
   eventMarkers: readonly TimeSeriesPlannedEventMarker[]
   anomalyTracks: readonly TimeSeriesPlannedAnomalyTrack[]
+  spcTracks: readonly TimeSeriesPlannedSpcTrack[]
   sourcePointCount: number
   includedSampleCount: number
   renderedPointCount: number
@@ -395,6 +507,20 @@ interface AnomalyTrackBuildResult {
   renderedPointCount: number
 }
 
+interface SpcTrackBuildResult {
+  zoneSegments: TimeSeriesBandSegment[]
+  warningZoneSegments: TimeSeriesBandSegment[]
+  centerLineSegments: TimeSeriesLineSegment[]
+  controlLimitSegments: TimeSeriesLineSegment[]
+  warningLimitSegments: TimeSeriesLineSegment[]
+  markers: TimeSeriesSpcPlannedRuleMarker[]
+  sourcePointCount: number
+  includedSampleCount: number
+  renderedPointCount: number
+  minY: number
+  maxY: number
+}
+
 export function buildTimeSeriesRenderPlan(
   data: TimeSeriesDataSet,
   options: TimeSeriesRenderOptions = {},
@@ -408,6 +534,7 @@ export function buildTimeSeriesRenderPlan(
   const plannedAnnotations: TimeSeriesPlannedAnnotation[] = []
   const plannedEventMarkers: TimeSeriesPlannedEventMarker[] = []
   const plannedAnomalyTracks: TimeSeriesPlannedAnomalyTrack[] = []
+  const plannedSpcTracks: TimeSeriesPlannedSpcTrack[] = []
   const warnings: string[] = []
   let minY = Number.POSITIVE_INFINITY
   let maxY = Number.NEGATIVE_INFINITY
@@ -526,6 +653,17 @@ export function buildTimeSeriesRenderPlan(
     }
   }
 
+  const spcTracks = data.spcTracks ?? []
+  for (const track of spcTracks) {
+    if (track.visible === false && options.includeHiddenSpcTracks !== true) continue
+    if (track.includeInYRange === false) continue
+    const extent = spcTrackYExtent(track)
+    if (extent) {
+      minY = Math.min(minY, extent[0])
+      maxY = Math.max(maxY, extent[1])
+    }
+  }
+
   const inferredYRange: NumericRange =
     minY === Number.POSITIVE_INFINITY ? [0, 1] : expandRange([minY, maxY], yPaddingRatio)
   const yRange = options.yRange ? normalizeRange(options.yRange) : inferredYRange
@@ -592,6 +730,55 @@ export function buildTimeSeriesRenderPlan(
       renderedPointCount: build.renderedPointCount,
       droppedPointCount: build.sourcePointCount - build.includedSampleCount,
       labelVisible: marker.labelVisible === true,
+    })
+  }
+
+  for (let trackIndex = 0; trackIndex < spcTracks.length; trackIndex++) {
+    const track = spcTracks[trackIndex] as TimeSeriesSpcTrack
+    if (track.visible === false && options.includeHiddenSpcTracks !== true) continue
+
+    const build = buildSpcTrackSegments(track, trackIndex, {
+      xRange,
+      xOrigin,
+      yRange,
+      markerTickRatio: options.spcMarkerTickRatio ?? 0.08,
+      options,
+    })
+
+    if (build.includedSampleCount === 0) {
+      warnings.push(`SPC track "${track.key}" has no geometry inside the visible range.`)
+      continue
+    }
+
+    plannedSpcTracks.push({
+      key: track.key,
+      label: track.label ?? track.key,
+      chartKind: track.chartKind ?? 'individual',
+      centerLine: track.centerLine,
+      ...(track.upperControlLimit !== undefined
+        ? { upperControlLimit: track.upperControlLimit }
+        : {}),
+      ...(track.lowerControlLimit !== undefined
+        ? { lowerControlLimit: track.lowerControlLimit }
+        : {}),
+      ...(track.upperWarningLimit !== undefined
+        ? { upperWarningLimit: track.upperWarningLimit }
+        : {}),
+      ...(track.lowerWarningLimit !== undefined
+        ? { lowerWarningLimit: track.lowerWarningLimit }
+        : {}),
+      style: resolveSpcTrackStyle(track, trackIndex, options),
+      zoneSegments: build.zoneSegments,
+      warningZoneSegments: build.warningZoneSegments,
+      centerLineSegments: build.centerLineSegments,
+      controlLimitSegments: build.controlLimitSegments,
+      warningLimitSegments: build.warningLimitSegments,
+      markers: build.markers,
+      sourcePointCount: build.sourcePointCount,
+      includedSampleCount: build.includedSampleCount,
+      renderedPointCount: build.renderedPointCount,
+      droppedPointCount: build.sourcePointCount - build.includedSampleCount,
+      includeInYRange: track.includeInYRange !== false,
     })
   }
 
@@ -665,6 +852,7 @@ export function buildTimeSeriesRenderPlan(
     annotations: plannedAnnotations,
     eventMarkers: plannedEventMarkers,
     anomalyTracks: plannedAnomalyTracks,
+    spcTracks: plannedSpcTracks,
     sourcePointCount,
     includedSampleCount,
     renderedPointCount,
@@ -718,6 +906,44 @@ export function addTimeSeriesEventMarkersToCommandList(
   for (const marker of plan.eventMarkers) {
     for (const segment of marker.lineSegments) {
       commands.addLine(segment.buffer, marker.style.line, z)
+    }
+  }
+}
+
+export function addTimeSeriesSpcTracksToCommandList(
+  commands: RenderCommandList,
+  plan: TimeSeriesRenderPlan,
+  fillZ: ZLayer = ZLayer.Fill,
+  lineZ: ZLayer = ZLayer.Overlay,
+): void {
+  for (const track of plan.spcTracks) {
+    if (track.style.zoneFill) {
+      for (const segment of track.zoneSegments) {
+        commands.addFill(segment.upper, segment.lower, track.style.zoneFill, fillZ)
+      }
+    }
+    if (track.style.warningFill) {
+      for (const segment of track.warningZoneSegments) {
+        commands.addFill(segment.upper, segment.lower, track.style.warningFill, fillZ)
+      }
+    }
+    for (const segment of track.centerLineSegments) {
+      commands.addLine(segment.buffer, track.style.centerLine, lineZ)
+    }
+    if (track.style.controlLine) {
+      for (const segment of track.controlLimitSegments) {
+        commands.addLine(segment.buffer, track.style.controlLine, lineZ)
+      }
+    }
+    if (track.style.warningLine) {
+      for (const segment of track.warningLimitSegments) {
+        commands.addLine(segment.buffer, track.style.warningLine, lineZ)
+      }
+    }
+    for (const marker of track.markers) {
+      for (const segment of marker.lineSegments) {
+        commands.addLine(segment.buffer, marker.style.line, lineZ)
+      }
     }
   }
 }
@@ -781,6 +1007,7 @@ export function buildTimeSeriesCommandFrame(
   }
   addTimeSeriesBandsToCommandList(commands, plan)
   addTimeSeriesAnnotationsToCommandList(commands, plan)
+  addTimeSeriesSpcTracksToCommandList(commands, plan)
   addTimeSeriesAnomalyTracksToCommandList(commands, plan)
   addTimeSeriesToCommandList(commands, plan)
   addTimeSeriesEventMarkersToCommandList(commands, plan)
@@ -791,6 +1018,12 @@ export function buildTimeSeriesCommandFrame(
     layout?.plotArea ?? { x: 0, y: 0, width, height },
   )
   addTimeSeriesEventMarkerLabelsToCommandList(
+    commands,
+    plan,
+    transform,
+    layout?.plotArea ?? { x: 0, y: 0, width, height },
+  )
+  addTimeSeriesSpcMarkerLabelsToCommandList(
     commands,
     plan,
     transform,
@@ -1119,6 +1352,164 @@ function buildAnomalyTrackSegments(
   }
 }
 
+function spcTrackYExtent(track: TimeSeriesSpcTrack): NumericRange | null {
+  const values = [
+    track.centerLine,
+    track.upperControlLimit,
+    track.lowerControlLimit,
+    track.upperWarningLimit,
+    track.lowerWarningLimit,
+  ].filter((value): value is number => value !== undefined && isFiniteNumber(value))
+
+  if (values.length === 0) return null
+  return [Math.min(...values), Math.max(...values)]
+}
+
+function buildSpcTrackSegments(
+  track: TimeSeriesSpcTrack,
+  index: number,
+  input: {
+    xRange: NumericRange
+    xOrigin: number
+    yRange: NumericRange
+    markerTickRatio: number
+    options: TimeSeriesRenderOptions
+  },
+): SpcTrackBuildResult {
+  const trackXRange = track.xRange ? normalizeRange(track.xRange) : input.xRange
+  const xStart = Math.max(input.xRange[0], trackXRange[0])
+  const xEnd = Math.min(input.xRange[1], trackXRange[1])
+  const relativeStart = xStart - input.xOrigin
+  const relativeEnd = xEnd - input.xOrigin
+  const zoneSegments: TimeSeriesBandSegment[] = []
+  const warningZoneSegments: TimeSeriesBandSegment[] = []
+  const centerLineSegments: TimeSeriesLineSegment[] = []
+  const controlLimitSegments: TimeSeriesLineSegment[] = []
+  const warningLimitSegments: TimeSeriesLineSegment[] = []
+  const markers: TimeSeriesSpcPlannedRuleMarker[] = []
+  let sourcePointCount = 0
+  let includedSampleCount = 0
+  let renderedPointCount = 0
+  let minY = Number.POSITIVE_INFINITY
+  let maxY = Number.NEGATIVE_INFINITY
+
+  const includeY = (value: number) => {
+    minY = Math.min(minY, value)
+    maxY = Math.max(maxY, value)
+  }
+
+  const addLine = (target: TimeSeriesLineSegment[], y: number) => {
+    sourcePointCount += 2
+    if (
+      !isFiniteNumber(y) ||
+      !isFiniteNumber(relativeStart) ||
+      !isFiniteNumber(relativeEnd) ||
+      xEnd <= xStart
+    ) {
+      return
+    }
+    target.push({
+      buffer: new Float32Array([relativeStart, y, relativeEnd, y]),
+      pointCount: 2,
+    })
+    includedSampleCount += 2
+    renderedPointCount += 2
+    includeY(y)
+  }
+
+  const addBand = (
+    target: TimeSeriesBandSegment[],
+    yA: number | undefined,
+    yB: number | undefined,
+  ) => {
+    sourcePointCount += 2
+    if (
+      yA === undefined ||
+      yB === undefined ||
+      !isFiniteNumber(yA) ||
+      !isFiniteNumber(yB) ||
+      !isFiniteNumber(relativeStart) ||
+      !isFiniteNumber(relativeEnd) ||
+      xEnd <= xStart ||
+      yA === yB
+    ) {
+      return
+    }
+    const yRange = normalizeRange([yA, yB])
+    target.push({
+      lower: new Float32Array([relativeStart, yRange[0], relativeEnd, yRange[0]]),
+      upper: new Float32Array([relativeStart, yRange[1], relativeEnd, yRange[1]]),
+      pointCount: 2,
+    })
+    includedSampleCount += 2
+    renderedPointCount += 2
+    includeY(yRange[0])
+    includeY(yRange[1])
+  }
+
+  addBand(zoneSegments, track.lowerControlLimit, track.upperControlLimit)
+  addBand(warningZoneSegments, track.upperWarningLimit, track.upperControlLimit)
+  addBand(warningZoneSegments, track.lowerControlLimit, track.lowerWarningLimit)
+  addLine(centerLineSegments, track.centerLine)
+  if (track.upperControlLimit !== undefined) addLine(controlLimitSegments, track.upperControlLimit)
+  if (track.lowerControlLimit !== undefined) addLine(controlLimitSegments, track.lowerControlLimit)
+  if (track.upperWarningLimit !== undefined) addLine(warningLimitSegments, track.upperWarningLimit)
+  if (track.lowerWarningLimit !== undefined) addLine(warningLimitSegments, track.lowerWarningLimit)
+
+  const ySpan = Math.max(Number.EPSILON, input.yRange[1] - input.yRange[0])
+  const tickHeight = ySpan * clampNumber(input.markerTickRatio, 0.01, 0.5)
+  const markerBase = input.yRange[1]
+  const markerEnd = markerBase - tickHeight
+  const rawMarkers = track.markers ?? []
+
+  for (let markerIndex = 0; markerIndex < rawMarkers.length; markerIndex++) {
+    const marker = rawMarkers[markerIndex] as TimeSeriesSpcRuleMarker
+    sourcePointCount += 2
+    if (marker.visible === false) continue
+    if (!isFiniteNumber(marker.x) || marker.x < input.xRange[0] || marker.x > input.xRange[1]) {
+      continue
+    }
+
+    const relativeX = marker.x - input.xOrigin
+    const plannedMarker: TimeSeriesSpcPlannedRuleMarker = {
+      key: marker.key,
+      label: marker.label ?? marker.rule ?? marker.key,
+      ...(marker.rule !== undefined ? { rule: marker.rule } : {}),
+      severity: marker.severity ?? 'violation',
+      x: marker.x,
+      style: resolveSpcRuleMarkerStyle(marker, track, index + markerIndex, input.options),
+      lineSegments: [
+        {
+          buffer: new Float32Array([relativeX, markerBase, relativeX, markerEnd]),
+          pointCount: 2,
+        },
+      ],
+      sourcePointCount: 2,
+      includedSampleCount: 2,
+      renderedPointCount: 2,
+      droppedPointCount: 0,
+      labelVisible: marker.labelVisible === true,
+    }
+    markers.push(plannedMarker)
+    includedSampleCount += 2
+    renderedPointCount += 2
+  }
+
+  return {
+    zoneSegments,
+    warningZoneSegments,
+    centerLineSegments,
+    controlLimitSegments,
+    warningLimitSegments,
+    markers,
+    sourcePointCount,
+    includedSampleCount,
+    renderedPointCount,
+    minY,
+    maxY,
+  }
+}
+
 function annotationYExtent(annotation: TimeSeriesAnnotation): NumericRange | null {
   switch (annotation.kind) {
     case 'y-line':
@@ -1238,6 +1629,58 @@ function resolveAnomalyTrackStyle(
   return style
 }
 
+function resolveSpcTrackStyle(
+  track: TimeSeriesSpcTrack,
+  index: number,
+  options: TimeSeriesRenderOptions,
+): TimeSeriesSpcTrackStyle {
+  const base = getDefaultColor(index, options.defaultSpcControlLineColor)
+  const zoneFill = track.zoneFillColor ??
+    options.defaultSpcZoneFillColor ?? [base[0], base[1], base[2], 0.07]
+  const warningFill = track.warningFillColor ??
+    options.defaultSpcWarningFillColor ?? [0.95, 0.61, 0.07, 0.12]
+  const lineWidth = track.lineWidth ?? options.defaultSpcLineWidth ?? 1
+  const controlLineColor = track.controlLineColor ??
+    options.defaultSpcControlLineColor ?? [0.82, 0.12, 0.08, 0.82]
+  const warningLineColor = track.warningLineColor ??
+    options.defaultSpcWarningLineColor ?? [0.93, 0.47, 0.09, 0.72]
+  const centerLineColor = track.centerLineColor ??
+    options.defaultSpcCenterLineColor ?? [0.13, 0.13, 0.13, 0.72]
+
+  return {
+    zoneFill: { color: zoneFill },
+    warningFill: { color: warningFill },
+    centerLine: { color: centerLineColor, width: lineWidth },
+    controlLine: { color: controlLineColor, width: Math.max(1, lineWidth) },
+    warningLine: { color: warningLineColor, width: Math.max(1, lineWidth * 0.85) },
+  }
+}
+
+function resolveSpcRuleMarkerStyle(
+  marker: TimeSeriesSpcRuleMarker,
+  track: TimeSeriesSpcTrack,
+  index: number,
+  options: TimeSeriesRenderOptions,
+): TimeSeriesSpcRuleMarkerStyle {
+  const fallbackColor: RgbaColor =
+    marker.severity === 'warning' ? [0.93, 0.47, 0.09, 0.84] : [0.82, 0.12, 0.08, 0.9]
+  const color =
+    marker.color ??
+    track.markerColor ??
+    options.defaultSpcMarkerColor ??
+    getDefaultColor(index, fallbackColor)
+  return {
+    line: {
+      color,
+      width: marker.lineWidth ?? track.markerLineWidth ?? options.defaultSpcMarkerLineWidth ?? 1.2,
+    },
+    text: {
+      color: options.defaultSpcTextColor ?? color,
+      fontSize: 11,
+    },
+  }
+}
+
 function eventMarkerDefaultColor(type: TimeSeriesEventMarkerType, index: number): RgbaColor {
   switch (type) {
     case 'alarm':
@@ -1321,6 +1764,38 @@ function addTimeSeriesEventMarkerLabelsToCommandList(
       },
       ZLayer.Text,
     )
+  }
+}
+
+function addTimeSeriesSpcMarkerLabelsToCommandList(
+  commands: RenderCommandList,
+  plan: TimeSeriesRenderPlan,
+  transform: ViewTransform,
+  plotArea: ChartRect,
+): void {
+  for (const track of plan.spcTracks) {
+    for (const marker of track.markers) {
+      if (!marker.labelVisible || !marker.label || !marker.style.text) continue
+      const segment = marker.lineSegments[0]
+      const x = segment?.buffer[0]
+      const y = segment?.buffer[3]
+      if (x === undefined || y === undefined) continue
+
+      const point = transform.dataToPixel(x, y)
+      const xPixel = clampNumber(point.x + 4, plotArea.x + 4, plotArea.x + plotArea.width - 4)
+      const yPixel = clampNumber(point.y + 4, plotArea.y + 4, plotArea.y + plotArea.height - 4)
+      commands.addText(
+        marker.label,
+        xPixel,
+        yPixel,
+        {
+          ...marker.style.text,
+          align: 'left',
+          baseline: 'top',
+        },
+        ZLayer.Text,
+      )
+    }
   }
 }
 

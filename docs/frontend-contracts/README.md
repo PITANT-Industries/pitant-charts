@@ -22,8 +22,8 @@ Each pack must include:
 |---|---|---|
 | Historian trend | `historian-trend.md` | initial pack |
 | Digital channel | `digital-channel.md` | initial pack |
-| Anomaly review | `anomaly-review.md` | contract-only pack |
-| SPC review | `spc-review.md` | contract-only pack |
+| Anomaly review | `anomaly-review.md` | initial score-lane pack |
+| SPC review | `spc-review.md` | initial control-limit pack |
 | Scientific analysis | `scientific-analysis.md` | contract-only pack |
 | Correlation workbench | `correlation-workbench.md` | contract-only pack |
 | Batch profile | `batch-profile.md` | pending |

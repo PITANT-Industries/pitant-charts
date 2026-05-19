@@ -2,11 +2,12 @@
 
 **Date:** 2026-05-19
 **Current phase:** Phase 6 - Post-v1 Industrial Chart Packs
-**Latest action:** Continued Phase 6 with TimeSeries anomaly score tracks in the
-core engine, React API, render harness, benchmark suite, frontend contract pack,
-and multi-axis demo. The demo now turns the anomaly overlay into a real
-`TimeSeriesConfig.anomalyTracks[]` lane so it stays attached to the package
-engine instead of a bespoke SVG-only visualization.
+**Latest action:** Continued Phase 6 with TimeSeries SPC control-limit tracks
+in the core engine, React API, render harness, benchmark suite, frontend
+contract pack, and multi-axis demo. The demo now turns the alarm-review preset
+into real `TimeSeriesConfig.spcTracks[]` geometry alongside the anomaly score
+lane, so the visible demo stays attached to the package engine instead of
+bespoke SVG-only overlays.
 
 ## What Exists
 
@@ -158,6 +159,13 @@ engine instead of a bespoke SVG-only visualization.
 - The multi-axis demo's PITANT TimeSeries engine panel now derives an
   `anomaly_score` typed-array column and renders it through
   `TimeSeriesConfig.anomalyTracks[]` when the abnormal-areas overlay is enabled.
+- Phase 6 SPC control-limit tracks exist in core and React config, with
+  center lines, control limits, warning limits, warning zones, sparse rule
+  markers, command-frame/SVG export coverage, browser harness `spc` profile
+  coverage, and benchmark scenario `025_time_series_spc_tracks_10k`.
+- The multi-axis demo's PITANT TimeSeries engine panel now renders simulated
+  upstream SPC limits through `TimeSeriesConfig.spcTracks[]` in the Alarm Review
+  preset, with the layer readout showing `1 scores / 1 spc`.
 
 ## Next Build Task
 
@@ -166,9 +174,9 @@ Continue Phase 6 implementation:
 1. Build the next concrete post-v1 industrial pack with the same rule: no
    visible runtime claim without a fixture, a contract-pack update, and a
    benchmark or browser-harness state.
-2. Prioritize SPC/control-limit tracks next unless a higher-value demo need
-   appears first.
-3. Keep spectrum/spectrogram, correlation, KPI, and PDF packs at
+2. Prioritize spectrum/spectrogram or capability/distribution next unless a
+   higher-value demo need appears first.
+3. Keep correlation, KPI, and PDF packs at
    contract-only until their benchmark fixtures exist.
 
 Before adding a new visible feature, update or check
@@ -311,6 +319,28 @@ Run after Phase 6 anomaly score-track slice on 2026-05-19:
 - Playwright local demo smoke against `http://127.0.0.1:5174/`: pass; selecting
   `Alarm Review` enables the TimeSeries engine score lane and reports
   `calc / 1 scores`
+
+Run after Phase 6 SPC control-limit track slice on 2026-05-19:
+
+- `bun run lint`: pass, 130 files checked
+- `bun run typecheck`: pass
+- `bun run build`: pass
+- Focused tests for TimeSeries core, public API, and React TimeSeries: pass,
+  3 files / 38 tests
+- `bun run --filter @pitant/benchmark bench 025`: pass,
+  `025_time_series_spc_tracks_10k` at 0.65 ms against a 25 ms target
+- `bun run --filter @pitant/render-harness build`: pass
+- `bun run --filter @pitant/multiaxis-demo build`: pass
+- `bun run harness:verify -- --renderers=canvas2d --profiles=spc`: pass,
+  Canvas2D SPC profile produced significant chart pixels with 10,000 samples
+- Playwright local demo smoke against `http://127.0.0.1:5174/`: pass; selecting
+  `Alarm Review` enables the TimeSeries engine score lane plus SPC track and
+  reports `calc / 1 scores / 1 spc`
+- `bun run test`: pass, 30 files / 342 tests
+- `bun run bench`: pass, 20/20 benchmark scenarios;
+  `025_time_series_spc_tracks_10k` measured 0.26 ms in the full run against a
+  25 ms target
+- `git diff --check`: pass
 
 Run after Phase 3 high-DPI resize slice on 2026-05-19:
 

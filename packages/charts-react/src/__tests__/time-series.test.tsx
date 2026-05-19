@@ -349,6 +349,46 @@ describe('useTimeSeries', () => {
     expect(result.current.renderPlan.anomalyTracks[0]?.fillSegments).toHaveLength(1)
   })
 
+  it('passes SPC control-limit tracks into the core render plan', () => {
+    const config: TimeSeriesConfig = {
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+      spcTracks: [
+        {
+          key: 'xbar-control',
+          label: 'Xbar control',
+          chartKind: 'xbar',
+          centerLine: 11,
+          upperControlLimit: 13,
+          lowerControlLimit: 9,
+          upperWarningLimit: 12.3,
+          lowerWarningLimit: 9.7,
+          markers: [
+            {
+              key: 'rule-1',
+              x: 1010,
+              label: 'WE-1',
+              rule: 'Western Electric 1',
+              severity: 'violation',
+              labelVisible: true,
+            },
+          ],
+        },
+      ],
+    }
+    const { result } = renderHook(() => {
+      const containerRef = useRef<ChartContainerRef | null>(null)
+      return useTimeSeries({ config, data: DATA, containerRef })
+    })
+
+    expect(result.current.renderPlan.spcTracks.map((track) => track.key)).toEqual(['xbar-control'])
+    expect(result.current.renderPlan.spcTracks[0]?.chartKind).toBe('xbar')
+    expect(result.current.renderPlan.spcTracks[0]?.centerLineSegments).toHaveLength(1)
+    expect(result.current.renderPlan.spcTracks[0]?.controlLimitSegments).toHaveLength(2)
+    expect(result.current.renderPlan.spcTracks[0]?.warningLimitSegments).toHaveLength(2)
+    expect(result.current.renderPlan.spcTracks[0]?.markers[0]?.rule).toBe('Western Electric 1')
+    expect(result.current.renderPlan.spcTracks[0]?.markers[0]?.labelVisible).toBe(true)
+  })
+
   it('expands derived series into legend, render plan, and tooltip metadata', () => {
     const data: TimeSeriesColumnData = {
       timestamps: new Float64Array([1000, 1010, 1020]),

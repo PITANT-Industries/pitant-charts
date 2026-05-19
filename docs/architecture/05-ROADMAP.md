@@ -432,6 +432,18 @@ packs after v1 field feedback.
   the core render plan and SVG/PNG export path.
 - [x] `023_time_series_event_markers_8x1M` benchmark covers eight high-density
   trend pens plus ten thousand sparse event markers.
+- [x] Anomaly score tracks support bounded top/bottom score lanes, thresholds,
+  model-version metadata, and reviewer-state metadata in the core TimeSeries
+  command-frame path.
+- [x] `024_time_series_anomaly_tracks_4x1M` benchmark covers four high-density
+  trend pens plus four anomaly score tracks.
+- [x] SPC control-limit tracks support approved center lines, control limits,
+  warning limits, warning zones, and sparse rule markers without computing
+  authoritative SPC rules in the chart package.
+- [x] React `TimeSeriesConfig.spcTracks[]` passes SPC tracks into the core
+  render plan and SVG/PNG export path.
+- [x] `025_time_series_spc_tracks_10k` benchmark covers 10k subgroup SPC review
+  with Xbar/R-style limits and Western Electric style markers.
 
 **Tests and Acceptance.** Pack-specific unit, visual, and performance tests.
 

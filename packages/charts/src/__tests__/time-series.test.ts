@@ -5,6 +5,7 @@ import {
   addTimeSeriesAnomalyTracksToCommandList,
   addTimeSeriesBandsToCommandList,
   addTimeSeriesEventMarkersToCommandList,
+  addTimeSeriesSpcTracksToCommandList,
   addTimeSeriesToCommandList,
   buildTimeSeriesCommandFrame,
   buildTimeSeriesRenderPlan,
@@ -371,6 +372,64 @@ describe('time-series chart planning', () => {
     expect(frame.commands.sorted().some((command) => command.kind === 'fill')).toBe(true)
     expect(svg).toContain('Anomaly trend')
     expect(svg).toContain('<path')
+  })
+
+  it('plans SPC control-limit tracks and sparse rule markers', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 1, 2, 3]),
+        columns: {
+          xbar: new Float64Array([10, 12, 11, 15]),
+        },
+        series: [{ key: 'xbar', label: 'Xbar', field: 'xbar' }],
+        spcTracks: [
+          {
+            key: 'xbar-limits',
+            label: 'Xbar limits',
+            chartKind: 'xbar',
+            centerLine: 12,
+            upperControlLimit: 18,
+            lowerControlLimit: 6,
+            upperWarningLimit: 16,
+            lowerWarningLimit: 8,
+            markers: [
+              { key: 'rule-1', x: 2, rule: 'WE-1', label: 'Rule 1', severity: 'violation' },
+            ],
+          },
+        ],
+      },
+      { yRange: [0, 20] },
+    )
+
+    expect(plan.spcTracks).toHaveLength(1)
+    expect(plan.spcTracks[0]?.chartKind).toBe('xbar')
+    expect(plan.spcTracks[0]?.zoneSegments[0]?.lower).toEqual(new Float32Array([0, 6, 3, 6]))
+    expect(plan.spcTracks[0]?.zoneSegments[0]?.upper).toEqual(new Float32Array([0, 18, 3, 18]))
+    expect(plan.spcTracks[0]?.warningZoneSegments).toHaveLength(2)
+    expect(plan.spcTracks[0]?.centerLineSegments[0]?.buffer).toEqual(
+      new Float32Array([0, 12, 3, 12]),
+    )
+    expect(plan.spcTracks[0]?.controlLimitSegments.map((segment) => segment.buffer)).toEqual([
+      new Float32Array([0, 18, 3, 18]),
+      new Float32Array([0, 6, 3, 6]),
+    ])
+    expect(plan.spcTracks[0]?.markers[0]?.lineSegments[0]?.buffer).toEqual(
+      new Float32Array([2, 20, 2, 18.4]),
+    )
+
+    const commands = new RenderCommandList()
+    addTimeSeriesSpcTracksToCommandList(commands, plan)
+    expect(commands.sorted().map((command) => command.kind)).toEqual([
+      'fill',
+      'fill',
+      'fill',
+      'line',
+      'line',
+      'line',
+      'line',
+      'line',
+      'line',
+    ])
   })
 
   it('exports visible event marker labels through the command frame', () => {

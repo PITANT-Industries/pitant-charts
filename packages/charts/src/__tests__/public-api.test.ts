@@ -15,6 +15,7 @@ describe('public API', () => {
     expect(api.addTimeSeriesAnomalyTracksToCommandList).toBeDefined()
     expect(api.addTimeSeriesBandsToCommandList).toBeDefined()
     expect(api.addTimeSeriesEventMarkersToCommandList).toBeDefined()
+    expect(api.addTimeSeriesSpcTracksToCommandList).toBeDefined()
     expect(api.addTimeSeriesDerivedColumns).toBeDefined()
     expect(api.buildDigitalChannelRenderPlan).toBeDefined()
     expect(api.TimeSeriesChart).toBeDefined()

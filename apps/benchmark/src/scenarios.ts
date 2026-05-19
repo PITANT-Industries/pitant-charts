@@ -2,7 +2,7 @@
  * Benchmark scenarios for @pitant/charts.
  *
  * Scenarios 1-4, 8-9 require a browser (WebGPU/Canvas2D).
- * Scenarios 5-7 and 10-24 are pure-compute/package-level gates.
+ * Scenarios 5-7 and 10-25 are pure-compute/package-level gates.
  * Bundle-size scenario runs via size-limit.
  */
 import {
@@ -10,6 +10,7 @@ import {
   addTimeSeriesAnomalyTracksToCommandList,
   addTimeSeriesBandsToCommandList,
   addTimeSeriesDerivedColumns,
+  addTimeSeriesSpcTracksToCommandList,
   addTimeSeriesToCommandList,
   buildDigitalChannelRenderPlan,
   buildTimeSeriesCommandFrame,
@@ -26,6 +27,8 @@ import {
   type TimeSeriesDerivedColumn,
   type TimeSeriesEventMarker,
   type TimeSeriesSeries,
+  type TimeSeriesSpcRuleMarker,
+  type TimeSeriesSpcTrack,
   zoomRangeAroundAnchor,
   zoomRangeAroundCenter,
 } from '@pitant/charts'
@@ -884,6 +887,96 @@ scenarios['024_time_series_anomaly_tracks_4x1M'] = () => {
   return {
     scenario: '024_time_series_anomaly_tracks_4x1M',
     metric: `${penCount} pens x ${(pointCount / 1e6).toFixed(0)}M pts plus ${trackCount} anomaly tracks (${anomalyPointCount.toLocaleString()} anomaly pts, ${commandCount} commands)`,
+    value: Math.round(medianMs * 100) / 100,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 025: SPC control-limit tracks ──────────────────
+
+scenarios['025_time_series_spc_tracks_10k'] = () => {
+  const pointCount = 10_000
+  const subgroupCount = 10_000
+  const trackCount = 2
+  const data = generateMultiPenData(pointCount, trackCount)
+  const xStart = data.timestamps[0] ?? 0
+  const xEnd = data.timestamps[data.timestamps.length - 1] ?? xStart
+  const markerEvery = 137
+  const xbarMarkers: TimeSeriesSpcRuleMarker[] = []
+  const rangeMarkers: TimeSeriesSpcRuleMarker[] = []
+  const spcTracks: TimeSeriesSpcTrack[] = [
+    {
+      key: 'xbar-limits',
+      label: 'Xbar limits',
+      chartKind: 'xbar',
+      centerLine: 8,
+      upperControlLimit: 36,
+      lowerControlLimit: -20,
+      upperWarningLimit: 28,
+      lowerWarningLimit: -12,
+      xRange: [xStart, xEnd],
+      markers: xbarMarkers,
+    },
+    {
+      key: 'range-limits',
+      label: 'R limits',
+      chartKind: 'range',
+      centerLine: 18,
+      upperControlLimit: 52,
+      lowerControlLimit: 0,
+      upperWarningLimit: 44,
+      lowerWarningLimit: 6,
+      xRange: [xStart, xEnd],
+      markers: rangeMarkers,
+    },
+  ]
+
+  for (let i = markerEvery; i < subgroupCount; i += markerEvery) {
+    const x = data.timestamps[i] ?? xStart
+    const target = i % spcTracks.length === 0 ? xbarMarkers : rangeMarkers
+    target.push({
+      key: `rule-${i}`,
+      label: `WE-${(i % 4) + 1}`,
+      rule: `Western Electric ${(i % 4) + 1}`,
+      x,
+      severity: i % 5 === 0 ? 'warning' : 'violation',
+      labelVisible: i % (markerEvery * 12) === 0,
+    })
+  }
+
+  const dataWithSpc = {
+    ...data,
+    spcTracks,
+  } as const
+  const target = 25 // ms for 10k subgroup trend plus SPC limits and sparse rule markers
+
+  const warmup = buildTimeSeriesRenderPlan(dataWithSpc, { gapThreshold: 0 })
+  const warmupCommands = new RenderCommandList()
+  addTimeSeriesSpcTracksToCommandList(warmupCommands, warmup)
+  addTimeSeriesToCommandList(warmupCommands, warmup)
+
+  const times: number[] = []
+  let markerCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 5; i++) {
+    const start = performance.now()
+    const plan = buildTimeSeriesRenderPlan(dataWithSpc, { gapThreshold: 0 })
+    const commands = new RenderCommandList()
+    addTimeSeriesSpcTracksToCommandList(commands, plan)
+    addTimeSeriesToCommandList(commands, plan)
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    markerCount = plan.spcTracks.reduce((total, track) => total + track.markers.length, 0)
+    commandCount = commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '025_time_series_spc_tracks_10k',
+    metric: `${trackCount} SPC tracks x ${subgroupCount.toLocaleString()} subgroups (${markerCount.toLocaleString()} rule markers, ${commandCount} commands)`,
     value: Math.round(medianMs * 100) / 100,
     unit: 'ms',
     target,
