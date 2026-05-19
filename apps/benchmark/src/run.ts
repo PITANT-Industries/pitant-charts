@@ -37,6 +37,7 @@ const ciTargetOverrides: Record<string, BenchmarkProfileOverride> = {
   '007_streaming_append': { target: 35, direction: 'max' },
   '016_data_source_live_append_query_4pens': { target: 5, direction: 'max' },
   '019_cursor_propagation_4panels_latency': { target: 3, direction: 'max' },
+  '021_time_series_derived_8x1M': { target: 550, direction: 'max' },
 }
 
 function applyBenchmarkProfile(entry: BenchmarkResult): BenchmarkResult {
