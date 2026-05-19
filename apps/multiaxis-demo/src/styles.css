@@ -539,6 +539,99 @@ h2 {
   overflow-wrap: anywhere;
 }
 
+.pitant-engine-panel {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 8px;
+  padding: 8px;
+  border: 1px solid #d8dee7;
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.pitant-engine-header {
+  display: grid;
+  grid-template-columns: minmax(156px, 0.3fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  min-width: 0;
+}
+
+.pitant-engine-header h3 {
+  min-width: 0;
+  margin: 0;
+  color: #111827;
+  font-size: 0.96rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.pitant-engine-readout,
+.pitant-engine-stats {
+  margin: 0;
+}
+
+.pitant-engine-readout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  min-width: 0;
+}
+
+.pitant-engine-readout div,
+.pitant-engine-stats div {
+  min-width: 0;
+  padding: 6px 7px;
+  border: 1px solid #e1e6ee;
+  background: #ffffff;
+}
+
+.pitant-engine-readout dt,
+.pitant-engine-stats dt {
+  color: #667085;
+  font-size: 0.59rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.pitant-engine-readout dd,
+.pitant-engine-stats dd {
+  min-width: 0;
+  margin: 3px 0 0;
+  color: #101828;
+  font-size: 0.74rem;
+  font-weight: 780;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.pitant-engine-chart {
+  min-width: 0;
+  min-height: 256px;
+  border: 1px solid #e1e6ee;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.pitant-engine-stats {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(58px, auto));
+  gap: 5px;
+  max-width: min(420px, calc(100% - 16px));
+}
+
+.pitant-engine-stats div {
+  border-color: #d8dee7;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.92);
+  box-shadow: 0 10px 22px rgb(18 23 34 / 0.08);
+}
+
 .scientific-legend {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.72fr);
@@ -1645,6 +1738,10 @@ h2 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .pitant-engine-header {
+    grid-template-columns: 1fr;
+  }
+
   .analytics-workbench {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1683,6 +1780,26 @@ h2 {
 
   .analytics-panel {
     order: 3;
+  }
+
+  .pitant-engine-panel {
+    inline-size: min(100%, calc(100vw - 50px));
+  }
+
+  .pitant-engine-readout {
+    grid-template-columns: 1fr;
+  }
+
+  .pitant-engine-chart {
+    min-height: 238px;
+  }
+
+  .pitant-engine-stats {
+    top: auto;
+    right: auto;
+    bottom: 8px;
+    left: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .analytics-workbench {

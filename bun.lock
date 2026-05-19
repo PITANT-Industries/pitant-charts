@@ -52,6 +52,8 @@
       "name": "@pitant/multiaxis-demo",
       "version": "0.0.0",
       "dependencies": {
+        "@pitant/charts": "workspace:*",
+        "@pitant/charts-react": "workspace:*",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
       },

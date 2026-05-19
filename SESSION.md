@@ -900,3 +900,26 @@ Run after Phase 6 TimeSeries band harness slice on 2026-05-19:
 - `bun run test`: pass, 29 files / 325 tests.
 - `bun run bench`: pass, 15/15 benchmark scenarios; `020_time_series_bands_8x1M`
   at 70.41 ms against a 250 ms target.
+
+Run after Phase 6 TimeSeries multiaxis demo integration on 2026-05-19:
+
+- `apps/multiaxis-demo` now depends on `@pitant/charts` and
+  `@pitant/charts-react` and mounts the public `TimeSeries` component inside
+  the multi-axis demo.
+- The demo converts the active zoom window into preallocated columnar
+  `Float64Array` data at 96 sub-samples per cycle, so the live demo exercises
+  LOD and render statistics continuously while the original multi-axis SVG
+  views remain available.
+- The TimeSeries panel is wired to the demo controls for active signal,
+  warning/alarm/anomaly bands, derived rolling average, selected-cycle
+  annotations, target/ruler annotations, and sparse event markers.
+- `bun run lint`: pass, 130 files checked.
+- `bun run typecheck`: pass.
+- `bun run build`: pass.
+- `bun run test`: pass, 30 files / 337 tests.
+- `bun run --filter @pitant/multiaxis-demo build`: pass.
+- Playwright runtime smoke at `http://127.0.0.1:5174/`: pass; the panel
+  rendered a 1030 x 391 CSS-pixel canvas with 11,521 source points, 1,442 drawn
+  points, and LOD level 4; Full Diagnostic toggled the derived-series count to
+  `1 calc`.
+- `git diff --check`: pass.

@@ -1,3 +1,13 @@
+import type { RgbaColor } from '@pitant/charts'
+import {
+  TimeSeries,
+  type TimeSeriesAnnotationConfig,
+  type TimeSeriesBandConfig,
+  type TimeSeriesColumnData,
+  type TimeSeriesConfig,
+  type TimeSeriesDerivedSeriesConfig,
+  type TimeSeriesEventMarkerConfig,
+} from '@pitant/charts-react'
 import { type CSSProperties, type PointerEvent, useMemo, useState } from 'react'
 
 type AxisSide = 'left' | 'right'
@@ -837,6 +847,7 @@ const VIEWBOX_WIDTH = 1200
 const VIEWBOX_HEIGHT = 680
 const ROW_VIEWBOX_HEIGHT = 620
 const ANALYSIS_VIEWBOX_HEIGHT = 930
+const PITANT_ENGINE_SUBSAMPLES_PER_CYCLE = 96
 const PLOT = {
   left: 220,
   right: 1000,
@@ -5004,6 +5015,479 @@ function barStyle(width: number, color: string): CSSProperties {
   } as CSSProperties
 }
 
+type PitantEventMarkerType = NonNullable<TimeSeriesEventMarkerConfig['eventType']>
+type PitantEventMarkerPlacement = NonNullable<TimeSeriesEventMarkerConfig['placement']>
+type PitantEngineColumnMap = Record<SeriesId, Float64Array>
+
+interface PitantTimeSeriesEnginePanelProps {
+  activeSeries: SeriesConfig
+  displaySamples: readonly Sample[]
+  overlays: Record<OverlayId, boolean>
+  selected: Sample | undefined
+}
+
+function createPitantEngineColumns(length: number): PitantEngineColumnMap {
+  return {
+    pressure: new Float64Array(length),
+    torque: new Float64Array(length),
+    temperature: new Float64Array(length),
+    vibration: new Float64Array(length),
+    cycleState: new Float64Array(length),
+    lubrication: new Float64Array(length),
+  }
+}
+
+function toRgba(hex: string, alpha = 1): RgbaColor {
+  const normalized = hex.startsWith('#') ? hex.slice(1) : hex
+  if (normalized.length !== 6) return [0, 0, 0, alpha]
+
+  const red = Number.parseInt(normalized.slice(0, 2), 16) / 255
+  const green = Number.parseInt(normalized.slice(2, 4), 16) / 255
+  const blue = Number.parseInt(normalized.slice(4, 6), 16) / 255
+  return [red, green, blue, alpha]
+}
+
+function pitantEngineRipple(series: SeriesConfig, cycle: number): number {
+  if (series.stepped) return 0
+
+  switch (series.id) {
+    case 'pressure':
+      return Math.sin(cycle * 11.7) * 0.28
+    case 'torque':
+      return Math.cos(cycle * 9.4) * 0.46
+    case 'temperature':
+      return Math.sin(cycle * 4.9) * 0.035
+    case 'vibration':
+      return Math.sin(cycle * 18.2) * 0.045
+    case 'lubrication':
+      return Math.cos(cycle * 7.1) * 0.08
+    case 'cycleState':
+      return 0
+  }
+}
+
+function interpolatePitantEngineValue(
+  current: Sample,
+  next: Sample,
+  series: SeriesConfig,
+  ratio: number,
+  cycle: number,
+): number {
+  const start = valueFor(current, series.id)
+  if (series.stepped) return start
+
+  const end = valueFor(next, series.id)
+  return start + (end - start) * ratio + pitantEngineRipple(series, cycle)
+}
+
+function writePitantEngineSample(
+  timestamps: Float64Array,
+  columns: PitantEngineColumnMap,
+  writeIndex: number,
+  cycle: number,
+  current: Sample,
+  next: Sample,
+  ratio: number,
+): void {
+  timestamps[writeIndex] = cycle
+
+  for (const series of SERIES) {
+    columns[series.id][writeIndex] = interpolatePitantEngineValue(
+      current,
+      next,
+      series,
+      ratio,
+      cycle,
+    )
+  }
+}
+
+function buildPitantTimeSeriesData(samples: readonly Sample[]): TimeSeriesColumnData {
+  const pointCount =
+    samples.length <= 1
+      ? samples.length
+      : (samples.length - 1) * PITANT_ENGINE_SUBSAMPLES_PER_CYCLE + 1
+  const timestamps = new Float64Array(pointCount)
+  const columns = createPitantEngineColumns(pointCount)
+  if (pointCount === 0) return { timestamps, columns }
+
+  let writeIndex = 0
+  for (let index = 0; index < samples.length - 1; index += 1) {
+    const current = samples[index]
+    const next = samples[index + 1]
+    if (!current || !next) continue
+
+    for (let step = 0; step < PITANT_ENGINE_SUBSAMPLES_PER_CYCLE; step += 1) {
+      const ratio = step / PITANT_ENGINE_SUBSAMPLES_PER_CYCLE
+      const cycle = current.cycle + (next.cycle - current.cycle) * ratio
+      writePitantEngineSample(timestamps, columns, writeIndex, cycle, current, next, ratio)
+      writeIndex += 1
+    }
+  }
+
+  const last = samples[samples.length - 1]
+  if (last && writeIndex < pointCount) {
+    writePitantEngineSample(timestamps, columns, writeIndex, last.cycle, last, last, 0)
+  }
+
+  return { timestamps, columns }
+}
+
+function addPitantValueBand(
+  bands: TimeSeriesBandConfig[],
+  key: string,
+  label: string,
+  domain: readonly [number, number],
+  yStart: number,
+  yEnd: number,
+  fillRgba: RgbaColor,
+): void {
+  const lower = clamp(Math.min(yStart, yEnd), domain[0], domain[1])
+  const upper = clamp(Math.max(yStart, yEnd), domain[0], domain[1])
+  if (upper <= lower) return
+
+  bands.push({
+    kind: 'value-band',
+    key,
+    label,
+    yStart: lower,
+    yEnd: upper,
+    fillRgba,
+    includeInYRange: false,
+  })
+}
+
+function buildPitantBands(
+  activeSeries: SeriesConfig,
+  overlays: Record<OverlayId, boolean>,
+): TimeSeriesBandConfig[] {
+  const thresholds = activeSeries.thresholds
+  if (!thresholds) return []
+
+  const bands: TimeSeriesBandConfig[] = []
+  const [domainLow, domainHigh] = activeSeries.domain
+
+  if (overlays.alarmBands) {
+    addPitantValueBand(
+      bands,
+      `${activeSeries.id}-warning-low`,
+      'Warning low',
+      activeSeries.domain,
+      domainLow,
+      thresholds.warning[0],
+      toRgba('#fdb022', 0.1),
+    )
+    addPitantValueBand(
+      bands,
+      `${activeSeries.id}-warning-high`,
+      'Warning high',
+      activeSeries.domain,
+      thresholds.warning[1],
+      domainHigh,
+      toRgba('#fdb022', 0.1),
+    )
+    addPitantValueBand(
+      bands,
+      `${activeSeries.id}-alarm-low`,
+      'Alarm low',
+      activeSeries.domain,
+      domainLow,
+      thresholds.alarm[0],
+      toRgba('#d92d20', 0.13),
+    )
+    addPitantValueBand(
+      bands,
+      `${activeSeries.id}-alarm-high`,
+      'Alarm high',
+      activeSeries.domain,
+      thresholds.alarm[1],
+      domainHigh,
+      toRgba('#d92d20', 0.13),
+    )
+  }
+
+  if (overlays.anomalyBands) {
+    addPitantValueBand(
+      bands,
+      `${activeSeries.id}-anomaly-low`,
+      'Anomaly low',
+      activeSeries.domain,
+      domainLow,
+      thresholds.anomaly[0],
+      toRgba('#7e2f8e', 0.11),
+    )
+    addPitantValueBand(
+      bands,
+      `${activeSeries.id}-anomaly-high`,
+      'Anomaly high',
+      activeSeries.domain,
+      thresholds.anomaly[1],
+      domainHigh,
+      toRgba('#7e2f8e', 0.11),
+    )
+  }
+
+  return bands
+}
+
+function buildPitantDerivedSeries(
+  activeSeries: SeriesConfig,
+  overlays: Record<OverlayId, boolean>,
+): TimeSeriesDerivedSeriesConfig[] {
+  if (!overlays.rollingAverage || activeSeries.stepped) return []
+
+  return [
+    {
+      kind: 'moving-average',
+      key: `${activeSeries.id}-rolling-average`,
+      label: `${activeSeries.shortLabel} rolling average`,
+      field: `${activeSeries.id}-rolling-average`,
+      sourceField: activeSeries.id,
+      windowSize: ROLLING_WINDOW * PITANT_ENGINE_SUBSAMPLES_PER_CYCLE,
+      minimumSamples: PITANT_ENGINE_SUBSAMPLES_PER_CYCLE,
+      color: '#111827',
+      rgba: toRgba('#111827', 0.72),
+      lineWidth: 1.35,
+    },
+  ]
+}
+
+function buildPitantAnnotations(
+  activeSeries: SeriesConfig,
+  displaySamples: readonly Sample[],
+  selected: Sample | undefined,
+): TimeSeriesAnnotationConfig[] {
+  const [firstCycle, lastCycle] = getCycleRange(displaySamples)
+  const selectedCycle = clamp(selected?.cycle ?? firstCycle, firstCycle, lastCycle)
+  const annotations: TimeSeriesAnnotationConfig[] = []
+  const reviewStart = clamp(selectedCycle - 3, firstCycle, lastCycle)
+  const reviewEnd = clamp(selectedCycle + 3, firstCycle, lastCycle)
+
+  if (reviewEnd > reviewStart) {
+    annotations.push({
+      kind: 'x-range',
+      key: 'selected-review-window',
+      label: 'Review window',
+      xStart: reviewStart,
+      xEnd: reviewEnd,
+      fillRgba: toRgba('#155eef', 0.06),
+      lineRgba: toRgba('#155eef', 0.24),
+      labelVisible: false,
+    })
+  }
+
+  annotations.push({
+    kind: 'x-line',
+    key: 'selected-cycle',
+    label: `Cycle ${formatCycleTick(selectedCycle)}`,
+    x: selectedCycle,
+    rgba: toRgba('#111827', 0.72),
+    lineWidth: 1.2,
+    labelVisible: true,
+  })
+
+  if (activeSeries.thresholds?.target !== undefined) {
+    annotations.push({
+      kind: 'y-line',
+      key: `${activeSeries.id}-target`,
+      label: `Target ${formatValue(activeSeries.thresholds.target, activeSeries)}`,
+      y: activeSeries.thresholds.target,
+      rgba: toRgba(activeSeries.color, 0.52),
+      lineWidth: 1,
+      labelVisible: true,
+    })
+  }
+
+  const firstSample = displaySamples[0]
+  if (firstSample && selected && selected.cycle !== firstSample.cycle) {
+    annotations.push({
+      kind: 'ruler',
+      key: `${activeSeries.id}-delta-ruler`,
+      label: 'Delta',
+      xStart: firstSample.cycle,
+      xEnd: selectedCycle,
+      yStart: valueFor(firstSample, activeSeries.id),
+      yEnd: valueFor(selected, activeSeries.id),
+      rgba: toRgba('#344054', 0.45),
+      lineWidth: 1,
+      labelVisible: true,
+    })
+  }
+
+  return annotations
+}
+
+function pitantEventType(severity: EventSeverity): PitantEventMarkerType {
+  switch (severity) {
+    case 'alarm':
+      return 'alarm'
+    case 'maintenance':
+      return 'maintenance'
+    case 'quality':
+      return 'hold'
+    case 'info':
+      return 'comment'
+  }
+}
+
+function pitantEventPlacement(severity: EventSeverity): PitantEventMarkerPlacement {
+  switch (severity) {
+    case 'alarm':
+      return 'full-height'
+    case 'quality':
+    case 'maintenance':
+      return 'bottom-tick'
+    case 'info':
+      return 'top-tick'
+  }
+}
+
+function pitantEventColor(severity: EventSeverity): RgbaColor {
+  switch (severity) {
+    case 'alarm':
+      return toRgba('#d92d20', 0.78)
+    case 'maintenance':
+      return toRgba('#475467', 0.74)
+    case 'quality':
+      return toRgba('#7e2f8e', 0.74)
+    case 'info':
+      return toRgba('#155eef', 0.64)
+  }
+}
+
+function buildPitantEventMarkers(
+  displaySamples: readonly Sample[],
+  overlays: Record<OverlayId, boolean>,
+): TimeSeriesEventMarkerConfig[] {
+  if (!overlays.eventMarkers) return []
+
+  const [firstCycle, lastCycle] = getCycleRange(displaySamples)
+  return EVENTS.filter((event) => event.cycle >= firstCycle && event.cycle <= lastCycle).map(
+    (event) => ({
+      key: `event-${event.cycle}-${event.severity}`,
+      x: event.cycle,
+      label: event.label,
+      eventType: pitantEventType(event.severity),
+      placement: pitantEventPlacement(event.severity),
+      rgba: pitantEventColor(event.severity),
+      lineWidth: event.severity === 'alarm' ? 1.5 : 1,
+      labelVisible: event.severity !== 'info',
+    }),
+  )
+}
+
+function buildPitantTimeSeriesConfig(
+  activeSeries: SeriesConfig,
+  displaySamples: readonly Sample[],
+  overlays: Record<OverlayId, boolean>,
+  selected: Sample | undefined,
+): TimeSeriesConfig {
+  return {
+    series: [
+      {
+        key: activeSeries.id,
+        label: activeSeries.label,
+        field: activeSeries.id,
+        color: activeSeries.color,
+        rgba: toRgba(activeSeries.color, 0.95),
+        lineWidth: activeSeries.stepped ? 1.6 : 1.45,
+        interpolation: activeSeries.stepped ? 'step-after' : 'linear',
+      },
+    ],
+    derivedSeries: buildPitantDerivedSeries(activeSeries, overlays),
+    bands: buildPitantBands(activeSeries, overlays),
+    annotations: buildPitantAnnotations(activeSeries, displaySamples, selected),
+    eventMarkers: buildPitantEventMarkers(displaySamples, overlays),
+    xAxis: {
+      label: 'Cycle',
+      formatValue: formatCycleTick,
+    },
+    yAxis: {
+      label: `${activeSeries.label} (${activeSeries.unit})`,
+      formatValue: (value) => formatTickValue(value, activeSeries),
+      range: activeSeries.domain,
+      paddingRatio: 0.02,
+    },
+    renderer: 'auto',
+    interpolation: activeSeries.stepped ? 'step-after' : 'linear',
+  }
+}
+
+function PitantTimeSeriesEnginePanel({
+  activeSeries,
+  displaySamples,
+  overlays,
+  selected,
+}: PitantTimeSeriesEnginePanelProps): React.JSX.Element {
+  const data = useMemo(() => buildPitantTimeSeriesData(displaySamples), [displaySamples])
+  const config = useMemo(
+    () => buildPitantTimeSeriesConfig(activeSeries, displaySamples, overlays, selected),
+    [activeSeries, displaySamples, overlays, selected],
+  )
+  const selectedValue = selected
+    ? formatValue(valueFor(selected, activeSeries.id), activeSeries)
+    : '-'
+  const derivedCount = config.derivedSeries?.length ?? 0
+  const bandCount = config.bands?.length ?? 0
+  const annotationCount = config.annotations?.length ?? 0
+  const eventCount = config.eventMarkers?.length ?? 0
+
+  return (
+    <section className="pitant-engine-panel" aria-label="PITANT TimeSeries engine">
+      <div className="pitant-engine-header">
+        <div>
+          <p className="eyebrow">Shared renderer</p>
+          <h3>{activeSeries.label} TimeSeries path</h3>
+        </div>
+        <dl className="pitant-engine-readout">
+          <div>
+            <dt>Selected</dt>
+            <dd>{selectedValue}</dd>
+          </div>
+          <div>
+            <dt>Source points</dt>
+            <dd>{data.timestamps.length.toLocaleString()}</dd>
+          </div>
+          <div>
+            <dt>Layers</dt>
+            <dd>
+              {bandCount} bands / {annotationCount} notes / {eventCount} events / {derivedCount}{' '}
+              calc
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <TimeSeries
+        ariaLabel={`${activeSeries.label} rendered by PITANT TimeSeries`}
+        aspectRatio={21 / 8}
+        chartKey={`multiaxis-demo-${activeSeries.id}`}
+        className="pitant-engine-chart"
+        config={config}
+        data={data}
+        dataZoom
+      >
+        {(chart) => (
+          <dl className="pitant-engine-stats" aria-label="TimeSeries render statistics">
+            <div>
+              <dt>Render</dt>
+              <dd>{chart.stats.renderTime.toFixed(1)} ms</dd>
+            </div>
+            <div>
+              <dt>Drawn</dt>
+              <dd>{chart.renderedPointCount.toLocaleString()}</dd>
+            </div>
+            <div>
+              <dt>LOD</dt>
+              <dd>{chart.stats.lodLevel}</dd>
+            </div>
+          </dl>
+        )}
+      </TimeSeries>
+    </section>
+  )
+}
+
 function App(): React.JSX.Element {
   const samples = useMemo(() => generateSamples(), [])
   const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode)
@@ -5308,6 +5792,13 @@ function App(): React.JSX.Element {
           selected={selected}
           status={activeStatus}
           summary={activeAnalytics}
+        />
+
+        <PitantTimeSeriesEnginePanel
+          activeSeries={activeSeries}
+          displaySamples={displaySamples}
+          overlays={overlays}
+          selected={selected}
         />
 
         {overlays.legend ? (
