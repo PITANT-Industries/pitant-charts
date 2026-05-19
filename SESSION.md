@@ -2,18 +2,19 @@
 
 **Date:** 2026-05-19
 **Current phase:** Phase 6 - Post-v1 Industrial Chart Packs
-**Latest action:** Continued Phase 6 with the initial precomputed-tile
-Spectrogram pack in the core engine, React API, render harness, benchmark
-suite, frontend contract pack, and multi-axis demo. The demo now mounts visible
-PITANT Spectrum and Spectrogram panels from the package APIs, so
-scientific-analysis rendering stays continuously exercised through shared
-engine code instead of bespoke demo-only SVG.
+**Latest action:** Continued Phase 6 with the initial precomputed-bin
+Distribution pack in the core engine, React API, render harness, benchmark
+suite, frontend contract packs, and multi-axis demo. The demo now mounts
+visible PITANT Spectrum, Spectrogram, and Distribution panels from the package
+APIs, so scientific-analysis rendering stays continuously exercised through
+shared engine code instead of bespoke demo-only SVG/bars.
 
 ## What Exists
 
 - Bun monorepo with `@pitant/charts`, `@pitant/charts-react`, and benchmark app.
-- Render harness app with compact/large/bands/anomaly/spc/spectrum/spectrogram
-  data profiles and renderer selection.
+- Render harness app with
+  compact/large/bands/anomaly/spc/spectrum/spectrogram/distribution data
+  profiles and renderer selection.
 - Core render contexts for WebGPU and Canvas2D.
 - Worker-backed data engine and LOD pyramid.
 - Benchmark suite includes 8-pen TimeSeries and 16-channel DigitalChannel
@@ -36,8 +37,8 @@ engine code instead of bespoke demo-only SVG.
 - Historian query rows and trend fixtures can be adapted into TimeSeries
   columnar data without pulling in a runtime dependency on `pitant-historian`.
 - Non-React consumers can use `TimeSeriesChart`, `DigitalChannelChart`,
-  `SpectrumChart`, and `SpectrogramChart` directly against a `RenderContext` or
-  create them from a canvas.
+  `SpectrumChart`, `SpectrogramChart`, and `DistributionChart` directly against
+  a `RenderContext` or create them from a canvas.
 - Docs examples now cover React trend composition, digital channel lanes,
   synchronized dashboards, and core imperative chart usage.
 - Initial frontend contract packs exist for historian trends, digital channels,
@@ -183,6 +184,15 @@ engine code instead of bespoke demo-only SVG.
   frozen upstream-style STFT tile matrix for the active signal, so spectrogram
   work is visible on the default page and remains outside authoritative STFT
   computation.
+- Phase 6 initial Distribution support exists in core and React config, with
+  precomputed bin starts/ends/counts, spec-limit markers, target markers,
+  percentile markers, command-frame/SVG export coverage, browser harness
+  `distribution` profile coverage, and benchmark scenario
+  `028_distribution_1m_window_512_bins`.
+- The multi-axis demo now mounts the public `Distribution` component in the
+  default chart stack and the analytics workbench Distribution card, while
+  upstream analytics/SPC siblings retain ownership of authoritative Cp/Cpk and
+  frozen sample semantics.
 
 ## Next Build Task
 
@@ -191,9 +201,9 @@ Continue Phase 6 implementation:
 1. Build the next concrete post-v1 industrial pack with the same rule: no
    visible runtime claim without a fixture, a contract-pack update, and a
    benchmark or browser-harness state.
-2. Prioritize capability/distribution next unless a higher-value demo need
-   appears first.
-3. Keep correlation, KPI, and PDF packs at
+2. Prioritize correlation or KPI next unless a higher-value demo need appears
+   first.
+3. Keep PDF packs and unimplemented correlation/KPI variants at
    contract-only until their benchmark fixtures exist.
 
 Before adding a new visible feature, update or check
@@ -405,6 +415,28 @@ Run after Phase 6 Spectrogram precomputed-tile slice on 2026-05-19:
 - Playwright local demo smoke against `http://127.0.0.1:5174/`: pass; default
   page exposes the PITANT Spectrogram engine panel with a nonblank canvas,
   168 rendered tiles, and render time around 0.6 ms.
+
+Run after Phase 6 Distribution precomputed-bin slice on 2026-05-19:
+
+- `bun run lint`: pass, 145 files checked
+- `bun run typecheck`: pass
+- `bun run build`: pass
+- Focused tests for Distribution core, public API, imperative chart classes,
+  and React Distribution: pass
+- `bun run --filter @pitant/benchmark bench 028`: pass,
+  `028_distribution_1m_window_512_bins` at 0.29 ms against an 8 ms target
+- `bun run --filter @pitant/render-harness build`: pass
+- `bun run --filter @pitant/multiaxis-demo build`: pass
+- `bun run harness:verify -- --renderers=canvas2d --profiles=distribution`:
+  pass; Canvas2D distribution profile produced significant chart pixels with
+  512 distribution bins and 10,000 harness samples
+- `bun run test`: pass, 36 files / 367 tests
+- `bun run bench`: pass, 23/23 benchmark scenarios;
+  `028_distribution_1m_window_512_bins` measured 0.18 ms in the full run
+  against an 8 ms target
+- Playwright local demo smoke against `http://127.0.0.1:5174/`: pass; default
+  page exposes the PITANT Distribution engine panel with a nonblank canvas,
+  10 rendered bins, 6 markers, and render time around 0.4 ms.
 
 Run after Phase 3 high-DPI resize slice on 2026-05-19:
 

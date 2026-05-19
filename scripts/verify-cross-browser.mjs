@@ -24,6 +24,7 @@ const SUPPORTED_PROFILES = [
   'spc',
   'spectrum',
   'spectrogram',
+  'distribution',
 ]
 
 const args = parseArgs(process.argv.slice(2))
@@ -227,6 +228,16 @@ function validateProfileState(state, profile) {
       `Expected ${profile} profile to render 0 spectrogram tiles, got ${state.spectrogramTiles}.`,
     )
   }
+  if (profile === 'distribution' && state.distributionBins !== 512) {
+    errors.push(
+      `Expected distribution profile to render 512 distribution bins, got ${state.distributionBins ?? 'none'}.`,
+    )
+  }
+  if (profile !== 'distribution' && state.distributionBins !== 0) {
+    errors.push(
+      `Expected ${profile} profile to render 0 distribution bins, got ${state.distributionBins}.`,
+    )
+  }
 
   return errors
 }
@@ -246,7 +257,7 @@ function launchBrowser(browserName, renderer) {
 }
 
 function expectedChartSurfaceCount(profile) {
-  return profile === 'spectrum' || profile === 'spectrogram' ? 3 : 2
+  return profile === 'spectrum' || profile === 'spectrogram' || profile === 'distribution' ? 3 : 2
 }
 
 async function runFpsBenchmark(page, renderer, profile) {

@@ -11,8 +11,7 @@ reviewers, and regulated-site approvers.
 | Surface | Path or symbol | 06 section |
 |---|---|---|
 | React config | `TimeSeriesConfig.spcTracks[]` control limits and rule markers | Phase 6 Chart Family Use / Do Not Use Catalog |
-| Future chart | `CapabilityHistogram` | Phase 6 Chart Family Use / Do Not Use Catalog |
-| Future chart | `DistributionPanel` | Phase 6 Chart Family Use / Do Not Use Catalog |
+| Package API | `Distribution`, `useDistribution`, `DistributionChart` for frozen capability histograms | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Upstream owner | `pitant-spc` rule and limit contracts | Whole-PITANT Composition Model |
 
 ## Request Or Prop Shape
@@ -43,7 +42,8 @@ reviewers, and regulated-site approvers.
 - Control limits, warning limits, center line, subgroup labels, and sparse
   violation markers are visible without obscuring the plotted samples.
 - Capability histogram shows spec limits, bin policy, outlier handling, Cp,
-  Cpk, Pp, and Ppk once the future histogram pack is implemented.
+  Cpk, Pp, and Ppk from `pitant-spc`, while `Distribution` renders the frozen
+  bins and spec/target/percentile markers.
 - Rule names and limit provenance are visible in tooltip, app metadata, or
   sibling evidence surfaces before production claim.
 - Chart never computes authoritative SPC rules unless `pitant-spc` provided the
@@ -54,8 +54,10 @@ reviewers, and regulated-site approvers.
 - Success: `spc-xbar-r-10k` renders through
   `025_time_series_spc_tracks_10k` and through the render harness `spc`
   browser profile with approved limits, named rules, and no missing subgroups.
-  `capability-histogram-100k` remains contract-only until the histogram pack is
-  built.
+- Success: `capability-histogram-100k` renders the frozen histogram surface
+  through `Distribution`, benchmark `028_distribution_1m_window_512_bins`, and
+  render-harness profile `distribution`; authoritative capability metrics still
+  come from `pitant-spc`.
 - Degraded: missing subgroup, stale limit, held sample, and one substituted
   value are all visible.
 - Denied: user lacks `quality.review` or the tenant profile excludes regulated

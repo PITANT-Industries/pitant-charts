@@ -3,9 +3,10 @@
 ## Workflow
 
 Scientific analysis covers frequency-domain and advanced engineering views:
-spectrogram, spectrum, power spectrum, Bode response, and transfer-response
-comparison. Primary actors are vibration specialists, controls engineers, power
-quality engineers, and process engineers.
+spectrogram, spectrum, distribution, power spectrum, Bode response, and
+transfer-response comparison. Primary actors are vibration specialists,
+controls engineers, power quality engineers, quality engineers, and process
+engineers.
 
 ## Route Or Package API List
 
@@ -13,6 +14,7 @@ quality engineers, and process engineers.
 |---|---|---|
 | Package API | `Spectrogram`, `useSpectrogram`, `SpectrogramChart` | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Package API | `Spectrum`, `useSpectrum`, `SpectrumChart` | Phase 6 Chart Family Use / Do Not Use Catalog |
+| Package API | `Distribution`, `useDistribution`, `DistributionChart` | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Future chart | `BodeChart` | Phase 6 Chart Family Use / Do Not Use Catalog |
 | Future transform | `spectrogram tile generation` | Transform Inventory |
 
@@ -51,6 +53,27 @@ quality engineers, and process engineers.
     zAxis: { label: 'Magnitude' },
   }}
 />
+
+<Distribution
+  ariaLabel="Frozen capability distribution"
+  data={{
+    binStarts,
+    binEnds,
+    columns: {
+      count,
+    },
+  }}
+  config={{
+    series: [{ key: 'capability', label: 'Capability distribution', field: 'count' }],
+    markers: [
+      { key: 'lsl', kind: 'lower-spec', value: lowerSpec, label: 'LSL' },
+      { key: 'target', kind: 'target', value: target, label: 'Target' },
+      { key: 'usl', kind: 'upper-spec', value: upperSpec, label: 'USL' },
+    ],
+    xAxis: { label: engineeringUnit },
+    yAxis: { label: 'Count', baseline: 0 },
+  }}
+/>
 ```
 
 ## Success State Shape
@@ -61,6 +84,8 @@ quality engineers, and process engineers.
   frequency bands through the package command-frame path.
 - Initial Spectrogram view renders precomputed time-frequency tiles through the
   package command-frame path.
+- Initial Distribution view renders precomputed bins and spec/target/percentile
+  markers through the package command-frame path.
 - Spectrogram labels must make upstream STFT/window/sample-rate provenance
   visible before fault-signature conclusions are trusted.
 - Spectrum view labels must make the upstream window/sample-rate provenance
@@ -73,6 +98,9 @@ quality engineers, and process engineers.
   `026_spectrum_1m_window_64k_bins` and render-harness profile `spectrum`.
 - Success: `spectrogram-tiles-60m` renders through benchmark
   `027_spectrogram_60m_64k_tiles` and render-harness profile `spectrogram`.
+- Success: `distribution-panel-1m` renders through benchmark
+  `028_distribution_1m_window_512_bins` and render-harness profile
+  `distribution`.
 - Future success: `bode-response-fixture` renders within its declared benchmark
   profile.
 - Degraded: irregular cadence, missing sampling-rate metadata, or low
@@ -92,10 +120,10 @@ quality engineers, and process engineers.
 
 ## Profile Gating
 
-Initial Spectrum and Spectrogram are enabled for `plant`, `enterprise`, and
-`premium` deployments when upstream analytics provides frozen frequency bins or
-time-frequency tiles. Bode remains hidden until its fixture moves beyond
-`contract_only`.
+Initial Spectrum, Spectrogram, and Distribution are enabled for `plant`,
+`enterprise`, and `premium` deployments when upstream analytics provides frozen
+frequency bins, time-frequency tiles, or distribution bins. Bode remains hidden
+until its fixture moves beyond `contract_only`.
 
 ## Mode Vector Summary
 
@@ -103,8 +131,8 @@ time-frequency tiles. Bode remains hidden until its fixture moves beyond
 
 ## Use Boundary
 
-Use this pack when frequency-domain inspection answers the user's question and
-the upstream window, sampling rate, and units are known. Do not use it when a
-trend, event marker, SPC view, or correlation surface is the more direct
-representation, or when the chart package would have to become the authoritative
-FFT/STFT engine.
+Use this pack when frequency-domain or frozen-distribution inspection answers
+the user's question and the upstream window, sampling rate, units, or bin
+boundaries are known. Do not use it when a trend, event marker, SPC view, or
+correlation surface is the more direct representation, or when the chart
+package would have to become the authoritative FFT/STFT/statistics engine.

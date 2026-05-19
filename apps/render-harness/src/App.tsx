@@ -5,6 +5,9 @@ import {
   DigitalChannel,
   type DigitalChannelColumnData,
   type DigitalChannelConfig,
+  Distribution,
+  type DistributionColumnData,
+  type DistributionConfig,
   Spectrogram,
   type SpectrogramConfig,
   type SpectrogramMatrixData,
@@ -18,11 +21,20 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 
 type RendererChoice = RendererType | 'auto'
-type LoadProfile = 'compact' | 'large' | 'bands' | 'anomaly' | 'spc' | 'spectrum' | 'spectrogram'
+type LoadProfile =
+  | 'compact'
+  | 'large'
+  | 'bands'
+  | 'anomaly'
+  | 'spc'
+  | 'spectrum'
+  | 'spectrogram'
+  | 'distribution'
 
 interface GeneratedData {
   analog: TimeSeriesColumnData
   digital: DigitalChannelColumnData
+  distribution: DistributionColumnData
   spectrum: SpectrumColumnData
   spectrogram: SpectrogramMatrixData
 }
@@ -38,6 +50,7 @@ declare global {
       analogAnomalyTracks: number
       analogSpcTracks: number
       digitalChannels: number
+      distributionBins: number
       spectrumBins: number
       spectrogramTiles: number
     }
@@ -53,6 +66,7 @@ const PROFILES: readonly LoadProfile[] = [
   'spc',
   'spectrum',
   'spectrogram',
+  'distribution',
 ]
 
 const SERIES_CONFIG: TimeSeriesConfig['series'] = [
@@ -282,6 +296,38 @@ const SPECTROGRAM_CONFIG: SpectrogramConfig = {
   },
 }
 
+const DISTRIBUTION_CONFIG: DistributionConfig = {
+  series: [
+    {
+      key: 'capability-distribution',
+      label: 'Capability distribution',
+      field: 'count',
+      color: 'var(--chart-1)',
+      rgba: [0.15, 0.39, 0.92, 1],
+      fillRgba: [0.15, 0.39, 0.92, 0.28],
+      lineRgba: [0.15, 0.39, 0.92, 0.88],
+      lineWidth: 0.75,
+    },
+  ],
+  markers: [
+    { key: 'lsl', kind: 'lower-spec', value: -3, label: 'LSL' },
+    { key: 'target', kind: 'target', value: 0, label: 'Target' },
+    { key: 'usl', kind: 'upper-spec', value: 3, label: 'USL' },
+    { key: 'p05', kind: 'percentile', value: -1.65, label: 'P05' },
+    { key: 'p95', kind: 'percentile', value: 1.72, label: 'P95' },
+  ],
+  xAxis: {
+    label: 'Deviation',
+    formatValue: (value) => value.toFixed(1),
+  },
+  yAxis: {
+    label: 'Count',
+    baseline: 0,
+    paddingRatio: 0.08,
+    formatValue: (value) => value.toFixed(0),
+  },
+}
+
 export function App(): React.JSX.Element {
   const [renderer, setRenderer] = useState<RendererChoice>(() =>
     readChoiceFromQuery('renderer', RENDERERS, 'auto'),
@@ -294,7 +340,10 @@ export function App(): React.JSX.Element {
       ? 180_000
       : profile === 'bands' || profile === 'anomaly'
         ? 90_000
-        : profile === 'spc' || profile === 'spectrum' || profile === 'spectrogram'
+        : profile === 'spc' ||
+            profile === 'spectrum' ||
+            profile === 'spectrogram' ||
+            profile === 'distribution'
           ? 10_000
           : 12_000
   const generated = useMemo(() => generateData(pointCount, profile), [pointCount, profile])
@@ -337,6 +386,7 @@ export function App(): React.JSX.Element {
       analogAnomalyTracks: profile === 'anomaly' ? ANOMALY_TRACK_CONFIG.length : 0,
       analogSpcTracks: profile === 'spc' ? SPC_TRACK_CONFIG.length : 0,
       digitalChannels: DIGITAL_CONFIG.length,
+      distributionBins: profile === 'distribution' ? generated.distribution.binStarts.length : 0,
       spectrumBins: profile === 'spectrum' ? generated.spectrum.frequencies.length : 0,
       spectrogramTiles:
         profile === 'spectrogram'
@@ -346,6 +396,7 @@ export function App(): React.JSX.Element {
   }, [
     generated.spectrogram.frequencyBins.length,
     generated.spectrogram.timeBins.length,
+    generated.distribution.binStarts.length,
     generated.spectrum.frequencies.length,
     pointCount,
     profile,
@@ -508,6 +559,38 @@ export function App(): React.JSX.Element {
           </Spectrogram>
         </section>
       ) : null}
+
+      {profile === 'distribution' ? (
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>Capability Distribution</h2>
+              <p>Precomputed-bin Distribution API, one-million-sample source window</p>
+            </div>
+          </div>
+          <Distribution
+            ariaLabel="Capability distribution render harness"
+            className="chart-surface distribution"
+            config={{ ...DISTRIBUTION_CONFIG, renderer }}
+            data={generated.distribution}
+          >
+            {(chart) => (
+              <div className="chart-overlay">
+                <ChartLegend
+                  items={[...chart.legendItems]}
+                  onToggle={(key) => chart.toggleSeries(key)}
+                />
+                <DistributionStatsRow
+                  markerCount={chart.stats.markerCount}
+                  renderTime={chart.stats.renderTime}
+                  renderedBinCount={chart.stats.renderedBinCount}
+                  sourceBinCount={chart.stats.sourceBinCount}
+                />
+              </div>
+            )}
+          </Distribution>
+        </section>
+      ) : null}
     </main>
   )
 }
@@ -606,6 +689,35 @@ function SpectrogramStatsRow(props: {
   )
 }
 
+function DistributionStatsRow(props: {
+  markerCount: number
+  renderTime: number
+  renderedBinCount: number
+  sourceBinCount: number
+}): React.JSX.Element {
+  const { markerCount, renderTime, renderedBinCount, sourceBinCount } = props
+  return (
+    <dl className="stats-row">
+      <div>
+        <dt>Bins</dt>
+        <dd>{renderedBinCount.toLocaleString()}</dd>
+      </div>
+      <div>
+        <dt>Source</dt>
+        <dd>{sourceBinCount.toLocaleString()}</dd>
+      </div>
+      <div>
+        <dt>Markers</dt>
+        <dd>{markerCount}</dd>
+      </div>
+      <div>
+        <dt>Render</dt>
+        <dd>{renderTime.toFixed(2)} ms</dd>
+      </div>
+    </dl>
+  )
+}
+
 function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
   const timestamps = new Float64Array(pointCount)
   const temperature = new Float64Array(pointCount)
@@ -667,6 +779,7 @@ function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
         manual,
       },
     },
+    distribution: generateDistributionData(512),
     spectrum: generateSpectrumData(8192),
     spectrogram: generateSpectrogramData(128, 96),
   }
@@ -737,6 +850,37 @@ function generateSpectrogramData(
     values,
     timeBinWidth,
     frequencyBinWidth,
+  }
+}
+
+function generateDistributionData(binCount: number): DistributionColumnData {
+  const binStarts = new Float64Array(binCount)
+  const binEnds = new Float64Array(binCount)
+  const count = new Float64Array(binCount)
+  const min = -5
+  const max = 5
+  const binWidth = (max - min) / binCount
+
+  for (let i = 0; i < binCount; i++) {
+    const start = min + i * binWidth
+    const end = start + binWidth
+    const center = start + binWidth / 2
+    binStarts[i] = start
+    binEnds[i] = end
+    count[i] =
+      gaussian(center, -0.18, 0.82) * 11_000 +
+      gaussian(center, 1.48, 0.42) * 1_900 +
+      gaussian(center, -2.85, 0.3) * 650 +
+      Math.abs(Math.sin(i / 11)) * 38 +
+      Math.abs(Math.cos(i / 37)) * 19
+  }
+
+  return {
+    binStarts,
+    binEnds,
+    columns: {
+      count,
+    },
   }
 }
 

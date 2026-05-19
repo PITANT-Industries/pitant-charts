@@ -2,11 +2,13 @@
  * Benchmark scenarios for @pitant/charts.
  *
  * Scenarios 1-4, 8-9 require a browser (WebGPU/Canvas2D).
- * Scenarios 5-7 and 10-27 are pure-compute/package-level gates.
+ * Scenarios 5-7 and 10-28 are pure-compute/package-level gates.
  * Bundle-size scenario runs via size-limit.
  */
 import {
   addDigitalChannelToCommandList,
+  addDistributionMarkersToCommandList,
+  addDistributionToCommandList,
   addSpectrogramToCommandList,
   addSpectrumBandsToCommandList,
   addSpectrumPeakMarkersToCommandList,
@@ -17,6 +19,7 @@ import {
   addTimeSeriesSpcTracksToCommandList,
   addTimeSeriesToCommandList,
   buildDigitalChannelRenderPlan,
+  buildDistributionRenderPlan,
   buildSpectrogramRenderPlan,
   buildSpectrumRenderPlan,
   buildTimeSeriesCommandFrame,
@@ -24,6 +27,7 @@ import {
   clampRangeToBounds,
   DataSource,
   type DigitalChannelSeries,
+  type DistributionDataSet,
   findNearestTimestampIndex,
   panRangeByPixels,
   panRangeByValue,
@@ -240,6 +244,53 @@ function generateSpectrogramData(
     values,
     timeBinWidth: timeStepSeconds,
     frequencyBinWidth: frequencyStepHz,
+  }
+}
+
+function generateDistributionData(binCount: number): DistributionDataSet {
+  const binStarts = new Float64Array(binCount)
+  const binEnds = new Float64Array(binCount)
+  const counts = new Float64Array(binCount)
+  const target = 0
+  const lowerSpec = -3
+  const upperSpec = 3
+  const min = -5
+  const max = 5
+  const binWidth = (max - min) / binCount
+
+  for (let i = 0; i < binCount; i++) {
+    const start = min + i * binWidth
+    const end = start + binWidth
+    const center = start + binWidth / 2
+    const mainProcess = gaussian(center, -0.18, 0.82) * 11_000
+    const secondaryMode = gaussian(center, 1.48, 0.42) * 1_900
+    const tail = gaussian(center, -2.85, 0.3) * 650
+    const deterministicNoise = Math.abs(Math.sin(i / 11)) * 38 + Math.abs(Math.cos(i / 37)) * 19
+    binStarts[i] = start
+    binEnds[i] = end
+    counts[i] = mainProcess + secondaryMode + tail + deterministicNoise
+  }
+
+  return {
+    series: [
+      {
+        key: 'capability-distribution',
+        label: 'Capability distribution',
+        binStarts,
+        binEnds,
+        values: counts,
+        color: [0.15, 0.39, 0.92, 1],
+        fillColor: [0.15, 0.39, 0.92, 0.28],
+        lineWidth: 0.7,
+      },
+    ],
+    markers: [
+      { key: 'lsl', kind: 'lower-spec', value: lowerSpec, label: 'LSL' },
+      { key: 'target', kind: 'target', value: target, label: 'Target' },
+      { key: 'usl', kind: 'upper-spec', value: upperSpec, label: 'USL' },
+      { key: 'p05', kind: 'percentile', value: -1.65, label: 'P05' },
+      { key: 'p95', kind: 'percentile', value: 1.72, label: 'P95' },
+    ],
   }
 }
 
@@ -1178,6 +1229,46 @@ scenarios['027_spectrogram_60m_64k_tiles'] = () => {
     scenario: '027_spectrogram_60m_64k_tiles',
     metric: `${timeBinCount} windows x ${frequencyBinCount} bands as ${renderedTileCount.toLocaleString()} tiles (${commandCount.toLocaleString()} commands)`,
     value: Math.round(medianMs * 100) / 100,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 028: Capability distribution render planning ───
+
+scenarios['028_distribution_1m_window_512_bins'] = () => {
+  const sourceWindowSamples = 1_000_000
+  const binCount = 512
+  const data = generateDistributionData(binCount)
+  const target = 8 // ms for one-million-sample source-window distribution as 512 precomputed bins
+
+  const warmup = buildDistributionRenderPlan(data, { baseline: 0 })
+  const warmupCommands = new RenderCommandList()
+  addDistributionToCommandList(warmupCommands, warmup)
+  addDistributionMarkersToCommandList(warmupCommands, warmup)
+
+  const times: number[] = []
+  let renderedBinCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 7; i++) {
+    const start = performance.now()
+    const plan = buildDistributionRenderPlan(data, { baseline: 0 })
+    const commands = new RenderCommandList()
+    addDistributionToCommandList(commands, plan)
+    addDistributionMarkersToCommandList(commands, plan)
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    renderedBinCount = plan.renderedBinCount
+    commandCount = commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '028_distribution_1m_window_512_bins',
+    metric: `${(sourceWindowSamples / 1e6).toFixed(0)}M-sample window as ${renderedBinCount.toLocaleString()} distribution bins (${commandCount.toLocaleString()} commands)`,
+    value: Math.round(medianMs * 1000) / 1000,
     unit: 'ms',
     target,
     passed: medianMs < target,

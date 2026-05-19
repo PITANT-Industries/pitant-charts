@@ -46,6 +46,32 @@ export type {
 } from './digital-channel-chart.js'
 export { DigitalChannelChart } from './digital-channel-chart.js'
 export type {
+  DistributionCommandFrame,
+  DistributionDataSet,
+  DistributionFrameOptions,
+  DistributionMarker,
+  DistributionMarkerKind,
+  DistributionPlannedBin,
+  DistributionPlannedMarker,
+  DistributionPlannedSeries,
+  DistributionRenderOptions,
+  DistributionRenderPlan,
+  DistributionSeries,
+} from './distribution.js'
+export {
+  addDistributionMarkersToCommandList,
+  addDistributionToCommandList,
+  buildDistributionCommandFrame,
+  buildDistributionRenderPlan,
+  createDistributionViewTransform,
+  renderDistributionPlan,
+} from './distribution.js'
+export type {
+  DistributionChartCreateOptions,
+  DistributionChartOptions,
+} from './distribution-chart.js'
+export { DistributionChart } from './distribution-chart.js'
+export type {
   ChartClientPoint,
   ChartDataPoint,
   ChartPoint,

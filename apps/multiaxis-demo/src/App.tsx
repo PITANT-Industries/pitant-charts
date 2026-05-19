@@ -1,5 +1,8 @@
 import type { RgbaColor } from '@pitant/charts'
 import {
+  Distribution,
+  type DistributionColumnData,
+  type DistributionConfig,
   Spectrogram,
   type SpectrogramConfig,
   type SpectrogramMatrixData,
@@ -220,6 +223,8 @@ interface RateChangeInsight {
 
 interface DistributionBin {
   label: string
+  start: number
+  end: number
   count: number
   width: number
 }
@@ -2157,6 +2162,8 @@ function buildDistributionInsight(
     const high = low + binSize
     return {
       label: `${formatTickValue(low, series)}-${formatTickValue(high, series)}`,
+      start: low,
+      end: high,
       count,
       width: (count / maxCount) * 100,
     }
@@ -5745,6 +5752,82 @@ function PitantSpectrogramEnginePanel({
   )
 }
 
+interface PitantDistributionEnginePanelProps {
+  activeSeries: SeriesConfig
+  displaySamples: readonly Sample[]
+}
+
+function PitantDistributionEnginePanel({
+  activeSeries,
+  displaySamples,
+}: PitantDistributionEnginePanelProps): React.JSX.Element {
+  const insight = useMemo(
+    () => buildDistributionInsight(displaySamples, activeSeries),
+    [activeSeries, displaySamples],
+  )
+  const distributionData = useMemo(() => buildPitantDistributionData(insight), [insight])
+  const distributionConfig = useMemo(
+    () => buildPitantDistributionConfig(activeSeries, insight),
+    [activeSeries, insight],
+  )
+
+  return (
+    <section className="pitant-distribution-panel" aria-label="PITANT Distribution engine">
+      <div className="pitant-distribution-header">
+        <div>
+          <p className="eyebrow">Scientific renderer</p>
+          <h3>{activeSeries.shortLabel} Distribution path</h3>
+        </div>
+        <dl className="pitant-distribution-readout">
+          <div>
+            <dt>P05</dt>
+            <dd>{formatValue(insight.p05, activeSeries)}</dd>
+          </div>
+          <div>
+            <dt>P50</dt>
+            <dd>{formatValue(insight.p50, activeSeries)}</dd>
+          </div>
+          <div>
+            <dt>P95</dt>
+            <dd>{formatValue(insight.p95, activeSeries)}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <Distribution
+        ariaLabel={`${activeSeries.label} distribution rendered by PITANT Distribution`}
+        aspectRatio={21 / 5}
+        chartKey={`multiaxis-demo-distribution-${activeSeries.id}`}
+        className="pitant-distribution-chart"
+        config={distributionConfig}
+        data={distributionData}
+        renderer="canvas2d"
+      >
+        {(chart) => (
+          <dl className="pitant-distribution-stats" aria-label="Distribution render statistics">
+            <div>
+              <dt>Path</dt>
+              <dd>PITANT Distribution</dd>
+            </div>
+            <div>
+              <dt>Bins</dt>
+              <dd>{chart.stats.renderedBinCount}</dd>
+            </div>
+            <div>
+              <dt>Markers</dt>
+              <dd>{chart.stats.markerCount}</dd>
+            </div>
+            <div>
+              <dt>Render</dt>
+              <dd>{chart.stats.renderTime.toFixed(1)} ms</dd>
+            </div>
+          </dl>
+        )}
+      </Distribution>
+    </section>
+  )
+}
+
 function App(): React.JSX.Element {
   const samples = useMemo(() => generateSamples(), [])
   const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode)
@@ -6061,6 +6144,11 @@ function App(): React.JSX.Element {
         <PitantSpectrumEnginePanel displaySamples={displaySamples} />
 
         <PitantSpectrogramEnginePanel activeSeries={activeSeries} displaySamples={displaySamples} />
+
+        <PitantDistributionEnginePanel
+          activeSeries={activeSeries}
+          displaySamples={displaySamples}
+        />
 
         {overlays.legend ? (
           <ScientificLegend
@@ -8009,6 +8097,112 @@ function buildPitantSpectrogramConfig(series: SeriesConfig): SpectrogramConfig {
   }
 }
 
+function buildPitantDistributionData(insight: DistributionInsight): DistributionColumnData {
+  const binStarts = new Float64Array(insight.bins.length)
+  const binEnds = new Float64Array(insight.bins.length)
+  const count = new Float64Array(insight.bins.length)
+
+  for (let index = 0; index < insight.bins.length; index++) {
+    const bin = insight.bins[index]
+    binStarts[index] = bin?.start ?? index
+    binEnds[index] = bin?.end ?? index + 1
+    count[index] = bin?.count ?? 0
+  }
+
+  return {
+    binStarts,
+    binEnds,
+    columns: {
+      count,
+    },
+  }
+}
+
+function buildPitantDistributionConfig(
+  series: SeriesConfig,
+  insight: DistributionInsight,
+): DistributionConfig {
+  const markers: NonNullable<DistributionConfig['markers']> = [
+    {
+      key: `${series.id}-p05`,
+      kind: 'percentile',
+      value: insight.p05,
+      label: 'P05',
+      rgba: toRgba('#344054', 0.72),
+    },
+    {
+      key: `${series.id}-p50`,
+      kind: 'median',
+      value: insight.p50,
+      label: 'P50',
+      rgba: toRgba(series.color, 0.82),
+    },
+    {
+      key: `${series.id}-p95`,
+      kind: 'percentile',
+      value: insight.p95,
+      label: 'P95',
+      rgba: toRgba('#344054', 0.72),
+    },
+  ]
+
+  if (series.thresholds?.alarm !== undefined) {
+    markers.push(
+      {
+        key: `${series.id}-lsl`,
+        kind: 'lower-spec',
+        value: series.thresholds.alarm[0],
+        label: 'LSL',
+        rgba: toRgba('#d92d20', 0.86),
+      },
+      {
+        key: `${series.id}-usl`,
+        kind: 'upper-spec',
+        value: series.thresholds.alarm[1],
+        label: 'USL',
+        rgba: toRgba('#d92d20', 0.86),
+      },
+    )
+  }
+
+  if (series.thresholds?.target !== undefined) {
+    markers.push({
+      key: `${series.id}-target`,
+      kind: 'target',
+      value: series.thresholds.target,
+      label: 'Target',
+      rgba: toRgba('#12b76a', 0.82),
+    })
+  }
+
+  return {
+    series: [
+      {
+        key: `${series.id}-distribution`,
+        label: `${series.shortLabel} distribution`,
+        field: 'count',
+        color: series.color,
+        rgba: toRgba(series.color, 0.94),
+        fillRgba: toRgba(series.color, 0.24),
+        lineRgba: toRgba(series.color, 0.88),
+        lineWidth: 0.85,
+        barWidthRatio: 0.92,
+      },
+    ],
+    markers,
+    xAxis: {
+      label: series.unit,
+      formatValue: (value) => formatTickValue(value, series),
+    },
+    yAxis: {
+      label: 'Count',
+      baseline: 0,
+      paddingRatio: 0.12,
+      formatValue: (value) => value.toFixed(0),
+    },
+  }
+}
+
 function maxFiniteValue(values: Float32Array | Float64Array): number {
   let max = 0
   for (let index = 0; index < values.length; index++) {
@@ -8187,19 +8381,44 @@ interface DistributionPanelProps {
 }
 
 function DistributionPanel({ insight, series }: DistributionPanelProps): React.JSX.Element {
+  const distributionData = useMemo(() => buildPitantDistributionData(insight), [insight])
+  const distributionConfig = useMemo(
+    () => buildPitantDistributionConfig(series, insight),
+    [series, insight],
+  )
+
   return (
     <article className="workbench-panel">
       <PanelHeader index="12" meta="histogram and percentiles" title="Distribution" />
-      <div className="histogram-bars">
-        {insight.bins.map((bin) => (
-          <div className="histogram-bin" key={bin.label}>
-            <span>{bin.label}</span>
-            <div className="bar-track">
-              <span className="bar-fill" style={barStyle(bin.width, series.color)} />
-            </div>
-            <strong>{bin.count}</strong>
-          </div>
-        ))}
+      <div className="pitant-distribution-engine">
+        <Distribution
+          ariaLabel={`${series.label} distribution rendered by PITANT Distribution`}
+          className="pitant-distribution-surface"
+          config={distributionConfig}
+          data={distributionData}
+          renderer="canvas2d"
+        >
+          {(chart) => (
+            <dl className="pitant-distribution-stats" aria-label="Distribution render statistics">
+              <div>
+                <dt>Path</dt>
+                <dd>PITANT Distribution</dd>
+              </div>
+              <div>
+                <dt>Bins</dt>
+                <dd>{chart.stats.renderedBinCount}</dd>
+              </div>
+              <div>
+                <dt>Markers</dt>
+                <dd>{chart.stats.markerCount}</dd>
+              </div>
+              <div>
+                <dt>Render</dt>
+                <dd>{chart.stats.renderTime.toFixed(2)} ms</dd>
+              </div>
+            </dl>
+          )}
+        </Distribution>
       </div>
       <dl className="workbench-metrics compact">
         <div>

@@ -121,7 +121,8 @@ select {
   min-height: 260px;
 }
 
-.chart-surface.spectrogram {
+.chart-surface.spectrogram,
+.chart-surface.distribution {
   min-height: 300px;
 }
 

@@ -24,7 +24,7 @@ Each pack must include:
 | Digital channel | `digital-channel.md` | initial pack |
 | Anomaly review | `anomaly-review.md` | initial score-lane pack |
 | SPC review | `spc-review.md` | initial control-limit pack |
-| Scientific analysis | `scientific-analysis.md` | initial Spectrum and Spectrogram pack |
+| Scientific analysis | `scientific-analysis.md` | initial Spectrum, Spectrogram, and Distribution pack |
 | Correlation workbench | `correlation-workbench.md` | contract-only pack |
 | Batch profile | `batch-profile.md` | pending |
 | Synchronized dashboard | `synchronized-dashboard.md` | initial pack |

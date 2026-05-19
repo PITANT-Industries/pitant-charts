@@ -59,6 +59,18 @@ export type {
   UseDigitalChannelReturn,
 } from './digital-channel.js'
 export { DigitalChannel, useDigitalChannel } from './digital-channel.js'
+// Distribution
+export type {
+  DistributionColumnData,
+  DistributionConfig,
+  DistributionMarkerConfig,
+  DistributionProps,
+  DistributionSeriesConfig,
+  DistributionStats,
+  UseDistributionOptions,
+  UseDistributionReturn,
+} from './distribution.js'
+export { Distribution, useDistribution } from './distribution.js'
 // Spectrogram
 export type {
   SpectrogramColorStopConfig,

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   DigitalChannelChart,
   type DigitalChannelDataSet,
+  DistributionChart,
+  type DistributionDataSet,
   type FillOptions,
   type LineOptions,
   type RectOptions,
@@ -112,6 +114,19 @@ const SPECTROGRAM_DATA: SpectrogramDataSet = {
   values: new Float32Array([1, 2, 3, 4, 5, 6]),
 }
 
+const DISTRIBUTION_DATA: DistributionDataSet = {
+  series: [
+    {
+      key: 'capability',
+      label: 'Capability histogram',
+      binStarts: new Float64Array([0, 1, 2]),
+      binEnds: new Float64Array([1, 2, 3]),
+      values: new Float64Array([2, 8, 3]),
+    },
+  ],
+  markers: [{ key: 'target', kind: 'target', value: 1.5, label: 'Target' }],
+}
+
 describe('imperative chart classes', () => {
   it('renders TimeSeriesChart through the existing render-plan path', () => {
     const context = new FakeRenderContext()
@@ -212,5 +227,24 @@ describe('imperative chart classes', () => {
 
     chart.dispose()
     expect(() => chart.render()).toThrow('SpectrogramChart has been disposed')
+  })
+
+  it('renders DistributionChart through the existing render-plan path', () => {
+    const context = new FakeRenderContext()
+    const chart = new DistributionChart(context, { data: DISTRIBUTION_DATA })
+
+    expect(chart.renderPlan.kind).toBe('distribution')
+    expect(chart.renderPlan.renderedBinCount).toBe(3)
+    expect(context.beginCount).toBe(1)
+    expect(context.endCount).toBe(1)
+    expect(context.rectCount).toBe(3)
+    expect(context.lineCount).toBeGreaterThanOrEqual(1)
+
+    chart.setRenderOptions({ xRange: [0.5, 2.5] })
+    expect(chart.renderPlan.renderedBinCount).toBe(3)
+    expect(context.beginCount).toBe(2)
+
+    chart.dispose()
+    expect(() => chart.render()).toThrow('DistributionChart has been disposed')
   })
 })

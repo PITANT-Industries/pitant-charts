@@ -463,6 +463,16 @@ packs after v1 field feedback.
   tiles.
 - [x] Render harness `spectrogram` profile and the multi-axis demo exercise the
   public `Spectrogram` package path.
+- [x] Precomputed-bin `Distribution` / `DistributionChart` support renders
+  frozen histogram/capability bins, spec limits, target lines, and percentile
+  markers without making the chart package responsible for authoritative
+  Cp/Cpk/Pp/Ppk calculation.
+- [x] React `Distribution` passes bin starts, bin ends, series counts, and
+  marker overlays into the core render plan and SVG/PNG export path.
+- [x] `028_distribution_1m_window_512_bins` benchmark covers a one-million-
+  sample source window represented as 512 precomputed distribution bins.
+- [x] Render harness `distribution` profile and the multi-axis demo exercise
+  the public `Distribution` package path.
 
 **Tests and Acceptance.** Pack-specific unit, visual, and performance tests.
 
