@@ -307,7 +307,7 @@ memory-leak stress test.
 
 ## Phase 5 - Registry, Docs, Export, Launch
 
-**Status.** Local release candidate complete; GitHub Actions evidence pending.
+**Status.** Local release candidate complete; PR CI passed; publish workflow dry-run pending.
 
 **Scope.** shadcn registry, docs, PNG/SVG export, npm readiness, cross-browser
 checks, and release gates.
@@ -385,9 +385,10 @@ browser visual checks.
 - [x] PNG and SVG export verified.
 - [x] npm packages are publishable.
 
-**Release gate.** v1 local release candidate. External closure requires the
-workflow files to be committed and pushed, GitHub CI to pass, and the publish
-workflow to be dispatched with `dry_run=true`.
+**Release gate.** v1 local release candidate. PR CI passed on
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089639951.
+External closure still requires the publish workflow to be dispatched with
+`dry_run=true` after the workflow exists on the default branch.
 
 ## Phase 6 - Post-v1 Industrial Chart Packs
 

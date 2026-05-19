@@ -79,8 +79,11 @@ https://github.com/PITANT-Industries/pitant-charts/actions/runs/26088799878
 Second PR CI run, failed before browser verifier/runtime fixes:
 https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089123123
 
-Passing PR CI run:
+Passing PR CI run before the evidence-only commit:
 https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089497306
+
+Captured passing PR CI run after verifier/runtime fixes:
+https://github.com/PITANT-Industries/pitant-charts/actions/runs/26089639951
 
 Passing run coverage:
 
@@ -126,7 +129,7 @@ bun run harness:fps -- --renderers=canvas2d
 bun run harness:cross-browser -- --browser=chromium --renderer=canvas2d --profile=compact
 ```
 
-All five commands passed on 2026-05-19.
+All listed commands passed on 2026-05-19.
 
 `gh workflow list` reports the remote `CI` workflow. The publish workflow exists
 on this PR branch but cannot be manually dispatched from the repository

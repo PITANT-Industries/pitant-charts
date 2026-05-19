@@ -25,3 +25,12 @@
 - Browser render verification does not exist yet.
 - Real TimeSeries and DigitalChannel chart types are not implemented yet.
 - Export is canvas `toBlob()` only; true SVG/PDF export is future work.
+
+## Current Delta
+
+This file remains the import baseline, not the live release scorecard. The
+Phase 0 gap ledger records closure. As of 2026-05-19, TimeSeries,
+DigitalChannel, layout, interaction, registry, PNG/SVG export, benchmark, and
+browser CI gaps are closed for the v1 release candidate. The live release
+evidence is maintained in
+`docs/architecture/phase-5/release-candidate-evidence.md`.

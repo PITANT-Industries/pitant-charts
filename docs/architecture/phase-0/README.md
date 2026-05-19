@@ -16,4 +16,8 @@ creates the historian-style architecture catalog.
 - [x] Generated/runtime metadata excluded.
 - [x] `docs/architecture` catalog created.
 - [x] Verification baseline recorded.
-- [ ] First Phase 3 implementation slice started.
+- [x] Phase 3 implementation slices completed.
+- [x] Phase 5 local release candidate completed.
+- [x] Phase 5 PR CI matrix passed.
+- [ ] Publish workflow dry-run captured after workflow exists on the default
+  branch.

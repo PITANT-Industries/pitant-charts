@@ -135,7 +135,7 @@ remain the release performance gate.
 
 Continue Phase 5 implementation:
 
-1. Commit and push the passing CI evidence update.
+1. Commit and push the gap-ledger / evidence cleanup.
 2. Run the publish workflow with `dry_run=true` after the workflow is available
    on the default branch.
 3. Start Phase 6 only after the external GitHub evidence is attached or the
