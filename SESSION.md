@@ -2,17 +2,16 @@
 
 **Date:** 2026-05-19
 **Current phase:** Phase 6 - Post-v1 Industrial Chart Packs
-**Latest action:** Continued Phase 6 with TimeSeries SPC control-limit tracks
-in the core engine, React API, render harness, benchmark suite, frontend
-contract pack, and multi-axis demo. The demo now turns the alarm-review preset
-into real `TimeSeriesConfig.spcTracks[]` geometry alongside the anomaly score
-lane, so the visible demo stays attached to the package engine instead of
-bespoke SVG-only overlays.
+**Latest action:** Continued Phase 6 with the initial precomputed-bin Spectrum
+pack in the core engine, React API, render harness, benchmark suite, frontend
+contract pack, and multi-axis demo. The demo's vibration spectrum panel now
+mounts the public `Spectrum` component while keeping the compact bar readout,
+so visible scientific-analysis work stays attached to the package engine.
 
 ## What Exists
 
 - Bun monorepo with `@pitant/charts`, `@pitant/charts-react`, and benchmark app.
-- Render harness app with compact/large/bands data profiles and renderer
+- Render harness app with compact/large/bands/anomaly/spc/spectrum data profiles and renderer
   selection.
 - Core render contexts for WebGPU and Canvas2D.
 - Worker-backed data engine and LOD pyramid.
@@ -35,7 +34,7 @@ bespoke SVG-only overlays.
   disturbing data-space grid and series transforms.
 - Historian query rows and trend fixtures can be adapted into TimeSeries
   columnar data without pulling in a runtime dependency on `pitant-historian`.
-- Non-React consumers can use `TimeSeriesChart` and `DigitalChannelChart`
+- Non-React consumers can use `TimeSeriesChart`, `DigitalChannelChart`, and `SpectrumChart`
   directly against a `RenderContext` or create them from a canvas.
 - Docs examples now cover React trend composition, digital channel lanes,
   synchronized dashboards, and core imperative chart usage.
@@ -166,6 +165,14 @@ bespoke SVG-only overlays.
 - The multi-axis demo's PITANT TimeSeries engine panel now renders simulated
   upstream SPC limits through `TimeSeriesConfig.spcTracks[]` in the Alarm Review
   preset, with the layer readout showing `1 scores / 1 spc`.
+- Phase 6 initial Spectrum support exists in core and React config, with
+  precomputed frequency bins, peak markers, frequency bands, command-frame/SVG
+  export coverage, browser harness `spectrum` profile coverage, and benchmark
+  scenario `026_spectrum_1m_window_64k_bins`.
+- The multi-axis demo's vibration spectrum panel now mounts the public
+  `Spectrum` component against the existing spectrum bins, so the demo can show
+  scientific-analysis rendering through package code instead of bespoke bars
+  alone.
 
 ## Next Build Task
 
@@ -174,8 +181,8 @@ Continue Phase 6 implementation:
 1. Build the next concrete post-v1 industrial pack with the same rule: no
    visible runtime claim without a fixture, a contract-pack update, and a
    benchmark or browser-harness state.
-2. Prioritize spectrum/spectrogram or capability/distribution next unless a
-   higher-value demo need appears first.
+2. Prioritize spectrogram or capability/distribution next unless a higher-value
+   demo need appears first.
 3. Keep correlation, KPI, and PDF packs at
    contract-only until their benchmark fixtures exist.
 
@@ -339,6 +346,29 @@ Run after Phase 6 SPC control-limit track slice on 2026-05-19:
 - `bun run test`: pass, 30 files / 342 tests
 - `bun run bench`: pass, 20/20 benchmark scenarios;
   `025_time_series_spc_tracks_10k` measured 0.26 ms in the full run against a
+  25 ms target
+- `git diff --check`: pass
+
+Run after Phase 6 Spectrum precomputed-bin slice on 2026-05-19:
+
+- `bun run lint`: pass, 135 files checked
+- `bun run typecheck`: pass
+- `bun run build`: pass
+- Focused tests for Spectrum core, public API, imperative chart classes, and
+  React Spectrum: pass, 4 files / 14 tests
+- `bun run --filter @pitant/benchmark bench 026`: pass,
+  `026_spectrum_1m_window_64k_bins` at 1.73 ms against a 25 ms target
+- `bun run --filter @pitant/render-harness build`: pass
+- `bun run --filter @pitant/multiaxis-demo build`: pass
+- `bun run harness:verify -- --renderers=canvas2d --profiles=spectrum`: pass,
+  Canvas2D spectrum profile produced significant chart pixels with 8,192
+  spectrum bins
+- Playwright local demo smoke against `http://127.0.0.1:5174/`: pass; default
+  page exposes the PITANT Spectrum engine panel with a nonblank canvas and
+  reports `Drawn 12 / Peaks 1`
+- `bun run test`: pass, 32 files / 350 tests
+- `bun run bench`: pass, 21/21 benchmark scenarios;
+  `026_spectrum_1m_window_64k_bins` measured 1.48 ms in the full run against a
   25 ms target
 - `git diff --check`: pass
 

@@ -59,6 +59,19 @@ export type {
   UseDigitalChannelReturn,
 } from './digital-channel.js'
 export { DigitalChannel, useDigitalChannel } from './digital-channel.js'
+// Spectrum
+export type {
+  SpectrumColumnData,
+  SpectrumConfig,
+  SpectrumFrequencyBandConfig,
+  SpectrumPeakMarkerConfig,
+  SpectrumProps,
+  SpectrumSeriesConfig,
+  SpectrumStats,
+  UseSpectrumOptions,
+  UseSpectrumReturn,
+} from './spectrum.js'
+export { Spectrum, useSpectrum } from './spectrum.js'
 // Time series
 export type {
   TimeSeriesAnnotationConfig,

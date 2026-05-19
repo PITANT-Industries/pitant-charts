@@ -5,6 +5,9 @@ import {
   DigitalChannel,
   type DigitalChannelColumnData,
   type DigitalChannelConfig,
+  Spectrum,
+  type SpectrumColumnData,
+  type SpectrumConfig,
   TimeSeries,
   type TimeSeriesColumnData,
   type TimeSeriesConfig,
@@ -12,11 +15,12 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 
 type RendererChoice = RendererType | 'auto'
-type LoadProfile = 'compact' | 'large' | 'bands' | 'anomaly' | 'spc'
+type LoadProfile = 'compact' | 'large' | 'bands' | 'anomaly' | 'spc' | 'spectrum'
 
 interface GeneratedData {
   analog: TimeSeriesColumnData
   digital: DigitalChannelColumnData
+  spectrum: SpectrumColumnData
 }
 
 declare global {
@@ -30,12 +34,13 @@ declare global {
       analogAnomalyTracks: number
       analogSpcTracks: number
       digitalChannels: number
+      spectrumBins: number
     }
   }
 }
 
 const RENDERERS: readonly RendererChoice[] = ['auto', 'canvas2d', 'webgpu']
-const PROFILES: readonly LoadProfile[] = ['compact', 'large', 'bands', 'anomaly', 'spc']
+const PROFILES: readonly LoadProfile[] = ['compact', 'large', 'bands', 'anomaly', 'spc', 'spectrum']
 
 const SERIES_CONFIG: TimeSeriesConfig['series'] = [
   {
@@ -186,6 +191,64 @@ const SPC_TRACK_CONFIG: NonNullable<TimeSeriesConfig['spcTracks']> = [
   },
 ]
 
+const SPECTRUM_CONFIG: SpectrumConfig = {
+  series: [
+    {
+      key: 'vibration-spectrum',
+      label: 'Vibration spectrum',
+      field: 'magnitude',
+      color: 'var(--chart-5)',
+      rgba: [0.48, 0.23, 0.93, 1],
+      fillRgba: [0.48, 0.23, 0.93, 0.24],
+      lineRgba: [0.48, 0.23, 0.93, 0.92],
+      lineWidth: 0.9,
+    },
+  ],
+  bands: [
+    {
+      key: 'bearing',
+      label: 'Bearing band',
+      frequencyStart: 68,
+      frequencyEnd: 78,
+      fillRgba: [0.86, 0.15, 0.15, 0.09],
+      lineRgba: [0.86, 0.15, 0.15, 0.32],
+    },
+    {
+      key: 'gear-mesh',
+      label: 'Gear mesh',
+      frequencyStart: 300,
+      frequencyEnd: 336,
+      fillRgba: [0.93, 0.47, 0.09, 0.1],
+      lineRgba: [0.93, 0.47, 0.09, 0.38],
+    },
+  ],
+  peakMarkers: [
+    {
+      key: 'bpfo',
+      frequency: 73,
+      magnitude: 50,
+      label: 'BPFO',
+      rgba: [0.86, 0.15, 0.15, 0.86],
+    },
+    {
+      key: 'mesh',
+      frequency: 312,
+      magnitude: 36,
+      label: 'mesh',
+      rgba: [0.93, 0.47, 0.09, 0.86],
+    },
+  ],
+  xAxis: {
+    label: 'Hz',
+    formatValue: (value) => `${value.toFixed(0)}`,
+  },
+  yAxis: {
+    label: 'Magnitude',
+    baseline: 0,
+    paddingRatio: 0.08,
+  },
+}
+
 export function App(): React.JSX.Element {
   const [renderer, setRenderer] = useState<RendererChoice>(() =>
     readChoiceFromQuery('renderer', RENDERERS, 'auto'),
@@ -198,7 +261,7 @@ export function App(): React.JSX.Element {
       ? 180_000
       : profile === 'bands' || profile === 'anomaly'
         ? 90_000
-        : profile === 'spc'
+        : profile === 'spc' || profile === 'spectrum'
           ? 10_000
           : 12_000
   const generated = useMemo(() => generateData(pointCount, profile), [pointCount, profile])
@@ -241,8 +304,9 @@ export function App(): React.JSX.Element {
       analogAnomalyTracks: profile === 'anomaly' ? ANOMALY_TRACK_CONFIG.length : 0,
       analogSpcTracks: profile === 'spc' ? SPC_TRACK_CONFIG.length : 0,
       digitalChannels: DIGITAL_CONFIG.length,
+      spectrumBins: profile === 'spectrum' ? generated.spectrum.frequencies.length : 0,
     }
-  }, [pointCount, profile, renderer])
+  }, [generated.spectrum.frequencies.length, pointCount, profile, renderer])
 
   return (
     <main className="harness-shell" data-profile={profile} data-renderer={renderer}>
@@ -340,6 +404,38 @@ export function App(): React.JSX.Element {
           )}
         </DigitalChannel>
       </section>
+
+      {profile === 'spectrum' ? (
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>Vibration Spectrum</h2>
+              <p>Precomputed-bin Spectrum API, one-million-sample source window</p>
+            </div>
+          </div>
+          <Spectrum
+            ariaLabel="Vibration spectrum render harness"
+            className="chart-surface spectrum"
+            config={{ ...SPECTRUM_CONFIG, renderer }}
+            data={generated.spectrum}
+          >
+            {(chart) => (
+              <div className="chart-overlay">
+                <ChartLegend
+                  items={[...chart.legendItems]}
+                  onToggle={(key) => chart.toggleSeries(key)}
+                />
+                <SpectrumStatsRow
+                  peakMarkerCount={chart.stats.peakMarkerCount}
+                  renderTime={chart.stats.renderTime}
+                  renderedBinCount={chart.stats.renderedBinCount}
+                  segmentCount={chart.stats.segmentCount}
+                />
+              </div>
+            )}
+          </Spectrum>
+        </section>
+      ) : null}
     </main>
   )
 }
@@ -371,6 +467,35 @@ function StatsRow(props: {
       <div>
         <dt>Raw</dt>
         <dd>{rawPointCount.toLocaleString()}</dd>
+      </div>
+      <div>
+        <dt>Render</dt>
+        <dd>{renderTime.toFixed(2)} ms</dd>
+      </div>
+    </dl>
+  )
+}
+
+function SpectrumStatsRow(props: {
+  peakMarkerCount: number
+  renderTime: number
+  renderedBinCount: number
+  segmentCount: number
+}): React.JSX.Element {
+  const { peakMarkerCount, renderTime, renderedBinCount, segmentCount } = props
+  return (
+    <dl className="stats-row">
+      <div>
+        <dt>Bins</dt>
+        <dd>{renderedBinCount.toLocaleString()}</dd>
+      </div>
+      <div>
+        <dt>Peaks</dt>
+        <dd>{peakMarkerCount}</dd>
+      </div>
+      <div>
+        <dt>Segments</dt>
+        <dd>{segmentCount}</dd>
       </div>
       <div>
         <dt>Render</dt>
@@ -441,5 +566,35 @@ function generateData(pointCount: number, profile: LoadProfile): GeneratedData {
         manual,
       },
     },
+    spectrum: generateSpectrumData(8192),
   }
+}
+
+function generateSpectrumData(binCount: number): SpectrumColumnData {
+  const frequencies = new Float64Array(binCount)
+  const magnitude = new Float64Array(binCount)
+  const sampleRateHz = 2048
+  const binWidth = sampleRateHz / (binCount * 2)
+
+  for (let i = 0; i < binCount; i++) {
+    const frequency = i * binWidth
+    const bearingPeak = gaussian(frequency, 73, 2.5) * 48
+    const gearMeshPeak = gaussian(frequency, 312, 6) * 34
+    const sideBand = gaussian(frequency, 328, 3.5) * 16
+    const floor = 2 + Math.abs(Math.sin(i / 29)) * 0.8 + Math.abs(Math.cos(i / 97)) * 0.45
+    frequencies[i] = frequency
+    magnitude[i] = floor + bearingPeak + gearMeshPeak + sideBand
+  }
+
+  return {
+    frequencies,
+    columns: {
+      magnitude,
+    },
+  }
+}
+
+function gaussian(value: number, center: number, width: number): number {
+  const normalized = (value - center) / Math.max(Number.EPSILON, width)
+  return Math.exp(-0.5 * normalized * normalized)
 }

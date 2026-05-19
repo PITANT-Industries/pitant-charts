@@ -117,6 +117,10 @@ select {
   min-height: 220px;
 }
 
+.chart-surface.spectrum {
+  min-height: 260px;
+}
+
 .chart-overlay {
   position: absolute;
   inset: 12px 14px auto 14px;

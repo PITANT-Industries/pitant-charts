@@ -444,6 +444,15 @@ packs after v1 field feedback.
   render plan and SVG/PNG export path.
 - [x] `025_time_series_spc_tracks_10k` benchmark covers 10k subgroup SPC review
   with Xbar/R-style limits and Western Electric style markers.
+- [x] Precomputed-bin `Spectrum` / `SpectrumChart` support renders frequency
+  magnitudes, frequency bands, and peak markers without making the chart package
+  responsible for authoritative FFT/STFT computation.
+- [x] React `Spectrum` passes spectrum bins, peak markers, and bands into the
+  core render plan and SVG/PNG export path.
+- [x] `026_spectrum_1m_window_64k_bins` benchmark covers a one-million-sample
+  source window represented as 64k precomputed spectrum bins.
+- [x] Render harness `spectrum` profile and the multi-axis demo exercise the
+  public `Spectrum` package path.
 
 **Tests and Acceptance.** Pack-specific unit, visual, and performance tests.
 

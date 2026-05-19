@@ -539,7 +539,8 @@ h2 {
   overflow-wrap: anywhere;
 }
 
-.pitant-engine-panel {
+.pitant-engine-panel,
+.pitant-spectrum-panel {
   display: grid;
   gap: 8px;
   min-width: 0;
@@ -550,7 +551,8 @@ h2 {
   background: #fbfcfd;
 }
 
-.pitant-engine-header {
+.pitant-engine-header,
+.pitant-spectrum-header {
   display: grid;
   grid-template-columns: minmax(156px, 0.3fr) minmax(0, 1fr);
   gap: 8px;
@@ -558,7 +560,8 @@ h2 {
   min-width: 0;
 }
 
-.pitant-engine-header h3 {
+.pitant-engine-header h3,
+.pitant-spectrum-header h3 {
   min-width: 0;
   margin: 0;
   color: #111827;
@@ -568,11 +571,14 @@ h2 {
 }
 
 .pitant-engine-readout,
-.pitant-engine-stats {
+.pitant-engine-stats,
+.pitant-spectrum-readout,
+.pitant-spectrum-stats {
   margin: 0;
 }
 
-.pitant-engine-readout {
+.pitant-engine-readout,
+.pitant-spectrum-readout {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
@@ -580,7 +586,8 @@ h2 {
 }
 
 .pitant-engine-readout div,
-.pitant-engine-stats div {
+.pitant-engine-stats div,
+.pitant-spectrum-readout div {
   min-width: 0;
   padding: 6px 7px;
   border: 1px solid #e1e6ee;
@@ -588,7 +595,8 @@ h2 {
 }
 
 .pitant-engine-readout dt,
-.pitant-engine-stats dt {
+.pitant-engine-stats dt,
+.pitant-spectrum-readout dt {
   color: #667085;
   font-size: 0.59rem;
   font-weight: 800;
@@ -597,7 +605,8 @@ h2 {
 }
 
 .pitant-engine-readout dd,
-.pitant-engine-stats dd {
+.pitant-engine-stats dd,
+.pitant-spectrum-readout dd {
   min-width: 0;
   margin: 3px 0 0;
   color: #101828;
@@ -607,9 +616,27 @@ h2 {
   overflow-wrap: anywhere;
 }
 
-.pitant-engine-chart {
+.pitant-engine-chart,
+.pitant-spectrum-chart {
   min-width: 0;
   min-height: 256px;
+  border: 1px solid #e1e6ee;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.pitant-spectrum-chart {
+  min-height: 196px;
+}
+
+.pitant-spectrum-engine {
+  min-width: 0;
+  margin: 0 0 8px;
+}
+
+.pitant-spectrum-surface {
+  min-width: 0;
+  min-height: 176px;
   border: 1px solid #e1e6ee;
   border-radius: 8px;
   background: #ffffff;
@@ -625,11 +652,46 @@ h2 {
   max-width: min(420px, calc(100% - 16px));
 }
 
+.pitant-spectrum-stats {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(54px, auto));
+  gap: 5px;
+  max-width: min(480px, calc(100% - 16px));
+  margin: 0;
+}
+
 .pitant-engine-stats div {
   border-color: #d8dee7;
   border-radius: 6px;
   background: rgb(255 255 255 / 0.92);
   box-shadow: 0 10px 22px rgb(18 23 34 / 0.08);
+}
+
+.pitant-spectrum-stats div {
+  min-width: 0;
+  padding: 5px 6px;
+  border: 1px solid #d8dee7;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.92);
+  box-shadow: 0 10px 22px rgb(18 23 34 / 0.08);
+}
+
+.pitant-spectrum-stats dt {
+  color: #667085;
+  font-size: 0.56rem;
+  font-weight: 800;
+}
+
+.pitant-spectrum-stats dd {
+  min-width: 0;
+  margin: 2px 0 0;
+  color: #101828;
+  font-size: 0.68rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .scientific-legend {
@@ -1738,7 +1800,8 @@ h2 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .pitant-engine-header {
+  .pitant-engine-header,
+  .pitant-spectrum-header {
     grid-template-columns: 1fr;
   }
 
@@ -1782,15 +1845,18 @@ h2 {
     order: 3;
   }
 
-  .pitant-engine-panel {
+  .pitant-engine-panel,
+  .pitant-spectrum-panel {
     inline-size: min(100%, calc(100vw - 50px));
   }
 
-  .pitant-engine-readout {
+  .pitant-engine-readout,
+  .pitant-spectrum-readout {
     grid-template-columns: 1fr;
   }
 
-  .pitant-engine-chart {
+  .pitant-engine-chart,
+  .pitant-spectrum-chart {
     min-height: 238px;
   }
 
@@ -1800,6 +1866,14 @@ h2 {
     bottom: 8px;
     left: 8px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pitant-spectrum-stats {
+    top: auto;
+    right: auto;
+    bottom: 8px;
+    left: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .analytics-workbench {

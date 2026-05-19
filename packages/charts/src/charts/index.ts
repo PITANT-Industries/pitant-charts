@@ -71,6 +71,32 @@ export {
   zoomRangeAroundAnchor,
   zoomRangeAroundCenter,
 } from './range-navigation.js'
+export type {
+  SpectrumCommandFrame,
+  SpectrumDataSet,
+  SpectrumFillSegment,
+  SpectrumFrameOptions,
+  SpectrumFrequencyBand,
+  SpectrumLineSegment,
+  SpectrumPeakMarker,
+  SpectrumPlannedBand,
+  SpectrumPlannedPeakMarker,
+  SpectrumPlannedSeries,
+  SpectrumRenderOptions,
+  SpectrumRenderPlan,
+  SpectrumSeries,
+} from './spectrum.js'
+export {
+  addSpectrumBandsToCommandList,
+  addSpectrumPeakMarkersToCommandList,
+  addSpectrumToCommandList,
+  buildSpectrumCommandFrame,
+  buildSpectrumRenderPlan,
+  createSpectrumViewTransform,
+  renderSpectrumPlan,
+} from './spectrum.js'
+export type { SpectrumChartCreateOptions, SpectrumChartOptions } from './spectrum-chart.js'
+export { SpectrumChart } from './spectrum-chart.js'
 export type { CommandFrameSvgInput, CommandFrameSvgOptions } from './svg-export.js'
 export { commandFrameToSvg } from './svg-export.js'
 export type {

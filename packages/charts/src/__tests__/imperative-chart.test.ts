@@ -7,6 +7,8 @@ import {
   type RectOptions,
   type RenderContext,
   type RendererCapabilities,
+  SpectrumChart,
+  type SpectrumDataSet,
   TimeSeriesChart,
   type TimeSeriesDataSet,
   type ViewTransform,
@@ -91,6 +93,17 @@ const DIGITAL_DATA: DigitalChannelDataSet = {
   channels: [{ key: 'running', label: 'Running', field: 'running' }],
 }
 
+const SPECTRUM_DATA: SpectrumDataSet = {
+  series: [
+    {
+      key: 'vibration',
+      label: 'Vibration FFT',
+      frequencies: new Float64Array([10, 20, 30]),
+      magnitudes: new Float64Array([2, 8, 3]),
+    },
+  ],
+}
+
 describe('imperative chart classes', () => {
   it('renders TimeSeriesChart through the existing render-plan path', () => {
     const context = new FakeRenderContext()
@@ -154,5 +167,24 @@ describe('imperative chart classes', () => {
 
     chart.dispose()
     expect(() => chart.resize(100, 100)).toThrow('DigitalChannelChart has been disposed')
+  })
+
+  it('renders SpectrumChart through the existing render-plan path', () => {
+    const context = new FakeRenderContext()
+    const chart = new SpectrumChart(context, { data: SPECTRUM_DATA })
+
+    expect(chart.renderPlan.kind).toBe('spectrum')
+    expect(chart.renderPlan.renderedBinCount).toBe(3)
+    expect(context.beginCount).toBe(1)
+    expect(context.endCount).toBe(1)
+    expect(context.fillCount).toBe(1)
+    expect(context.lineCount).toBe(1)
+
+    chart.setRenderOptions({ xRange: [15, 25] })
+    expect(chart.renderPlan.renderedBinCount).toBe(1)
+    expect(context.beginCount).toBe(2)
+
+    chart.dispose()
+    expect(() => chart.render()).toThrow('SpectrumChart has been disposed')
   })
 })

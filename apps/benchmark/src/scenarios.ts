@@ -2,17 +2,21 @@
  * Benchmark scenarios for @pitant/charts.
  *
  * Scenarios 1-4, 8-9 require a browser (WebGPU/Canvas2D).
- * Scenarios 5-7 and 10-25 are pure-compute/package-level gates.
+ * Scenarios 5-7 and 10-26 are pure-compute/package-level gates.
  * Bundle-size scenario runs via size-limit.
  */
 import {
   addDigitalChannelToCommandList,
+  addSpectrumBandsToCommandList,
+  addSpectrumPeakMarkersToCommandList,
+  addSpectrumToCommandList,
   addTimeSeriesAnomalyTracksToCommandList,
   addTimeSeriesBandsToCommandList,
   addTimeSeriesDerivedColumns,
   addTimeSeriesSpcTracksToCommandList,
   addTimeSeriesToCommandList,
   buildDigitalChannelRenderPlan,
+  buildSpectrumRenderPlan,
   buildTimeSeriesCommandFrame,
   buildTimeSeriesRenderPlan,
   clampRangeToBounds,
@@ -22,6 +26,9 @@ import {
   panRangeByPixels,
   panRangeByValue,
   RenderCommandList,
+  type SpectrumFrequencyBand,
+  type SpectrumPeakMarker,
+  type SpectrumSeries,
   type TimeSeriesAnnotation,
   type TimeSeriesAnomalyTrack,
   type TimeSeriesDerivedColumn,
@@ -126,6 +133,73 @@ function generateDigitalChannelData(
   }
 
   return { timestamps, columns, channels }
+}
+
+function generateSpectrumData(binCount: number): {
+  series: SpectrumSeries[]
+  peakMarkers: SpectrumPeakMarker[]
+  bands: SpectrumFrequencyBand[]
+} {
+  const frequencies = new Float64Array(binCount)
+  const magnitudes = new Float64Array(binCount)
+  const sampleRateHz = 2048
+  const binWidth = sampleRateHz / (binCount * 2)
+
+  for (let i = 0; i < binCount; i++) {
+    const frequency = i * binWidth
+    const bearingPeak = gaussian(frequency, 73, 2.5) * 48
+    const gearMeshPeak = gaussian(frequency, 312, 6) * 34
+    const sideBand = gaussian(frequency, 328, 3.5) * 16
+    const floor = 2 + Math.abs(Math.sin(i / 29)) * 0.8 + Math.abs(Math.cos(i / 97)) * 0.45
+    frequencies[i] = frequency
+    magnitudes[i] = floor + bearingPeak + gearMeshPeak + sideBand
+  }
+
+  return {
+    series: [
+      {
+        key: 'vibration-spectrum',
+        label: 'Vibration spectrum',
+        frequencies,
+        magnitudes,
+        color: [0.48, 0.23, 0.93, 1],
+        lineWidth: 0.8,
+      },
+    ],
+    peakMarkers: [
+      {
+        key: 'bearing-outer-race',
+        frequency: 73,
+        magnitude: 50,
+        label: 'BPFO',
+      },
+      {
+        key: 'gear-mesh',
+        frequency: 312,
+        magnitude: 36,
+        label: 'mesh',
+      },
+    ],
+    bands: [
+      {
+        key: 'bearing-band',
+        label: 'Bearing',
+        frequencyStart: 68,
+        frequencyEnd: 78,
+      },
+      {
+        key: 'gear-band',
+        label: 'Gear mesh',
+        frequencyStart: 300,
+        frequencyEnd: 336,
+      },
+    ],
+  }
+}
+
+function gaussian(value: number, center: number, width: number): number {
+  const normalized = (value - center) / Math.max(Number.EPSILON, width)
+  return Math.exp(-0.5 * normalized * normalized)
 }
 
 function addQualityFlags<T extends { columns: Record<string, Float64Array> }>(
@@ -977,6 +1051,48 @@ scenarios['025_time_series_spc_tracks_10k'] = () => {
   return {
     scenario: '025_time_series_spc_tracks_10k',
     metric: `${trackCount} SPC tracks x ${subgroupCount.toLocaleString()} subgroups (${markerCount.toLocaleString()} rule markers, ${commandCount} commands)`,
+    value: Math.round(medianMs * 100) / 100,
+    unit: 'ms',
+    target,
+    passed: medianMs < target,
+  }
+}
+
+// ── SCENARIO 026: Spectrum precomputed-bin render planning ─
+
+scenarios['026_spectrum_1m_window_64k_bins'] = () => {
+  const sourceWindowSamples = 1_000_000
+  const binCount = 65_536
+  const data = generateSpectrumData(binCount)
+  const target = 25 // ms for one-million-sample source-window spectrum payload as 64k bins
+
+  const warmup = buildSpectrumRenderPlan(data, { baseline: 0 })
+  const warmupCommands = new RenderCommandList()
+  addSpectrumBandsToCommandList(warmupCommands, warmup)
+  addSpectrumToCommandList(warmupCommands, warmup)
+  addSpectrumPeakMarkersToCommandList(warmupCommands, warmup)
+
+  const times: number[] = []
+  let renderedBinCount = 0
+  let commandCount = 0
+  for (let i = 0; i < 5; i++) {
+    const start = performance.now()
+    const plan = buildSpectrumRenderPlan(data, { baseline: 0 })
+    const commands = new RenderCommandList()
+    addSpectrumBandsToCommandList(commands, plan)
+    addSpectrumToCommandList(commands, plan)
+    addSpectrumPeakMarkersToCommandList(commands, plan)
+    const elapsed = performance.now() - start
+    times.push(elapsed)
+    renderedBinCount = plan.renderedBinCount
+    commandCount = commands.sorted().length
+  }
+
+  const medianMs = median(times)
+
+  return {
+    scenario: '026_spectrum_1m_window_64k_bins',
+    metric: `${(sourceWindowSamples / 1e6).toFixed(0)}M-sample window as ${renderedBinCount.toLocaleString()} spectrum bins (${commandCount} commands)`,
     value: Math.round(medianMs * 100) / 100,
     unit: 'ms',
     target,

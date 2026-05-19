@@ -16,7 +16,7 @@ const VISUAL_BASELINE_PATH = resolve(HARNESS_DIR, 'visual-baselines.json')
 const VIEWPORT = { width: 1280, height: 900, deviceScaleFactor: 1 }
 const VISUAL_GRID = { columns: 24, rows: 12 }
 const DEFAULT_RENDERERS = ['canvas2d', 'webgpu']
-const DEFAULT_VERIFY_PROFILES = ['compact', 'bands', 'anomaly', 'spc']
+const DEFAULT_VERIFY_PROFILES = ['compact', 'bands', 'anomaly', 'spc', 'spectrum']
 const DEFAULT_VISUAL_PROFILES = ['compact', 'large']
 const DEFAULT_FPS_PROFILES = ['compact']
 const MIN_SIGNIFICANT_PIXELS = 90
@@ -178,13 +178,14 @@ try {
 
 async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
   const url = `${baseUrl}?renderer=${renderer}&profile=${profile}`
+  const expectedSurfaces = expectedChartSurfaceCount(profile)
   await tab.send('Page.navigate', { url })
   await waitForExpression(
     tab,
     `document.readyState === "complete" &&
       window.__PITANT_RENDER_HARNESS_STATE__?.renderer === ${JSON.stringify(renderer)} &&
       window.__PITANT_RENDER_HARNESS_STATE__?.profile === ${JSON.stringify(profile)} &&
-      document.querySelectorAll(".chart-surface").length === 2`,
+      document.querySelectorAll(".chart-surface").length === ${JSON.stringify(expectedSurfaces)}`,
     20_000,
   )
   await sleep(900)
@@ -277,8 +278,20 @@ function validateProfileState(state, profile) {
   if (profile !== 'spc' && state.analogSpcTracks !== 0) {
     errors.push(`Expected ${profile} profile to render 0 SPC tracks, got ${state.analogSpcTracks}.`)
   }
+  if (profile === 'spectrum' && state.spectrumBins !== 8192) {
+    errors.push(
+      `Expected spectrum profile to render 8192 spectrum bins, got ${state.spectrumBins ?? 'none'}.`,
+    )
+  }
+  if (profile !== 'spectrum' && state.spectrumBins !== 0) {
+    errors.push(`Expected ${profile} profile to render 0 spectrum bins, got ${state.spectrumBins}.`)
+  }
 
   return errors
+}
+
+function expectedChartSurfaceCount(profile) {
+  return profile === 'spectrum' ? 3 : 2
 }
 
 async function runFpsBenchmark(tab, renderer, profile) {

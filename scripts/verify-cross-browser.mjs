@@ -16,7 +16,7 @@ const FPS_FRAME_COUNT = 90
 const DEFAULT_BROWSERS = ['chromium', 'firefox', 'webkit']
 const DEFAULT_RENDERERS = ['canvas2d']
 const DEFAULT_PROFILES = ['compact']
-const SUPPORTED_PROFILES = ['compact', 'large', 'bands', 'anomaly', 'spc']
+const SUPPORTED_PROFILES = ['compact', 'large', 'bands', 'anomaly', 'spc', 'spectrum']
 
 const args = parseArgs(process.argv.slice(2))
 const browsers = args.browsers ?? DEFAULT_BROWSERS
@@ -94,14 +94,19 @@ async function verifyCase({ baseUrl, browserName, fps, profile, renderer }) {
     }
 
     const url = `${baseUrl}?renderer=${renderer}&profile=${profile}`
+    const expectedSurfaces = expectedChartSurfaceCount(profile)
     await page.goto(url, { waitUntil: 'domcontentloaded' })
     await page.waitForFunction(
-      ({ expectedProfile, expectedRenderer }) =>
+      ({ expectedProfile, expectedRenderer, expectedSurfaceCount }) =>
         document.readyState === 'complete' &&
         window.__PITANT_RENDER_HARNESS_STATE__?.renderer === expectedRenderer &&
         window.__PITANT_RENDER_HARNESS_STATE__?.profile === expectedProfile &&
-        document.querySelectorAll('.chart-surface').length === 2,
-      { expectedProfile: profile, expectedRenderer: renderer },
+        document.querySelectorAll('.chart-surface').length === expectedSurfaceCount,
+      {
+        expectedProfile: profile,
+        expectedRenderer: renderer,
+        expectedSurfaceCount: expectedSurfaces,
+      },
       { timeout: 20_000 },
     )
     await page.waitForTimeout(900)
@@ -196,6 +201,14 @@ function validateProfileState(state, profile) {
   if (profile !== 'spc' && state.analogSpcTracks !== 0) {
     errors.push(`Expected ${profile} profile to render 0 SPC tracks, got ${state.analogSpcTracks}.`)
   }
+  if (profile === 'spectrum' && state.spectrumBins !== 8192) {
+    errors.push(
+      `Expected spectrum profile to render 8192 spectrum bins, got ${state.spectrumBins ?? 'none'}.`,
+    )
+  }
+  if (profile !== 'spectrum' && state.spectrumBins !== 0) {
+    errors.push(`Expected ${profile} profile to render 0 spectrum bins, got ${state.spectrumBins}.`)
+  }
 
   return errors
 }
@@ -212,6 +225,10 @@ function launchBrowser(browserName, renderer) {
   if (browserName === 'webkit') return webkit.launch({ headless: true })
 
   throw new Error(`Unsupported browser "${browserName}"`)
+}
+
+function expectedChartSurfaceCount(profile) {
+  return profile === 'spectrum' ? 3 : 2
 }
 
 async function runFpsBenchmark(page, renderer, profile) {

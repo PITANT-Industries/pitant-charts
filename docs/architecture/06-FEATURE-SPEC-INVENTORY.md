@@ -85,20 +85,20 @@ Pitant use until it is at least `perf_browser`.
 | Normalize | 35% | 55% | 10% | validation tests, quality/gap viewport tests |
 | Transform | 68% | 22% | 10% | `LodPyramid`, `DataEngine`, derived-series columns, benchmarks |
 | Layout | 35% | 50% | 15% | `createChartLayout`, plot reservation, axis text tests |
-| Render | 79% | 11% | 10% | WebGPU, Canvas2D, command list, text overlay, TimeSeries value/envelope bands, derived overlays, anomaly score tracks, SPC control-limit tracks, persistent annotation/ruler overlays, and sparse event markers through the command-frame path |
+| Render | 82% | 8% | 10% | WebGPU, Canvas2D, command list, text overlay, TimeSeries value/envelope bands, derived overlays, anomaly score tracks, SPC control-limit tracks, persistent annotation/ruler overlays, sparse event markers, and precomputed-bin Spectrum command frames |
 | Interact | 82% | 6% | 12% | pointer, zoom, pan, keyboard, touch, DataZoom, crosshair, quality/gap/provenance tooltip tests, range-navigation helper tests, live-append interaction regression |
-| Compose | 70% | 25% | 5% | React primitives and tests |
+| Compose | 72% | 23% | 5% | React primitives, `TimeSeries`, `DigitalChannel`, `Spectrum`, and tests |
 | Synchronize | 65% | 25% | 10% | `ChartSyncGroup`, TimeSeries, DigitalChannel sync tests, cursor propagation benchmark |
 | Theme | 70% | 25% | 5% | token resolver and CSS |
 | Export | 75% | 15% | 10% | explicit PNG export options and true SVG export from command frames |
-| Benchmark | 97% | 0% | 3% | strict benchmark app gate, explicit CI benchmark profile, interaction range stress gate, cursor propagation gate, TimeSeries band benchmark, TimeSeries derived-series benchmark, TimeSeries anomaly-track benchmark, TimeSeries SPC-track benchmark, TimeSeries annotation/ruler benchmark, TimeSeries event-marker benchmark, browser FPS mode, browser screenshot verifier, TimeSeries bands/anomaly/SPC harness profiles, visual baseline, local Playwright Chromium/Firefox/WebKit smoke matrix |
+| Benchmark | 98% | 0% | 2% | strict benchmark app gate, explicit CI benchmark profile, interaction range stress gate, cursor propagation gate, TimeSeries band benchmark, TimeSeries derived-series benchmark, TimeSeries anomaly-track benchmark, TimeSeries SPC-track benchmark, TimeSeries annotation/ruler benchmark, TimeSeries event-marker benchmark, Spectrum one-million-window benchmark, browser FPS mode, browser screenshot verifier, TimeSeries bands/anomaly/SPC/Spectrum harness profiles, visual baseline, local Playwright Chromium/Firefox/WebKit smoke matrix |
 | Package | 90% | 0% | 10% | v1 package metadata, README files, package changelogs, MIT licenses, npm publish dry-run, expanded shadcn registry, registry validator, registry typecheck, shadcn smoke, live docs app, quick start |
 | Govern | 20% | 70% | 10% | architecture docs |
-| Performance Contract | 62% | 33% | 5% | LOD, interaction range, cursor propagation, TimeSeries band, TimeSeries derived-series, TimeSeries anomaly-track, TimeSeries SPC-track, TimeSeries annotation/ruler, TimeSeries event-marker, browser FPS benchmarks, and live-append interaction regression |
+| Performance Contract | 65% | 30% | 5% | LOD, interaction range, cursor propagation, TimeSeries band, TimeSeries derived-series, TimeSeries anomaly-track, TimeSeries SPC-track, TimeSeries annotation/ruler, TimeSeries event-marker, Spectrum precomputed-bin, browser FPS benchmarks, and live-append interaction regression |
 | GPU Hot Path | 35% | 55% | 10% | WebGPU context and shaders |
 | Worker Hot Path | 60% | 35% | 5% | `DataEngine`, `LodPyramid` |
 | Memory Budget | 30% | 60% | 10% | memory overhead and interaction heap-growth benchmarks |
-| Browser Matrix | 74% | 16% | 10% | Chrome CDP harness plus local Playwright Chromium, Firefox, and WebKit smoke; TimeSeries bands, anomaly, and SPC profiles covered in harness; Edge configured in CI but not locally verified |
+| Browser Matrix | 76% | 14% | 10% | Chrome CDP harness plus local Playwright Chromium, Firefox, and WebKit smoke; TimeSeries bands, anomaly, SPC, and Spectrum profiles covered in harness; Edge configured in CI but not locally verified |
 
 ## Performance Workload Model
 
@@ -116,7 +116,7 @@ a feature does not improve or preserve these scenarios, it is not v1 critical.
 | P1 evidence | signed/static replay window, export, no animation | Auditor, incident reviewer | pilot target |
 | P2 overlays | alarm bands, envelope bands, anomaly tracks | Reliability, quality | post-v1 or pilot |
 | P2 dense panels | 8-16 chart panels on one dashboard | Control room | post-v1 hardening |
-| P3 scientific packs | spectrogram, histogram, SPC, correlation | Specialist engineer | contract-only |
+| P3 scientific packs | spectrum, spectrogram, histogram, SPC, correlation | Specialist engineer | initial Spectrum pack; rest contract-only |
 
 ### Workload Use / Do Not Use Rules
 
@@ -150,7 +150,7 @@ decision, fixture, non-use boundary, and benchmark.
 | Capability histograms | Quality engineers evaluate Cp, Cpk, Pp, Ppk, spec limits, distribution shape, and outlier treatment. | The distribution is streaming live data without frozen sample boundaries or approved spec limits. | `capability-histogram-100k` | [Both] {Proof=signed; Workflow=approve; Sovereignty=tenant-bound; Autonomy=manual; Privacy=confidential; Liability=quality-impacting} |
 | Distribution charts | Analysts compare histogram, box, violin, percentile, density, or residual distributions. | Time ordering, causality, or event sequence is the primary question; use a trend or timeline instead. | `distribution-panel-1m` | [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review} |
 | Spectrogram | Vibration, audio, power, or process-frequency workflows need time-frequency heatmap inspection. | The signal has irregular cadence, missing sampling-rate metadata, or the user only needs a single FFT snapshot. | `spectrogram-tiles-60m` | [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=assisted; Privacy=telemetry-only; Liability=engineering-review} |
-| Spectrum and power spectrum | Specialists need frequency-domain peaks, harmonics, band power, or rotating equipment signatures. | The workflow needs time evolution of frequency content; use spectrogram instead. | `spectrum-1m-window` | [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review} |
+| Spectrum and power spectrum | Specialists need frequency-domain peaks, harmonics, band power, or rotating equipment signatures from a frozen upstream analysis window. | The workflow needs time evolution of frequency content, missing sample-rate/window metadata, or authoritative FFT/STFT computation inside `pitant-charts`; use spectrogram or analytics siblings instead. | `spectrum-1m-window` / `026_spectrum_1m_window_64k_bins` / harness `spectrum` | [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review} |
 | Bode and transfer response | Controls or process engineers compare gain/phase response for known stimulus and response signals. | The input/output pair is not validated, not synchronized, or would imply controller tuning authority. | `bode-response-fixture` | [Both] {Proof=checksum; Workflow=approve; Sovereignty=site-local; Autonomy=manual; Privacy=telemetry-only; Liability=engineering-review} |
 | Scatter plot | Analysts inspect relationship, clusters, operating envelopes, or residuals between two numeric variables. | Time order, excursions, or sequence explains the event; use linked trend plus brushing instead. | `scatter-500k-brush` | [Both] {Proof=checksum; Workflow=inspect; Sovereignty=site-local; Autonomy=assisted; Privacy=telemetry-only; Liability=engineering-review} |
 | Correlation matrix | Engineers compare many variable pairs to choose candidates for deeper investigation. | The user needs causality, lag discovery, or model explanation; hand off to analytics/model repos. | `correlation-matrix-128vars` | [Both] {Proof=checksum; Workflow=inspect; Sovereignty=tenant-bound; Autonomy=assisted; Privacy=confidential; Liability=engineering-review} |

@@ -1,5 +1,8 @@
 import type { RgbaColor } from '@pitant/charts'
 import {
+  Spectrum,
+  type SpectrumColumnData,
+  type SpectrumConfig,
   TimeSeries,
   type TimeSeriesAnnotationConfig,
   type TimeSeriesBandConfig,
@@ -182,6 +185,7 @@ interface SpcInsight {
 
 interface SpectrumBin {
   bin: number
+  frequency: number
   label: string
   magnitude: number
   width: number
@@ -2018,6 +2022,7 @@ function buildSpectrumBins(samples: readonly Sample[]): SpectrumBin[] {
 
     return {
       bin,
+      frequency,
       label: `${frequency.toFixed(2)} Hz`,
       magnitude,
       width: 0,
@@ -3115,6 +3120,7 @@ function buildSpectralEntropy(
     const frequency = bin / (Math.max(1, samples.length) * 0.5)
     return {
       bin,
+      frequency,
       label: `${frequency.toFixed(2)} Hz`,
       magnitude,
       width: 0,
@@ -3888,6 +3894,7 @@ function buildEnvelopeSpectrum(samples: readonly Sample[]): SpectrumBin[] {
 
     return {
       bin,
+      frequency,
       label: `${frequency.toFixed(2)} Hz`,
       magnitude: dftMagnitude(envelope, bin),
       width: 0,
@@ -3912,6 +3919,7 @@ function buildOrderTracking(samples: readonly Sample[], series: SeriesConfig): S
 
     return {
       bin: order,
+      frequency: order,
       label: `${order}x`,
       magnitude: dftMagnitude(phaseValues, order),
       width: 0,
@@ -5584,6 +5592,78 @@ function PitantTimeSeriesEnginePanel({
   )
 }
 
+interface PitantSpectrumEnginePanelProps {
+  displaySamples: readonly Sample[]
+}
+
+function PitantSpectrumEnginePanel({
+  displaySamples,
+}: PitantSpectrumEnginePanelProps): React.JSX.Element {
+  const bins = useMemo(() => buildSpectrumBins(displaySamples), [displaySamples])
+  const topBin = bins.reduce(
+    (current, candidate) => (candidate.magnitude > current.magnitude ? candidate : current),
+    bins[0] ?? { bin: 0, frequency: 0, label: '0.00 Hz', magnitude: 0, width: 0 },
+  )
+  const spectrumData = useMemo(() => buildPitantSpectrumData(bins), [bins])
+  const spectrumConfig = useMemo(() => buildPitantSpectrumConfig(topBin), [topBin])
+
+  return (
+    <section className="pitant-spectrum-panel" aria-label="PITANT Spectrum engine">
+      <div className="pitant-spectrum-header">
+        <div>
+          <p className="eyebrow">Scientific renderer</p>
+          <h3>Vibration Spectrum path</h3>
+        </div>
+        <dl className="pitant-spectrum-readout">
+          <div>
+            <dt>Peak</dt>
+            <dd>{topBin.label}</dd>
+          </div>
+          <div>
+            <dt>Bins</dt>
+            <dd>{bins.length}</dd>
+          </div>
+          <div>
+            <dt>Source window</dt>
+            <dd>{displaySamples.length.toLocaleString()} samples</dd>
+          </div>
+        </dl>
+      </div>
+
+      <Spectrum
+        ariaLabel="Vibration spectrum rendered by PITANT Spectrum"
+        aspectRatio={21 / 5}
+        chartKey="multiaxis-demo-spectrum"
+        className="pitant-spectrum-chart"
+        config={spectrumConfig}
+        data={spectrumData}
+        renderer="canvas2d"
+      >
+        {(chart) => (
+          <dl className="pitant-spectrum-stats" aria-label="Spectrum render statistics">
+            <div>
+              <dt>Path</dt>
+              <dd>PITANT Spectrum</dd>
+            </div>
+            <div>
+              <dt>Drawn</dt>
+              <dd>{chart.stats.renderedBinCount}</dd>
+            </div>
+            <div>
+              <dt>Peaks</dt>
+              <dd>{chart.stats.peakMarkerCount}</dd>
+            </div>
+            <div>
+              <dt>Render</dt>
+              <dd>{chart.stats.renderTime.toFixed(1)} ms</dd>
+            </div>
+          </dl>
+        )}
+      </Spectrum>
+    </section>
+  )
+}
+
 function App(): React.JSX.Element {
   const samples = useMemo(() => generateSamples(), [])
   const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode)
@@ -5896,6 +5976,8 @@ function App(): React.JSX.Element {
           overlays={overlays}
           selected={selected}
         />
+
+        <PitantSpectrumEnginePanel displaySamples={displaySamples} />
 
         {overlays.legend ? (
           <ScientificLegend
@@ -7718,15 +7800,111 @@ interface SpectrumPanelProps {
   bins: readonly SpectrumBin[]
 }
 
+function buildPitantSpectrumData(bins: readonly SpectrumBin[]): SpectrumColumnData {
+  const frequencies = new Float64Array(bins.length)
+  const magnitude = new Float64Array(bins.length)
+
+  for (let index = 0; index < bins.length; index++) {
+    const bin = bins[index]
+    frequencies[index] = bin?.frequency ?? 0
+    magnitude[index] = bin?.magnitude ?? 0
+  }
+
+  return {
+    frequencies,
+    columns: {
+      magnitude,
+    },
+  }
+}
+
+function buildPitantSpectrumConfig(topBin: SpectrumBin): SpectrumConfig {
+  const bandWidth = Math.max(0.01, topBin.frequency * 0.12)
+  return {
+    series: [
+      {
+        key: 'vibration-spectrum',
+        label: 'Vibration spectrum',
+        field: 'magnitude',
+        color: '#7e2f8e',
+        rgba: [0.49, 0.18, 0.56, 1],
+        fillRgba: [0.49, 0.18, 0.56, 0.22],
+        lineRgba: [0.49, 0.18, 0.56, 0.92],
+        lineWidth: 1.1,
+      },
+    ],
+    peakMarkers: [
+      {
+        key: 'dominant',
+        frequency: topBin.frequency,
+        magnitude: topBin.magnitude,
+        label: topBin.label,
+        rgba: [0.86, 0.15, 0.15, 0.86],
+      },
+    ],
+    bands: [
+      {
+        key: 'dominant-band',
+        frequencyStart: Math.max(0, topBin.frequency - bandWidth),
+        frequencyEnd: topBin.frequency + bandWidth,
+        label: 'Dominant band',
+        fillRgba: [0.86, 0.15, 0.15, 0.08],
+        lineRgba: [0.86, 0.15, 0.15, 0.3],
+      },
+    ],
+    xAxis: {
+      label: 'Hz',
+      formatValue: (value) => `${value.toFixed(2)}`,
+    },
+    yAxis: {
+      label: 'Magnitude',
+      baseline: 0,
+      paddingRatio: 0.12,
+    },
+  }
+}
+
 function SpectrumPanel({ bins }: SpectrumPanelProps): React.JSX.Element {
   const topBin = bins.reduce(
     (current, candidate) => (candidate.magnitude > current.magnitude ? candidate : current),
-    bins[0] ?? { bin: 0, label: '0.00 Hz', magnitude: 0, width: 0 },
+    bins[0] ?? { bin: 0, frequency: 0, label: '0.00 Hz', magnitude: 0, width: 0 },
   )
+  const spectrumData = useMemo(() => buildPitantSpectrumData(bins), [bins])
+  const spectrumConfig = useMemo(() => buildPitantSpectrumConfig(topBin), [topBin])
 
   return (
     <article className="workbench-panel">
       <PanelHeader index="08" meta={`peak ${topBin.label}`} title="Vibration spectrum" />
+      <div className="pitant-spectrum-engine">
+        <Spectrum
+          ariaLabel="Vibration spectrum rendered by PITANT Spectrum"
+          className="pitant-spectrum-surface"
+          config={spectrumConfig}
+          data={spectrumData}
+          renderer="canvas2d"
+        >
+          {(chart) => (
+            <dl className="pitant-spectrum-stats" aria-label="Spectrum render statistics">
+              <div>
+                <dt>Path</dt>
+                <dd>PITANT Spectrum</dd>
+              </div>
+              <div>
+                <dt>Bins</dt>
+                <dd>{chart.stats.renderedBinCount}</dd>
+              </div>
+              <div>
+                <dt>Peaks</dt>
+                <dd>{chart.stats.peakMarkerCount}</dd>
+              </div>
+              <div>
+                <dt>Render</dt>
+                <dd>{chart.stats.renderTime.toFixed(2)} ms</dd>
+              </div>
+            </dl>
+          )}
+        </Spectrum>
+      </div>
       <div className="spectrum-bars">
         {bins.map((bin) => (
           <div
