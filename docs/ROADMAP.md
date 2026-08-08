@@ -1,11 +1,28 @@
 # @pitant/charts Roadmap
 
 **Status:** Phase 5 release candidate closed; GitHub publish dry-run passed; Phase 6 planned
-**Last updated:** 2026-05-19
+**Last updated:** 2026-08-08
 **Imported source:** `/Users/ali/Pchart`
 **North star:** Replace SciChart inside Pitant Systems with a WebGPU-first,
 TypeScript-native charting library for industrial historian and scientific
 time-series workflows.
+
+## Platform alignment — accepted 2026-08-08
+
+`@pitant/charts` is the shared visualization package for one PITANT engineering
+console. The same chart and interaction primitives must run in `pitant-client`
+when delivered by `pitant-web` or by the later Tauri desktop host. Device
+editions, beginning with **PITANT Recorder Workspace — PRXXXX Edition**, compose
+these primitives; they do not fork the chart library or own a separate data
+store.
+
+The visual direction is dense engineering software: synchronized trends,
+quality/gap overlays, process-state bands, archive coverage, ingestion health,
+and evidence-aware exports. It deliberately avoids image-heavy dashboard
+assets; vector/canvas rendering, data-driven symbols, CSS tokens, and bounded
+fixture datasets remain the default. `pitant-charts` owns rendering and
+interaction performance, while Historian owns query/evidence semantics and the
+shared client owns workspace/navigation behavior.
 
 This file is the canonical execution roadmap. The older `plan/*.md` files stay
 as detailed design references, but new sessions should start here.
