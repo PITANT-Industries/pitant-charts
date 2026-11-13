@@ -1,0 +1,86 @@
+.cartesian-example, .cartesian-spark-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+.cartesian-plot { position: relative; min-height: 0; flex: 1; }
+.cartesian-point-crosshair { position: absolute; width: 2px; transform: translateX(-50%); background: linear-gradient(to bottom, var(--chart-1), var(--chart-3)); box-shadow: 0 0 10px var(--chart-2); pointer-events: none; }
+.cartesian-point-crosshair::before { content: ""; position: absolute; top: -3px; left: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--chart-1); }
+.cartesian-shadcn { width: 100%; height: 100%; min-height: 76px; }
+.cartesian-controls { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 1px 2px 9px; }
+.cartesian-controls button, .cartesian-controls select {
+  color: var(--foreground);
+  background: var(--card, var(--background));
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font: inherit;
+  font-size: 11px;
+  padding: 5px 8px;
+}
+.cartesian-controls button { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.cartesian-controls button:disabled { cursor: default; opacity: 0.45; }
+.cartesian-controls button:not(:disabled):hover, .cartesian-controls button[aria-pressed="true"] {
+  background: var(--muted);
+  border-color: var(--chart-2);
+}
+.cartesian-controls label { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted-foreground); }
+.cartesian-muted { color: var(--muted-foreground); font-size: 11px; }
+.cartesian-swatch, .cartesian-live i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: 0 0 7px; }
+.cartesian-live { display: flex; align-items: center; gap: 6px; padding: 0 0 3px 8px; font-size: 10px; color: var(--muted-foreground); }
+.cartesian-live i { background: var(--chart-1); }
+.cartesian-live strong { font-size: 11px; color: var(--foreground); font-variant-numeric: tabular-nums; }
+.cartesian-live .cartesian-pulse { animation: cartesian-pulse 1.25s ease-in-out infinite; }
+.cartesian-panels { display: grid; grid-auto-rows: minmax(50px, 1fr); height: 100%; width: 100%; min-height: 0; gap: 2px; }
+.cartesian-panels--multiples { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cartesian-panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.cartesian-panel > span { color: var(--muted-foreground); padding: 0 0 0 6px; font-size: 9px; line-height: 1.3; }
+.cartesian-panel > .chart-renderer { flex: 1; min-height: 0; }
+.cartesian-skeleton { position: relative; display: grid; height: 100%; min-height: 84px; place-items: center; overflow: hidden; }
+.cartesian-skeleton svg { width: 100%; height: 100%; }
+.cartesian-skeleton span { position: absolute; bottom: 3px; right: 5px; }
+.cartesian-skeleton::after {
+  position: absolute;
+  content: "";
+  inset: 0;
+  background: linear-gradient(115deg, transparent 29%, color-mix(in srgb, var(--card, var(--background)), transparent 30%) 50%, transparent 71%);
+  transform: translateX(-100%);
+  animation: cartesian-sweep 1.9s ease-in-out infinite;
+  pointer-events: none;
+}
+.cartesian-skeleton--pulse::after { display: none; }
+.cartesian-skeleton--pulse svg { animation: cartesian-pulse 1.25s ease-in-out infinite; }
+@keyframes cartesian-sweep { 75%, 100% { transform: translateX(100%); } }
+@keyframes cartesian-pulse { 50% { opacity: 0.37; } }
+.cartesian-table { border: 1px solid var(--border); border-radius: 8px; margin: 5px 3px 0; overflow: auto; flex: 0 1 auto; max-height: 45%; }
+.cartesian-table:only-child, .cartesian-controls + .cartesian-table { max-height: 100%; }
+.cartesian-table table { width: 100%; border-collapse: collapse; font-size: 11px; color: var(--foreground); }
+.cartesian-table th, .cartesian-table td { border-bottom: 1px solid var(--border); padding: 6px 9px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cartesian-table thead { position: sticky; top: 0; background: var(--card, var(--background)); }
+.cartesian-table thead th { color: var(--muted-foreground); font-weight: 550; }
+.cartesian-table tbody th { font-weight: 450; }
+.cartesian-table th:first-child { text-align: left; }
+.cartesian-table th:not(:first-child), .cartesian-table td { text-align: right; }
+.cartesian-row-active { background: var(--muted); }
+.cartesian-sparks { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); min-height: 0; flex: 1; gap: 8px; width: 100%; }
+.cartesian-sparks--single { grid-template-columns: 1fr; }
+.cartesian-sparks--matrix { grid-template-columns: repeat(4, minmax(0, 1fr)); overflow-y: auto; grid-auto-rows: minmax(35px, 1fr); gap: 4px; }
+.cartesian-sparks--table { grid-template-columns: 1fr; gap: 0; }
+.cartesian-spark-item { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.cartesian-sparks--table .cartesian-spark-item { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(100px, 2fr); align-items: center; border-bottom: 1px solid var(--border); }
+.cartesian-spark-caption { display: flex; align-items: baseline; flex-wrap: wrap; padding: 1px 3px 2px; gap: 5px; font-size: 9px; color: var(--muted-foreground); }
+.cartesian-spark-caption strong { color: var(--foreground); font-size: 14px; font-variant-numeric: tabular-nums; }
+.cartesian-spark-caption small { font-size: 9px; }
+.cartesian-spark { display: block; width: 100%; flex: 1; min-height: 0; min-width: 0; height: 100%; }
+.cartesian-sparks--table .cartesian-spark { height: 28px; }
+.cartesian-spark:focus-visible { outline: 1px solid var(--chart-1); border-radius: 4px; outline-offset: 2px; }
+.cartesian-spark rect { transition: opacity 140ms ease-out; }
+.cartesian-spark circle { transition: cx 220ms cubic-bezier(.19, 1.4, .35, 1), cy 220ms cubic-bezier(.19, 1.4, .35, 1); }
+.cartesian-spark--stiff circle { transition-duration: 110ms; }
+.cartesian-spark--none circle, .cartesian-spark--none rect { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .cartesian-live .cartesian-pulse, .cartesian-skeleton::after, .cartesian-skeleton--pulse svg { animation: none; }
+  .cartesian-spark circle, .cartesian-spark rect { transition: none; }
+}

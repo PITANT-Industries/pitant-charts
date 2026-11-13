@@ -1,0 +1,12 @@
+# Third-party notices
+
+| Source | Adaptations | License |
+| --- | --- | --- |
+| [shadcn/ui registry](https://github.com/shadcn-ui/ui) | Card slots and Recharts line, area and bar examples | [MIT](licenses/shadcn-ui-MIT.md) |
+| [Bklit UI](https://github.com/bklit/bklit-ui) | Gauge notch geometry, sunburst layout, and sign-sensitive line segments | [MIT](licenses/Bklit-UI-MIT.md) |
+| [Simplify Charts](https://github.com/simplifyingai/ui.simplifyingai.com) | Density estimation, box plot statistics, and waterfall accumulation | [MIT](licenses/Simplify-Charts-MIT.md) |
+| [EvilCharts registry](https://evilcharts.com/r/echarts-tooltip.json) | Shared chart tooltip and color treatment | [MIT](licenses/EvilCharts-MIT.txt) |
+
+The chart library uses React, Recharts, Apache ECharts, D3, TopoJSON and World Atlas. The gallery also uses Lucide icons and Geist fonts. Dependency license files are collected in `licenses/dependencies`. World Atlas geography is derived from Natural Earth public-domain data.
+
+Catalog names and links identify the [shadcn.io React chart gallery](https://www.shadcn.io/charts) used for comparison. The implementation is maintained independently.

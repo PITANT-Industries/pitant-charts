@@ -1,0 +1,120 @@
+.stat-demo {
+  color: var(--foreground);
+  width: 100%;
+  min-width: 0;
+}
+.stat-frame { position: relative; min-width: 0; }
+.stat-svg {
+  width: 100%;
+  max-height: 390px;
+  display: block;
+  overflow: visible;
+}
+.stat-compact .stat-svg { max-height: none; }
+.stat-svg:focus-visible, .stat-map-svg:focus-visible {
+  outline: 2px solid var(--chart-1);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+.stat-axis { fill: var(--muted-foreground); font-size: 11px; font-family: inherit; }
+.stat-hint {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, calc(-100% - 9px));
+  pointer-events: none;
+  color: var(--foreground);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 11px;
+  line-height: 1.5;
+  font-size: 12px;
+  min-width: max-content;
+  box-shadow: 0 5px 16px #0002;
+  font-variant-numeric: tabular-nums;
+}
+.stat-hint div:first-child { font-weight: 650; }
+.stat-hint div:not(:first-child) { color: var(--muted-foreground); }
+.stat-controls { display: flex; justify-content: flex-end; margin: 0 0 6px; gap: 8px; flex-wrap: wrap; }
+.stat-control {
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.stat-control[aria-pressed="true"], .stat-control:hover { background: var(--muted); }
+.stat-control:focus-visible, .stat-legend button:focus-visible { outline: 2px solid var(--chart-1); outline-offset: 2px; }
+.stat-legend {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 12px;
+  flex-wrap: wrap;
+  min-height: 23px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.stat-legend button, .stat-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.stat-legend button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 3px;
+  cursor: pointer;
+}
+.stat-legend button[aria-pressed="false"] { opacity: .45; text-decoration: line-through; }
+.stat-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 3px; background: var(--legend-color); }
+.stat-compact .stat-legend { font-size: 9px; gap: 4px 8px; }
+.stat-loading .stat-load {
+  fill: var(--muted-foreground);
+  stroke: var(--muted-foreground);
+  pointer-events: none;
+  animation: stat-pulse 1.55s ease-in-out infinite alternate;
+}
+@keyframes stat-pulse { from { opacity: .13; } to { opacity: .31; } }
+.stat-map-pan { cursor: grab; touch-action: pan-y; }
+.stat-map-pan:active { cursor: grabbing; }
+.stat-map-pulse { animation: stat-pulse-marker 2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes stat-pulse-marker { 0% { opacity: .8; transform: scale(.8); } 75%, 100% { opacity: 0; transform: scale(2.3); } }
+.stat-map-viewport { transition: transform .36s ease; }
+.stat-heat-scroll { overflow-x: auto; scrollbar-color: var(--border) transparent; }
+.stat-heat-scale { transition: opacity .15s, transform .15s; transform-box: fill-box; transform-origin: center; }
+.stat-heat-gradient { border-radius: 4px; width: 110px; height: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  .stat-loading .stat-load, .stat-map-pulse { animation: none; opacity: .23; }
+  .stat-map-viewport, .stat-heat-scale { transition: none; }
+}
+.stat-canvas { display: flex; flex-direction: column; height: 100%; }
+.stat-canvas .chart-renderer { flex: 1 1 auto; min-height: 165px; }
+.chart-preview--compact .stat-canvas .chart-renderer { min-height: 0; }
+.stat-heat-scroll { position: relative; }
+.stat-heat-sticky {
+  position: sticky;
+  left: 0;
+  height: 0;
+  width: 38px;
+  z-index: 1;
+  display: grid;
+  padding-top: 25px;
+  pointer-events: none;
+}
+.stat-heat-sticky span {
+  display: grid;
+  height: 24px;
+  padding-right: 10px;
+  place-items: center end;
+  background: var(--card, var(--background));
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.stat-heat-scroll svg { margin-top: -25px; }
+.stat-ready { animation: stat-appear .42s ease-out both; }
+@keyframes stat-appear { from { opacity: .22; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .stat-ready { animation: none; }
+}
