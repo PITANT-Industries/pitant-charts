@@ -123,7 +123,9 @@ export function useChoroplethCameraMotion({ active, width, height, target, tilt,
   useLayoutEffect(() => {
     stop();
     const config = latest.current;
-    frame.current = { ...config.target, tilt: config.tilt, yaw: config.pointer && preference.current?.matches ? 0 : config.yaw };
+    // Projection changes reset the zoom immediately; angle changes can still
+    // fly from the current orientation in the effect below.
+    frame.current = { ...config.target, tilt: frame.current.tilt, yaw: frame.current.yaw };
     viewTarget.current = config.target;
     write();
   }, [width, height]);

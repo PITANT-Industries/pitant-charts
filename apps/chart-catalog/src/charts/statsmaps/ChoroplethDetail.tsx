@@ -66,6 +66,7 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
   const [focus, setFocus] = useState<Target>();
   const [hover, setHover] = useState<{ target: Target; point: Coordinate }>();
   const [selection, setSelection] = useState<Target>();
+  const selectionSize = useRef<{ width: number; height: number } | null>(null);
   const projection = useMemo(() => detailProjection(width, height), [width, height]);
   const model = useMemo(() => {
     const path = geoPath(projection);
@@ -102,8 +103,9 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
     }));
   }, [flyable, infrastructure, projection]);
   const active = hover?.target ?? focus;
-  const selectedTarget = selection && (selection.marker === undefined ? model.areas.find(target => target.name === selection.name)
-    : markerData[selection.marker]);
+  const selectedTarget = selection && selectionSize.current?.width === width && selectionSize.current?.height === height
+    ? selection.marker === undefined ? model.areas.find(target => target.name === selection.name) : markerData[selection.marker]
+    : undefined;
   const view = selectedTarget ? "view" in selectedTarget ? selectedTarget.view
     : { cx: selectedTarget.at[0], cy: selectedTarget.at[1], k: dots ? 2 : 4 }
     : { cx: width / 2, cy: height / 2, k: 1 };
@@ -120,6 +122,7 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
     : undefined;
 
   useEffect(() => {
+    selectionSize.current = null;
     setCamera(rest);
     setPitch(0);
     setSelection(undefined);
@@ -161,6 +164,7 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
   }, [compact, pannable, plot]);
 
   function reset() {
+    selectionSize.current = null;
     setCamera(rest);
     setPitch(0);
     setSelection(undefined);
@@ -171,6 +175,7 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
   function fly(target: Target) {
     if (!flyable || compact || didDrag.current) return;
     if (selection?.name === target.name) { reset(); return; }
+    selectionSize.current = { width, height };
     setSelection(target);
     setHover(current => current?.target.name === target.name ? current : undefined);
     setFocus(current => current?.name === target.name ? current : undefined);
@@ -280,7 +285,7 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
   const [summary, description] = mapCaptions[variant];
   return <div className="choropleth-detail" data-choropleth={variant} data-compact={compact}>
     <div ref={plot} className="choropleth-stage" data-pannable={pannable} data-flying={flyable}
-      data-selected={selection?.name} onPointerDown={down} onPointerMove={move} onPointerUp={end}
+      data-selected={selectedTarget?.name} onPointerDown={down} onPointerMove={move} onPointerUp={end}
       onPointerCancel={end} onPointerLeave={event => { if (!drag.current?.moved) end(event); if (event.pointerType !== "touch") setHover(undefined); setPitch(0); }}>
       {(background || pointerCamera) && <svg className="choropleth-backdrop" aria-hidden="true" viewBox={`0 0 ${width} ${height}`} data-map-backdrop="" opacity={selection && pointerCamera ? 0 : 1}>
         <defs><pattern id={`${id}-backdrop`} width="6" height="6" patternUnits="userSpaceOnUse">
