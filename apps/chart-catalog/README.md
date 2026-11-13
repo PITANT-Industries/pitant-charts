@@ -12,7 +12,7 @@ The gallery uses Hanken Grotesk, neutral surfaces, and a blue accent in both the
 
 Search within **Parity review** to find checked behavior and remaining gaps by keyword. Copy the URL while **Compare** or **Code** is selected to share that view of the variant.
 
-[Component index and progress](https://chatgpt.com/space/page_158565692cf88191bb821bf62112a8d1)
+The header’s **Component index** opens the gallery’s built-in Parity review. It works without a connected workspace account. [Source index and verification progress](PARITY.md)
 
 ## Use the React library
 
