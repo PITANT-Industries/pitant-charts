@@ -5,7 +5,7 @@ import styles from "./donut.module.css";
 const numberFormat: Format = { maximumFractionDigits: 1 };
 const currencyFormat: Format = { style: "currency", currency: "USD", maximumFractionDigits: 0 };
 
-export function CircularCenter({ center, size, value, label, currency, animated, fontSize, labelSize = 12, color, share, useCustom, children }: {
+export function CircularCenter({ center, size, value, label, currency, animated, fontSize, labelSize = 12, color, share, useCustom, children, format = currency ? currencyFormat : numberFormat }: {
   center: number;
   size: number;
   value: number;
@@ -18,8 +18,8 @@ export function CircularCenter({ center, size, value, label, currency, animated,
   share?: string;
   useCustom?: boolean;
   children?: ReactNode;
+  format?: Format;
 }) {
-  const format = currency ? currencyFormat : numberFormat;
   return <foreignObject x={center - size / 2} y={center - size / 2} width={size} height={size} pointerEvents="none" aria-hidden={useCustom ? undefined : true}>
     <div className={styles.circularCenter} data-circular-center="">
       {useCustom ? children : <>

@@ -1,25 +1,53 @@
-.frame { display: grid; width: 100%; height: 100%; min-height: 0; align-content: center; justify-items: center; container-type: inline-size; overflow: auto; }
-.plot { width: 100%; height: auto; max-height: 100%; min-height: 0; display: block; }
+.frame {
+  display: grid;
+  width: 100%;
+  min-height: 0;
+  justify-items: center;
+  align-items: center;
+  container-type: inline-size;
+}
+.frame[data-radial-compact] { height: 100%; }
+.plot { width: 100%; height: auto; min-height: 0; display: block; overflow: visible; font-family: inherit; }
+[data-radial-compact] .plot { max-height: 100%; }
 .plot:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; border-radius: .5rem; }
-.readout { fill: var(--foreground); font-variant-numeric: tabular-nums; font-weight: 650; }
-.caption { fill: var(--muted-foreground); }
-.key { display: flex; justify-content: center; flex-wrap: wrap; gap: .25rem .65rem; min-height: 0; padding: .2rem .6rem .3rem; color: var(--muted-foreground); font-size: .72rem; }
+.center {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  inline-size: 100%;
+  block-size: 100%;
+  gap: clamp(2px, calc(var(--radial-center-size) * .025), 6px);
+  text-align: center;
+  line-height: 1.2;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(10px, calc(var(--radial-center-size) * .07), 17px);
+}
+.center strong { color: var(--foreground); font-size: clamp(20px, calc(var(--radial-center-size) * .17), 44px); letter-spacing: -.03em; line-height: 1; }
+.center[data-temperature] strong { font-size: clamp(19px, calc(var(--radial-center-size) * .16), 44px); }
+.center[data-temperature] span:nth-last-child(-n+2) { font-size: .84em; }
+.key { display: flex; justify-content: center; flex-wrap: wrap; gap: .25rem .65rem; min-height: 0; padding: .4rem .6rem; color: var(--muted-foreground); font-size: .8rem; }
 .key span { white-space: nowrap; }
 .key strong { color: var(--foreground); font-variant-numeric: tabular-nums; }
 .key button { display: inline-flex; align-items: center; gap: .32rem; border: 0; border-radius: .3rem; background: transparent; color: inherit; font: inherit; padding: .28rem .38rem; }
 .key button[data-active='true'] { background: var(--muted); color: var(--foreground); }
 .key i { display: inline-block; border-radius: .13rem; width: .55rem; height: .55rem; }
-.withKey { grid-template-rows: minmax(0, 1fr) auto; }
-.withKey .plot { height: 100%; max-height: 100%; }
-.withSide { grid-template: minmax(0, 1fr) / minmax(8rem, .9fr) minmax(0, 1fr); align-items: center; gap: .4rem; }
-.cardMetrics { width: 100%; padding: .35rem .65rem; box-sizing: border-box; }
-.cardReadout { display: grid; gap: .2rem; padding-block-end: .45rem; border-block-end: 1px solid var(--border); }
-.cardReadout strong { color: var(--foreground); font-size: clamp(1rem, 3.5cqi, 2rem); font-weight: 650; font-variant-numeric: tabular-nums; }
-.cardReadout span { color: var(--muted-foreground); font-size: .72rem; }
-.cardMetrics .key { display: grid; justify-content: stretch; gap: .35rem; padding: .55rem 0 0; }
-.cardMetrics .key span { display: flex; justify-content: space-between; gap: .35rem; white-space: normal; }
-@media (max-width: 460px) {
-  .withSide { grid-template: minmax(0, 1fr) auto / minmax(0, 1fr); }
-  .cardMetrics { max-width: 20rem; }
-  .cardReadout { display: flex; align-items: baseline; gap: .45rem; }
+.frame[data-radial-activity] .plot { width: min(100%, 220px); }
+.frame[data-radial-seasonal] .plot { width: min(100%, 240px); }
+.cardMetrics { width: min(100%, 390px); padding: .5rem 0; }
+.cardReadout { display: grid; gap: .2rem; padding-block-end: .65rem; border-block-end: 1px solid var(--border); }
+.cardReadout strong { color: var(--foreground); font-size: 1.875rem; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.04em; }
+.cardReadout span { color: var(--muted-foreground); font-size: .75rem; }
+.cardMetrics .key { display: grid; justify-content: stretch; gap: .375rem; padding: .65rem 0 0; }
+.cardMetrics .key span { display: flex; align-items: center; gap: .4rem; white-space: normal; }
+.cardMetrics .key strong { margin-inline-start: auto; }
+.halo { paint-order: stroke; stroke: var(--background); stroke-width: 3px; stroke-linejoin: round; }
+@container (min-width: 480px) {
+  .frame[data-radial-activity] > .plot, .frame[data-radial-seasonal] > .plot { grid-area: 1 / 1; justify-self: start; }
+  .frame[data-radial-activity] > .cardMetrics { grid-area: 1 / 1; justify-self: end; width: calc(100% - 244px); }
+  .frame[data-radial-seasonal] > .cardMetrics { grid-area: 1 / 1; justify-self: end; width: calc(100% - 264px); }
 }
+@media (prefers-reduced-motion: no-preference) {
+  .areaEntrance { animation: radial-area-enter 420ms ease-out both; }
+}
+@keyframes radial-area-enter { from { opacity: .25; } to { opacity: 1; } }

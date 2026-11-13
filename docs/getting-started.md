@@ -124,7 +124,7 @@ For a line or bar example, use `data={{ categories: ['Jan', 'Feb'], series: [{ n
 
 Use `getExample(slug)` to look up a variant and `getFamily(id)` to list its family. The `examples`, `families`, and `groups` exports let you build your own index. `renderCenter` receives the active name, value, total, and share for donut and ring variants. Some rings also provide a target. `renderTooltip` is available on Tooltip family examples and receives the category, sample index, pin state, and current and previous series values. [Catalog usage and types](../apps/chart-catalog/README.md) · [Public type definitions](../apps/chart-catalog/src/types.ts)
 
-The catalog contains 320 chart examples across 44 families plus 11 tooltip examples. All 331 rendered in Chrome at desktop and mobile widths in both themes in the v0.7.0 release checks. Compare plot sizing was measured for 76 examples. Exact styling, motion, and interactions remain open where the parity notes record gaps. [Parity status](../apps/chart-catalog/PARITY.md) · [Measured examples](https://chart-library-catalog.stony-boar-2041.chatgpt.site/#review=measured)
+The catalog contains 320 chart examples across 44 families plus 11 tooltip examples. The parity audit covers rendering in Chrome at desktop and mobile widths in both themes. **With measured plot sizing** shows the variants whose Compare dimensions have been checked. Exact styling, motion, and interactions remain open where the parity notes record gaps. [Parity status](../apps/chart-catalog/PARITY.md) · [Measured examples](https://chart-library-catalog.stony-boar-2041.chatgpt.site/#review=measured)
 
 ## Plot an industrial trend
 
