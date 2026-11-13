@@ -29,7 +29,11 @@ export function comparisonPlot(example: ChartExample) {
   if (example.family === 'radial') return 'radial'
   if (example.family === 'gauge') return 'gauge'
   if (example.family === 'funnel') return 'funnel'
-  if (['sparkline', 'sunburst', 'treemap', 'tree', 'network', 'gantt'].includes(example.family)) return 'intrinsic'
+  if ([
+    'sparkline', 'sunburst', 'treemap', 'tree', 'network', 'gantt',
+    'uncertainty', 'bump', 'slope', 'waffle', 'marimekko', 'stream', 'diverging', 'choropleth',
+    'bubble-map', 'route-map', 'globe', 'vector-field',
+  ].includes(example.family)) return 'intrinsic'
   if (example.family === 'pie') return 'pie'
   if (example.family === 'ring') return example.id === 'ring-default' ? 'ring-default' : 'ring'
   return undefined
