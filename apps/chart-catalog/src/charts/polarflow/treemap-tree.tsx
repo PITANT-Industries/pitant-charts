@@ -1,6 +1,9 @@
 import { Button } from "@ui-sdk/react/button";
 import { useId, useState, type KeyboardEvent } from "react";
 import { useChartTheme } from "../theme";
+import { CartesianReadout } from "../cartesian/CartesianFocus";
+import { demoTreeLayout, treePlaceholderLabels, type TreeMark } from "./tree-layout";
+import detail from "./tree-network-detail.module.css";
 import { dollars, number, short, tone, type Props } from "./shared";
 import { hierarchyShare, selectMark, useChartLoading, usePlotSize } from "./hierarchy-interaction";
 import type { SunburstNode } from "./upstream/sunburst-data";
@@ -158,8 +161,6 @@ export function Treemap({ example, compact, data }: Props) {
   </div>;
 }
 
-type TreeMark = { id: string; path: string[]; node: SunburstNode; parent: TreeMark | undefined; depth: number; group: number; order: number; angle: number; x: number; y: number; folded: number };
-
 function descendants(node: SunburstNode): number {
   return node.children?.reduce((total, child) => total + 1 + descendants(child), 0) ?? 0;
 }
@@ -225,14 +226,19 @@ export function Tree({ example, compact, data }: Props) {
   const fixture = treeFixtures[example.id] ?? treeFixtures["tree-default"];
   const root = data?.rows ? { name: fixture.name, children: readHierarchy(data.rows) } : fixture;
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set(mode === "top" && !data ? ["1"] : []));
-  const [hover, setHover] = useState<number | null>(null);
+  const [activeId, setActive] = useState<string | null>(null);
   const size = usePlotSize<SVGSVGElement>(448, 448);
-  const viewWidth = mode === "radial" ? size.width : width;
-  const viewHeight = mode === "radial" ? size.height : height;
-  const { nodes, cx, cy } = treeLayout(root, collapsed, mode, viewWidth, viewHeight);
-  const active = hover === null ? undefined : nodes[hover];
+  const reference = !data && !compact;
+  const viewWidth = reference || mode === "radial" ? size.width : width;
+  const viewHeight = reference || mode === "radial" ? size.height : height;
+  const { nodes, cx, cy } = reference
+    ? demoTreeLayout(root, collapsed, mode, viewWidth, viewHeight, loading)
+    : treeLayout(root, collapsed, mode, viewWidth, viewHeight);
+  const index = nodes.findIndex(mark => mark.id === activeId);
+  const active = nodes[index];
   const label = mode === "top" ? "Views" : mode === "radial" ? "Installs" : hasDemo ? "Pages" : "Headcount";
   const unit = mode === "top" ? "k views" : mode === "radial" ? "k a week" : hasDemo ? " pages" : " people";
+
   function toggle(mark: TreeMark) {
     if (!mark.node.children?.length) return;
     setCollapsed(previous => {
@@ -241,53 +247,93 @@ export function Tree({ example, compact, data }: Props) {
       return next;
     });
   }
+
   function onKey(event: KeyboardEvent<SVGSVGElement>) {
-    if ((event.key === "Enter" || event.key === " ") && active?.node.children?.length) { event.preventDefault(); toggle(active); return; }
-    selectMark(event, hover, nodes.length, setHover);
+    if ((event.key === "Enter" || event.key === " ") && active?.node.children?.length) {
+      event.preventDefault();
+      toggle(active);
+      return;
+    }
+    selectMark(event, index < 0 ? null : index, nodes.length, next => setActive(next === null ? null : nodes[next].id));
   }
-  return <div className={styles.frame}>
+
+  function near(mark: TreeMark) {
+    if (!active) return true;
+    const length = Math.min(mark.path.length, active.path.length);
+    return mark.path.slice(0, length).every((name, index) => name === active.path[index]);
+  }
+
+  const activeColor = active && active.group >= 0 ? tone(theme, active.group, active.node.color) : theme.muted;
+  const rows = active ? [
+    { name: label, value: `${reference ? sumValues(active.node) : number.format(sumValues(active.node))}${unit}`, color: activeColor },
+    ...(active.folded ? [{ name: "Folded", value: `${active.folded} nodes`, color: activeColor }]
+      : active.node.children?.length ? [{ name: "Children", value: active.node.children.length, color: activeColor }] : []),
+  ] : [];
+  const tipOnRight = active && active.x + 176 < viewWidth;
+  const tipTop = active ? Math.max(0, Math.min(viewHeight - (rows.length === 2 ? 86 : 62), active.y - (rows.length === 2 ? 43 : 31))) : 0;
+
+  return <div className={`${styles.frame} ${reference ? detail.detailFrame : ""}`}>
     {control}
-    <div className={`${styles.graph} ${charts.measuredGraph} ${mode === "radial" ? charts.measuredRadial : ""}`}>
-      <svg ref={mode === "radial" ? size.plot : undefined} className={`${styles.native} ${charts.plot}`} viewBox={`0 0 ${viewWidth} ${viewHeight}`} role="img" aria-roledescription="chart" aria-label={example.title}
-        aria-busy={loading || undefined} tabIndex={compact || loading ? undefined : 0} onBlur={() => setHover(null)} onPointerLeave={() => setHover(null)} onKeyDown={onKey}>
+    <div className={`${styles.graph} ${reference ? detail.treeGraph : ""}`} data-mode={mode}>
+      <svg ref={reference || mode === "radial" ? size.plot : undefined} className={`${styles.native} ${charts.plot}`} viewBox={`0 0 ${viewWidth} ${viewHeight}`} role="img" aria-roledescription="chart" aria-label={example.title}
+        aria-busy={loading || undefined} tabIndex={compact || loading ? undefined : 0} onBlur={() => setActive(null)} onPointerLeave={event => {
+          if (event.pointerType !== "touch") setActive(null);
+        }} onKeyDown={onKey}>
         {nodes.map((mark, index) => {
           if (!mark.parent) return null;
-          const near = !active || active.path.slice(0, mark.path.length).join("/") === mark.path.join("/") || mark.parent.id === active.id;
           const color = tone(theme, mark.group);
           return <path key={mark.id} data-mark="tree-edge" data-node={mark.node.name} d={treeEdge(mark, mark.parent, mode, cx, cy)} fill="none" pathLength="1"
-            stroke={loading ? theme.grid : mode === "radial" ? `color-mix(in oklab, ${color} 55%, ${theme.surface})` : color} strokeWidth={mode === "radial" ? 1.5 : 1.6} opacity={near ? mode === "radial" ? 1 : .62 : .2}
+            stroke={loading ? reference ? theme.text : theme.grid : reference || mode === "radial" ? `color-mix(in oklab, ${color} 55%, ${theme.surface})` : color}
+            strokeWidth={reference || mode === "radial" ? 1.5 : 1.6} strokeOpacity={loading && reference ? .2 : undefined}
+            opacity={loading && reference ? .7 : near(mark) ? reference || mode === "radial" ? 1 : .62 : reference ? .4 : .2}
             className={loading ? charts.bone : hasDemo ? charts.draw : undefined} style={hasDemo ? { animationDelay: `${index * 19}ms` } : undefined} />;
         })}
         {nodes.map((mark, index) => {
           const { node, x, y, folded, group } = mark;
           const branch = !!node.children?.length;
+          const inner = branch && !folded;
           const color = group < 0 ? theme.text : tone(theme, group, node.color);
           const radial = mode === "radial";
-          const leaf = !branch && mark.depth > 0;
+          const leaf = !inner && mark.depth > 0;
           const angle = mark.angle;
           const radialLeft = Math.cos(angle) < -1e-9;
           const labelOffset = radial ? group < 0 ? 0 : leaf ? 12.5 : 16.5 : 0;
-          const textX = x + (radial ? Math.cos(angle) * labelOffset : mode === "top" ? 0 : 9);
-          const textY = y + (radial ? group < 0 ? -13.5 : Math.sin(angle) * labelOffset : mode === "top" ? -10 : 3.5);
-          const textAnchor = radial ? leaf ? radialLeft ? "end" : "start" : "middle" : mode === "top" ? "middle" : "start";
+          const xOffset = reference ? inner ? -12.5 : 12.5 : 9;
+          const textX = x + (radial ? Math.cos(angle) * labelOffset : mode === "top" ? 0 : xOffset);
+          const textY = y + (radial ? group < 0 ? -13.5 : Math.sin(angle) * labelOffset : mode === "top" ? reference ? inner ? -13 : 17 : -10 : reference ? 1 : 3.5);
+          const textAnchor = radial ? leaf ? radialLeft ? "end" : "start" : "middle" : mode === "top" ? "middle" : reference && inner ? "end" : "start";
           const rotation = radial && leaf ? `rotate(${angle * 180 / Math.PI + (radialLeft ? 180 : 0)} ${textX} ${textY})` : undefined;
+          const radius = reference ? loading ? group < 0 ? 6 : 5 : (mode === "top" ? 5 : 4.5) + (folded ? 1.5 : 0)
+            : active === mark || !radial && group < 0 ? 6 : 4.5;
+          const ghostWidth = reference ? treePlaceholderLabels[index] : Math.min(78, 17 + node.name.length * 3);
           return <g key={mark.id} data-mark={loading ? "tree-bone" : "tree-node"} data-node={node.name} data-folded={folded || undefined}
+            opacity={loading && reference ? .7 : reference && !near(mark) ? .4 : undefined}
             className={`${branch && !compact && !loading ? charts.mark : ""} ${loading ? charts.bone : hasDemo ? charts.reveal : ""}`}
             style={hasDemo ? { animationDelay: `${index * 19}ms` } : undefined}
-            onPointerEnter={!loading && !compact ? () => setHover(index) : undefined}
-            onClick={branch && !loading && !compact ? () => toggle(mark) : undefined}>
-            <circle cx={x} cy={y} r={active === mark || !radial && group < 0 ? 6 : 4.5} fill={loading ? theme.grid : branch && !folded && group >= 0 ? theme.surface : color} stroke={loading ? theme.grid : color} strokeWidth="1.4" />
-            {loading ? <rect x={x + 10} y={y - 3} width={Math.min(78, 17 + node.name.length * 3)} height="6" rx="3" fill={theme.grid} /> :
-              <text x={textX} y={textY} textAnchor={textAnchor} transform={rotation} dominantBaseline={radial ? "middle" : undefined} fill={radial && branch ? theme.muted : theme.text}
-                fontSize={radial ? compact ? 9 : 12 : 11} fontWeight={radial ? 500 : branch ? 600 : 450} stroke={theme.surface} strokeWidth="1.8" paintOrder="stroke">{node.name}{folded ? ` +${folded}` : ""}</text>}
+            onPointerEnter={!loading && !compact ? () => setActive(mark.id) : undefined}
+            onPointerDown={!loading && !compact ? event => { if (event.pointerType === "touch") setActive(mark.id); } : undefined}
+            onClick={branch && !loading && !compact ? () => { setActive(mark.id); toggle(mark); } : undefined}>
+            <circle cx={x} cy={y} r={radius} fill={loading ? reference ? theme.text : theme.grid : inner && group >= 0 ? theme.surface : color}
+              fillOpacity={loading && reference ? .2 : undefined}
+              stroke={loading && reference ? undefined : reference && group < 0 ? theme.surface : loading ? theme.grid : color}
+              strokeWidth={loading && reference ? undefined : reference ? branch ? 2 : 0 : "1.4"} />
+            {loading ? <rect data-mark="tree-bone-label" x={reference && inner ? x - ghostWidth - (group < 0 ? 14 : 13) : x + (reference ? 13 : 10)}
+              y={y - 3} width={ghostWidth} height={reference ? 8 : 6} rx={reference ? 4 : 3} fill={reference ? theme.text : theme.grid} fillOpacity={reference ? .2 : undefined} /> :
+              <text x={textX} y={textY} textAnchor={textAnchor} transform={rotation} dominantBaseline={reference || radial ? "middle" : undefined}
+                fill={reference && inner || radial && branch ? theme.muted : theme.text}
+                fontSize={reference ? 12 : radial ? compact ? 9 : 12 : 11} fontWeight={reference ? inner ? 500 : 400 : radial ? 500 : branch ? 600 : 450}
+                stroke={theme.surface} strokeWidth={reference ? 3 : "1.8"} paintOrder="stroke">{node.name}{folded ? ` +${folded}` : ""}</text>}
           </g>;
         })}
       </svg>
-      {!compact && !loading && active && <div className={`${charts.tip} ${charts.floating}`} role="status"><strong>{active.path.slice(active.depth ? 1 : 0).join(" / ")}</strong>
-        <span>{label}</span><b>{number.format(sumValues(active.node))}{unit}</b>
-        {!!active.folded ? <><span>Folded</span><b>{active.folded} nodes</b></> : !!active.node.children?.length ? <><span>Children</span><b>{active.node.children.length}</b></> : null}
-      </div>}
+      {!compact && !loading && active && (reference
+        ? <div className={detail.positionedTip} style={{ top: tipTop, left: tipOnRight ? active.x + 16 : undefined, right: tipOnRight ? undefined : viewWidth - active.x + 16 }}>
+          <CartesianReadout label={active.path.slice(active.depth ? 1 : 0).join(" / ")} entries={rows} />
+        </div>
+        : <div className={`${charts.tip} ${charts.floating}`} role="status"><strong>{active.path.slice(active.depth ? 1 : 0).join(" / ")}</strong>
+          {rows.map(row => <div key={row.name} style={{ display: "contents" }}><span>{row.name}</span><b>{row.value}</b></div>)}
+        </div>)}
     </div>
-    {!compact && <p className={styles.hint}>{loading ? "Fetching the site map…" : mode === "radial" ? `${short.format(sumValues(root) * 1000)} weekly installs across ${root.children?.length ?? 0} categories` : `${number.format(sumValues(root))}${unit} across ${root.children?.length ?? 0} groups`}</p>}
+    {!compact && (loading || !reference) && <p className={styles.hint}>{loading ? "Fetching the site map…" : mode === "radial" ? `${short.format(sumValues(root) * 1000)} weekly installs across ${root.children?.length ?? 0} categories` : `${number.format(sumValues(root))}${unit} across ${root.children?.length ?? 0} groups`}</p>}
   </div>;
 }

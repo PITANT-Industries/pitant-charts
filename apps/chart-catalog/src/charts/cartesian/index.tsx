@@ -20,6 +20,8 @@ import { isLineTable, LineTableDetail } from "./LineTableDetail";
 import { LineSyncExportDetail } from "./LineSyncExportDetail";
 import { LineZoomDetail } from "./LineZoomDetail";
 import { isLineBrushVariant, LineBrushDetail } from "./LineBrushDetail";
+import { GanttDetail } from "./GanttDetail";
+import { schedules, type ScheduleVariant } from "./gantt-detail-data";
 import { ComparisonMarksDetail, isComparisonMarksVariant } from "./ComparisonMarksDetail";
 import { DeadlineFills, downloadLineChart, LineLegend, LineLoadToggle, LineSkeleton } from "./LineExtras";
 import { buildGantt, buildStream } from "./comparisons";
@@ -70,6 +72,7 @@ export default function Cartesian(props: ChartPreviewProps) {
   const streaming = example.family === "live-line" && Boolean(props.liveStream);
   const source = useMemo(() => streaming && !props.data ? { categories: [], series: [] }
     : resolveData(example, props.data), [streaming, example, props.data]);
+  if (!props.data && Object.hasOwn(schedules, example.id)) return <GanttDetail key={example.id} variant={example.id as ScheduleVariant} label={example.title} compact={compact} />;
   if (!props.data && isComparisonMarksVariant(example.id)) return <ComparisonMarksDetail key={example.id} variant={example.id} label={example.title} compact={compact} theme={theme} />;
   if (example.family === "candlestick") return <Candles key={example.id} example={example} data={source} compact={compact} theme={theme} />;
   if (example.family === "live-line") return <LiveLine key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data && !props.liveStream} stream={props.liveStream} />;
@@ -313,7 +316,7 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
     globalout() { if (controls.activeMarker !== undefined) update("activeMarker", undefined); },
   } : undefined;
 
-  if (family === "sparkline") return <SparklineExamples example={example} data={source} compact={compact} theme={theme} />;
+  if (family === "sparkline") return <SparklineExamples example={example} data={source} compact={compact} theme={theme} fixture={!data} />;
   if (basics.has(id)) return <ShadcnBasics family={family} data={source} theme={theme} label={example.title} compact={compact} fixture={!data} />;
   if (id === "line-deadline-fills") return <DeadlineFills example={example} data={source} theme={theme} compact={compact} controls={controls} />;
 

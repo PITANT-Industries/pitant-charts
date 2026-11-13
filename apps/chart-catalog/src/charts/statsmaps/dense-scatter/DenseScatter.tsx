@@ -4,7 +4,7 @@ import { Choices } from "../../../ui/Choices";
 import type { ChartPreviewProps } from "../../../types";
 import { useChartTheme } from "../../theme";
 import type { Bounds, ScatterFrame } from "./data";
-import { exact, exactTime, inset, makeScatterPainter, number, project } from "./plot";
+import { exact, exactTime, makeScatterPainter, number, plotInsets, project } from "./plot";
 import { useScatterFrame } from "./useScatterFrame";
 import "../styles.css";
 import "./scatter.css";
@@ -28,11 +28,12 @@ export default function DenseScatter({ example, compact = false, data }: ChartPr
   const canvas = useRef<HTMLCanvasElement>(null);
   const drag = useRef<{ x: number; y: number; view: Bounds }>(undefined);
   const painter = useRef<ReturnType<typeof makeScatterPainter>>(undefined);
+  const inset = plotInsets(!data && !compact);
   const input = useMemo(() => ({ count: data || !compact ? count : 1600, data }), [compact, count, data]);
   const columns = size.width ? Math.max(8, Math.floor((size.width - inset.left - inset.right) / 5)) : 0;
   const rows = size.height ? Math.max(8, Math.floor((size.height - inset.top - inset.bottom) / 5)) : 0;
   const { frame, busy } = useScatterFrame(input, view, columns, rows);
-  const plot = frame ? project(frame.view, size.width, size.height) : undefined;
+  const plot = frame ? project(frame.view, size.width, size.height, inset) : undefined;
   const current = frame && selection?.frame === frame ? selection : undefined;
 
   useEffect(() => { setView(undefined); setSelection(undefined); }, [input]);
@@ -44,7 +45,7 @@ export default function DenseScatter({ example, compact = false, data }: ChartPr
     painter.current = next;
     function resize() {
       if (!element) return;
-      const width = element.clientWidth, height = element.clientHeight;
+      const { width, height } = element.getBoundingClientRect();
       setSize(previous => previous.width === width && previous.height === height ? previous : { width, height });
     }
     const observer = new ResizeObserver(resize);
@@ -179,7 +180,7 @@ export default function DenseScatter({ example, compact = false, data }: ChartPr
     }
   }
 
-  return <div className="stat-demo stat-canvas">
+  return <div className="stat-demo stat-canvas" data-scatter-demo={!data && !compact}>
     {!compact && <div className="stat-controls scatter-controls">
       {!data && <><span>Points</span><Choices label="Request count" options={counts} value={String(count)} onChange={next => setCount(Number(next))} itemClassName="stat-control" /></>}
       <div className="scatter-zoom">
@@ -210,6 +211,7 @@ export default function DenseScatter({ example, compact = false, data }: ChartPr
     {!compact && <p className="stat-map-summary" role="status">{frame ? <>
       {number.format(frame.count)} {data ? "points" : "requests in one week"} · {frame.mode === "density" ? data ? "Density view · zoom in to inspect points" : "Density view · zoom in to inspect requests" : `${number.format(frame.visible)} visible points`}
     </> : "Loading points…"}</p>}
+    {!compact && !data && <p className="scatter-summary">Each dot is one checkout request and how long it took, in ms</p>}
     {!compact && <output className="scatter-announcement" aria-live="polite">{current?.keyboard && tooltip ? [tooltip.heading, ...tooltip.rows.flat()].join(", ") : ""}</output>}
   </div>;
 }

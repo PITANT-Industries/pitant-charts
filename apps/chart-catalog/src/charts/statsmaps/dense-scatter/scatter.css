@@ -5,3 +5,12 @@
 .scatter-tooltip { position: absolute; z-index: 2; max-width: calc(100% - 24px); overflow-wrap: anywhere; pointer-events: none; }
 .scatter-focus { position: absolute; width: 8px; height: 8px; border: 1px solid var(--chart-1); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
 .scatter-announcement { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.stat-canvas[data-scatter-demo='true'] { block-size: auto; }
+.stat-canvas[data-scatter-demo='true'] .scatter-plot {
+  flex: 0 0 auto;
+  min-block-size: 0;
+  block-size: auto;
+  aspect-ratio: 2;
+}
+.scatter-summary { margin: 0; color: var(--muted-foreground); text-align: center; font-size: 12px; }
