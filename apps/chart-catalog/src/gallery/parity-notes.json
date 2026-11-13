@@ -160,24 +160,24 @@
     "remaining": "Compare the selection surface, date-strip and drag treatment against the live reference."
   },
   "line-brush": {
-    "checked": "The overview window pans and resizes. Its handles respond to the keyboard, and Escape restores the range after a drag.",
-    "remaining": "Compare overview styling and the timing of axis rescaling."
+    "checked": "The 90-day fixture, 300px detail plot, 72px overview, date ticks and sampled readout match the live reference at desktop and mobile widths. Drag or use the keyboard to resize or pan. Escape restores the pre-drag range.",
+    "remaining": "Compare scale easing and sub-day pointer motion during a drag."
   },
   "line-linked-brush": {
-    "checked": "One overview controls both detail charts. The detail charts share a tooltip date.",
-    "remaining": "Compare animation timing and date-label behavior during continuous drag."
+    "checked": "Visitors, Signups and the overview match the live plot geometry. Both detail plots start at August 29, pan and zoom together, and share a crosshair date. Mouse, keyboard and touch controls work at both sizes.",
+    "remaining": "Compare scale easing and hover fade during continuous drag."
   },
   "line-zoom": {
-    "checked": "Ctrl-wheel and Cmd-wheel zoom the chart. Double-click resets the range.",
-    "remaining": "Compare zoom sensitivity, pan easing, and limits."
+    "checked": "All 365 daily user readouts match the reference. Desktop and mobile plots match the reference trace coordinates, grid, and date ticks. Ctrl-wheel zoom, drag to pan, double-click reset, keyboard controls, and touch selection and panning passed in Chrome.",
+    "remaining": "The date pill uses the library’s static text presentation."
   },
   "line-synced": {
-    "checked": "Requests, latency, and errors share the same tooltip date.",
-    "remaining": "Compare the crosshair animation and panel spacing."
+    "checked": "Requests, p95 latency, and Error rate share the same selected day. Pointer, touch, and keyboard moved all three guides and the active panel readout. October 2 shows 1,490 requests, 372 latency, and a 1.74% error rate. The three panel sizes, tick labels, and paths match the reference in desktop light and mobile dark Compare.",
+    "remaining": "The date pill uses the library’s static text presentation."
   },
   "line-table": {
-    "checked": "Ten weekly rows include Trials, Paid, and calculated Conversion. Chart inspection highlights the row, and row focus shows the chart tooltip.",
-    "remaining": "Compare table treatment and focus transition."
+    "checked": "Both weekly curves, axes, all ten table rows and conversion percentages agree in the sampled desktop and mobile views. Hover or focus on a table row inspects its week. Plot hover and keyboard inspection highlight the corresponding row.",
+    "remaining": "Compare hover transition timing and tooltip paint. Escape clears the local selection."
   },
   "line-projection": {
     "checked": "Actual, goal and trend geometry match, with measured forecast endpoint positions and a ring at the last observed date.",
@@ -240,8 +240,8 @@
     "remaining": "Compare clipping and fill paint. The PITANT panels also expose keyboard and pointer readouts."
   },
   "line-date-highlights-brush": {
-    "checked": "At mobile width, weekend shading is hidden when dates are dense and appears after zooming in. The launch marker stays on its original date.",
-    "remaining": "Compare precise density thresholds and band styling."
+    "checked": "The September 1 Launch mark stays anchored across zoom and pan. The measured weekend strips show once they reach 4px, and the same 90-day fixture matches the reference detail and overview.",
+    "remaining": "Compare exact hatch paint, fade and range-change easing."
   },
   "line-glow": {
     "checked": "The full-bleed 28-point geometry and sampled tooltip match, with two radial backdrops clipped above the line.",
@@ -268,20 +268,20 @@
     "remaining": "Compare cursor fades and exact tooltip placement."
   },
   "line-export": {
-    "checked": "Direct keyboard-accessible SVG and PNG actions produce valid files from the current rendered chart. The legend totals show all three plans.",
-    "remaining": "Compare inclusion of surrounding card content and exact totals."
+    "checked": "SVG and PNG buttons download the rendered revenue plot and responsive plan legend. The SVG includes its font and themed background. The 2× PNG and SVG dimensions matched the reference in desktop light and mobile dark Compare. Path coordinates matched within 0.001px.",
+    "remaining": "Raster output can vary with browser font rendering."
   },
   "line-large-data": {
-    "checked": "The Canvas chart displays minute-sampled p50 and p95 series. It starts at 50,000 points and switches to 10,000 or 100,000. The tooltip reports both raw values.",
-    "remaining": "The nearest displayed minute can be affected by decimation. Compare lookup behavior and rendering performance at the largest setting."
+    "checked": "The 10k, 50k and 100k selections use the reference minute fixture, Canvas traces, responsive date ticks and the p95 and p50 readout. Pointer and keyboard inspect the raw data, including minutes skipped by the drawing sampler.",
+    "remaining": "Compare the exact Canvas gradients, focus dimming, and entry transitions across browsers."
   },
   "line-loading": {
     "checked": "Loading and Ready states use the measured revenue path and grid. Ready exposes keyboard inspection.",
     "remaining": "Compare the loading animation and Ready palette."
   },
   "chart-data-table": {
-    "checked": "The six-period Revenue and Expenses table is accessible with the plot visible and becomes the visual view when activated.",
-    "remaining": "Compare the displayed table formatting and layout."
+    "checked": "The six monthly Revenue and Expenses values agree in the chart and table. The top-right toggle preserves the 2:1 plot box and keeps keyboard focus. The table stays available to screen readers in chart view and scrolls to June on mobile.",
+    "remaining": "Compare focus marker paint and tooltip transitions. Escape clears the local selection."
   },
   "line-loading-placeholder": {
     "checked": "The placeholder uses the measured 2:1 plot and four dashed horizontal grid lines.",

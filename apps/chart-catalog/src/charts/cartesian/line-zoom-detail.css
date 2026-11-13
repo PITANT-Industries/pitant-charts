@@ -1,0 +1,11 @@
+.line-zoom-detail { display: grid; inline-size: 100%; gap: 12px; min-inline-size: 0; }
+.line-zoom-plot { aspect-ratio: 2; position: relative; min-inline-size: 0; }
+.line-zoom-plot > svg { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; touch-action: pan-y; }
+.line-zoom-plot[data-zoomed='true'] > svg { cursor: grab; touch-action: pan-y; }
+.line-zoom-plot[data-zoomed='true'] > svg:active { cursor: grabbing; }
+.line-zoom-detail[data-compact='true'] { block-size: 100%; }
+.line-zoom-detail[data-compact='true'] .line-zoom-plot { aspect-ratio: auto; }
+.line-zoom-tip { position: absolute; z-index: 1; pointer-events: none; }
+.line-zoom-caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; color: var(--muted-foreground); font-size: 12px; }
+.line-zoom-caption > output { color: var(--foreground); }
+.line-zoom-keyboard { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

@@ -11,4 +11,4 @@
 
 The chart library uses React, Recharts, Apache ECharts, D3, TopoJSON, World Atlas, and [Vercel Labs UI SDK](https://github.com/vercel-labs/ui) under Apache-2.0. The gallery also uses Lucide icons, Geist fonts, and [Hanken Grotesk](https://github.com/marcologous/hanken-grotesk) under OFL-1.1. Dependency license files are collected in `licenses/dependencies`. World Atlas geography is derived from Natural Earth public-domain data.
 
-Catalog names and links identify the [shadcn.io React chart gallery](https://www.shadcn.io/charts) used for comparison. The implementation is maintained independently.
+Catalog names and links identify the [shadcn.io React chart gallery](https://www.shadcn.io/charts) used for comparison. The implementation is maintained independently. The simulated latency fixture and dense sampling behavior for the Line examples follow the [shadcn.io Line reference](https://www.shadcn.io/charts/line).

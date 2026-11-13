@@ -7,10 +7,15 @@ const widePlots = new Set([
   'scatter-default', 'scatter-rings', 'scatter-solid', 'scatter-outline',
 ])
 
+const lineWithControls = new Set([
+  'line-table', 'chart-data-table', 'line-synced', 'line-export', 'line-zoom',
+  'line-brush', 'line-linked-brush', 'line-date-highlights-brush', 'line-large-data',
+])
+
 export function comparisonPlot(example: ChartExample) {
   if (widePlots.has(example.id)) return 'wide'
   if (example.family === 'composed') return 'cartesian-controls'
-  if (example.family === 'line' && Object.hasOwn(detailedLines, example.id)) return 'cartesian-controls'
+  if (example.family === 'line' && (Object.hasOwn(detailedLines, example.id) || lineWithControls.has(example.id))) return 'cartesian-controls'
   if (example.family === 'bar') return 'cartesian-controls'
   if (example.family === 'area') return ['area-small-multiples', 'area-loading'].includes(example.id) ? 'cartesian-controls' : 'wide'
   if (example.family === 'tooltip') return example.id === 'tooltip-indicator' || example.id === 'tooltip-motion' ? 'tooltip-controls' : 'wide'
