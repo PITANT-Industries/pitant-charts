@@ -222,36 +222,43 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
     20_000,
   )
   const stateErrors = validateProfileState(state, profile)
-  const captureHeight = Math.ceil(
-    Math.max(VIEWPORT.height, ...rects.map(({ y, height }) => y + height)),
-  )
-  const screenshot = await tab.send('Page.captureScreenshot', {
-    format: 'png',
-    fromSurface: true,
-    captureBeyondViewport: captureHeight > VIEWPORT.height,
-    clip: { x: 0, y: 0, width: VIEWPORT.width, height: captureHeight, scale: 1 },
-  })
-  const image = parsePng(Buffer.from(screenshot.data, 'base64'))
-  if (image.width !== VIEWPORT.width || image.height !== captureHeight) {
-    throw new Error(
-      `Expected a ${VIEWPORT.width}×${captureHeight} screenshot, got ${image.width}×${image.height}.`,
-    )
-  }
-  const charts = rects.map((rect, index) => {
-    const chartRect = insetChartRect(rect)
-    const visual = summarizeVisualRegion(image, chartRect)
-    return {
+  const image = await captureViewport(tab)
+  const charts = []
+  for (const [index, rect] of rects.entries()) {
+    let chartRect = insetChartRect(rect)
+    let chartImage = image
+    if (chartRect.y + chartRect.height > image.height) {
+      const visibleRect = await evaluate(
+        tab,
+        `new Promise((resolve) => {
+          const chart = document.querySelectorAll(".chart-surface")[${index}]
+          chart.scrollIntoView({ block: "center", behavior: "instant" })
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            const { x, y, width, height } = chart.getBoundingClientRect()
+            resolve({ x, y, width, height })
+          }))
+        })`,
+      )
+      chartRect = insetChartRect(visibleRect)
+      chartImage = await captureViewport(tab)
+    }
+    if (chartRect.y < 0 || chartRect.y + chartRect.height > chartImage.height) {
+      throw new Error(`Chart ${index + 1} in ${profile} is outside the screenshot.`)
+    }
+    const visual = summarizeVisualRegion(chartImage, chartRect)
+    charts.push({
       name: chartNameFromClassName(rect.className, index),
       rect: chartRect,
       significantPixels: visual.significantPixels,
       visual,
-    }
-  })
+    })
+  }
   const pixelChecks = charts.map((chart) => chart.significantPixels)
   const visualComparison =
     options.visual && options.baseline
       ? compareVisualResult({ renderer, profile, charts }, options.baseline)
       : null
+  if (options.fps) await evaluate(tab, 'window.scrollTo(0, 0)')
   const fpsBenchmark = options.fps ? await runFpsBenchmark(tab, renderer, profile) : null
   const failed =
     stateErrors.length > 0 ||
@@ -270,6 +277,15 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
     fpsBenchmark,
     failed,
   }
+}
+
+async function captureViewport(tab) {
+  const screenshot = await tab.send('Page.captureScreenshot', {
+    format: 'png',
+    fromSurface: true,
+    captureBeyondViewport: false,
+  })
+  return parsePng(Buffer.from(screenshot.data, 'base64'))
 }
 
 function validateProfileState(state, profile) {
