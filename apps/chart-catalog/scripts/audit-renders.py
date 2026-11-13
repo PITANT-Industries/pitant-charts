@@ -75,8 +75,12 @@ async def run(browser, queue, results, local_url, compare):
             return
         name, width, height, theme = profile
         page = await browser.new_page(viewport={'width': width, 'height': height}, reduced_motion='reduce')
+        page.set_default_navigation_timeout(20000)
         errors = []
+        diagnostics = []
         page.on('pageerror', lambda error: errors.append(str(error)))
+        page.on('console', lambda message: diagnostics.append(message.text[:500]) if message.type == 'error' else None)
+        page.on('requestfailed', lambda request: diagnostics.append(f'{request.url}: {request.failure}'))
         if local_url:
             parsed_url = urlsplit(local_url)
             origin = json.dumps(f'{parsed_url.scheme}://{parsed_url.netloc}')
@@ -96,7 +100,7 @@ async def run(browser, queue, results, local_url, compare):
                     params = {'example': slug}
                     if compare:
                         params['view'] = 'compare'
-                    await page.evaluate('(hash) => { location.hash = hash }', urlencode(params))
+                    await asyncio.wait_for(page.evaluate('(hash) => { location.hash = hash }', urlencode(params)), timeout=20)
                     await page.get_by_role('heading', name=example['title'], exact=True).wait_for(timeout=8000)
                     await page.locator(f'html[data-theme="{theme}"]').wait_for(state='attached', timeout=8000)
                     plot = page.locator('.detail-plot')
@@ -109,22 +113,35 @@ async def run(browser, queue, results, local_url, compare):
                     await page.locator(selector).wait_for(state='attached', timeout=12000)
                     plot = page.locator('#chart')
                 if compare:
-                    await compare_dimensions(page, slug)
+                    await asyncio.wait_for(compare_dimensions(page, slug), timeout=45)
                 else:
-                    output = plot.locator('svg path, svg circle, svg rect, svg polygon, svg polyline, canvas, table').first
+                    output = plot.locator('svg path, svg circle, svg rect, svg polygon, svg polyline, canvas, table, [role=alert]').first
                     await output.wait_for(state='attached', timeout=8000)
-                    visible_output = await plot.evaluate('''plot => [...plot.querySelectorAll('svg, canvas, table')].some(mark => {
+                    visible_output = await asyncio.wait_for(plot.evaluate('''plot => [...plot.querySelectorAll('svg, canvas, table')].some(mark => {
                         const { width, height } = mark.getBoundingClientRect();
                         return width > 0 && height > 0;
-                    })''')
+                    })'''), timeout=20)
                     if not visible_output or await page.locator('.detail-plot [role=alert], [data-chart-error]').count():
                         errors.append('Chart output missing or error state displayed')
+            except TimeoutError as error:
+                raise RuntimeError(f'{name} {slug}: browser evaluation timed out') from error
             except Exception as error:
                 errors.append(str(error).splitlines()[0])
             results[name][slug] = list(errors)
             if errors:
-                print(f'{name} {slug}: {errors[0]}', flush=True)
+                try:
+                    state = await asyncio.wait_for(page.evaluate("""() => ({
+                        theme: document.documentElement.dataset.theme,
+                        headings: [...document.querySelectorAll('h1, h2')].map(element => element.textContent),
+                        dialog: !!document.querySelector('dialog[open]'),
+                        alerts: [...document.querySelectorAll('[role="alert"]')].map(element => element.textContent)
+                    })"""), timeout=3)
+                except Exception:
+                    state = {'url': page.url, 'responsive': False}
+                state['diagnostics'] = diagnostics[-8:]
+                print(f'{name} {slug}: {errors[0]} {json.dumps(state)}', flush=True)
         await page.close()
+        print(f'{name}: checked {len(results[name])} examples', flush=True)
 
 
 async def audit(args):
