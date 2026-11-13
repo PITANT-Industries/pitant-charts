@@ -1,0 +1,62 @@
+.live-line-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-end: 6px;
+}
+.live-line-action {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding-inline: 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 12px;
+}
+.live-line-action:enabled:hover { background: var(--muted); }
+.live-line-summary {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-block: 8px;
+  margin-block-start: 8px;
+  border-block-start: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.3;
+}
+.live-line-summary strong { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--foreground); font-weight: 550; }
+.live-line-summary p { margin: 4px 0 0; }
+.live-line-readout { position: absolute; z-index: 1; pointer-events: none; }
+.live-line-readout .cartesian-focus-readout { min-width: 0; max-width: 100%; }
+.live-line-readout .cartesian-focus-readout-title { line-height: 16px; margin-block-end: 8px; }
+.live-line-readout .cartesian-focus-readout-row,
+.live-line-readout .cartesian-focus-readout-row:last-child { min-height: 20px; }
+.live-line-readout .cartesian-focus-readout-row { gap: 8px; }
+.comparison-measured[data-plot-layout="live-line"] .live-line-example { height: auto; }
+.comparison-measured[data-plot-layout="live-line"] .cartesian-live-plot {
+  flex: none;
+  height: var(--comparison-plot-height, 260px);
+}
+.live-line-pulse { transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .live-line-pulse { animation: live-line-pulse 1.6s ease-out infinite; }
+  .live-line-skeleton { animation: live-line-skeleton 1.3s ease-in-out infinite alternate; }
+}
+@keyframes live-line-pulse { from { transform: scale(1); } to { transform: scale(2); opacity: 0; } }
+@keyframes live-line-skeleton { to { opacity: .45; } }
+
+.live-line-announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

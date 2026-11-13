@@ -1,0 +1,50 @@
+.panel[data-tooltip-style] {
+  --tooltip-bg: var(--chart-tooltip-background, oklch(.205 0 0));
+  --tooltip-text: var(--chart-tooltip-foreground, oklch(.985 0 0));
+  --tooltip-muted: color-mix(in srgb, var(--tooltip-text) 70%, var(--tooltip-bg));
+  min-inline-size: min(140px, calc(100% - 8px));
+  max-inline-size: calc(100% - 8px);
+  border: 0;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  box-shadow: 0 10px 15px -3px #0001, 0 4px 6px -4px #0001;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+:global([data-theme='dark']) .panel[data-tooltip-style], :global(.dark) .panel[data-tooltip-style] {
+  --tooltip-bg: var(--chart-tooltip-background, oklch(.985 0 0));
+  --tooltip-text: var(--chart-tooltip-foreground, oklch(.205 0 0));
+}
+.panel[data-tooltip-style='header'] { min-inline-size: min(176px, calc(100% - 8px)); padding-inline: 14px; padding-block-end: 14px; }
+.panel[data-tooltip-style='content'] { min-inline-size: min(179px, calc(100% - 8px)); }
+.panel[data-tooltip-style='pin'] { min-inline-size: min(240px, calc(100% - 8px)); }
+.panel p { margin: 0; }
+.panel p[data-row] { gap: 16px; margin-top: 6px; }
+.panel .date + p[data-row], .panel .header + p[data-row] { margin-top: 0; }
+.panel p[data-row] span { display: flex; align-items: center; }
+.panel strong { font-weight: 550; }
+.panel p[data-row] strong { font-variant-numeric: tabular-nums; }
+.panel i { inline-size: 10px; block-size: 10px; margin-inline-end: 8px; flex: none; }
+.panel .header { border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent); padding: 0 0 10px; margin: 0 0 10px; }
+.panel .date { font-size: 12px; line-height: 16px; margin-bottom: 8px; }
+.panel[data-tooltip-style='content'] .date, .panel[data-tooltip-style='pin'] .date { margin-bottom: 2px; color: var(--tooltip-muted); }
+.panel .revenue { font-size: 20px; line-height: 25px; }
+.panel .revenue strong { font-weight: 650; }
+.panel .change { margin-top: 6px; color: var(--tooltip-muted); font-size: 12px; line-height: 16px; }
+.panel button { background: transparent; color: var(--tooltip-text); border-color: transparent; font-size: 20px; }
+.axisPill { fill: var(--chart-axis-pill-background, oklch(.922 0 0)); }
+.axisText { fill: var(--chart-axis-pill-foreground, oklch(.205 0 0)); }
+:global([data-theme='dark']) .axisPill, :global(.dark) .axisPill { fill: var(--chart-axis-pill-background, oklch(.205 0 0)); }
+:global([data-theme='dark']) .axisText, :global(.dark) .axisText { fill: var(--chart-axis-pill-foreground, oklch(.922 0 0)); }
+@media (prefers-reduced-motion: no-preference) {
+  .panel[data-tooltip-motion='eased'] { transition: transform 140ms ease-out; }
+  .panel[data-tooltip-motion='matched'], .matchedGuide { transition: transform 280ms cubic-bezier(.2,1.3,.45,1); }
+}
+
+.tooltipGraph {
+  flex-basis: var(--comparison-plot-height, 0);
+  block-size: var(--comparison-plot-height, auto);
+}

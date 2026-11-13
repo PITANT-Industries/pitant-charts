@@ -1,0 +1,90 @@
+.frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  container-type: inline-size;
+}
+.layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.layout[data-legend] { gap: 12px; }
+.plotBounds {
+  display: grid;
+  place-items: center;
+  flex: 1 1 auto;
+  min-height: 0;
+  inline-size: min(100%, var(--radar-limit));
+  container-type: size;
+}
+.plot {
+  display: block;
+  inline-size: min(100cqw, 100cqh);
+  block-size: auto;
+  aspect-ratio: 1;
+  overflow: visible;
+  font-family: inherit;
+}
+.plot:focus-visible { outline: 2px solid var(--chart-1); outline-offset: -2px; border-radius: 6px; }
+.ringValue { paint-order: stroke; stroke-width: 2.5px; stroke-linejoin: round; }
+.series { pointer-events: none; transform-origin: 0 0; }
+.series[data-active="true"] { transform: scale(1.05); }
+.series[data-dimmed="true"], .legend button[data-dimmed="true"] { opacity: .3; }
+.hit { fill: transparent; cursor: pointer; }
+.legend {
+  display: grid;
+  flex: none;
+  inline-size: min(100%, 192px);
+  gap: 8px;
+  font-size: 14px;
+}
+.legendTitle { color: var(--muted-foreground); font-size: 12px; line-height: 24px; }
+.legend button {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 5px 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  line-height: 20px;
+  text-align: start;
+  cursor: pointer;
+}
+.legend button[data-active="true"] { border-color: var(--border); background: var(--muted); }
+.legend button:focus-visible { outline: 2px solid var(--chart-1); }
+.legend i { width: 10px; height: 10px; border-radius: 50%; }
+.legend strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+.footer { display: grid; flex: none; gap: 3px; margin: 8px 10px 4px; font-size: 13px; line-height: 1.3; color: var(--muted-foreground); }
+.footer strong { color: var(--foreground); font-weight: 600; }
+:global(.comparison-measured[data-plot-layout="radar"]) .frame { height: auto; }
+:global(.comparison-measured[data-plot-layout="radar"]) .plotBounds { container-type: inline-size; }
+:global(.comparison-measured[data-plot-layout="radar"]) .plot { inline-size: 100%; }
+:global(.comparison-measured[data-plot-layout="radar"]) .layout[data-legend] { gap: 24px; }
+@container (min-width: 608px) {
+  .layout[data-legend] { flex-direction: row; }
+  .layout[data-legend] .plotBounds { flex: 0 1 var(--radar-limit); align-self: stretch; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .series { transition: opacity 120ms ease-out, transform 120ms cubic-bezier(.2, .8, .3, 1); }
+  .shape { transition: fill-opacity 120ms ease-out, stroke-width 120ms ease-out, filter 120ms ease-out; }
+  .legend button { transition: opacity 120ms ease-out; }
+  .ringValueEnter { animation: radar-label-enter 1100ms ease-out calc(200ms + var(--radar-order, 0) * 60ms) backwards; }
+  .labelEnter {
+    animation: radar-label-glide 960ms cubic-bezier(.2, .8, .25, 1.06) backwards,
+      radar-label-enter 500ms ease-out calc(var(--radar-start) + var(--radar-order, 0) * 80ms) backwards;
+  }
+  .plot:focus-within :is(.labelEnter, .ringValueEnter) { animation: none; }
+  @keyframes radar-label-glide { from { transform: translate(var(--radar-enter-x), var(--radar-enter-y)); } }
+  @keyframes radar-label-enter { from { opacity: 0; } }
+}

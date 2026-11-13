@@ -1,0 +1,29 @@
+# Polar, flow and hierarchy examples
+
+The library includes 116 examples from these families. They use a shared theme, React controls and demo data. Bklit UI's MIT-licensed gauge notch geometry and sunburst partition layout are included under `upstream/`.
+
+## Differences observed in the source comparison
+
+| Reference variant | Local behavior and remaining difference |
+| --- | --- |
+| `pie-center`, `pie-center-custom`, `pie-center-share`, `pie-donut-grow`, `ring-default` | Values interpolate on hover. The reference uses rolling digits. |
+| `pie-center-custom`, `ring-center-custom` | The public `renderCenter` callback receives the current datum and its share. Pie share uses the aggregate. Focused ring share uses the active target, and idle ring share uses the aggregate. Custom center content follows the library’s SVG layout. |
+| `pie-half-donut`, `pie-glow`, `pie-patterns` | The local slices have spacing and round stroke joins. Their corner geometry and SVG patterns differ from the reference. |
+| `radial-default`, `radial-line` | The 96-bin clock accepts pointer and keyboard scrubbing. Dot status legend isolation and the line’s dashed prior day are implemented. Fixtures and styling differ. |
+| `radial-patterned-dots`, `radial-activity-card` | The hourly fixtures show patterned dots and update the activity value. Status labels, interaction surfaces and presentation differ. |
+| `radial-temperature`, `radial-seasonal-card` | Daily fixture data covers a year, with two range bands and a mean. Values are synthetic. |
+| `radial-bar-clock`, `radial-area-clock` | The 96-bin clocks show the previous day beyond the current time. Bars highlight the active bin with a rotating scrubber. Areas sweep in and show three edge markers. Motion timing and fixture values differ. |
+| `gauge-fixed` | Full previews use three 160 px dials. They sit side by side on wide panels and wrap at narrower widths. Compact gallery cards use a single scaled preview. |
+| `gauge-interactive`, `gauge-dial`, `gauge-live-load` | Quarter selection, six manual readings, and the 1.8-second CPU sample loop sweep between readings. The live gauge derives current, average and peak from the same sample stream. Numeric values interpolate, and the reference’s digit transitions and gauge geometry differ. |
+| Gauge family | Variant checks cover notched, continuous, segmented, and dotted tracks, theme gradients, per-zone colors, ruler ticks, and separate metric and target readouts in desktop light and mobile dark. Exact spacing, typography, and motion remain open. |
+| `sunburst-default`, `sunburst-breadcrumb`, `sunburst-legend` | The examples use their own revenue, cloud spending, and department hierarchies. Branches morph during drill-down and back navigation. Arrow keys inspect, Enter or Space drills down, and Escape returns up. Breadcrumbs jump to ancestors, and the legend shows department shares. Finer fixture values, geometry, and timing remain open. |
+| `sunburst-segment-colors`, `sunburst-patterns`, `sunburst-custom-hint` | Social and its channels use distinct colors. The Services and Partners branches use diagonal stripes. The expense tooltip reports the inspected cost and share. Exact leaf values, visual treatment, and highlight timing remain open. |
+| Funnel family | Local fixtures follow the reference’s stage labels and values or its displayed rounding. The demos implement layered halos, ratio pills, straight and curved variants, grids, stage fills, keyboard drop-off inspection, and linked legend progress. Chart proportions, typography, and transition timing still differ. |
+| Radar family | All 96 metric values match across nine variants. Matched plots align within 0.0051 px, including the responsive square, rings, labels, and series profiles. Exact hover hit boundaries, spring timing, and footer typography remain open. |
+| Sankey family | All 86 node bounds and 166 weighted links match within 0.0051 px across three plot sizes. The 238 captured node and link readouts match. The campaign legend uses UI SDK toggles and highlights reachable flows. Exact paint, tooltip placement, and motion remain open. |
+| `treemap-default`, `treemap-drilldown`, `treemap-portfolio` | The default treemap fills the plot with the reference group order. Mean group-box displacement is 1.19 px at desktop width and 0.64 px at narrow width. Drill-down and breadcrumb navigation work, and the portfolio uses weighted tiles. Individual leaf placement and text clipping remain open. |
+| `tree-default`, `tree-radial`, `tree-vertical`, `network-default`, `network-legend` | The default network and radial tree use measured layouts with responsive node placement. At matched desktop sizes, mean node displacement is 0.033 px for the network and 0.005 px for the radial tree. Link styling, label typography, and entrance motion remain open. |
+| `waffle-loading`, `marimekko-loading`, `treemap-loading`, `tree-loading`, `network-loading` | Muted chart geometry pulses before a user-controlled reveal. The reference uses individual entrance transitions for some marks. |
+| Tooltip family | All 270 sampled readouts match the live text across 11 variants. The guide widths, bar rings, horizontal tracker, and pin controls have independent checks. Callers can override the panel with `renderTooltip` to use the active category, pinned state, and each series’ current and previous values. Exact motion, panel typography, and edge placement remain open. |
+
+The live React reference and the library were compared in Chromium for the gauge and sunburst controls and quarter-hour clock navigation, plus the named features of 11 funnel, nine radar and nine Sankey examples. The library was also tested with caller-provided data in the pie and ring render callbacks. The remaining comparisons include cross-browser behavior, exact visual rendering and motion, and the full set of states.

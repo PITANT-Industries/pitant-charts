@@ -1,0 +1,43 @@
+.verticalFunnel { max-width: 310px; align-self: center; }
+.legendFrame { container-type: inline-size; justify-content: flex-start; }
+.legendFunnel { flex: 1 0 0; min-height: min(17rem, 45cqw); }
+.funnelStage { transition: opacity 180ms ease-out; }
+.funnelStage[data-dimmed="true"], .funnelLegend button[data-dimmed="true"] { opacity: .36; }
+.funnelLayer { animation: flow-in 420ms ease-out var(--flow-delay, 0ms) both; }
+@keyframes flow-in { from { opacity: 0; } }
+.flowFooter { display: flex; flex-direction: column; gap: .15rem; margin: .45rem .65rem .15rem; min-height: 2rem; color: var(--muted-foreground); font-size: .75rem; }
+.flowFooter strong { color: var(--foreground); font-weight: 600; }
+.funnelLegend { display: grid; flex: none; gap: .15rem; width: min(100%, 25rem); margin: .2rem auto; }
+.funnelLegend button { display: grid; grid-template-columns: 1fr auto; gap: .15rem .6rem; border: 1px solid transparent; border-radius: .35rem; padding: .2rem .4rem; color: var(--muted-foreground); background: transparent; font: inherit; font-size: .72rem; cursor: pointer; text-align: left; transition: opacity 180ms ease-out; }
+.funnelLegend button[data-active="true"] { border-color: var(--border); background: var(--muted, var(--border)); }
+.funnelLegend button > span:first-child { color: var(--foreground); display: flex; gap: .4rem; align-items: center; }
+.funnelLegend i { width: .5rem; height: .5rem; border-radius: 50%; }
+.funnelLegend .progress { height: .28rem; grid-column: 1 / -1; border-radius: 999px; background: var(--border); }
+.progress > span { display: block; height: 100%; border-radius: inherit; }
+.funnelLegend small { grid-column: 2; text-align: right; }
+@media (prefers-reduced-motion: reduce) {
+  .funnelLayer { animation: none; }
+  .funnelStage, .funnelLegend button { transition: none; }
+}
+
+.sankeyFrame { justify-content: safe center; }
+.sankeyScroll { max-inline-size: 100%; min-inline-size: 0; overflow-x: auto; flex: none; }
+.sankeyCanvas { position: relative; inline-size: 100%; aspect-ratio: 16 / 9; }
+.sankeyScroll[data-wide="true"] .sankeyCanvas { min-inline-size: 576px; }
+.sankeyCanvas[data-unlabelled="true"] { aspect-ratio: 2; }
+.sankeyCanvas[data-compact="true"] { block-size: 130px; aspect-ratio: auto; }
+.sankeyCanvas .sankeyPlot { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sankeyTooltip {
+  position: absolute;
+  inset: var(--flow-y) auto auto calc(var(--flow-x) + 16px);
+  translate: 0 -50%;
+  pointer-events: none;
+  z-index: 2;
+}
+.sankeyTooltip[data-flip="true"] { left: calc(var(--flow-x) - 16px); translate: -100% -50%; }
+.sankeyTooltip :global(.cartesian-focus-readout) { min-inline-size: 140px; }
+@media (prefers-reduced-motion: no-preference) { .sankeyMark { transition: opacity 180ms ease-out; } }
+.sankeyLegend { display: flex; flex-wrap: wrap; justify-content: center; gap: .3rem; padding: .3rem; }
+.sankeyLegend button { display: inline-flex; gap: .35rem; align-items: center; padding: .25rem .55rem; border: 1px solid var(--border); border-radius: .35rem; background: transparent; color: var(--foreground); font: inherit; font-size: .72rem; cursor: pointer; }
+.sankeyLegend button[data-active="true"], .sankeyLegend button[aria-pressed="true"] { background: var(--muted); }
+.sankeyLegend i { width: .45rem; height: .45rem; border-radius: 50%; }

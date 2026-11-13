@@ -1,0 +1,3296 @@
+[
+  {
+    "id": "area",
+    "name": "Area chart",
+    "url": "https://www.shadcn.io/area-chart-examples",
+    "examples": [
+      {
+        "id": "area-default",
+        "family": "area",
+        "title": "Area Chart",
+        "label": "Standard area",
+        "description": "Standard area",
+        "url": "https://www.shadcn.io/examples/area-default",
+        "position": 1
+      },
+      {
+        "id": "area-fill",
+        "family": "area",
+        "title": "Fill-Only Area Chart",
+        "label": "Fill with no outline",
+        "description": "Fill with no outline",
+        "url": "https://www.shadcn.io/examples/area-fill",
+        "position": 2
+      },
+      {
+        "id": "area-gradient-fill",
+        "family": "area",
+        "title": "Area Chart with Gradient Fill",
+        "label": "Gradient fill",
+        "description": "Gradient fill",
+        "url": "https://www.shadcn.io/examples/area-gradient-fill",
+        "position": 3
+      },
+      {
+        "id": "area-pattern",
+        "family": "area",
+        "title": "Hatched Area Chart",
+        "label": "Hatched fill",
+        "description": "Hatched fill",
+        "url": "https://www.shadcn.io/examples/area-pattern",
+        "position": 4
+      },
+      {
+        "id": "area-mixed",
+        "family": "area",
+        "title": "Area Chart with Mixed Fills",
+        "label": "Mixed fill styles",
+        "description": "Mixed fill styles",
+        "url": "https://www.shadcn.io/examples/area-mixed",
+        "position": 5
+      },
+      {
+        "id": "area-forecast",
+        "family": "area",
+        "title": "Area Chart with Forecast",
+        "label": "Dashed forecast segment",
+        "description": "Dashed forecast segment",
+        "url": "https://www.shadcn.io/examples/area-forecast",
+        "position": 6
+      },
+      {
+        "id": "area-reference-band",
+        "family": "area",
+        "title": "Area Chart with a Target Band",
+        "label": "Target range band",
+        "description": "Target range band",
+        "url": "https://www.shadcn.io/examples/area-reference-band",
+        "position": 7
+      },
+      {
+        "id": "area-reference-range",
+        "family": "area",
+        "title": "Area Chart with Highlighted Range",
+        "label": "Highlighted interval",
+        "description": "Highlighted interval",
+        "url": "https://www.shadcn.io/examples/area-reference-range",
+        "position": 8
+      },
+      {
+        "id": "area-background",
+        "family": "area",
+        "title": "Area Chart with Patterned Background",
+        "label": "Background pattern",
+        "description": "Background pattern",
+        "url": "https://www.shadcn.io/examples/area-background",
+        "position": 9
+      },
+      {
+        "id": "area-small-multiples",
+        "family": "area",
+        "title": "Area Chart Small Multiples",
+        "label": "Small multiples",
+        "description": "Small multiples",
+        "url": "https://www.shadcn.io/examples/area-small-multiples",
+        "position": 10
+      },
+      {
+        "id": "area-date-highlights",
+        "family": "area",
+        "title": "Area Chart with Weekends and a Deadline",
+        "label": "Weekend and overdue-date shading",
+        "description": "Weekend and overdue-date shading",
+        "url": "https://www.shadcn.io/examples/area-date-highlights",
+        "position": 11
+      },
+      {
+        "id": "area-trend",
+        "family": "area",
+        "title": "Area Chart with Trend Line",
+        "label": "Trend-line overlay",
+        "description": "Trend-line overlay",
+        "url": "https://www.shadcn.io/examples/area-trend",
+        "position": 12
+      },
+      {
+        "id": "area-value-labels",
+        "family": "area",
+        "title": "Area Chart with Value Labels",
+        "label": "Values displayed on the plot",
+        "description": "Values displayed on the plot",
+        "url": "https://www.shadcn.io/examples/area-value-labels",
+        "position": 13
+      },
+      {
+        "id": "area-dual-axis",
+        "family": "area",
+        "title": "Area Chart with Dual Axis",
+        "label": "Two Y-axes",
+        "description": "Two Y-axes",
+        "url": "https://www.shadcn.io/examples/area-dual-axis",
+        "position": 14
+      },
+      {
+        "id": "area-steps",
+        "family": "area",
+        "title": "Stepped Area Chart",
+        "label": "Step interpolation",
+        "description": "Step interpolation",
+        "url": "https://www.shadcn.io/examples/area-steps",
+        "position": 15
+      },
+      {
+        "id": "area-selection",
+        "family": "area",
+        "title": "Area Chart with Range Selection",
+        "label": "Range selection",
+        "description": "Range selection",
+        "url": "https://www.shadcn.io/examples/area-selection",
+        "position": 16
+      },
+      {
+        "id": "area-pattern-fade",
+        "family": "area",
+        "title": "Area Chart with Faded Pattern",
+        "label": "Pattern with a fade",
+        "description": "Pattern with a fade",
+        "url": "https://www.shadcn.io/examples/area-pattern-fade",
+        "position": 17
+      },
+      {
+        "id": "area-fade-bottom",
+        "family": "area",
+        "title": "Area Chart with Bottom Fade",
+        "label": "Fill fading toward the baseline",
+        "description": "Fill fading toward the baseline",
+        "url": "https://www.shadcn.io/examples/area-fade-bottom",
+        "position": 18
+      },
+      {
+        "id": "area-custom-labels",
+        "family": "area",
+        "title": "Area Chart with Custom Labels",
+        "label": "Custom labels",
+        "description": "Custom labels",
+        "url": "https://www.shadcn.io/examples/area-custom-labels",
+        "position": 19
+      },
+      {
+        "id": "area-loading",
+        "family": "area",
+        "title": "Area Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/area-loading",
+        "position": 20
+      }
+    ]
+  },
+  {
+    "id": "bar",
+    "name": "Bar chart",
+    "url": "https://www.shadcn.io/bar-chart-examples",
+    "examples": [
+      {
+        "id": "bar-default",
+        "family": "bar",
+        "title": "Bar Chart",
+        "label": "Standard bar",
+        "description": "Standard bar",
+        "url": "https://www.shadcn.io/examples/bar-default",
+        "position": 1
+      },
+      {
+        "id": "bar-grouped",
+        "family": "bar",
+        "title": "Grouped Bar Chart",
+        "label": "Grouped bars",
+        "description": "Grouped bars",
+        "url": "https://www.shadcn.io/examples/bar-grouped",
+        "position": 2
+      },
+      {
+        "id": "bar-stacked",
+        "family": "bar",
+        "title": "Stacked Bar Chart",
+        "label": "Stacked bars",
+        "description": "Stacked bars",
+        "url": "https://www.shadcn.io/examples/bar-stacked",
+        "position": 3
+      },
+      {
+        "id": "bar-values",
+        "family": "bar",
+        "title": "Bar Chart with Value Labels",
+        "label": "Value labels",
+        "description": "Value labels",
+        "url": "https://www.shadcn.io/examples/bar-values",
+        "position": 4
+      },
+      {
+        "id": "bar-profit-loss",
+        "family": "bar",
+        "title": "Bar Chart with Positive and Negative Values",
+        "label": "Positive and negative bars",
+        "description": "Positive and negative bars",
+        "url": "https://www.shadcn.io/examples/bar-profit-loss",
+        "position": 5
+      },
+      {
+        "id": "bar-sources",
+        "family": "bar",
+        "title": "Horizontal Bar Chart of Traffic Sources",
+        "label": "Horizontal bars",
+        "description": "Horizontal bars",
+        "url": "https://www.shadcn.io/examples/bar-sources",
+        "position": 6
+      },
+      {
+        "id": "bar-squares",
+        "family": "bar",
+        "title": "Bar Chart with Squares",
+        "label": "Bars made of squares",
+        "description": "Bars made of squares",
+        "url": "https://www.shadcn.io/examples/bar-squares",
+        "position": 7
+      },
+      {
+        "id": "bar-squares-legend",
+        "family": "bar",
+        "title": "Square Bar Chart with Legend",
+        "label": "Square bars with an interactive legend",
+        "description": "Square bars with an interactive legend",
+        "url": "https://www.shadcn.io/examples/bar-squares-legend",
+        "position": 8
+      },
+      {
+        "id": "bar-depth",
+        "family": "bar",
+        "title": "3D Bar Chart",
+        "label": "Three-dimensional styling",
+        "description": "Three-dimensional styling",
+        "url": "https://www.shadcn.io/examples/bar-depth",
+        "position": 9
+      },
+      {
+        "id": "bar-synced",
+        "family": "bar",
+        "title": "Bar Chart with Synced Cursors",
+        "label": "Cursor shared between charts",
+        "description": "Cursor shared between charts",
+        "url": "https://www.shadcn.io/examples/bar-synced",
+        "position": 10
+      },
+      {
+        "id": "bar-loading",
+        "family": "bar",
+        "title": "Bar Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/bar-loading",
+        "position": 11
+      }
+    ]
+  },
+  {
+    "id": "line",
+    "name": "Line chart",
+    "url": "https://www.shadcn.io/line-chart-examples",
+    "examples": [
+      {
+        "id": "line-default",
+        "family": "line",
+        "title": "Line Chart",
+        "label": "Standard two-series line",
+        "description": "Standard two-series line",
+        "url": "https://www.shadcn.io/examples/line-default",
+        "position": 1
+      },
+      {
+        "id": "line-dual-axis",
+        "family": "line",
+        "title": "Line Chart with Dual Axis",
+        "label": "Two Y-axes",
+        "description": "Two Y-axes",
+        "url": "https://www.shadcn.io/examples/line-dual-axis",
+        "position": 2
+      },
+      {
+        "id": "line-grid",
+        "family": "line",
+        "title": "Line Chart with Grid",
+        "label": "Dotted chart grid",
+        "description": "Dotted chart grid",
+        "url": "https://www.shadcn.io/examples/line-grid",
+        "position": 3
+      },
+      {
+        "id": "line-points",
+        "family": "line",
+        "title": "Line Chart with Points",
+        "label": "Point markers on the line",
+        "description": "Point markers on the line",
+        "url": "https://www.shadcn.io/examples/line-points",
+        "position": 4
+      },
+      {
+        "id": "line-dashed",
+        "family": "line",
+        "title": "Dashed Line Chart",
+        "label": "Dashed end segment",
+        "description": "Dashed end segment",
+        "url": "https://www.shadcn.io/examples/line-dashed",
+        "position": 5
+      },
+      {
+        "id": "line-markers",
+        "family": "line",
+        "title": "Line Chart with Markers",
+        "label": "Event markers",
+        "description": "Event markers",
+        "url": "https://www.shadcn.io/examples/line-markers",
+        "position": 6
+      },
+      {
+        "id": "line-legend",
+        "family": "line",
+        "title": "Line Chart with Legend",
+        "label": "Interactive series legend",
+        "description": "Interactive series legend",
+        "url": "https://www.shadcn.io/examples/line-legend",
+        "position": 7
+      },
+      {
+        "id": "line-time-range",
+        "family": "line",
+        "title": "Line Chart with Time Range",
+        "label": "Time-range switcher",
+        "description": "Time-range switcher",
+        "url": "https://www.shadcn.io/examples/line-time-range",
+        "position": 8
+      },
+      {
+        "id": "line-segment",
+        "family": "line",
+        "title": "Line Chart with Segment Selection",
+        "label": "Drag-to-select a segment",
+        "description": "Drag-to-select a segment",
+        "url": "https://www.shadcn.io/examples/line-segment",
+        "position": 9
+      },
+      {
+        "id": "line-brush",
+        "family": "line",
+        "title": "Line Chart with Brush",
+        "label": "Overview brush for range selection",
+        "description": "Overview brush for range selection",
+        "url": "https://www.shadcn.io/examples/line-brush",
+        "position": 10
+      },
+      {
+        "id": "line-linked-brush",
+        "family": "line",
+        "title": "Line Chart with Linked Brush",
+        "label": "One brush for two linked charts",
+        "description": "One brush for two linked charts",
+        "url": "https://www.shadcn.io/examples/line-linked-brush",
+        "position": 11
+      },
+      {
+        "id": "line-zoom",
+        "family": "line",
+        "title": "Line Chart with Zoom and Pan",
+        "label": "Zoom and pan controls",
+        "description": "Zoom and pan controls",
+        "url": "https://www.shadcn.io/examples/line-zoom",
+        "position": 12
+      },
+      {
+        "id": "line-synced",
+        "family": "line",
+        "title": "Line Chart with Synced Cursors",
+        "label": "Cursor shared between charts",
+        "description": "Cursor shared between charts",
+        "url": "https://www.shadcn.io/examples/line-synced",
+        "position": 13
+      },
+      {
+        "id": "line-table",
+        "family": "line",
+        "title": "Line Chart with Linked Table",
+        "label": "Linked chart and table",
+        "description": "Linked chart and table",
+        "url": "https://www.shadcn.io/examples/line-table",
+        "position": 14
+      },
+      {
+        "id": "line-projection",
+        "family": "line",
+        "title": "Line Chart with Projection",
+        "label": "Projected values",
+        "description": "Projected values",
+        "url": "https://www.shadcn.io/examples/line-projection",
+        "position": 15
+      },
+      {
+        "id": "line-projection-manual",
+        "family": "line",
+        "title": "Line Chart with Manual Projection",
+        "label": "Manually specified projection",
+        "description": "Manually specified projection",
+        "url": "https://www.shadcn.io/examples/line-projection-manual",
+        "position": 16
+      },
+      {
+        "id": "line-threshold",
+        "family": "line",
+        "title": "Line Chart with Threshold",
+        "label": "Reference threshold",
+        "description": "Reference threshold",
+        "url": "https://www.shadcn.io/examples/line-threshold",
+        "position": 17
+      },
+      {
+        "id": "line-profit-loss",
+        "family": "line",
+        "title": "Profit and Loss Line Chart",
+        "label": "Profit/loss coloring",
+        "description": "Profit/loss coloring",
+        "url": "https://www.shadcn.io/examples/line-profit-loss",
+        "position": 18
+      },
+      {
+        "id": "line-profit-loss-legend",
+        "family": "line",
+        "title": "Profit and Loss Line Chart with Legend",
+        "label": "Profit/loss with a legend",
+        "description": "Profit/loss with a legend",
+        "url": "https://www.shadcn.io/examples/line-profit-loss-legend",
+        "position": 19
+      },
+      {
+        "id": "line-band",
+        "family": "line",
+        "title": "Line Chart with Band",
+        "label": "Shaded band overlay",
+        "description": "Shaded band overlay",
+        "url": "https://www.shadcn.io/examples/line-band",
+        "position": 20
+      },
+      {
+        "id": "line-band-range",
+        "family": "line",
+        "title": "Line Chart with Range Area",
+        "label": "Standalone range band",
+        "description": "Standalone range band",
+        "url": "https://www.shadcn.io/examples/line-band-range",
+        "position": 21
+      },
+      {
+        "id": "line-band-ranges",
+        "family": "line",
+        "title": "Line Chart with Band Ranges",
+        "label": "Multiple band ranges",
+        "description": "Multiple band ranges",
+        "url": "https://www.shadcn.io/examples/line-band-ranges",
+        "position": 22
+      },
+      {
+        "id": "line-band-bollinger",
+        "family": "line",
+        "title": "Line Chart with Bollinger Bands",
+        "label": "Bollinger Bands overlay",
+        "description": "Bollinger Bands overlay",
+        "url": "https://www.shadcn.io/examples/line-band-bollinger",
+        "position": 23
+      },
+      {
+        "id": "line-band-fill",
+        "family": "line",
+        "title": "Line Chart with Band Fill Types",
+        "label": "Alternative band fills",
+        "description": "Alternative band fills",
+        "url": "https://www.shadcn.io/examples/line-band-fill",
+        "position": 24
+      },
+      {
+        "id": "line-band-fade",
+        "family": "line",
+        "title": "Line Chart with Faded Band",
+        "label": "Band with a fade",
+        "description": "Band with a fade",
+        "url": "https://www.shadcn.io/examples/line-band-fade",
+        "position": 25
+      },
+      {
+        "id": "line-band-edges",
+        "family": "line",
+        "title": "Line Chart with Band Edges",
+        "label": "Band edge styling",
+        "description": "Band edge styling",
+        "url": "https://www.shadcn.io/examples/line-band-edges",
+        "position": 26
+      },
+      {
+        "id": "line-weekends",
+        "family": "line",
+        "title": "Line Chart with Weekends",
+        "label": "Weekend highlights",
+        "description": "Weekend highlights",
+        "url": "https://www.shadcn.io/examples/line-weekends",
+        "position": 27
+      },
+      {
+        "id": "line-deadline",
+        "family": "line",
+        "title": "Line Chart with Deadline",
+        "label": "Deadline marker",
+        "description": "Deadline marker",
+        "url": "https://www.shadcn.io/examples/line-deadline",
+        "position": 28
+      },
+      {
+        "id": "line-deadline-fills",
+        "family": "line",
+        "title": "Line Chart with Deadline Fills",
+        "label": "Deadline range shading",
+        "description": "Deadline range shading",
+        "url": "https://www.shadcn.io/examples/line-deadline-fills",
+        "position": 29
+      },
+      {
+        "id": "line-date-highlights-brush",
+        "family": "line",
+        "title": "Line Chart with Date Highlights and Brush",
+        "label": "Date highlights with a brush",
+        "description": "Date highlights with a brush",
+        "url": "https://www.shadcn.io/examples/line-date-highlights-brush",
+        "position": 30
+      },
+      {
+        "id": "line-glow",
+        "family": "line",
+        "title": "Line Chart with Glow",
+        "label": "Glowing line",
+        "description": "Glowing line",
+        "url": "https://www.shadcn.io/examples/line-glow",
+        "position": 31
+      },
+      {
+        "id": "line-trend",
+        "family": "line",
+        "title": "Line Chart with Trend Line",
+        "label": "Trend-line overlay",
+        "description": "Trend-line overlay",
+        "url": "https://www.shadcn.io/examples/line-trend",
+        "position": 32
+      },
+      {
+        "id": "line-bollinger",
+        "family": "line",
+        "title": "Line Chart with Bollinger Bands on a Floating Axis",
+        "label": "Floating scale for Bollinger Bands",
+        "description": "Floating scale for Bollinger Bands",
+        "url": "https://www.shadcn.io/examples/line-bollinger",
+        "position": 33
+      },
+      {
+        "id": "line-crosshair-point",
+        "family": "line",
+        "title": "Line Chart with Point Crosshair",
+        "label": "Crosshair at a point",
+        "description": "Crosshair at a point",
+        "url": "https://www.shadcn.io/examples/line-crosshair-point",
+        "position": 34
+      },
+      {
+        "id": "line-fixed-scale",
+        "family": "line",
+        "title": "Line Chart with Fixed Scale",
+        "label": "Fixed axis scale",
+        "description": "Fixed axis scale",
+        "url": "https://www.shadcn.io/examples/line-fixed-scale",
+        "position": 35
+      },
+      {
+        "id": "line-straight",
+        "family": "line",
+        "title": "Straight Line Chart",
+        "label": "Straight segments between points",
+        "description": "Straight segments between points",
+        "url": "https://www.shadcn.io/examples/line-straight",
+        "position": 36
+      },
+      {
+        "id": "line-export",
+        "family": "line",
+        "title": "Line Chart with Export",
+        "label": "Chart export",
+        "description": "Chart export",
+        "url": "https://www.shadcn.io/examples/line-export",
+        "position": 37
+      },
+      {
+        "id": "line-large-data",
+        "family": "line",
+        "title": "Line Chart with Large Data",
+        "label": "Large dataset",
+        "description": "Large dataset",
+        "url": "https://www.shadcn.io/examples/line-large-data",
+        "position": 38
+      },
+      {
+        "id": "line-loading",
+        "family": "line",
+        "title": "Line Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/line-loading",
+        "position": 39
+      },
+      {
+        "id": "chart-data-table",
+        "family": "line",
+        "title": "Chart Data Table",
+        "label": "Tabular view of chart data",
+        "description": "Tabular view of chart data",
+        "url": "https://www.shadcn.io/examples/chart-data-table",
+        "position": 40
+      },
+      {
+        "id": "line-loading-placeholder",
+        "family": "line",
+        "title": "Line Chart Loading Placeholder",
+        "label": "Loading placeholder",
+        "description": "Loading placeholder",
+        "url": "https://www.shadcn.io/examples/line-loading-placeholder",
+        "position": 41
+      }
+    ]
+  },
+  {
+    "id": "scatter",
+    "name": "Scatter chart",
+    "url": "https://www.shadcn.io/scatter-chart-examples",
+    "examples": [
+      {
+        "id": "scatter-default",
+        "family": "scatter",
+        "title": "Scatter Chart",
+        "label": "Standard scatter",
+        "description": "Standard scatter",
+        "url": "https://www.shadcn.io/examples/scatter-default",
+        "position": 1
+      },
+      {
+        "id": "scatter-rings",
+        "family": "scatter",
+        "title": "Scatter Chart with Offset Rings",
+        "label": "Offset ring markers",
+        "description": "Offset ring markers",
+        "url": "https://www.shadcn.io/examples/scatter-rings",
+        "position": 2
+      },
+      {
+        "id": "scatter-solid",
+        "family": "scatter",
+        "title": "Scatter Chart with Solid Dots",
+        "label": "Filled dot markers",
+        "description": "Filled dot markers",
+        "url": "https://www.shadcn.io/examples/scatter-solid",
+        "position": 3
+      },
+      {
+        "id": "scatter-outline",
+        "family": "scatter",
+        "title": "Scatter Chart with Outlines",
+        "label": "Outlined markers",
+        "description": "Outlined markers",
+        "url": "https://www.shadcn.io/examples/scatter-outline",
+        "position": 4
+      },
+      {
+        "id": "scatter-jitter",
+        "family": "scatter",
+        "title": "Scatter Chart with Jitter",
+        "label": "Jittered points",
+        "description": "Jittered points",
+        "url": "https://www.shadcn.io/examples/scatter-jitter",
+        "position": 5
+      },
+      {
+        "id": "scatter-large-data",
+        "family": "scatter",
+        "title": "Scatter Chart with Large Data",
+        "label": "Large dataset",
+        "description": "Large dataset",
+        "url": "https://www.shadcn.io/examples/scatter-large-data",
+        "position": 6
+      }
+    ]
+  },
+  {
+    "id": "candlestick",
+    "name": "Candlestick chart",
+    "url": "https://www.shadcn.io/candlestick-chart-examples",
+    "examples": [
+      {
+        "id": "candlestick-default",
+        "family": "candlestick",
+        "title": "Candlestick Chart",
+        "label": "Standard candlestick",
+        "description": "Standard candlestick",
+        "url": "https://www.shadcn.io/examples/candlestick-default",
+        "position": 1
+      },
+      {
+        "id": "candlestick-minimal",
+        "family": "candlestick",
+        "title": "Minimal Candlestick Chart",
+        "label": "Minimal styling",
+        "description": "Minimal styling",
+        "url": "https://www.shadcn.io/examples/candlestick-minimal",
+        "position": 2
+      },
+      {
+        "id": "candlestick-colors",
+        "family": "candlestick",
+        "title": "Candlestick Chart with Custom Colors",
+        "label": "Custom candle colors",
+        "description": "Custom candle colors",
+        "url": "https://www.shadcn.io/examples/candlestick-colors",
+        "position": 3
+      },
+      {
+        "id": "candlestick-range",
+        "family": "candlestick",
+        "title": "Candlestick Chart with a Range Selector",
+        "label": "Range picker",
+        "description": "Range picker",
+        "url": "https://www.shadcn.io/examples/candlestick-range",
+        "position": 4
+      },
+      {
+        "id": "candlestick-crosshair",
+        "family": "candlestick",
+        "title": "Candlestick Chart with a Matching Crosshair",
+        "label": "Coordinated crosshair",
+        "description": "Coordinated crosshair",
+        "url": "https://www.shadcn.io/examples/candlestick-crosshair",
+        "position": 5
+      },
+      {
+        "id": "candlestick-pattern",
+        "family": "candlestick",
+        "title": "Candlestick Chart with Striped Bodies",
+        "label": "Striped candle bodies",
+        "description": "Striped candle bodies",
+        "url": "https://www.shadcn.io/examples/candlestick-pattern",
+        "position": 6
+      }
+    ]
+  },
+  {
+    "id": "composed",
+    "name": "Composed chart",
+    "url": "https://www.shadcn.io/composed-chart-examples",
+    "examples": [
+      {
+        "id": "composed-default",
+        "family": "composed",
+        "title": "Composed Chart",
+        "label": "Standard combined chart",
+        "description": "Standard combined chart",
+        "url": "https://www.shadcn.io/examples/composed-default",
+        "position": 1
+      },
+      {
+        "id": "composed-target",
+        "family": "composed",
+        "title": "Composed Chart with a Target Line",
+        "label": "Target reference line",
+        "description": "Target reference line",
+        "url": "https://www.shadcn.io/examples/composed-target",
+        "position": 2
+      },
+      {
+        "id": "composed-grouped",
+        "family": "composed",
+        "title": "Composed Chart with Grouped Bars",
+        "label": "Grouped bar series",
+        "description": "Grouped bar series",
+        "url": "https://www.shadcn.io/examples/composed-grouped",
+        "position": 3
+      },
+      {
+        "id": "composed-stacked",
+        "family": "composed",
+        "title": "Composed Chart with Stacked Bars",
+        "label": "Stacked bar series",
+        "description": "Stacked bar series",
+        "url": "https://www.shadcn.io/examples/composed-stacked",
+        "position": 4
+      },
+      {
+        "id": "composed-band",
+        "family": "composed",
+        "title": "Composed Chart with an Expected Range",
+        "label": "Expected range overlay",
+        "description": "Expected range overlay",
+        "url": "https://www.shadcn.io/examples/composed-band",
+        "position": 5
+      },
+      {
+        "id": "composed-date-highlights",
+        "family": "composed",
+        "title": "Composed Chart with Date Highlights",
+        "label": "Date highlighting",
+        "description": "Date highlighting",
+        "url": "https://www.shadcn.io/examples/composed-date-highlights",
+        "position": 6
+      },
+      {
+        "id": "composed-trend",
+        "family": "composed",
+        "title": "Composed Chart with Trend Lines",
+        "label": "Trend-line overlays",
+        "description": "Trend-line overlays",
+        "url": "https://www.shadcn.io/examples/composed-trend",
+        "position": 7
+      },
+      {
+        "id": "composed-y-domains",
+        "family": "composed",
+        "title": "Composed Chart with Separate Scales",
+        "label": "Separate axis scales",
+        "description": "Separate axis scales",
+        "url": "https://www.shadcn.io/examples/composed-y-domains",
+        "position": 8
+      },
+      {
+        "id": "composed-price-volume",
+        "family": "composed",
+        "title": "Composed Chart with Price and Volume",
+        "label": "Price and volume combination",
+        "description": "Price and volume combination",
+        "url": "https://www.shadcn.io/examples/composed-price-volume",
+        "position": 9
+      },
+      {
+        "id": "composed-signal",
+        "family": "composed",
+        "title": "Composed Chart with a Moving Average",
+        "label": "Moving-average overlay",
+        "description": "Moving-average overlay",
+        "url": "https://www.shadcn.io/examples/composed-signal",
+        "position": 10
+      },
+      {
+        "id": "composed-profit-loss",
+        "family": "composed",
+        "title": "Composed Chart with Profit and Loss",
+        "label": "Profit/loss combination",
+        "description": "Profit/loss combination",
+        "url": "https://www.shadcn.io/examples/composed-profit-loss",
+        "position": 11
+      }
+    ]
+  },
+  {
+    "id": "live-line",
+    "name": "Live line chart",
+    "url": "https://www.shadcn.io/live-line-chart-examples",
+    "examples": [
+      {
+        "id": "live-line-default",
+        "family": "live-line",
+        "title": "Live Line Chart",
+        "label": "Standard live line",
+        "description": "Standard live line",
+        "url": "https://www.shadcn.io/examples/live-line-default",
+        "position": 1
+      },
+      {
+        "id": "live-line-momentum",
+        "family": "live-line",
+        "title": "Live Line Chart with Momentum Colors",
+        "label": "Colors that follow momentum",
+        "description": "Colors that follow momentum",
+        "url": "https://www.shadcn.io/examples/live-line-momentum",
+        "position": 2
+      },
+      {
+        "id": "live-line-paused",
+        "family": "live-line",
+        "title": "Live Line Chart with Pause",
+        "label": "Pause control",
+        "description": "Pause control",
+        "url": "https://www.shadcn.io/examples/live-line-paused",
+        "position": 3
+      },
+      {
+        "id": "live-line-right-axis",
+        "family": "live-line",
+        "title": "Live Line Chart with a Right Axis",
+        "label": "Right-side axis",
+        "description": "Right-side axis",
+        "url": "https://www.shadcn.io/examples/live-line-right-axis",
+        "position": 4
+      },
+      {
+        "id": "live-line-background",
+        "family": "live-line",
+        "title": "Live Line Chart with Patterned Background",
+        "label": "Background pattern",
+        "description": "Background pattern",
+        "url": "https://www.shadcn.io/examples/live-line-background",
+        "position": 5
+      },
+      {
+        "id": "live-line-dots",
+        "family": "live-line",
+        "title": "Live Line Chart with Dot Grid",
+        "label": "Dotted grid",
+        "description": "Dotted grid",
+        "url": "https://www.shadcn.io/examples/live-line-dots",
+        "position": 6
+      },
+      {
+        "id": "live-line-reference-band",
+        "family": "live-line",
+        "title": "Live Line Chart with a Target Band",
+        "label": "Target range band",
+        "description": "Target range band",
+        "url": "https://www.shadcn.io/examples/live-line-reference-band",
+        "position": 7
+      },
+      {
+        "id": "live-line-pattern-band",
+        "family": "live-line",
+        "title": "Live Line Chart with a Hatched Band",
+        "label": "Hatched band",
+        "description": "Hatched band",
+        "url": "https://www.shadcn.io/examples/live-line-pattern-band",
+        "position": 8
+      },
+      {
+        "id": "live-line-loading",
+        "family": "live-line",
+        "title": "Live Line Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/live-line-loading",
+        "position": 9
+      }
+    ]
+  },
+  {
+    "id": "gantt",
+    "name": "Gantt chart",
+    "url": "https://www.shadcn.io/gantt-chart-examples",
+    "examples": [
+      {
+        "id": "gantt-default",
+        "family": "gantt",
+        "title": "Gantt Chart",
+        "label": "Standard Gantt timeline",
+        "description": "Standard Gantt timeline",
+        "url": "https://www.shadcn.io/examples/gantt-default",
+        "position": 1
+      },
+      {
+        "id": "gantt-roadmap",
+        "family": "gantt",
+        "title": "Roadmap Gantt Chart",
+        "label": "Roadmap timeline",
+        "description": "Roadmap timeline",
+        "url": "https://www.shadcn.io/examples/gantt-roadmap",
+        "position": 2
+      },
+      {
+        "id": "gantt-milestones",
+        "family": "gantt",
+        "title": "Gantt Chart with Milestones",
+        "label": "Milestone markers",
+        "description": "Milestone markers",
+        "url": "https://www.shadcn.io/examples/gantt-milestones",
+        "position": 3
+      },
+      {
+        "id": "gantt-loading",
+        "family": "gantt",
+        "title": "Gantt Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/gantt-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "waterfall",
+    "name": "Waterfall chart",
+    "url": "https://www.shadcn.io/waterfall-chart-examples",
+    "examples": [
+      {
+        "id": "waterfall-default",
+        "family": "waterfall",
+        "title": "Waterfall Chart",
+        "label": "Standard waterfall",
+        "description": "Standard waterfall",
+        "url": "https://www.shadcn.io/examples/waterfall-default",
+        "position": 1
+      },
+      {
+        "id": "waterfall-subtotals",
+        "family": "waterfall",
+        "title": "Waterfall Chart with Subtotals",
+        "label": "Subtotal bars",
+        "description": "Subtotal bars",
+        "url": "https://www.shadcn.io/examples/waterfall-subtotals",
+        "position": 2
+      },
+      {
+        "id": "waterfall-cash-flow",
+        "family": "waterfall",
+        "title": "Cash Flow Waterfall Chart",
+        "label": "Cash-flow breakdown",
+        "description": "Cash-flow breakdown",
+        "url": "https://www.shadcn.io/examples/waterfall-cash-flow",
+        "position": 3
+      },
+      {
+        "id": "waterfall-loading",
+        "family": "waterfall",
+        "title": "Waterfall Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/waterfall-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "lollipop",
+    "name": "Lollipop chart",
+    "url": "https://www.shadcn.io/lollipop-chart-examples",
+    "examples": [
+      {
+        "id": "lollipop-default",
+        "family": "lollipop",
+        "title": "Lollipop Chart",
+        "label": "Standard lollipop",
+        "description": "Standard lollipop",
+        "url": "https://www.shadcn.io/examples/lollipop-default",
+        "position": 1
+      },
+      {
+        "id": "lollipop-horizontal",
+        "family": "lollipop",
+        "title": "Horizontal Lollipop Chart",
+        "label": "Horizontal layout",
+        "description": "Horizontal layout",
+        "url": "https://www.shadcn.io/examples/lollipop-horizontal",
+        "position": 2
+      },
+      {
+        "id": "lollipop-change",
+        "family": "lollipop",
+        "title": "Lollipop Chart with Negative Values",
+        "label": "Negative values",
+        "description": "Negative values",
+        "url": "https://www.shadcn.io/examples/lollipop-change",
+        "position": 3
+      },
+      {
+        "id": "lollipop-loading",
+        "family": "lollipop",
+        "title": "Lollipop Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/lollipop-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "dumbbell",
+    "name": "Dumbbell chart",
+    "url": "https://www.shadcn.io/dumbbell-chart-examples",
+    "examples": [
+      {
+        "id": "dumbbell-default",
+        "family": "dumbbell",
+        "title": "Dumbbell Chart",
+        "label": "Standard dumbbell",
+        "description": "Standard dumbbell",
+        "url": "https://www.shadcn.io/examples/dumbbell-default",
+        "position": 1
+      },
+      {
+        "id": "dumbbell-legend",
+        "family": "dumbbell",
+        "title": "Dumbbell Chart with Legend",
+        "label": "Series legend",
+        "description": "Series legend",
+        "url": "https://www.shadcn.io/examples/dumbbell-legend",
+        "position": 2
+      },
+      {
+        "id": "dumbbell-vertical",
+        "family": "dumbbell",
+        "title": "Vertical Dumbbell Chart",
+        "label": "Vertical layout",
+        "description": "Vertical layout",
+        "url": "https://www.shadcn.io/examples/dumbbell-vertical",
+        "position": 3
+      },
+      {
+        "id": "dumbbell-loading",
+        "family": "dumbbell",
+        "title": "Dumbbell Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/dumbbell-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "uncertainty",
+    "name": "Uncertainty chart",
+    "url": "https://www.shadcn.io/uncertainty-chart-examples",
+    "examples": [
+      {
+        "id": "uncertainty-default",
+        "family": "uncertainty",
+        "title": "Error Bar Chart",
+        "label": "Error bars",
+        "description": "Error bars",
+        "url": "https://www.shadcn.io/examples/uncertainty-default",
+        "position": 1
+      },
+      {
+        "id": "uncertainty-forest",
+        "family": "uncertainty",
+        "title": "Forest Plot",
+        "label": "Forest plot",
+        "description": "Forest plot",
+        "url": "https://www.shadcn.io/examples/uncertainty-forest",
+        "position": 2
+      },
+      {
+        "id": "uncertainty-ribbon",
+        "family": "uncertainty",
+        "title": "Ribbon Chart with Percentile Bands",
+        "label": "Percentile ribbons",
+        "description": "Percentile ribbons",
+        "url": "https://www.shadcn.io/examples/uncertainty-ribbon",
+        "position": 3
+      },
+      {
+        "id": "uncertainty-forecast",
+        "family": "uncertainty",
+        "title": "Forecast Fan Chart",
+        "label": "Fan-shaped forecast intervals",
+        "description": "Fan-shaped forecast intervals",
+        "url": "https://www.shadcn.io/examples/uncertainty-forecast",
+        "position": 4
+      },
+      {
+        "id": "uncertainty-loading",
+        "family": "uncertainty",
+        "title": "Error Bar Chart Loading State",
+        "label": "Error-bar loading state",
+        "description": "Error-bar loading state",
+        "url": "https://www.shadcn.io/examples/uncertainty-loading",
+        "position": 5
+      }
+    ]
+  },
+  {
+    "id": "bump",
+    "name": "Bump chart",
+    "url": "https://www.shadcn.io/bump-chart-examples",
+    "examples": [
+      {
+        "id": "bump-default",
+        "family": "bump",
+        "title": "Bump Chart",
+        "label": "Standard rank-over-time chart",
+        "description": "Standard rank-over-time chart",
+        "url": "https://www.shadcn.io/examples/bump-default",
+        "position": 1
+      },
+      {
+        "id": "bump-ascending",
+        "family": "bump",
+        "title": "Bump Chart Ranked Lowest First",
+        "label": "Rank lowest values first",
+        "description": "Rank lowest values first",
+        "url": "https://www.shadcn.io/examples/bump-ascending",
+        "position": 2
+      },
+      {
+        "id": "bump-loading",
+        "family": "bump",
+        "title": "Bump Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/bump-loading",
+        "position": 3
+      }
+    ]
+  },
+  {
+    "id": "slope",
+    "name": "Slope chart",
+    "url": "https://www.shadcn.io/slope-chart-examples",
+    "examples": [
+      {
+        "id": "slope-default",
+        "family": "slope",
+        "title": "Slope Chart",
+        "label": "Standard slope chart",
+        "description": "Standard slope chart",
+        "url": "https://www.shadcn.io/examples/slope-default",
+        "position": 1
+      },
+      {
+        "id": "slope-response-time",
+        "family": "slope",
+        "title": "Slope Chart Where Lower Is Better",
+        "label": "Highlight decreases as improvements",
+        "description": "Highlight decreases as improvements",
+        "url": "https://www.shadcn.io/examples/slope-response-time",
+        "position": 2
+      },
+      {
+        "id": "slope-loading",
+        "family": "slope",
+        "title": "Slope Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/slope-loading",
+        "position": 3
+      }
+    ]
+  },
+  {
+    "id": "sparkline",
+    "name": "Sparkline",
+    "url": "https://www.shadcn.io/sparkline-chart-examples",
+    "examples": [
+      {
+        "id": "sparkline-default",
+        "family": "sparkline",
+        "title": "Sparklines",
+        "label": "Sparkline overview",
+        "description": "Sparkline overview",
+        "url": "https://www.shadcn.io/examples/sparkline-default",
+        "position": 1
+      },
+      {
+        "id": "sparkline-line",
+        "family": "sparkline",
+        "title": "Line Sparkline",
+        "label": "Line sparkline",
+        "description": "Line sparkline",
+        "url": "https://www.shadcn.io/examples/sparkline-line",
+        "position": 2
+      },
+      {
+        "id": "sparkline-area",
+        "family": "sparkline",
+        "title": "Area Sparkline",
+        "label": "Area sparkline",
+        "description": "Area sparkline",
+        "url": "https://www.shadcn.io/examples/sparkline-area",
+        "position": 3
+      },
+      {
+        "id": "sparkline-area-solid",
+        "family": "sparkline",
+        "title": "Area Sparkline with a Solid Fill",
+        "label": "Solid-filled area sparkline",
+        "description": "Solid-filled area sparkline",
+        "url": "https://www.shadcn.io/examples/sparkline-area-solid",
+        "position": 4
+      },
+      {
+        "id": "sparkline-bar",
+        "family": "sparkline",
+        "title": "Bar Sparkline",
+        "label": "Bar sparkline",
+        "description": "Bar sparkline",
+        "url": "https://www.shadcn.io/examples/sparkline-bar",
+        "position": 5
+      },
+      {
+        "id": "sparkline-bar-negative",
+        "family": "sparkline",
+        "title": "Bar Sparkline with Negative Values",
+        "label": "Bars with negative values",
+        "description": "Bars with negative values",
+        "url": "https://www.shadcn.io/examples/sparkline-bar-negative",
+        "position": 6
+      },
+      {
+        "id": "sparkline-end-dot",
+        "family": "sparkline",
+        "title": "Sparkline with an End Dot",
+        "label": "Endpoint marker",
+        "description": "Endpoint marker",
+        "url": "https://www.shadcn.io/examples/sparkline-end-dot",
+        "position": 7
+      },
+      {
+        "id": "sparkline-step",
+        "family": "sparkline",
+        "title": "Stepped Area Sparkline",
+        "label": "Stepped area",
+        "description": "Stepped area",
+        "url": "https://www.shadcn.io/examples/sparkline-step",
+        "position": 8
+      },
+      {
+        "id": "sparkline-crosshairs",
+        "family": "sparkline",
+        "title": "Sparkline Crosshairs",
+        "label": "Hover crosshairs",
+        "description": "Hover crosshairs",
+        "url": "https://www.shadcn.io/examples/sparkline-crosshairs",
+        "position": 9
+      },
+      {
+        "id": "sparkline-hover-feel",
+        "family": "sparkline",
+        "title": "Sparkline Hover Springs",
+        "label": "Spring-animated hover",
+        "description": "Spring-animated hover",
+        "url": "https://www.shadcn.io/examples/sparkline-hover-feel",
+        "position": 10
+      },
+      {
+        "id": "sparkline-synced",
+        "family": "sparkline",
+        "title": "Synced Sparklines",
+        "label": "Synchronized sparklines",
+        "description": "Synchronized sparklines",
+        "url": "https://www.shadcn.io/examples/sparkline-synced",
+        "position": 11
+      },
+      {
+        "id": "sparkline-table",
+        "family": "sparkline",
+        "title": "Sparklines in a Table",
+        "label": "Embedded in table rows",
+        "description": "Embedded in table rows",
+        "url": "https://www.shadcn.io/examples/sparkline-table",
+        "position": 12
+      },
+      {
+        "id": "sparkline-stat-card",
+        "family": "sparkline",
+        "title": "Sparkline Stat Card",
+        "label": "Metric card",
+        "description": "Metric card",
+        "url": "https://www.shadcn.io/examples/sparkline-stat-card",
+        "position": 13
+      },
+      {
+        "id": "sparkline-range",
+        "family": "sparkline",
+        "title": "Sparkline with a Range Toggle",
+        "label": "Range switcher",
+        "description": "Range switcher",
+        "url": "https://www.shadcn.io/examples/sparkline-range",
+        "position": 14
+      },
+      {
+        "id": "sparkline-grid",
+        "family": "sparkline",
+        "title": "Sparkline Grid",
+        "label": "Grid of sparklines",
+        "description": "Grid of sparklines",
+        "url": "https://www.shadcn.io/examples/sparkline-grid",
+        "position": 15
+      }
+    ]
+  },
+  {
+    "id": "pie",
+    "name": "Pie chart",
+    "url": "https://www.shadcn.io/pie-chart-examples",
+    "examples": [
+      {
+        "id": "pie-default",
+        "family": "pie",
+        "title": "Pie Chart",
+        "label": "Standard pie",
+        "description": "Standard pie",
+        "url": "https://www.shadcn.io/examples/pie-default",
+        "position": 1
+      },
+      {
+        "id": "pie-center",
+        "family": "pie",
+        "title": "Donut Chart with Center Total",
+        "label": "Donut with a total in the center",
+        "description": "Donut with a total in the center",
+        "url": "https://www.shadcn.io/examples/pie-center",
+        "position": 2
+      },
+      {
+        "id": "pie-center-custom",
+        "family": "pie",
+        "title": "Donut Chart with Custom Center",
+        "label": "Donut with custom center content",
+        "description": "Donut with custom center content",
+        "url": "https://www.shadcn.io/examples/pie-center-custom",
+        "position": 3
+      },
+      {
+        "id": "pie-hover-legend",
+        "family": "pie",
+        "title": "Pie Chart with Legend",
+        "label": "Donut with an interactive legend",
+        "description": "Donut with an interactive legend",
+        "url": "https://www.shadcn.io/examples/pie-hover-legend",
+        "position": 4
+      },
+      {
+        "id": "pie-half-donut",
+        "family": "pie",
+        "title": "Half Donut Chart",
+        "label": "Semicircular donut",
+        "description": "Semicircular donut",
+        "url": "https://www.shadcn.io/examples/pie-half-donut",
+        "position": 5
+      },
+      {
+        "id": "pie-pattern",
+        "family": "pie",
+        "title": "Pie Chart with Pattern",
+        "label": "Patterned pie",
+        "description": "Patterned pie",
+        "url": "https://www.shadcn.io/examples/pie-pattern",
+        "position": 6
+      },
+      {
+        "id": "pie-pattern-presets",
+        "family": "pie",
+        "title": "Pie Chart with Pattern Presets",
+        "label": "Pie with preset patterns",
+        "description": "Pie with preset patterns",
+        "url": "https://www.shadcn.io/examples/pie-pattern-presets",
+        "position": 7
+      },
+      {
+        "id": "pie-pattern-tile",
+        "family": "pie",
+        "title": "Pie Chart with a Pattern Tile",
+        "label": "Pie with a custom tiled pattern",
+        "description": "Pie with a custom tiled pattern",
+        "url": "https://www.shadcn.io/examples/pie-pattern-tile",
+        "position": 8
+      },
+      {
+        "id": "pie-center-share",
+        "family": "pie",
+        "title": "Donut Chart with Share in the Center",
+        "label": "Donut with the share in the center",
+        "description": "Donut with the share in the center",
+        "url": "https://www.shadcn.io/examples/pie-center-share",
+        "position": 9
+      },
+      {
+        "id": "pie-hover-effects",
+        "family": "pie",
+        "title": "Pie Chart with Hover Effects",
+        "label": "Pie with hover styling",
+        "description": "Pie with hover styling",
+        "url": "https://www.shadcn.io/examples/pie-hover-effects",
+        "position": 10
+      },
+      {
+        "id": "pie-donut-grow",
+        "family": "pie",
+        "title": "Donut Chart with Grow Hover",
+        "label": "Donut segments expand on hover",
+        "description": "Donut segments expand on hover",
+        "url": "https://www.shadcn.io/examples/pie-donut-grow",
+        "position": 11
+      },
+      {
+        "id": "pie-glow",
+        "family": "pie",
+        "title": "Donut Chart with Glow",
+        "label": "Donut with a glow effect",
+        "description": "Donut with a glow effect",
+        "url": "https://www.shadcn.io/examples/pie-glow",
+        "position": 12
+      },
+      {
+        "id": "pie-gradients",
+        "family": "pie",
+        "title": "Pie Chart with Gradients",
+        "label": "Gradient-filled pie slices",
+        "description": "Gradient-filled pie slices",
+        "url": "https://www.shadcn.io/examples/pie-gradients",
+        "position": 13
+      },
+      {
+        "id": "pie-patterns",
+        "family": "pie",
+        "title": "Donut Chart with Patterns",
+        "label": "Patterned donut segments",
+        "description": "Patterned donut segments",
+        "url": "https://www.shadcn.io/examples/pie-patterns",
+        "position": 14
+      }
+    ]
+  },
+  {
+    "id": "ring",
+    "name": "Ring chart",
+    "url": "https://www.shadcn.io/ring-chart-examples",
+    "examples": [
+      {
+        "id": "ring-default",
+        "family": "ring",
+        "title": "Ring Chart",
+        "label": "Standard ring",
+        "description": "Standard ring",
+        "url": "https://www.shadcn.io/examples/ring-default",
+        "position": 1
+      },
+      {
+        "id": "ring-center-custom",
+        "family": "ring",
+        "title": "Ring Chart with Custom Center",
+        "label": "Custom content in the center",
+        "description": "Custom content in the center",
+        "url": "https://www.shadcn.io/examples/ring-center-custom",
+        "position": 2
+      },
+      {
+        "id": "ring-arc",
+        "family": "ring",
+        "title": "Three-Quarter Ring Chart",
+        "label": "270-degree ring",
+        "description": "270-degree ring",
+        "url": "https://www.shadcn.io/examples/ring-arc",
+        "position": 3
+      },
+      {
+        "id": "ring-legend",
+        "family": "ring",
+        "title": "Ring Chart with Legend",
+        "label": "Ring with a legend",
+        "description": "Ring with a legend",
+        "url": "https://www.shadcn.io/examples/ring-legend",
+        "position": 4
+      },
+      {
+        "id": "ring-grid",
+        "family": "ring",
+        "title": "Ring Chart with Progress Grid",
+        "label": "Progress rings with quarter guides",
+        "description": "Progress rings with quarter guides",
+        "url": "https://www.shadcn.io/examples/ring-grid",
+        "position": 5
+      },
+      {
+        "id": "ring-semicircle",
+        "family": "ring",
+        "title": "Half Ring Chart",
+        "label": "180-degree ring",
+        "description": "180-degree ring",
+        "url": "https://www.shadcn.io/examples/ring-semicircle",
+        "position": 6
+      }
+    ]
+  },
+  {
+    "id": "radar",
+    "name": "Radar chart",
+    "url": "https://www.shadcn.io/radar-chart-examples",
+    "examples": [
+      {
+        "id": "radar-default",
+        "family": "radar",
+        "title": "Radar Chart",
+        "label": "Standard radar",
+        "description": "Standard radar",
+        "url": "https://www.shadcn.io/examples/radar-default",
+        "position": 1
+      },
+      {
+        "id": "radar-hover",
+        "family": "radar",
+        "title": "Radar Chart with Controlled Hover",
+        "label": "Externally controlled hover",
+        "description": "Externally controlled hover",
+        "url": "https://www.shadcn.io/examples/radar-hover",
+        "position": 2
+      },
+      {
+        "id": "radar-minimal",
+        "family": "radar",
+        "title": "Minimal Radar Chart",
+        "label": "Minimal styling",
+        "description": "Minimal styling",
+        "url": "https://www.shadcn.io/examples/radar-minimal",
+        "position": 3
+      },
+      {
+        "id": "radar-hover-legend",
+        "family": "radar",
+        "title": "Radar Chart with Legend",
+        "label": "Series legend",
+        "description": "Series legend",
+        "url": "https://www.shadcn.io/examples/radar-hover-legend",
+        "position": 4
+      },
+      {
+        "id": "radar-triangle",
+        "family": "radar",
+        "title": "Triangle Radar Chart",
+        "label": "Triangular layout",
+        "description": "Triangular layout",
+        "url": "https://www.shadcn.io/examples/radar-triangle",
+        "position": 5
+      },
+      {
+        "id": "radar-fill-only",
+        "family": "radar",
+        "title": "Radar Chart with Fills Only",
+        "label": "Filled shapes only",
+        "description": "Filled shapes only",
+        "url": "https://www.shadcn.io/examples/radar-fill-only",
+        "position": 6
+      },
+      {
+        "id": "radar-single",
+        "family": "radar",
+        "title": "Single Series Radar Chart",
+        "label": "One series",
+        "description": "One series",
+        "url": "https://www.shadcn.io/examples/radar-single",
+        "position": 7
+      },
+      {
+        "id": "radar-levels",
+        "family": "radar",
+        "title": "Radar Chart with Three Levels",
+        "label": "Three grid levels",
+        "description": "Three grid levels",
+        "url": "https://www.shadcn.io/examples/radar-levels",
+        "position": 8
+      },
+      {
+        "id": "radar-grid-only",
+        "family": "radar",
+        "title": "Radar Chart without Spokes",
+        "label": "Hidden spokes",
+        "description": "Hidden spokes",
+        "url": "https://www.shadcn.io/examples/radar-grid-only",
+        "position": 9
+      }
+    ]
+  },
+  {
+    "id": "radial",
+    "name": "Radial chart",
+    "url": "https://www.shadcn.io/radial-chart-examples",
+    "examples": [
+      {
+        "id": "radial-default",
+        "family": "radial",
+        "title": "Radial Chart",
+        "label": "Standard radial chart",
+        "description": "Standard radial chart",
+        "url": "https://www.shadcn.io/examples/radial-default",
+        "position": 1
+      },
+      {
+        "id": "radial-patterned-dots",
+        "family": "radial",
+        "title": "Radial Chart with Patterned Dots",
+        "label": "Patterned dot plot",
+        "description": "Patterned dot plot",
+        "url": "https://www.shadcn.io/examples/radial-patterned-dots",
+        "position": 2
+      },
+      {
+        "id": "radial-line",
+        "family": "radial",
+        "title": "Radial Line Chart",
+        "label": "Circular line plot",
+        "description": "Circular line plot",
+        "url": "https://www.shadcn.io/examples/radial-line",
+        "position": 3
+      },
+      {
+        "id": "radial-temperature",
+        "family": "radial",
+        "title": "Radial Area Chart of a Year",
+        "label": "Yearly radial area plot",
+        "description": "Yearly radial area plot",
+        "url": "https://www.shadcn.io/examples/radial-temperature",
+        "position": 4
+      },
+      {
+        "id": "radial-population",
+        "family": "radial",
+        "title": "Radial Stacked Bar Chart by State",
+        "label": "Stacked radial bars by state",
+        "description": "Stacked radial bars by state",
+        "url": "https://www.shadcn.io/examples/radial-population",
+        "position": 5
+      },
+      {
+        "id": "radial-semicircle",
+        "family": "radial",
+        "title": "Radial Ring Bars on a Semicircle",
+        "label": "Semicircular ring bars",
+        "description": "Semicircular ring bars",
+        "url": "https://www.shadcn.io/examples/radial-semicircle",
+        "position": 6
+      },
+      {
+        "id": "radial-bar-clock",
+        "family": "radial",
+        "title": "Radial Stacked Bar Chart",
+        "label": "Stacked radial bars",
+        "description": "Stacked radial bars",
+        "url": "https://www.shadcn.io/examples/radial-bar-clock",
+        "position": 7
+      },
+      {
+        "id": "radial-area-clock",
+        "family": "radial",
+        "title": "Radial Stacked Area Chart",
+        "label": "Stacked radial areas",
+        "description": "Stacked radial areas",
+        "url": "https://www.shadcn.io/examples/radial-area-clock",
+        "position": 8
+      },
+      {
+        "id": "radial-activity-card",
+        "family": "radial",
+        "title": "Radial Activity Card",
+        "label": "Activity card",
+        "description": "Activity card",
+        "url": "https://www.shadcn.io/examples/radial-activity-card",
+        "position": 9
+      },
+      {
+        "id": "radial-storage-card",
+        "family": "radial",
+        "title": "Radial Storage Card",
+        "label": "Storage card",
+        "description": "Storage card",
+        "url": "https://www.shadcn.io/examples/radial-storage-card",
+        "position": 10
+      },
+      {
+        "id": "radial-seasonal-card",
+        "family": "radial",
+        "title": "Radial Temperature Card",
+        "label": "Temperature card",
+        "description": "Temperature card",
+        "url": "https://www.shadcn.io/examples/radial-seasonal-card",
+        "position": 11
+      }
+    ]
+  },
+  {
+    "id": "gauge",
+    "name": "Gauge",
+    "url": "https://www.shadcn.io/gauge-chart-examples",
+    "examples": [
+      {
+        "id": "gauge-default",
+        "family": "gauge",
+        "title": "Gauge",
+        "label": "Standard gauge",
+        "description": "Standard gauge",
+        "url": "https://www.shadcn.io/examples/gauge-default",
+        "position": 1
+      },
+      {
+        "id": "gauge-semicircle",
+        "family": "gauge",
+        "title": "Semicircle Gauge",
+        "label": "Semicircular gauge",
+        "description": "Semicircular gauge",
+        "url": "https://www.shadcn.io/examples/gauge-semicircle",
+        "position": 2
+      },
+      {
+        "id": "gauge-linear",
+        "family": "gauge",
+        "title": "Linear Gauge",
+        "label": "Horizontal linear gauge",
+        "description": "Horizontal linear gauge",
+        "url": "https://www.shadcn.io/examples/gauge-linear",
+        "position": 3
+      },
+      {
+        "id": "gauge-linear-gradient",
+        "family": "gauge",
+        "title": "Linear Gauge with Gradient",
+        "label": "Gradient-filled linear gauge",
+        "description": "Gradient-filled linear gauge",
+        "url": "https://www.shadcn.io/examples/gauge-linear-gradient",
+        "position": 4
+      },
+      {
+        "id": "gauge-fixed",
+        "family": "gauge",
+        "title": "Fixed-Size Gauges",
+        "label": "Gauges at fixed sizes",
+        "description": "Gauges at fixed sizes",
+        "url": "https://www.shadcn.io/examples/gauge-fixed",
+        "position": 5
+      },
+      {
+        "id": "gauge-interactive",
+        "family": "gauge",
+        "title": "Interactive Gauge",
+        "label": "Interactive gauge",
+        "description": "Interactive gauge",
+        "url": "https://www.shadcn.io/examples/gauge-interactive",
+        "position": 6
+      },
+      {
+        "id": "gauge-dial",
+        "family": "gauge",
+        "title": "Dial Gauge",
+        "label": "Dial-style gauge",
+        "description": "Dial-style gauge",
+        "url": "https://www.shadcn.io/examples/gauge-dial",
+        "position": 7
+      },
+      {
+        "id": "gauge-arc-styles",
+        "family": "gauge",
+        "title": "Gauge Arc Styles",
+        "label": "Alternative arc styles",
+        "description": "Alternative arc styles",
+        "url": "https://www.shadcn.io/examples/gauge-arc-styles",
+        "position": 8
+      },
+      {
+        "id": "gauge-ruler",
+        "family": "gauge",
+        "title": "Gauge with Ruler",
+        "label": "Ruler markings",
+        "description": "Ruler markings",
+        "url": "https://www.shadcn.io/examples/gauge-ruler",
+        "position": 9
+      },
+      {
+        "id": "gauge-needles",
+        "family": "gauge",
+        "title": "Gauge Needles",
+        "label": "Needle styles",
+        "description": "Needle styles",
+        "url": "https://www.shadcn.io/examples/gauge-needles",
+        "position": 10
+      },
+      {
+        "id": "gauge-needle-tips",
+        "family": "gauge",
+        "title": "Gauge Needle Tips",
+        "label": "Needle-tip styles",
+        "description": "Needle-tip styles",
+        "url": "https://www.shadcn.io/examples/gauge-needle-tips",
+        "position": 11
+      },
+      {
+        "id": "gauge-zones",
+        "family": "gauge",
+        "title": "Gauge with Zones",
+        "label": "Value zones",
+        "description": "Value zones",
+        "url": "https://www.shadcn.io/examples/gauge-zones",
+        "position": 12
+      },
+      {
+        "id": "gauge-sectors",
+        "family": "gauge",
+        "title": "Gauge Sectors",
+        "label": "Sector styling",
+        "description": "Sector styling",
+        "url": "https://www.shadcn.io/examples/gauge-sectors",
+        "position": 13
+      },
+      {
+        "id": "gauge-progress-ring",
+        "family": "gauge",
+        "title": "Gauge with Progress Ring",
+        "label": "Progress ring",
+        "description": "Progress ring",
+        "url": "https://www.shadcn.io/examples/gauge-progress-ring",
+        "position": 14
+      },
+      {
+        "id": "gauge-dots",
+        "family": "gauge",
+        "title": "Gauge with Dots",
+        "label": "Progress shown with rings of dots",
+        "description": "Progress shown with rings of dots",
+        "url": "https://www.shadcn.io/examples/gauge-dots",
+        "position": 15
+      },
+      {
+        "id": "gauge-glow",
+        "family": "gauge",
+        "title": "Gauge with Glow",
+        "label": "Glow styling",
+        "description": "Glow styling",
+        "url": "https://www.shadcn.io/examples/gauge-glow",
+        "position": 16
+      },
+      {
+        "id": "gauge-center-disc",
+        "family": "gauge",
+        "title": "Gauge with Center Disc",
+        "label": "Central disc",
+        "description": "Central disc",
+        "url": "https://www.shadcn.io/examples/gauge-center-disc",
+        "position": 17
+      },
+      {
+        "id": "gauge-fan-duty",
+        "family": "gauge",
+        "title": "Fan Duty Gauge",
+        "label": "Fan duty metric",
+        "description": "Fan duty metric",
+        "url": "https://www.shadcn.io/examples/gauge-fan-duty",
+        "position": 18
+      },
+      {
+        "id": "gauge-speedometer",
+        "family": "gauge",
+        "title": "Speedometer Gauge",
+        "label": "Speedometer",
+        "description": "Speedometer",
+        "url": "https://www.shadcn.io/examples/gauge-speedometer",
+        "position": 19
+      },
+      {
+        "id": "gauge-throughput",
+        "family": "gauge",
+        "title": "Throughput Gauge",
+        "label": "Throughput metric",
+        "description": "Throughput metric",
+        "url": "https://www.shadcn.io/examples/gauge-throughput",
+        "position": 20
+      },
+      {
+        "id": "gauge-live-load",
+        "family": "gauge",
+        "title": "Live Load Gauge",
+        "label": "Live system load",
+        "description": "Live system load",
+        "url": "https://www.shadcn.io/examples/gauge-live-load",
+        "position": 21
+      }
+    ]
+  },
+  {
+    "id": "funnel",
+    "name": "Funnel chart",
+    "url": "https://www.shadcn.io/funnel-chart-examples",
+    "examples": [
+      {
+        "id": "funnel-default",
+        "family": "funnel",
+        "title": "Funnel Chart",
+        "label": "Standard funnel",
+        "description": "Standard funnel",
+        "url": "https://www.shadcn.io/examples/funnel-default",
+        "position": 1
+      },
+      {
+        "id": "funnel-vertical",
+        "family": "funnel",
+        "title": "Vertical Funnel Chart",
+        "label": "Vertical layout",
+        "description": "Vertical layout",
+        "url": "https://www.shadcn.io/examples/funnel-vertical",
+        "position": 2
+      },
+      {
+        "id": "funnel-colors",
+        "family": "funnel",
+        "title": "Funnel Chart with Custom Colors",
+        "label": "Custom stage colors",
+        "description": "Custom stage colors",
+        "url": "https://www.shadcn.io/examples/funnel-colors",
+        "position": 3
+      },
+      {
+        "id": "funnel-pattern",
+        "family": "funnel",
+        "title": "Funnel Chart with a Pattern",
+        "label": "Pattern fill",
+        "description": "Pattern fill",
+        "url": "https://www.shadcn.io/examples/funnel-pattern",
+        "position": 4
+      },
+      {
+        "id": "funnel-interactive",
+        "family": "funnel",
+        "title": "Interactive Funnel Chart",
+        "label": "Interactive stages",
+        "description": "Interactive stages",
+        "url": "https://www.shadcn.io/examples/funnel-interactive",
+        "position": 5
+      },
+      {
+        "id": "funnel-legend",
+        "family": "funnel",
+        "title": "Funnel Chart with Legend",
+        "label": "Stage legend",
+        "description": "Stage legend",
+        "url": "https://www.shadcn.io/examples/funnel-legend",
+        "position": 6
+      },
+      {
+        "id": "funnel-straight",
+        "family": "funnel",
+        "title": "Funnel Chart with Straight Edges",
+        "label": "Straight edges",
+        "description": "Straight edges",
+        "url": "https://www.shadcn.io/examples/funnel-straight",
+        "position": 7
+      },
+      {
+        "id": "funnel-gradient",
+        "family": "funnel",
+        "title": "Funnel Chart with Gradients",
+        "label": "Gradient fills",
+        "description": "Gradient fills",
+        "url": "https://www.shadcn.io/examples/funnel-gradient",
+        "position": 8
+      },
+      {
+        "id": "funnel-grouped",
+        "family": "funnel",
+        "title": "Funnel Chart with Grouped Labels",
+        "label": "Grouped stage labels",
+        "description": "Grouped stage labels",
+        "url": "https://www.shadcn.io/examples/funnel-grouped",
+        "position": 9
+      },
+      {
+        "id": "funnel-grid",
+        "family": "funnel",
+        "title": "Funnel Chart with Grid",
+        "label": "Background grid",
+        "description": "Background grid",
+        "url": "https://www.shadcn.io/examples/funnel-grid",
+        "position": 10
+      },
+      {
+        "id": "funnel-vertical-curved",
+        "family": "funnel",
+        "title": "Vertical Curved Funnel Chart",
+        "label": "Vertical layout with curved edges",
+        "description": "Vertical layout with curved edges",
+        "url": "https://www.shadcn.io/examples/funnel-vertical-curved",
+        "position": 11
+      }
+    ]
+  },
+  {
+    "id": "heatmap",
+    "name": "Heatmap",
+    "url": "https://www.shadcn.io/heatmap-chart-examples",
+    "examples": [
+      {
+        "id": "heatmap-default",
+        "family": "heatmap",
+        "title": "Contribution Heatmap",
+        "label": "Contribution calendar",
+        "description": "Contribution calendar",
+        "url": "https://www.shadcn.io/examples/heatmap-default",
+        "position": 1
+      },
+      {
+        "id": "heatmap-patterns",
+        "family": "heatmap",
+        "title": "Heatmap with a Striped Level",
+        "label": "Striped intensity level",
+        "description": "Striped intensity level",
+        "url": "https://www.shadcn.io/examples/heatmap-patterns",
+        "position": 2
+      },
+      {
+        "id": "heatmap-weekdays",
+        "family": "heatmap",
+        "title": "Heatmap with Faded Weekends",
+        "label": "Muted weekends",
+        "description": "Muted weekends",
+        "url": "https://www.shadcn.io/examples/heatmap-weekdays",
+        "position": 3
+      },
+      {
+        "id": "heatmap-quarters",
+        "family": "heatmap",
+        "title": "Heatmap Split by Quarter",
+        "label": "Quarterly sections",
+        "description": "Quarterly sections",
+        "url": "https://www.shadcn.io/examples/heatmap-quarters",
+        "position": 4
+      },
+      {
+        "id": "heatmap-gradient-legend",
+        "family": "heatmap",
+        "title": "Heatmap with a Gradient Legend",
+        "label": "Continuous color legend",
+        "description": "Continuous color legend",
+        "url": "https://www.shadcn.io/examples/heatmap-gradient-legend",
+        "position": 5
+      },
+      {
+        "id": "heatmap-dots",
+        "family": "heatmap",
+        "title": "Dot Heatmap",
+        "label": "Dot markers",
+        "description": "Dot markers",
+        "url": "https://www.shadcn.io/examples/heatmap-dots",
+        "position": 6
+      },
+      {
+        "id": "heatmap-separators-solid",
+        "family": "heatmap",
+        "title": "Heatmap with Solid Dividers",
+        "label": "Solid quarter dividers",
+        "description": "Solid quarter dividers",
+        "url": "https://www.shadcn.io/examples/heatmap-separators-solid",
+        "position": 7
+      },
+      {
+        "id": "heatmap-separators-dashed",
+        "family": "heatmap",
+        "title": "Heatmap with Dashed Dividers",
+        "label": "Dashed quarter dividers",
+        "description": "Dashed quarter dividers",
+        "url": "https://www.shadcn.io/examples/heatmap-separators-dashed",
+        "position": 8
+      },
+      {
+        "id": "heatmap-active-scale",
+        "family": "heatmap",
+        "title": "Heatmap That Lifts on Hover",
+        "label": "Cells enlarge on hover",
+        "description": "Cells enlarge on hover",
+        "url": "https://www.shadcn.io/examples/heatmap-active-scale",
+        "position": 9
+      },
+      {
+        "id": "heatmap-scroll",
+        "family": "heatmap",
+        "title": "Scrolling Heatmap",
+        "label": "Scrollable grid",
+        "description": "Scrollable grid",
+        "url": "https://www.shadcn.io/examples/heatmap-scroll",
+        "position": 10
+      },
+      {
+        "id": "heatmap-loading",
+        "family": "heatmap",
+        "title": "Heatmap Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/heatmap-loading",
+        "position": 11
+      }
+    ]
+  },
+  {
+    "id": "sunburst",
+    "name": "Sunburst chart",
+    "url": "https://www.shadcn.io/sunburst-chart-examples",
+    "examples": [
+      {
+        "id": "sunburst-default",
+        "family": "sunburst",
+        "title": "Sunburst Chart",
+        "label": "Standard sunburst",
+        "description": "Standard sunburst",
+        "url": "https://www.shadcn.io/examples/sunburst-default",
+        "position": 1
+      },
+      {
+        "id": "sunburst-breadcrumb",
+        "family": "sunburst",
+        "title": "Sunburst Chart with Breadcrumb",
+        "label": "Breadcrumb trail",
+        "description": "Breadcrumb trail",
+        "url": "https://www.shadcn.io/examples/sunburst-breadcrumb",
+        "position": 2
+      },
+      {
+        "id": "sunburst-segment-colors",
+        "family": "sunburst",
+        "title": "Sunburst Chart with Segment Colors",
+        "label": "Custom segment colors",
+        "description": "Custom segment colors",
+        "url": "https://www.shadcn.io/examples/sunburst-segment-colors",
+        "position": 3
+      },
+      {
+        "id": "sunburst-patterns",
+        "family": "sunburst",
+        "title": "Sunburst Chart with Patterns",
+        "label": "Patterned segments",
+        "description": "Patterned segments",
+        "url": "https://www.shadcn.io/examples/sunburst-patterns",
+        "position": 4
+      },
+      {
+        "id": "sunburst-legend",
+        "family": "sunburst",
+        "title": "Sunburst Chart with Legend",
+        "label": "Category legend",
+        "description": "Category legend",
+        "url": "https://www.shadcn.io/examples/sunburst-legend",
+        "position": 5
+      },
+      {
+        "id": "sunburst-custom-hint",
+        "family": "sunburst",
+        "title": "Sunburst Chart with Custom Hint",
+        "label": "Custom segment hint",
+        "description": "Custom segment hint",
+        "url": "https://www.shadcn.io/examples/sunburst-custom-hint",
+        "position": 6
+      }
+    ]
+  },
+  {
+    "id": "sankey",
+    "name": "Sankey diagram",
+    "url": "https://www.shadcn.io/sankey-chart-examples",
+    "examples": [
+      {
+        "id": "sankey-default",
+        "family": "sankey",
+        "title": "Sankey of Site Traffic",
+        "label": "Website traffic flows",
+        "description": "Website traffic flows",
+        "url": "https://www.shadcn.io/examples/sankey-default",
+        "position": 1
+      },
+      {
+        "id": "sankey-vertical-labels",
+        "family": "sankey",
+        "title": "Sankey with Vertical Labels",
+        "label": "Vertical labels",
+        "description": "Vertical labels",
+        "url": "https://www.shadcn.io/examples/sankey-vertical-labels",
+        "position": 2
+      },
+      {
+        "id": "sankey-category-colors",
+        "family": "sankey",
+        "title": "Sankey Colored by Stage",
+        "label": "Flow colors by stage",
+        "description": "Flow colors by stage",
+        "url": "https://www.shadcn.io/examples/sankey-category-colors",
+        "position": 3
+      },
+      {
+        "id": "sankey-solid-links",
+        "family": "sankey",
+        "title": "Sankey with Solid Links",
+        "label": "Solid-color links",
+        "description": "Solid-color links",
+        "url": "https://www.shadcn.io/examples/sankey-solid-links",
+        "position": 4
+      },
+      {
+        "id": "sankey-single-color",
+        "family": "sankey",
+        "title": "Single-Color Sankey",
+        "label": "Single-color palette",
+        "description": "Single-color palette",
+        "url": "https://www.shadcn.io/examples/sankey-single-color",
+        "position": 5
+      },
+      {
+        "id": "sankey-no-labels",
+        "family": "sankey",
+        "title": "Sankey without Labels",
+        "label": "Hidden labels",
+        "description": "Hidden labels",
+        "url": "https://www.shadcn.io/examples/sankey-no-labels",
+        "position": 6
+      },
+      {
+        "id": "sankey-pattern-lines",
+        "family": "sankey",
+        "title": "Sankey with Striped Flows",
+        "label": "Striped flow links",
+        "description": "Striped flow links",
+        "url": "https://www.shadcn.io/examples/sankey-pattern-lines",
+        "position": 7
+      },
+      {
+        "id": "sankey-legend",
+        "family": "sankey",
+        "title": "Sankey with a Legend",
+        "label": "Interactive flow legend",
+        "description": "Interactive flow legend",
+        "url": "https://www.shadcn.io/examples/sankey-legend",
+        "position": 8
+      },
+      {
+        "id": "sankey-patterns",
+        "family": "sankey",
+        "title": "Sankey with Hatched Flows",
+        "label": "Hatched flow links",
+        "description": "Hatched flow links",
+        "url": "https://www.shadcn.io/examples/sankey-patterns",
+        "position": 9
+      }
+    ]
+  },
+  {
+    "id": "treemap",
+    "name": "Treemap",
+    "url": "https://www.shadcn.io/treemap-chart-examples",
+    "examples": [
+      {
+        "id": "treemap-default",
+        "family": "treemap",
+        "title": "Cloud Spend Treemap",
+        "label": "Cloud spending breakdown",
+        "description": "Cloud spending breakdown",
+        "url": "https://www.shadcn.io/examples/treemap-default",
+        "position": 1
+      },
+      {
+        "id": "treemap-drilldown",
+        "family": "treemap",
+        "title": "Treemap with Drill-Down",
+        "label": "Hierarchy drill-down",
+        "description": "Hierarchy drill-down",
+        "url": "https://www.shadcn.io/examples/treemap-drilldown",
+        "position": 2
+      },
+      {
+        "id": "treemap-portfolio",
+        "family": "treemap",
+        "title": "Portfolio Treemap",
+        "label": "Portfolio breakdown",
+        "description": "Portfolio breakdown",
+        "url": "https://www.shadcn.io/examples/treemap-portfolio",
+        "position": 3
+      },
+      {
+        "id": "treemap-loading",
+        "family": "treemap",
+        "title": "Treemap Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/treemap-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "tree",
+    "name": "Tree chart",
+    "url": "https://www.shadcn.io/tree-chart-examples",
+    "examples": [
+      {
+        "id": "tree-default",
+        "family": "tree",
+        "title": "Org Chart",
+        "label": "Organizational chart",
+        "description": "Organizational chart",
+        "url": "https://www.shadcn.io/examples/tree-default",
+        "position": 1
+      },
+      {
+        "id": "tree-radial",
+        "family": "tree",
+        "title": "Radial Dendrogram",
+        "label": "Radial dendrogram",
+        "description": "Radial dendrogram",
+        "url": "https://www.shadcn.io/examples/tree-radial",
+        "position": 2
+      },
+      {
+        "id": "tree-vertical",
+        "family": "tree",
+        "title": "Vertical Site Map",
+        "label": "Vertical website hierarchy",
+        "description": "Vertical website hierarchy",
+        "url": "https://www.shadcn.io/examples/tree-vertical",
+        "position": 3
+      },
+      {
+        "id": "tree-loading",
+        "family": "tree",
+        "title": "Tree Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/tree-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "network",
+    "name": "Network chart",
+    "url": "https://www.shadcn.io/network-chart-examples",
+    "examples": [
+      {
+        "id": "network-default",
+        "family": "network",
+        "title": "Service Dependency Graph",
+        "label": "Service dependencies",
+        "description": "Service dependencies",
+        "url": "https://www.shadcn.io/examples/network-default",
+        "position": 1
+      },
+      {
+        "id": "network-legend",
+        "family": "network",
+        "title": "Network with a Team Legend",
+        "label": "Team legend",
+        "description": "Team legend",
+        "url": "https://www.shadcn.io/examples/network-legend",
+        "position": 2
+      },
+      {
+        "id": "network-loading",
+        "family": "network",
+        "title": "Network Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/network-loading",
+        "position": 3
+      }
+    ]
+  },
+  {
+    "id": "waffle",
+    "name": "Waffle chart",
+    "url": "https://www.shadcn.io/waffle-chart-examples",
+    "examples": [
+      {
+        "id": "waffle-default",
+        "family": "waffle",
+        "title": "Browser Share Waffle",
+        "label": "Browser market share",
+        "description": "Browser market share",
+        "url": "https://www.shadcn.io/examples/waffle-default",
+        "position": 1
+      },
+      {
+        "id": "waffle-progress",
+        "family": "waffle",
+        "title": "Waffle as a Progress Bar",
+        "label": "Waffle progress indicator",
+        "description": "Waffle progress indicator",
+        "url": "https://www.shadcn.io/examples/waffle-progress",
+        "position": 2
+      },
+      {
+        "id": "waffle-columns",
+        "family": "waffle",
+        "title": "Waffle Filled by Column",
+        "label": "Column-first fill",
+        "description": "Column-first fill",
+        "url": "https://www.shadcn.io/examples/waffle-columns",
+        "position": 3
+      },
+      {
+        "id": "waffle-loading",
+        "family": "waffle",
+        "title": "Waffle Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/waffle-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "marimekko",
+    "name": "Marimekko chart",
+    "url": "https://www.shadcn.io/marimekko-chart-examples",
+    "examples": [
+      {
+        "id": "marimekko-default",
+        "family": "marimekko",
+        "title": "Revenue Marimekko",
+        "label": "Revenue breakdown",
+        "description": "Revenue breakdown",
+        "url": "https://www.shadcn.io/examples/marimekko-default",
+        "position": 1
+      },
+      {
+        "id": "marimekko-legend",
+        "family": "marimekko",
+        "title": "Marimekko with a Legend",
+        "label": "Category legend",
+        "description": "Category legend",
+        "url": "https://www.shadcn.io/examples/marimekko-legend",
+        "position": 2
+      },
+      {
+        "id": "marimekko-loading",
+        "family": "marimekko",
+        "title": "Marimekko Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/marimekko-loading",
+        "position": 3
+      }
+    ]
+  },
+  {
+    "id": "stream",
+    "name": "Stream chart",
+    "url": "https://www.shadcn.io/stream-chart-examples",
+    "examples": [
+      {
+        "id": "stream-default",
+        "family": "stream",
+        "title": "Stream Chart",
+        "label": "Standard streamgraph",
+        "description": "Standard streamgraph",
+        "url": "https://www.shadcn.io/examples/stream-default",
+        "position": 1
+      },
+      {
+        "id": "stream-expand",
+        "family": "stream",
+        "title": "Normalized Stream Chart",
+        "label": "Normalized streamgraph",
+        "description": "Normalized streamgraph",
+        "url": "https://www.shadcn.io/examples/stream-expand",
+        "position": 2
+      },
+      {
+        "id": "stream-loading",
+        "family": "stream",
+        "title": "Stream Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/stream-loading",
+        "position": 3
+      }
+    ]
+  },
+  {
+    "id": "diverging",
+    "name": "Diverging bar chart",
+    "url": "https://www.shadcn.io/diverging-chart-examples",
+    "examples": [
+      {
+        "id": "diverging-default",
+        "family": "diverging",
+        "title": "Diverging Bar Chart",
+        "label": "Standard diverging bars",
+        "description": "Standard diverging bars",
+        "url": "https://www.shadcn.io/examples/diverging-default",
+        "position": 1
+      },
+      {
+        "id": "diverging-legend",
+        "family": "diverging",
+        "title": "Diverging Bars with a Legend",
+        "label": "Diverging bars with series legend",
+        "description": "Diverging bars with series legend",
+        "url": "https://www.shadcn.io/examples/diverging-legend",
+        "position": 2
+      },
+      {
+        "id": "diverging-loading",
+        "family": "diverging",
+        "title": "Diverging Bar Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/diverging-loading",
+        "position": 3
+      }
+    ]
+  },
+  {
+    "id": "choropleth",
+    "name": "Choropleth map",
+    "url": "https://www.shadcn.io/choropleth-chart-examples",
+    "examples": [
+      {
+        "id": "choropleth-default",
+        "family": "choropleth",
+        "title": "World Choropleth",
+        "label": "World choropleth",
+        "description": "World choropleth",
+        "url": "https://www.shadcn.io/examples/choropleth-default",
+        "position": 1
+      },
+      {
+        "id": "choropleth-values",
+        "family": "choropleth",
+        "title": "Map Shaded by Value",
+        "label": "Regions shaded by value",
+        "description": "Regions shaded by value",
+        "url": "https://www.shadcn.io/examples/choropleth-values",
+        "position": 2
+      },
+      {
+        "id": "choropleth-graticule",
+        "family": "choropleth",
+        "title": "Map with a Graticule",
+        "label": "Latitude and longitude grid",
+        "description": "Latitude and longitude grid",
+        "url": "https://www.shadcn.io/examples/choropleth-graticule",
+        "position": 3
+      },
+      {
+        "id": "choropleth-patterns",
+        "family": "choropleth",
+        "title": "Map with Striped Countries",
+        "label": "Striped country fills",
+        "description": "Striped country fills",
+        "url": "https://www.shadcn.io/examples/choropleth-patterns",
+        "position": 4
+      },
+      {
+        "id": "choropleth-click-to-zoom",
+        "family": "choropleth",
+        "title": "Click-to-Zoom Map",
+        "label": "Click to zoom",
+        "description": "Click to zoom",
+        "url": "https://www.shadcn.io/examples/choropleth-click-to-zoom",
+        "position": 5
+      },
+      {
+        "id": "choropleth-dot-grid",
+        "family": "choropleth",
+        "title": "Dot-Grid Map",
+        "label": "World map made of dots",
+        "description": "World map made of dots",
+        "url": "https://www.shadcn.io/examples/choropleth-dot-grid",
+        "position": 6
+      },
+      {
+        "id": "choropleth-pointer-camera",
+        "family": "choropleth",
+        "title": "Map with a Pointer Camera",
+        "label": "Pointer-controlled camera",
+        "description": "Pointer-controlled camera",
+        "url": "https://www.shadcn.io/examples/choropleth-pointer-camera",
+        "position": 7
+      },
+      {
+        "id": "choropleth-markers",
+        "family": "choropleth",
+        "title": "Map with Markers",
+        "label": "Location markers",
+        "description": "Location markers",
+        "url": "https://www.shadcn.io/examples/choropleth-markers",
+        "position": 8
+      },
+      {
+        "id": "choropleth-background",
+        "family": "choropleth",
+        "title": "Map over a Pattern",
+        "label": "Patterned background",
+        "description": "Patterned background",
+        "url": "https://www.shadcn.io/examples/choropleth-background",
+        "position": 9
+      }
+    ]
+  },
+  {
+    "id": "histogram",
+    "name": "Histogram",
+    "url": "https://www.shadcn.io/histogram-chart-examples",
+    "examples": [
+      {
+        "id": "histogram-default",
+        "family": "histogram",
+        "title": "Histogram",
+        "label": "Standard histogram",
+        "description": "Standard histogram",
+        "url": "https://www.shadcn.io/examples/histogram-default",
+        "position": 1
+      },
+      {
+        "id": "histogram-overlay",
+        "family": "histogram",
+        "title": "Overlapping Histograms",
+        "label": "Overlaid distributions",
+        "description": "Overlaid distributions",
+        "url": "https://www.shadcn.io/examples/histogram-overlay",
+        "position": 2
+      },
+      {
+        "id": "histogram-stacked",
+        "family": "histogram",
+        "title": "Stacked Histogram",
+        "label": "Stacked distributions",
+        "description": "Stacked distributions",
+        "url": "https://www.shadcn.io/examples/histogram-stacked",
+        "position": 3
+      },
+      {
+        "id": "histogram-loading",
+        "family": "histogram",
+        "title": "Histogram Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/histogram-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "ridgeline",
+    "name": "Ridgeline plot",
+    "url": "https://www.shadcn.io/ridgeline-chart-examples",
+    "examples": [
+      {
+        "id": "ridgeline-default",
+        "family": "ridgeline",
+        "title": "Ridgeline Plot",
+        "label": "Standard ridgeline",
+        "description": "Standard ridgeline",
+        "url": "https://www.shadcn.io/examples/ridgeline-default",
+        "position": 1
+      },
+      {
+        "id": "ridgeline-colors",
+        "family": "ridgeline",
+        "title": "Ridgeline with a Color per Row",
+        "label": "Distinct color per row",
+        "description": "Distinct color per row",
+        "url": "https://www.shadcn.io/examples/ridgeline-colors",
+        "position": 2
+      },
+      {
+        "id": "ridgeline-loading",
+        "family": "ridgeline",
+        "title": "Ridgeline Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/ridgeline-loading",
+        "position": 3
+      }
+    ]
+  },
+  {
+    "id": "ecdf",
+    "name": "ECDF chart",
+    "url": "https://www.shadcn.io/ecdf-chart-examples",
+    "examples": [
+      {
+        "id": "ecdf-default",
+        "family": "ecdf",
+        "title": "ECDF Chart",
+        "label": "Standard empirical cumulative distribution",
+        "description": "Standard empirical cumulative distribution",
+        "url": "https://www.shadcn.io/examples/ecdf-default",
+        "position": 1
+      },
+      {
+        "id": "ecdf-compare",
+        "family": "ecdf",
+        "title": "ECDF Comparing Two Releases",
+        "label": "Comparison of two releases",
+        "description": "Comparison of two releases",
+        "url": "https://www.shadcn.io/examples/ecdf-compare",
+        "position": 2
+      },
+      {
+        "id": "ecdf-loading",
+        "family": "ecdf",
+        "title": "ECDF Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/ecdf-loading",
+        "position": 3
+      }
+    ]
+  },
+  {
+    "id": "beeswarm",
+    "name": "Beeswarm chart",
+    "url": "https://www.shadcn.io/beeswarm-chart-examples",
+    "examples": [
+      {
+        "id": "beeswarm-default",
+        "family": "beeswarm",
+        "title": "Beeswarm Chart",
+        "label": "Standard beeswarm",
+        "description": "Standard beeswarm",
+        "url": "https://www.shadcn.io/examples/beeswarm-default",
+        "position": 1
+      },
+      {
+        "id": "beeswarm-series",
+        "family": "beeswarm",
+        "title": "Beeswarm with Two Series",
+        "label": "Two series",
+        "description": "Two series",
+        "url": "https://www.shadcn.io/examples/beeswarm-series",
+        "position": 2
+      },
+      {
+        "id": "beeswarm-vertical",
+        "family": "beeswarm",
+        "title": "Vertical Beeswarm",
+        "label": "Vertical layout",
+        "description": "Vertical layout",
+        "url": "https://www.shadcn.io/examples/beeswarm-vertical",
+        "position": 3
+      },
+      {
+        "id": "beeswarm-loading",
+        "family": "beeswarm",
+        "title": "Beeswarm Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/beeswarm-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "violin",
+    "name": "Violin plot",
+    "url": "https://www.shadcn.io/violin-chart-examples",
+    "examples": [
+      {
+        "id": "violin-default",
+        "family": "violin",
+        "title": "Violin Plot",
+        "label": "Standard violin plot",
+        "description": "Standard violin plot",
+        "url": "https://www.shadcn.io/examples/violin-default",
+        "position": 1
+      },
+      {
+        "id": "violin-horizontal",
+        "family": "violin",
+        "title": "Horizontal Violin Plot",
+        "label": "Horizontal layout",
+        "description": "Horizontal layout",
+        "url": "https://www.shadcn.io/examples/violin-horizontal",
+        "position": 2
+      },
+      {
+        "id": "violin-grouped",
+        "family": "violin",
+        "title": "Grouped Violin Plot",
+        "label": "Grouped violins",
+        "description": "Grouped violins",
+        "url": "https://www.shadcn.io/examples/violin-grouped",
+        "position": 3
+      },
+      {
+        "id": "violin-loading",
+        "family": "violin",
+        "title": "Violin Plot Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/violin-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "box-plot",
+    "name": "Box plot",
+    "url": "https://www.shadcn.io/box-plot-chart-examples",
+    "examples": [
+      {
+        "id": "box-plot-default",
+        "family": "box-plot",
+        "title": "Box Plot",
+        "label": "Standard box plot",
+        "description": "Standard box plot",
+        "url": "https://www.shadcn.io/examples/box-plot-default",
+        "position": 1
+      },
+      {
+        "id": "box-plot-horizontal",
+        "family": "box-plot",
+        "title": "Horizontal Box Plot",
+        "label": "Horizontal layout",
+        "description": "Horizontal layout",
+        "url": "https://www.shadcn.io/examples/box-plot-horizontal",
+        "position": 2
+      },
+      {
+        "id": "box-plot-grouped",
+        "family": "box-plot",
+        "title": "Grouped Box Plot",
+        "label": "Grouped boxes",
+        "description": "Grouped boxes",
+        "url": "https://www.shadcn.io/examples/box-plot-grouped",
+        "position": 3
+      },
+      {
+        "id": "box-plot-loading",
+        "family": "box-plot",
+        "title": "Box Plot Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/box-plot-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "hexbin",
+    "name": "Hexbin chart",
+    "url": "https://www.shadcn.io/hexbin-chart-examples",
+    "examples": [
+      {
+        "id": "hexbin-default",
+        "family": "hexbin",
+        "title": "Hexbin Chart",
+        "label": "Standard hexagonal bins",
+        "description": "Standard hexagonal bins",
+        "url": "https://www.shadcn.io/examples/hexbin-default",
+        "position": 1
+      },
+      {
+        "id": "hexbin-average",
+        "family": "hexbin",
+        "title": "Hexbin Chart with Averages",
+        "label": "Average value per bin",
+        "description": "Average value per bin",
+        "url": "https://www.shadcn.io/examples/hexbin-average",
+        "position": 2
+      },
+      {
+        "id": "hexbin-custom-tooltip",
+        "family": "hexbin",
+        "title": "Hexbin Chart with a Custom Tooltip",
+        "label": "Custom bin tooltip",
+        "description": "Custom bin tooltip",
+        "url": "https://www.shadcn.io/examples/hexbin-custom-tooltip",
+        "position": 3
+      },
+      {
+        "id": "hexbin-loading",
+        "family": "hexbin",
+        "title": "Hexbin Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/hexbin-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "density",
+    "name": "Density chart",
+    "url": "https://www.shadcn.io/density-chart-examples",
+    "examples": [
+      {
+        "id": "density-default",
+        "family": "density",
+        "title": "Density Chart",
+        "label": "Standard density plot",
+        "description": "Standard density plot",
+        "url": "https://www.shadcn.io/examples/density-default",
+        "position": 1
+      },
+      {
+        "id": "density-groups",
+        "family": "density",
+        "title": "Density Chart with Groups",
+        "label": "Grouped densities",
+        "description": "Grouped densities",
+        "url": "https://www.shadcn.io/examples/density-groups",
+        "position": 2
+      },
+      {
+        "id": "density-contours",
+        "family": "density",
+        "title": "Density Chart with Contours Only",
+        "label": "Contour lines only",
+        "description": "Contour lines only",
+        "url": "https://www.shadcn.io/examples/density-contours",
+        "position": 3
+      },
+      {
+        "id": "density-loading",
+        "family": "density",
+        "title": "Density Chart Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/density-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "bubble-map",
+    "name": "Bubble map",
+    "url": "https://www.shadcn.io/bubble-map-chart-examples",
+    "examples": [
+      {
+        "id": "bubble-map-default",
+        "family": "bubble-map",
+        "title": "Bubble Map",
+        "label": "Standard bubble map",
+        "description": "Standard bubble map",
+        "url": "https://www.shadcn.io/examples/bubble-map-default",
+        "position": 1
+      },
+      {
+        "id": "bubble-map-categories",
+        "family": "bubble-map",
+        "title": "Bubble Map with Categories",
+        "label": "Categorical bubbles",
+        "description": "Categorical bubbles",
+        "url": "https://www.shadcn.io/examples/bubble-map-categories",
+        "position": 2
+      },
+      {
+        "id": "bubble-map-region",
+        "family": "bubble-map",
+        "title": "Bubble Map of a Region",
+        "label": "Regional bubble map",
+        "description": "Regional bubble map",
+        "url": "https://www.shadcn.io/examples/bubble-map-region",
+        "position": 3
+      },
+      {
+        "id": "bubble-map-loading",
+        "family": "bubble-map",
+        "title": "Bubble Map Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/bubble-map-loading",
+        "position": 4
+      }
+    ]
+  },
+  {
+    "id": "route-map",
+    "name": "Route map",
+    "url": "https://www.shadcn.io/route-map-chart-examples",
+    "examples": [
+      {
+        "id": "route-map-default",
+        "family": "route-map",
+        "title": "Route Map",
+        "label": "Standard route map",
+        "description": "Standard route map",
+        "url": "https://www.shadcn.io/examples/route-map-default",
+        "position": 1
+      },
+      {
+        "id": "route-map-region",
+        "family": "route-map",
+        "title": "Route Map of a Region",
+        "label": "Regional route map",
+        "description": "Regional route map",
+        "url": "https://www.shadcn.io/examples/route-map-region",
+        "position": 2
+      },
+      {
+        "id": "route-map-loading",
+        "family": "route-map",
+        "title": "Route Map Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/route-map-loading",
+        "position": 3
+      }
+    ]
+  },
+  {
+    "id": "globe",
+    "name": "Globe",
+    "url": "https://www.shadcn.io/globe-chart-examples",
+    "examples": [
+      {
+        "id": "globe-default",
+        "family": "globe",
+        "title": "Globe",
+        "label": "Standard globe",
+        "description": "Standard globe",
+        "url": "https://www.shadcn.io/examples/globe-default",
+        "position": 1
+      },
+      {
+        "id": "globe-sized",
+        "family": "globe",
+        "title": "Globe with Sized Markers",
+        "label": "Globe with size-encoded markers",
+        "description": "Globe with size-encoded markers",
+        "url": "https://www.shadcn.io/examples/globe-sized",
+        "position": 2
+      },
+      {
+        "id": "globe-loading",
+        "family": "globe",
+        "title": "Globe Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/globe-loading",
+        "position": 3
+      }
+    ]
+  },
+  {
+    "id": "vector-field",
+    "name": "Vector field",
+    "url": "https://www.shadcn.io/vector-field-chart-examples",
+    "examples": [
+      {
+        "id": "vector-field-default",
+        "family": "vector-field",
+        "title": "Vector Field",
+        "label": "Standard vector field",
+        "description": "Standard vector field",
+        "url": "https://www.shadcn.io/examples/vector-field-default",
+        "position": 1
+      },
+      {
+        "id": "vector-field-stations",
+        "family": "vector-field",
+        "title": "Vector Field of Weather Stations",
+        "label": "Weather-station vectors",
+        "description": "Weather-station vectors",
+        "url": "https://www.shadcn.io/examples/vector-field-stations",
+        "position": 2
+      },
+      {
+        "id": "vector-field-loading",
+        "family": "vector-field",
+        "title": "Vector Field Loading State",
+        "label": "Loading state",
+        "description": "Loading state",
+        "url": "https://www.shadcn.io/examples/vector-field-loading",
+        "position": 3
+      }
+    ]
+  },
+  {
+    "id": "tooltip",
+    "name": "Tooltip",
+    "url": "https://www.shadcn.io/tooltip-chart-examples",
+    "examples": [
+      {
+        "id": "tooltip-standard",
+        "family": "tooltip",
+        "title": "Chart Tooltip",
+        "label": "Standard chart tooltip",
+        "description": "Standard chart tooltip",
+        "url": "https://www.shadcn.io/examples/tooltip-standard",
+        "position": 1
+      },
+      {
+        "id": "tooltip-crosshair",
+        "family": "tooltip",
+        "title": "Tooltip with a Dashed Crosshair",
+        "label": "Dashed crosshair",
+        "description": "Dashed crosshair",
+        "url": "https://www.shadcn.io/examples/tooltip-crosshair",
+        "position": 2
+      },
+      {
+        "id": "tooltip-indicator",
+        "family": "tooltip",
+        "title": "Tooltip with a Styled Indicator",
+        "label": "Styled crosshair and dots",
+        "description": "Styled crosshair and dots",
+        "url": "https://www.shadcn.io/examples/tooltip-indicator",
+        "position": 3
+      },
+      {
+        "id": "tooltip-motion",
+        "family": "tooltip",
+        "title": "Tooltip with Panel Motion",
+        "label": "Animated tooltip panel",
+        "description": "Animated tooltip panel",
+        "url": "https://www.shadcn.io/examples/tooltip-motion",
+        "position": 4
+      },
+      {
+        "id": "tooltip-rows",
+        "family": "tooltip",
+        "title": "Tooltip with Custom Rows",
+        "label": "Custom data rows",
+        "description": "Custom data rows",
+        "url": "https://www.shadcn.io/examples/tooltip-rows",
+        "position": 5
+      },
+      {
+        "id": "tooltip-content",
+        "family": "tooltip",
+        "title": "Tooltip with Custom Content",
+        "label": "Custom content layout",
+        "description": "Custom content layout",
+        "url": "https://www.shadcn.io/examples/tooltip-content",
+        "position": 6
+      },
+      {
+        "id": "tooltip-pinned",
+        "family": "tooltip",
+        "title": "Pinned Tooltip",
+        "label": "Pinned tooltip",
+        "description": "Pinned tooltip",
+        "url": "https://www.shadcn.io/examples/tooltip-pinned",
+        "position": 7
+      },
+      {
+        "id": "tooltip-ring",
+        "family": "tooltip",
+        "title": "Bar Chart Tooltip with Rings",
+        "label": "Ring indicators on bars",
+        "description": "Ring indicators on bars",
+        "url": "https://www.shadcn.io/examples/tooltip-ring",
+        "position": 8
+      },
+      {
+        "id": "tooltip-horizontal-crosshair",
+        "family": "tooltip",
+        "title": "Tooltip with a Horizontal Crosshair",
+        "label": "Horizontal crosshair",
+        "description": "Horizontal crosshair",
+        "url": "https://www.shadcn.io/examples/tooltip-horizontal-crosshair",
+        "position": 9
+      },
+      {
+        "id": "tooltip-header",
+        "family": "tooltip",
+        "title": "Tooltip with a Header",
+        "label": "Tooltip header",
+        "description": "Tooltip header",
+        "url": "https://www.shadcn.io/examples/tooltip-header",
+        "position": 10
+      },
+      {
+        "id": "tooltip-custom-indicator",
+        "family": "tooltip",
+        "title": "Tooltip with a Custom Indicator",
+        "label": "Custom indicator bar under the active value",
+        "description": "Custom indicator bar under the active value",
+        "url": "https://www.shadcn.io/examples/tooltip-custom-indicator",
+        "position": 11
+      }
+    ]
+  }
+]

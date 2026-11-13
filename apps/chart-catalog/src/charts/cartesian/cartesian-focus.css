@@ -1,0 +1,52 @@
+.cartesian-focus-surface:focus-visible,
+.cartesian-shadcn .recharts-surface:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+  border-radius: 7px;
+}
+
+.cartesian-focus-pill {
+  filter: drop-shadow(0 3px 4px rgb(0 0 0 / 12%));
+  font-variant-numeric: tabular-nums;
+}
+
+.cartesian-focus-readout {
+  box-sizing: border-box;
+  min-width: 154px;
+  max-width: min(220px, 70vw);
+  padding: 10px 12px;
+  color: var(--popover-foreground);
+  background: var(--popover);
+  border-radius: 10px;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.cartesian-focus-readout-title { font-size: 12px; font-weight: 500; }
+.cartesian-focus-readout-values { margin: 0; }
+.cartesian-focus-readout-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  min-height: 26px;
+}
+.cartesian-focus-readout-row:last-child { min-height: 24px; }
+.cartesian-focus-readout-row dt { display: flex; align-items: center; gap: 8px; color: var(--muted-foreground); overflow-wrap: anywhere; }
+.cartesian-focus-readout-row i { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.cartesian-focus-readout-row dd { margin: 0; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.cartesian-shadcn .recharts-cartesian-grid {
+  mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+}
+
+.cartesian-shadcn .recharts-area-area {
+  mask-image: linear-gradient(90deg, transparent, black 15%, black 85%, transparent);
+}
+
+.cartesian-shadcn:has(.cartesian-focus-pill) .recharts-area-area { opacity: 0.6; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .cartesian-shadcn .recharts-bar-rectangle rect { transition: opacity 150ms ease-out; }
+}

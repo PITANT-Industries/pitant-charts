@@ -1,0 +1,38 @@
+.donut { display: grid; min-height: 0; height: 100%; width: 100%; place-items: center; }
+.plot { display: block; width: 100%; height: 100%; min-height: 0; overflow: visible; font-family: inherit; }
+.plot:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; border-radius: 8px; }
+.slice { transition: opacity 160ms ease-out, transform 180ms ease-out; }
+.slice[data-dimmed='true'] { opacity: .56; }
+.mark { pointer-events: none; }
+.slice > path { cursor: pointer; }
+.value { fill: var(--foreground); font-size: 28px; font-weight: 650; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
+.caption { fill: var(--muted-foreground); font-size: 11px; font-weight: 500; }
+.custom { display: grid; place-content: center; height: 100%; text-align: center; color: var(--foreground); font-size: 12px; font-weight: 500; line-height: 1.25; }
+.screenReader { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.withLegend { grid-template-columns: minmax(0, 1fr) minmax(140px, 34%); padding-inline: min(2.4vw, 18px); }
+.legend { display: grid; align-content: center; width: 100%; min-width: 0; margin: 0; padding: 0; list-style: none; }
+.legend button { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; padding: 8px; border: 0; border-radius: 6px; background: transparent; color: var(--muted-foreground); text-align: start; font: 500 .75rem/1.3 system-ui, sans-serif; }
+.legend button[data-active='true'] { background: var(--muted); color: var(--foreground); }
+.legend strong { color: var(--foreground); font-weight: 610; font-variant-numeric: tabular-nums; }
+.swatch { width: 8px; height: 8px; border-radius: 2px; }
+@media (max-width: 560px) {
+  .withLegend { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; padding: 4px 10px 8px; }
+  .legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .legend button { gap: 5px; padding: 5px; font-size: .68rem; }
+}
+@media (prefers-reduced-motion: reduce) { .slice { transition: none; } }
+.legend button.ringLegend { grid-template-columns: 8px minmax(0, 1fr) auto auto; }
+.ringLegend meter { inline-size: 100%; block-size: 4px; grid-column: 2 / -1; }
+
+.matchedPie { inline-size: min(100%, 280px); block-size: min(100%, 280px); }
+.matchedRing { inline-size: min(100%, 300px); block-size: min(100%, 300px); }
+.circularMark { pointer-events: none; }
+.circularHit { cursor: pointer; }
+.circularCenter { display: flex; flex-direction: column; justify-content: center; align-items: center; block-size: 100%; gap: 2px; text-align: center; line-height: 1.3; }
+.circularValue { color: var(--foreground); font-variant-numeric: tabular-nums; font-weight: 700; line-height: 1; }
+.circularLabel { color: var(--muted-foreground); font-weight: 400; line-height: 1.5; }
+@media (prefers-reduced-motion: no-preference) {
+  .circularMark { transition: opacity 120ms ease-out; }
+  .ringEntrance { animation: ring-reveal 1100ms cubic-bezier(.85, 0, .15, 1) both; }
+}
+@keyframes ring-reveal { from { scale: .001; } to { scale: 1; } }
