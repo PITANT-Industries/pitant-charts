@@ -1,0 +1,70 @@
+.reference-distributions {
+  inline-size: 100%;
+  min-inline-size: 0;
+  container-type: inline-size;
+}
+.reference-distribution-plot { position: relative; aspect-ratio: 2; inline-size: 100%; }
+.reference-distribution-plot > svg { display: block; inline-size: 100%; block-size: 100%; touch-action: pan-y; overflow: visible; }
+.reference-distributions[data-compact="true"], .reference-distributions[data-compact="true"] .reference-distribution-plot { block-size: 100%; }
+.reference-distribution-marks[data-loading="true"] { opacity: .55; }
+.reference-distribution-plot [data-distribution-grid="horizontal"] { mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
+.reference-distribution-controls { display: flex; justify-content: flex-end; margin-block-end: 34px; }
+.reference-distribution-controls button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-block-size: 28px;
+  padding-inline: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  cursor: pointer;
+}
+.reference-distribution-controls button:is(:hover, [aria-pressed="true"]) { background: var(--muted); }
+.reference-distribution-controls button:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.reference-distribution-loading {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+}
+.reference-distribution-footer {
+  display: grid;
+  gap: 8px;
+  margin-block-start: 16px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted-foreground);
+}
+.reference-distribution-footer strong { font-weight: 500; color: var(--foreground); }
+.reference-distribution-readout { position: absolute; z-index: 1; inline-size: max-content; pointer-events: none; }
+.reference-distribution-readout > .cartesian-focus-readout { min-inline-size: 140px; max-inline-size: 100%; }
+.reference-distribution-readout .cartesian-focus-readout-title { margin-block-end: 8px; line-height: 16px; }
+.reference-distribution-readout .cartesian-focus-readout-row:last-child { min-height: 20px; }
+
+@container (max-width: 320px) { .reference-distribution-controls { margin-block-end: 54px; } }
+@media (prefers-reduced-motion: no-preference) {
+  .reference-distribution-controls [aria-pressed="true"] svg { animation: distribution-spinner 1.3s linear infinite; }
+  .reference-distribution-marks[data-loading="true"] { animation: distribution-placeholder 1.8s ease-in-out infinite; }
+  .reference-distribution-marks[data-ready="true"] [data-swarm] {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: distribution-dot 420ms ease-out var(--distribution-delay) both;
+  }
+  .reference-distribution-marks[data-ready="true"] [data-unfold] { transform-origin: var(--distribution-origin); }
+  .reference-distribution-marks[data-ready="true"] [data-unfold="x"] { animation: distribution-unfold-x 620ms ease-out var(--distribution-delay) both; }
+  .reference-distribution-marks[data-ready="true"] [data-unfold="y"] { animation: distribution-unfold-y 620ms ease-out var(--distribution-delay) both; }
+}
+@keyframes distribution-spinner { to { rotate: 360deg; } }
+@keyframes distribution-placeholder { 50% { opacity: .32; } }
+@keyframes distribution-dot { from { scale: 0; } }
+@keyframes distribution-unfold-x { from { scale: .01 1; } }
+@keyframes distribution-unfold-y { from { scale: 1 .01; } }

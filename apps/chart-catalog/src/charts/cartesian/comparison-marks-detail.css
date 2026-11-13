@@ -1,0 +1,59 @@
+.comparison-marks-detail {
+  inline-size: 100%;
+  min-inline-size: 0;
+  align-self: start;
+  container-type: inline-size;
+}
+.comparison-marks-body { display: grid; min-inline-size: 0; }
+.comparison-marks-plot { position: relative; min-inline-size: 0; }
+.comparison-marks-plot > svg {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.comparison-marks-detail[data-compact='true'],
+.comparison-marks-detail[data-compact='true'] .comparison-marks-body,
+.comparison-marks-detail[data-compact='true'] .comparison-marks-plot { block-size: 100%; }
+.comparison-marks-grid { mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent); }
+.comparison-marks-plot[data-horizontal='true'] .comparison-marks-grid { mask-image: linear-gradient(180deg, transparent, black 10%, black 90%, transparent); }
+.comparison-marks-controls { display: flex; justify-content: flex-end; }
+.comparison-marks-controls > button {
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.comparison-marks-controls > button[aria-pressed='true'] { background: var(--muted); }
+.comparison-marks-controls > button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.comparison-marks-tooltip {
+  position: absolute;
+  z-index: 1;
+  max-inline-size: min(190px, 62%);
+  pointer-events: none;
+}
+.comparison-marks-tooltip .cartesian-focus-readout { min-inline-size: min(164px, 100%); max-inline-size: 100%; }
+.comparison-marks-tooltip .cartesian-focus-readout-title { margin-block-end: 8px; line-height: 16px; }
+.comparison-marks-tooltip .cartesian-focus-readout-row { min-block-size: 20px; }
+.comparison-marks-loading {
+  position: absolute;
+  inset: auto 0 6%;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+@container (min-width: 608px) {
+  .comparison-marks-detail[data-legend='true'] .comparison-marks-body { grid-template-columns: minmax(0, 1fr) 184px; gap: 16px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .comparison-marks-skeleton { animation: comparison-marks-pulse 1.4s ease-in-out infinite alternate; }
+  .comparison-marks-group { transition: opacity 150ms ease-out; }
+}
+@keyframes comparison-marks-pulse { to { opacity: .44; } }

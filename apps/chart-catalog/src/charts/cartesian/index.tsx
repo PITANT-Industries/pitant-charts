@@ -21,6 +21,7 @@ import { LineSyncExportDetail } from "./LineSyncExportDetail";
 import { LineZoomDetail } from "./LineZoomDetail";
 import { isLineBrushVariant, LineBrushDetail } from "./LineBrushDetail";
 import { LineLargeDetail } from "./LineLargeDetail";
+import { ComparisonMarksDetail, isComparisonMarksVariant } from "./ComparisonMarksDetail";
 import { DeadlineFills, downloadLineChart, LineLegend, LineLoadToggle, LineSkeleton } from "./LineExtras";
 import { buildGantt, buildStream } from "./comparisons";
 import { buildDiverging, buildDumbbell, buildLollipop, buildRanking, buildWaterfall, divergingColor } from "./comparison-options";
@@ -71,6 +72,7 @@ export default function Cartesian(props: ChartPreviewProps) {
   const denseDemo = !props.data && example.id === "line-large-data";
   const source = useMemo(() => denseDemo ? null : resolveData(example, props.data), [denseDemo, example, props.data]);
   if (source === null) return <LineLargeDetail key={example.id} label={example.title} compact={compact} theme={theme} />;
+  if (!props.data && isComparisonMarksVariant(example.id)) return <ComparisonMarksDetail key={example.id} variant={example.id} label={example.title} compact={compact} theme={theme} />;
   if (example.family === "candlestick") return <Candles key={example.id} example={example} data={source} compact={compact} theme={theme} />;
   if (example.family === "live-line") return <LiveLine key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
   if (example.family === "composed") return <ComposedDetail key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
