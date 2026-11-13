@@ -3,6 +3,7 @@ import type { ChartData } from "../../../types";
 import { day, demoBounds } from "./bounds";
 
 const weekStart = demoBounds[0];
+const weekDuration = 7 * day;
 export const pointLimit = 6000;
 
 export type Bounds = readonly [left: number, right: number, low: number, high: number];
@@ -13,7 +14,7 @@ export type ScatterRequest =
   | { kind: "prepare"; input: Input }
   | { kind: "view"; id: number; view?: Bounds; columns: number; rows: number };
 
-type FrameInfo = { view: Bounds; full: Bounds; count: number; visible: number; groups: Group[] };
+type FrameInfo = { view: Bounds; full: Bounds; count: number; visible: number; groups: Group[]; reference: boolean };
 export type ScatterFrame = FrameInfo & (
   | { mode: "density"; columns: number; rows: number; counts: Uint32Array; peak: number }
   | { mode: "points"; points: ExactPoint[] }
@@ -28,6 +29,11 @@ function finite(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function noise(index: number, channel: number) {
+  const value = Math.sin(index * 12.9898 + channel * 78.233) * 43758.5453;
+  return value - Math.floor(value);
+}
+
 function gridCoordinate(value: number, min: number, max: number, size: number) {
   return Math.max(0, Math.min(size - 1, Math.floor((value - min) / (max - min) * size)));
 }
@@ -39,6 +45,7 @@ export function prepareScatter({ count, data }: Input) {
   const groups: Group[] = [];
   const groupIndex = new Map<string, number>();
   const colors = new Map(data?.series?.map(item => [item.name, item.color]));
+  const reference = !data && (count === 10_000 || count === 50_000);
   let size = 0;
   let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
   function add(a: number, b: number, name: string, label?: string) {
@@ -68,6 +75,16 @@ export function prepareScatter({ count, data }: Input) {
         if (finite(value)) add(i + 1, value, item.name, data.categories?.[i]);
       }
     }
+  } else if (reference) {
+    // Match the reference checkout demo's evenly spaced timestamps and two request channels.
+    for (let i = 0; i < count; i++) {
+      const elapsed = Math.floor(i / count * weekDuration);
+      const dailyCycle = Math.sin(elapsed / day * 2 * Math.PI - Math.PI / 2);
+      const tail = -Math.log(1 - noise(i, 1) * .995);
+      const duration = Math.round(140 + 45 * dailyCycle + 90 * tail + 30 * noise(i, 2));
+      const mobile = i % 3 === 0;
+      add(weekStart + elapsed, mobile ? Math.round(duration * 1.35) : duration, mobile ? "Mobile" : "Web");
+    }
   } else {
     let seed = 511;
     const random = () => {
@@ -87,7 +104,16 @@ export function prepareScatter({ count, data }: Input) {
     return [min - pad, max + pad];
   }
   const custom = Boolean(data?.rows || data?.series);
-  const full: Bounds = custom && size ? [...extent(xMin, xMax), ...extent(yMin, yMax)] : demoBounds;
+  const full: Bounds = reference ? [xMin, xMax, demoBounds[2], demoBounds[3]]
+    : custom && size ? [...extent(xMin, xMax), ...extent(yMin, yMax)] : demoBounds;
+  if (reference) {
+    const points = Array.from({ length: size }, (_, i) => ({ x: x[i], y: y[i], group: group[i] }));
+    return ({ view = full }: { view?: Bounds; columns: number; rows: number }): ScatterFrame => {
+      const visible = view === full ? points : points.filter(point =>
+        point.x >= view[0] && point.x <= view[1] && point.y >= view[2] && point.y <= view[3]);
+      return { view, full, count: size, groups, reference, visible: visible.length, mode: "points", points: visible };
+    };
+  }
   function cellFor(i: number) {
     return gridCoordinate(x[i], full[0], full[1], indexColumns) +
       indexColumns * gridCoordinate(y[i], full[2], full[3], indexRows);
@@ -107,6 +133,7 @@ export function prepareScatter({ count, data }: Input) {
   for (let i = 0; i < size; i++) indices[next[cells[i]]++] = i;
 
   return ({ view = full, columns, rows }: { view?: Bounds; columns: number; rows: number }): ScatterFrame => {
+    const info = { view, full, count: size, groups, reference };
     const [left, right, low, high] = view;
     const firstCol = gridCoordinate(left, full[0], full[1], indexColumns);
     const lastCol = gridCoordinate(right, full[0], full[1], indexColumns);
@@ -129,9 +156,8 @@ export function prepareScatter({ count, data }: Input) {
         }
       }
     }
-    const info = { view, full, count: size, visible, groups };
-    if (overview || visible > pointLimit) return { ...info, mode: "density", columns, rows, counts, peak };
+    if (overview || visible > pointLimit) return { ...info, visible, mode: "density", columns, rows, counts, peak };
     exact.sort((a, b) => x[a] - x[b] || y[a] - y[b] || a - b);
-    return { ...info, mode: "points", points: exact.map(i => ({ x: x[i], y: y[i], group: group[i], label: labels.get(i) })) };
+    return { ...info, visible, mode: "points", points: exact.map(i => ({ x: x[i], y: y[i], group: group[i], label: labels.get(i) })) };
   };
 }

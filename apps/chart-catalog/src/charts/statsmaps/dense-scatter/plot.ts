@@ -7,6 +7,9 @@ import { day } from "./bounds";
 const defaultInset = { left: 48, top: 22, right: 24, bottom: 39 };
 const demoInset = { left: 40, top: 40, right: 40, bottom: 40 };
 export const plotInsets = (example: boolean) => example ? demoInset : defaultInset;
+export const referenceXPadding = 11.5;
+export const referenceTooltipWidth = 140;
+export const referenceDate = new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 export const axisDate = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone: "UTC" });
 const hourLabel = new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC" });
 const dateTime = new Intl.DateTimeFormat("en", {
@@ -16,14 +19,17 @@ export const number = new Intl.NumberFormat("en", { maximumFractionDigits: 1 });
 export const exact = (value: number) => String(value);
 export const exactTime = (value: number) => `${dateTime.format(value)} UTC`;
 
-export function project([left, right, low, high]: Bounds, width: number, height: number, inset = defaultInset) {
+export function project([left, right, low, high]: Bounds, width: number, height: number, inset = defaultInset, horizontalPadding = 0) {
   const w = Math.max(1, width - inset.left - inset.right);
   const h = Math.max(1, height - inset.top - inset.bottom);
+  const padding = Math.min(horizontalPadding, Math.max(0, (w - 1) / 2));
+  const inner = w - padding * 2;
+  const origin = inset.left + padding;
   return {
     w, h,
-    x: (value: number) => inset.left + (value - left) / (right - left) * w,
+    x: (value: number) => origin + (value - left) / (right - left) * inner,
     y: (value: number) => inset.top + (high - value) / (high - low) * h,
-    at: (x: number, y: number) => [left + (x - inset.left) / w * (right - left), high - (y - inset.top) / h * (high - low)] as const,
+    at: (x: number, y: number) => [left + (x - origin) / inner * (right - left), high - (y - inset.top) / h * (high - low)] as const,
   };
 }
 
@@ -57,7 +63,22 @@ export function makeScatterPainter(canvas: HTMLCanvasElement) {
       if (!frame) return;
       const { view } = frame;
       const inset = plotInsets(demo && !compact);
-      const plot = project(view, w, h, inset);
+      const plot = project(view, w, h, inset, frame.reference ? referenceXPadding : 0);
+      if (frame.reference && frame.mode === "points") {
+        // One path per channel keeps overlapping dots opaque and makes the 50k redraw a pair of fills.
+        const paths = frame.groups.map(() => new Path2D());
+        for (const point of frame.points) {
+          const x = plot.x(point.x), y = plot.y(point.y);
+          const path = paths[point.group];
+          path.moveTo(x + 1.5, y);
+          path.arc(x, y, 1.5, 0, 2 * Math.PI);
+        }
+        for (const [name, color] of [["Web", theme.colors[0]], ["Mobile", theme.colors[1]]] as const) {
+          const index = frame.groups.findIndex(group => group.name === name);
+          if (index >= 0) renderer.paintPath(paths[index], color, "fill");
+        }
+        return;
+      }
       const line = new Float32Array(4);
       const label = { color: rgba(theme.muted), fontSize: demo ? 12 : 11, font: getComputedStyle(canvas).fontFamily } as const;
       context.setLineDash([4, 4]);

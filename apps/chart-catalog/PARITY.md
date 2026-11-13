@@ -13,7 +13,7 @@ The [shadcn.io React reference](https://www.shadcn.io/charts) enumerates 44 char
 | Variant parity notes | 331 variants have targeted behavior findings and specific remaining checks. |
 | Donut interaction | Eight donut previews checked for keyboard selection, accessible value and share, and Escape clearing selection. |
 | Representative chart behaviors | Time range, range selection, synchronized sparklines, data table, PNG and SVG export, live pause, gauge controls, tooltip pinning, hierarchy drill-down, loading states, large scatter, heatmap scrolling, map zoom, and globe drag checked |
-| Tooltip sample readouts | All 270 captured date and value readouts match across 11 variants. Guide styles, pinning, and reduced motion were checked separately. |
+| Tooltip sample readouts | All 270 captured date and value readouts match across 11 variants. Desktop and mobile checks cover matching tick layouts, panel typography and paint, guide styles, pinning, and reduced motion. Narrow tooltips stay inside the library plot when the reference extends beyond the left edge. |
 | Matched hierarchy geometry | At desktop widths, mean node position differences are 0.005 px for the radial tree and 0.033 px for the network. The default treemap's five group boxes average 1.19 px difference at desktop width and 0.64 px at narrow width. |
 | Default Cartesian geometry | All 30 dates match for each of the default area and line examples. The default bar matches all six monthly values, 83.61 px bar width at a 728 px plot, and idle-bar dimming. |
 | Matched stacked bars and latency threshold | Stacked marks differ by at most 0.008 px across three matched sizes. The p95 and median line paths differ by under 0.001 px, and all 60 readout values match. |
@@ -37,8 +37,8 @@ The [shadcn.io React reference](https://www.shadcn.io/charts) enumerates 44 char
 | Gantt | All four schedules were checked at desktop and mobile widths. Bars, progress, grids, and labels align within 0.005 px, and dependency paths and milestone diamonds match. The 15 loading marks align within 0.009 px. |
 | Sparklines | All 15 examples were checked at desktop and mobile widths, with four additional wide-layout checks. Resting SVG paths match within 0.01 px. Range controls, keyboard and pointer inspection, linked touch inspection, and caller-provided data were exercised. |
 | Tree and Network | All seven examples match the measured plot dimensions, including the logical SVG viewport of the horizontal trees. Measured node and link coordinates differ by at most 0.009 px. All 123 captured node readouts agree at both widths. |
-| Sunburst and Treemap | All six Sunburst examples match the measured plot sizes and wedge paths within 0.03 px. All four Treemap layouts match the measured rectangle bounds, including nested drill-down and the ten loading rectangles. |
-| Scatter Jitter and Large Data | Jitter matches 522 mark coordinates within 0.009 px and all 522 keyboard readouts. Large Data matches the 2:1 canvas size and supports three point counts, zoom, and coordinate inspection. The large-data fixtures and readouts still differ from the reference. |
+| Sunburst and Treemap | All six Sunburst examples match the measured plot sizes and wedge paths within 0.03 px. Across the four Treemap examples, 472 measured tiles match within 0.005 px, 622 label checks agree, and 130 keyboard and 20 pointer readouts match. Leaf activation drills into its visible ancestor, and the full-width breadcrumb returns to the parent. |
+| Scatter Jitter and Large Data | Jitter matches 522 mark coordinates within 0.009 px and all 522 keyboard readouts. Large Data matches every dot position and radius in the 10,000- and 50,000-point fixtures at two widths, with all 48 sampled date, group, and duration readouts matching. The library also provides a 500,000-point density mode, zoom, and reset. |
 | Area overlays and readouts | 84 reference samples match across forecast, target band, highlighted range, and trend. Geometry of the overlays, paths, and grids matches within 0.005 px at both tested sizes. |
 | Sankey geometry and inspection | Across nine variants at three matched sizes, 86 node bounds and 166 weighted link paths align within 0.0051 px. All 238 captured keyboard readouts match. |
 | Radar geometry and inspection | All 96 series scores match across nine variants. Rings, spokes, labels, dots and profiles align within 0.0051 px at measured desktop and narrow sizes. |
@@ -54,11 +54,11 @@ The [shadcn.io React reference](https://www.shadcn.io/charts) enumerates 44 char
 
 The gallery’s **Parity review** lists coverage by family and searches checked behavior and remaining gaps. The **Compare** tab shows the live reference and current notes for each variant. All 331 entries have targeted checks and an explicit remaining comparison. The render checks establish that a preview mounted and showed chart output. Full parity still requires comparing chart geometry, styling, animation, and pointer and keyboard interactions across the supported profiles.
 
-The previews use local fixtures and inherit chart theme tokens. Compare can apply the reference palette and font to the library pane. Remaining comparisons include forecast marker motion, exact motion timing, individual treemap leaf positions, and chart-specific loading and hover effects. [Polar, flow, and hierarchy notes](src/charts/polarflow/PARITY.md)
+The previews use local fixtures and inherit chart theme tokens. Compare can apply the reference palette and font to the library pane. Remaining comparisons include forecast marker motion, Treemap zoom and exit timing, and chart-specific loading and hover effects. [Polar, flow, and hierarchy notes](src/charts/polarflow/PARITY.md)
 
 ## Repeat the render audit
 
-The audit uses Python Playwright with Chromium. Pass `CHROMIUM_PATH` if using a separately installed Chromium or Chrome binary.
+The audit uses Python Playwright and defaults to Chromium. Pass `CHROMIUM_PATH` for an installed Chromium or Chrome binary. Select another installed engine with `--browser firefox`, `--browser webkit`, or `--browser edge`. The Edge option requires Microsoft Edge.
 
 ```sh
 python scripts/audit-renders.py --reference

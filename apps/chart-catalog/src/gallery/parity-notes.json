@@ -308,8 +308,8 @@
     "remaining": "Compare the focus paint and narrow tooltip placement. Escape clears the library readout."
   },
   "scatter-large-data": {
-    "checked": "The overview canvas matches the reference 2:1 size and 40 px plot margins. The PITANT renderer switches between 10,000, 50,000 and 500,000 requests and exposes exact coordinates for individual points after zooming.",
-    "remaining": "Compare the reference 10,000 and 50,000 point fixtures, dot appearance and date, group and duration readouts."
+    "checked": "All 60,000 dot centers and radii across the 10,000- and 50,000-request fixtures match at two tested widths. All 48 sampled keyboard and pointer date, channel, and duration readouts match. The library also offers 500,000-point density, zoom, and reset.",
+    "remaining": "Compare canvas compositing and hover timing across browsers. The reference initially draws the 10,000-point canvas in monochrome. The library applies the theme palette from the start and supports tap inspection."
   },
   "candlestick-default": {
     "checked": "All 31 dates and 124 OHLC prices match. Each body has separate upper and lower wicks. A vertical guide, Close marker and date pill appear on inspection as other candles dim to 30%.",
@@ -976,20 +976,20 @@
     "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "treemap-default": {
-    "checked": "All 21 cloud-spend rectangles match the live plot coordinates at both measured widths. Pointer and keyboard open Platform and the breadcrumb or Escape returns. Compute represents 22% of total spend.",
-    "remaining": "Compare exact tooltip placement, paint and zoom easing."
+    "checked": "Cloud-spend tiles and labels match at three widths. Selecting Compute drills into Platform, and the entire breadcrumb row returns to the parent. Keyboard readouts and group highlights match.",
+    "remaining": "Compare exact zoom easing and pointer reinspection immediately after drilling in."
   },
   "treemap-drilldown": {
-    "checked": "All 13 initial rectangles match the measured reference at desktop and mobile widths. Pointer drill reaches node_modules / @tanstack and its 64 kB charts tile. Keyboard Enter and Escape navigate between levels.",
-    "remaining": "Compare breadcrumb and tooltip paint and zoom easing."
+    "checked": "Initial and nested layouts match at three widths. Selecting the charts leaf from node_modules opens @tanstack. Breadcrumb and tile readouts match, including the 64 kB charts tile.",
+    "remaining": "Compare exact zoom and exit easing and pointer reinspection after drill-down."
   },
   "treemap-portfolio": {
-    "checked": "All 17 rectangles match at both measured widths. Touch inspection of S&P 500 ETF reports $126,000 and 16.8% of the portfolio. Activating a holding retains the overview.",
-    "remaining": "Compare exact tooltip placement, paint and entrance easing."
+    "checked": "All 17 rectangles match at the measured widths, and inspection of S&P 500 ETF reports $126,000 and 16.8% of the portfolio. Portfolio hover highlights the selected holding and its group. Activating a holding retains the overview.",
+    "remaining": "Compare exact entrance easing and cross-browser paint."
   },
   "treemap-loading": {
-    "checked": "The Loading toggle swaps ten skeleton rectangles for four groups and ten storage tiles. Every skeleton and ready rectangle matches at both measured widths. Uploads reports 1.8 TB.",
-    "remaining": "Compare skeleton pulse and the timing of the ready-state entrance animation."
+    "checked": "The Loading toggle swaps ten skeleton rectangles for four groups and ten storage tiles. Both layouts match at the measured widths. The skeleton pulse lasts 2,200 ms and the tile reveal 880 ms. Uploads reports 1.8 TB.",
+    "remaining": "Compare exact motion curves and exit choreography."
   },
   "tree-default": {
     "checked": "All 16 nodes, labels and 15 curves match the measured reference. Platform folds and reopens through pointer or keyboard, and inspection reports all branch totals and leaf headcounts.",
@@ -1280,11 +1280,11 @@
     "remaining": "Placeholder arrow directions and reveal timing differ slightly."
   },
   "tooltip-standard": {
-    "checked": "All 30 September readouts match the live reference for Organic, Direct, and Referral. The filled series share a vertical guide, date pill, and 5 px focus dots with halos.",
-    "remaining": "Compare area gradient, panel placement near both edges, and cursor easing."
+    "checked": "All 30 September readouts match the live reference for Organic, Direct, and Referral. Sampled pointer readouts, panel size and desktop placement agree. The plot uses the measured mobile grid and ticks.",
+    "remaining": "Compare area gradient and cursor easing. The panel stays inside the plot on narrow layouts."
   },
   "tooltip-crosshair": {
-    "checked": "All 31 October Sign-ups readouts match. The 6 px dash and 4 px gap guide appears without focus dots or a date pill.",
+    "checked": "All 31 October Sign-ups readouts match. Desktop and mobile placement use the October time scale. The 6 px dash and 4 px gap guide appears without focus dots or a date pill.",
     "remaining": "Compare cursor color and movement timing across themes."
   },
   "tooltip-indicator": {
@@ -1292,35 +1292,35 @@
     "remaining": "Compare the guide fade and motion across themes."
   },
   "tooltip-motion": {
-    "checked": "All 21 August Web and App readouts match. Eased, Matched, and Instant change the movement of the panel and active marks. Reduced motion suppresses these transitions.",
-    "remaining": "Compare spring duration and rapid pointer movement against the reference."
+    "checked": "All 21 August Web and App readouts match. Eased and Matched use the sampled 200 ms panel travel, with Matched moving the guide and active marks together. Instant and reduced motion suppress the panel transition.",
+    "remaining": "Compare motion during rapid pointer movement and exact active-mark easing."
   },
   "tooltip-rows": {
-    "checked": "All 30 June readouts match, including Pages per user rounded to one decimal. The Users and Pageviews traces stay unfilled.",
-    "remaining": "Compare panel typography and cursor easing."
+    "checked": "All 30 June readouts match, including Pages per user rounded to one decimal. The Users and Pageviews traces stay unfilled, and the panel uses the measured row spacing.",
+    "remaining": "Compare cursor easing. The panel stays inside the plot on narrow layouts."
   },
   "tooltip-content": {
-    "checked": "All 30 April revenue and day-over-day readouts match, including the first-day message. The area has a dollar axis and reports signed percentage change.",
-    "remaining": "Compare panel typography, axis density at narrow widths, and change colors."
+    "checked": "All 30 April revenue and day-over-day readouts match, including the first-day message. The area has a dollar axis and reports signed percentage change with a direction icon. Sampled panel sizes match.",
+    "remaining": "Compare gradient and hover timing. The panel stays inside the plot on narrow layouts."
   },
   "tooltip-pinned": {
-    "checked": "All 30 November pinned readouts match the total and three-channel breakdown. The plot shows one aggregate trace. Enter and Space pin the selected day, and Escape or the close control releases it.",
-    "remaining": "Compare collapsed panel treatment, animated expansion, and touch interactions across browsers."
+    "checked": "All 30 November pinned readouts match the total and three-channel breakdown. The collapsed and expanded panels match the measured heights and show proportional channel bars. Enter and Space pin the selected day, and Escape or the close control releases it.",
+    "remaining": "Compare the exact expansion easing and touch interactions across browsers. The panel stays inside the plot on narrow layouts."
   },
   "tooltip-ring": {
-    "checked": "All nine monthly readouts match. Eighteen bars show Online and Retail revenue. Square rounded outlines track both active bar tops.",
-    "remaining": "Compare corner treatment and entrance and hover timing."
+    "checked": "All nine monthly readouts match. Eighteen bars show Online and Retail revenue with the measured spacing. Rounded outlines track both active bar tops.",
+    "remaining": "Compare ring paint and entrance and hover timing."
   },
   "tooltip-horizontal-crosshair": {
     "checked": "All 30 trading-day readouts match. The horizontal guide updates its price label as the pointer moves vertically, independently of the date.",
     "remaining": "Compare tick-label fading at both edges and guide timing."
   },
   "tooltip-header": {
-    "checked": "All 30 trading-day readouts match, including the USD close and signed daily change under the date divider.",
-    "remaining": "Compare header typography, hover timing, and gradient."
+    "checked": "All 30 trading-day readouts match, including the USD close and signed daily change under the date divider. Sampled panel size and desktop placement match.",
+    "remaining": "Compare hover timing and gradient. The panel stays inside the plot on narrow layouts."
   },
   "tooltip-custom-indicator": {
-    "checked": "All eight monthly Revenue readouts match. The 3 px strip spans the active bar and replaces the vertical guide.",
-    "remaining": "Compare the indicator motion and narrow chart label density."
+    "checked": "All eight monthly Revenue readouts match. The 3 px strip spans the active bar and replaces the vertical guide. The narrow plot shows every other month, as in the reference.",
+    "remaining": "Compare the indicator motion and exact bar paint."
   }
 }
