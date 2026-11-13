@@ -1,19 +1,19 @@
 {
   "area-default": {
-    "checked": "The Revenue and Costs series use the September fixture, faded edges, adaptive date ticks and the same plot dimensions on desktop and mobile. The first date shows 12,000 revenue and 8,500 costs.",
-    "remaining": "Compare the entrance transition and the exact color and alignment of the active marker and tooltip."
+    "checked": "At 577 px and 286 px in both palettes, the two vertical fills and 15%/85% horizontal edge fade match the live reference. Hover opacity, 13 px halo/5 px dot paint, rounded focus positions and all sampled readouts agree. Tooltip bounds match, allowing the existing 4 px narrow inset. Normal and reduced motion were checked.",
+    "remaining": "Audit entrance frames and match the rolling date pill and gradual tick suppression. Small raster differences remain at fill and mask edges."
   },
   "area-fill": {
-    "checked": "The 31 August visitor counts, fill-only geometry, five horizontal guides and responsive date ticks agree in the sampled Compare views. The fill fades from 60% to 5%.",
-    "remaining": "Compare the gradient at the plot edges and during inspection."
+    "checked": "The 60%-to-5% Visitors gradient, 15%/85% edge fade, 0.6 hover opacity and absence of an upper stroke match the measured reference at 577 px and 286 px in both palettes. Marker paint, readouts and tooltip bounds agree in normal and reduced motion.",
+    "remaining": "Audit entrance frames and axis-pill/tick behavior. Curved masked edges differ by up to 7 RGB levels on fewer than 1% of sampled interior pixels."
   },
   "area-gradient-fill": {
-    "checked": "The April subscriber curve, responsive ticks and all three gradient stops are reproduced. Keyboard inspection shows 8,224 on April 1 and 10,574 on April 30.",
-    "remaining": "Compare gradient paint and tooltip motion in both palettes."
+    "checked": "All three theme gradient stops at 0%/55%/100% and 0.7/0.35/0.05 opacity match in both palettes and widths. Marker paint and tooltip bounds agree, including Subscribers values changing from four to five digits. Continuous tooltip position updates remain immediate like the live reference; opacity uses the measured 120 ms spring.",
+    "remaining": "Audit entrance frames and match rolling date-pill and tick-fade behavior. The sampled gradient interior retains at most 1 RGB level of raster difference."
   },
   "area-pattern": {
-    "checked": "The September Spend series uses diagonal hatching, the reference area outline and responsive date ticks. Keyboard inspection shows 4,240 on September 1 and 5,170 on September 30.",
-    "remaining": "Compare the hatch density, opacity and reveal frame by frame."
+    "checked": "The 6 px crisp diagonal tile, 1 px hatch marks and 2.5 px upper stroke match. In the sampled idle interior, three palette-width profiles are pixel-identical; the fourth differs by 1 RGB level at three pixels. Active marker paint, readouts and tooltip bounds also agree.",
+    "remaining": "Audit reveal frames and match rolling date-pill and gradual tick suppression."
   },
   "area-mixed": {
     "checked": "The June Desktop gradient and Mobile dot fill use the reference curves and axes. Both series appear in the keyboard readout, including 303 Desktop and 190 Mobile on June 1.",
@@ -64,8 +64,8 @@
     "remaining": "Compare range fill, endpoint hit areas and transient drag behavior with the reference."
   },
   "area-pattern-fade": {
-    "checked": "The September Revenue curve uses a diagonal pattern, vertical fill fade and horizontal stroke fade. The area path and sampled dates agree at both widths.",
-    "remaining": "Compare hatch density, opacity and the fade at each edge."
+    "checked": "The 6 px diagonal hatch now has independent vertical alpha and 15%/85% horizontal fades, with a 2 px faded upper stroke. The mask no longer clips the curved edge twice. Both palette-width pairs passed idle/active paint, marker and tooltip checks with reduced motion.",
+    "remaining": "Audit reveal frames and match rolling date-pill and gradual tick suppression. Sampled faded-pattern raster differences remain within 2 RGB levels."
   },
   "area-fade-bottom": {
     "checked": "The September Orders curve agrees with the reference and keeps its 50% fill through the first 40% before fading out. Keyboard inspection reads 700 on September 1 and 886 on September 30.",
@@ -976,20 +976,20 @@
     "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "treemap-default": {
-    "checked": "Cloud-spend tiles and labels match at three widths. Selecting Compute drills into Platform. The stationary pointer reports the same tile as the reference after zoom and back. Rapid reversals preserve spring velocity, and enabling reduced motion clears active layout and loading animations. Across the three interactive examples, controlled Chrome samples through 48 rapid drill/back actions match scene membership, rectangle bounds within 0.008 px, label positions within 0.033 px, and layout opacity within 0.0005 at both tested widths.",
-    "remaining": "Compare native focus-opacity paint and rasterization across browsers, including the intentional narrow-tooltip inset."
+    "checked": "Cloud-spend tiles and labels match at three widths. Selecting Compute drills into Platform. The stationary pointer reports the same tile as the reference after zoom and back. Rapid reversals preserve spring velocity, and enabling reduced motion clears active layout and loading animations. Across the three interactive examples, controlled Chrome samples through 48 rapid drill/back actions match scene membership, rectangle bounds within 0.008 px, label positions within 0.033 px, and layout opacity within 0.0005 at both tested widths. In the four-variant focus audit at 577 and 286 px in both palettes, valid computed opacity, fill/stroke colors, label paint and keyboard outlines match across Chrome, Firefox and WebKit. Valid root fill and border raster samples differ by at most two RGB channel levels.",
+    "remaining": "WebKit raster frames during focus fades and broad nested raster coverage remain unverified. A targeted nested dark sample agrees within one RGB channel level. The narrow tooltip retains its intentional inset."
   },
   "treemap-drilldown": {
-    "checked": "Initial and nested layouts match at three widths. Selecting charts from node_modules opens @tanstack. The nested branch swap, shared-tile spring and stationary pointer readouts follow the reference. Rapid drill and back sequences return to the complete overview. Across the three interactive examples, controlled Chrome samples through 48 rapid drill/back actions match scene membership, rectangle bounds within 0.008 px, label positions within 0.033 px, and layout opacity within 0.0005 at both tested widths.",
-    "remaining": "Compare native focus-opacity paint and rasterization across browsers, including the intentional narrow-tooltip inset."
+    "checked": "Initial and nested layouts match at three widths. Selecting charts from node_modules opens @tanstack. The nested branch swap, shared-tile spring and stationary pointer readouts follow the reference. Rapid drill and back sequences return to the complete overview. Across the three interactive examples, controlled Chrome samples through 48 rapid drill/back actions match scene membership, rectangle bounds within 0.008 px, label positions within 0.033 px, and layout opacity within 0.0005 at both tested widths. In the four-variant focus audit at 577 and 286 px in both palettes, valid computed opacity, fill/stroke colors, label paint and keyboard outlines match across Chrome, Firefox and WebKit. Valid root fill and border raster samples differ by at most two RGB channel levels.",
+    "remaining": "WebKit raster frames during focus fades and broad nested raster coverage remain unverified. A targeted nested dark sample agrees within one RGB channel level. The narrow tooltip retains its intentional inset."
   },
   "treemap-portfolio": {
-    "checked": "All 17 rectangles match at the measured widths, and inspection of S&P 500 ETF reports $126,000 and 16.8% of the portfolio. Portfolio hover highlights the selected holding and its group. Activating a holding retains the overview.",
-    "remaining": "Compare exact entrance easing and cross-browser paint."
+    "checked": "All 17 rectangles match at the measured widths, and inspection of S&P 500 ETF reports $126,000 and 16.8% of the portfolio. Portfolio hover highlights the selected holding and its group. Activating a holding retains the overview. In the four-variant focus audit at 577 and 286 px in both palettes, valid computed opacity, fill/stroke colors, label paint and keyboard outlines match across Chrome, Firefox and WebKit. Valid root fill and border raster samples differ by at most two RGB channel levels.",
+    "remaining": "Compare exact entrance easing. WebKit raster frames during focus fades remain unverified. The narrow tooltip retains its intentional inset."
   },
   "treemap-loading": {
-    "checked": "The Loading toggle swaps ten skeleton rectangles for four groups and ten storage tiles. Both layouts match at the measured widths. The skeleton pulse lasts 2,200 ms and the tile reveal 880 ms. Uploads reports 1.8 TB. Across the three interactive examples, controlled Chrome samples through 48 rapid drill/back actions match scene membership, rectangle bounds within 0.008 px, label positions within 0.033 px, and layout opacity within 0.0005 at both tested widths.",
-    "remaining": "Compare native focus-opacity paint and rasterization across browsers, including the intentional narrow-tooltip inset."
+    "checked": "The Loading toggle swaps ten skeleton rectangles for four groups and ten storage tiles. Both layouts match at the measured widths. The skeleton pulse lasts 2,200 ms and the tile reveal 880 ms. Uploads reports 1.8 TB. Across the three interactive examples, controlled Chrome samples through 48 rapid drill/back actions match scene membership, rectangle bounds within 0.008 px, label positions within 0.033 px, and layout opacity within 0.0005 at both tested widths. In the four-variant focus audit at 577 and 286 px in both palettes, valid computed opacity, fill/stroke colors, label paint and keyboard outlines match across Chrome, Firefox and WebKit. Valid root fill and border raster samples differ by at most two RGB channel levels.",
+    "remaining": "WebKit raster frames during focus fades and broad nested raster coverage remain unverified. A targeted nested dark sample agrees within one RGB channel level. The narrow tooltip retains its intentional inset."
   },
   "tree-default": {
     "checked": "All 16 nodes, labels and 15 curves match the measured reference. Platform folds and reopens through pointer or keyboard, and inspection reports all branch totals and leaf headcounts.",
@@ -1072,40 +1072,40 @@
     "remaining": "Compare the exact loading pulse and center-out easing."
   },
   "choropleth-default": {
-    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. Keyboard names, wheel zoom, and reset were checked. Touch pinch passed at mobile width.",
-    "remaining": "Compare exact wheel response, panning inertia and tooltip placement."
+    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. Keyboard names, wheel zoom, and reset were checked. Touch pinch passed at mobile width. Visible sampled tooltip panels match text, typography, swatches and bounds within 0.017 px at 577 and 286 px in both palettes in Chrome, Firefox and WebKit. Keyboard tooltip bounds match exactly at rest; matching countries after zoom and pan agree within 0.015625 px when camera transforms are matched. The shared 96-readout reduced-motion recheck found no animations.",
+    "remaining": "Wheel sensitivity and the keyboard country list after zoom and pan still differ. Compare panning inertia and other SVG input sequences."
   },
   "choropleth-values": {
-    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. The 42 visitor counts and all five fill levels match, including the neutral fill.",
-    "remaining": "Compare tooltip placement and highlight transitions."
+    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. The 42 visitor counts and all five fill levels match, including the neutral fill. Visible sampled tooltip panels match text, typography, swatches and bounds within 0.017 px at 577 and 286 px in both palettes in Chrome, Firefox and WebKit.",
+    "remaining": "Compare country highlight transitions and other SVG input sequences."
   },
   "choropleth-graticule": {
-    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. The Mercator grid centered on 20° N matches the reference path exactly.",
-    "remaining": "Compare the grid and country fade during hover."
+    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. The Mercator grid centered on 20° N matches the reference path exactly. Visible sampled tooltip panels match text, typography, swatches and bounds within 0.017 px at 577 and 286 px in both palettes in Chrome, Firefox and WebKit.",
+    "remaining": "Compare the grid and country fade during hover and other SVG input sequences."
   },
   "choropleth-patterns": {
-    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. Eighteen live countries and ten beta countries use the matching fill categories.",
-    "remaining": "Compare stripe paint, tooltip placement and fade timing."
+    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. Eighteen live countries and ten beta countries use the matching fill categories. Visible sampled tooltip panels match text, typography, swatches and bounds within 0.017 px at 577 and 286 px in both palettes in Chrome, Firefox and WebKit.",
+    "remaining": "Compare stripe paint, fade timing and other SVG input sequences."
   },
   "choropleth-click-to-zoom": {
-    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. All five office centers match within 0.001 px. Clicking London centers it at 4× zoom; Escape resets the map. All 158 desktop and 125 mobile keyboard readouts match. The 700 ms camera flight uses geometric zoom and the measured ease. Across 852 paired forward/reset frames, translation agrees within 0.008 px, scale within 0.00003 and tilt/yaw within 0.0003 degrees. All five office markers support Tab, Enter, Space and Escape; focused hover stays on the selected target. Country framing matches 23 tested France, Brazil, Russia and Japan variant/width cases, including mainland bounds and automatic yaw.",
-    "remaining": "Compare tooltip placement and retention after toggling focus, plus cross-browser rasterization of intermediate camera frames."
+    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. All five office centers match within 0.001 px. Clicking London centers it at 4× zoom; Escape resets the map. All 158 desktop and 125 mobile keyboard readouts match. The 700 ms camera flight uses geometric zoom and the measured ease. Across 852 paired forward/reset frames, translation agrees within 0.008 px, scale within 0.00003 and tilt/yaw within 0.0003 degrees. All five office markers support Tab, Enter, Space and Escape; focused hover stays on the selected target. Country framing matches 23 tested France, Brazil, Russia and Japan variant/width cases, including mainland bounds and automatic yaw. Visible sampled tooltip panels match text, typography, swatches and bounds within 0.017 px at 577 and 286 px in both palettes in Chrome, Firefox and WebKit. Controlled keyboard following at both widths, desktop hover following and an off-frame retarget case agree within 0.00064 px. Across six local browser/width profiles, 144 tooltip entry samples match the measured side-dependent 20 px offset and 120 ms opacity. Dynamic reduced motion and unmount cancel pending follow and entry animations. Targeted pointer grace and focused marker-button checks passed. Targeted focused-SVG stage leave, blur, country-key reset and arrow-context checks passed across the four marker examples.",
+    "remaining": "Moving from a marker into empty SVG inside a focused chart still retains the marker readout locally; the reference reveals the underlying country context. Compare cross-browser rasterization of intermediate camera frames."
   },
   "choropleth-dot-grid": {
-    "checked": "The ocean and five land path strings match at six widths in Chrome, Firefox, and WebKit, including 78,246 sampled dots. Selecting London centers it at 2× zoom, enlarges the land dots and fades the ocean. Escape resets the view. The 700 ms camera flight uses geometric zoom and the measured ease. Across 852 paired forward/reset frames, translation agrees within 0.008 px, scale within 0.00003 and tilt/yaw within 0.0003 degrees. All five office markers support Tab, Enter, Space and Escape; focused hover stays on the selected target. Country framing matches 23 tested France, Brazil, Russia and Japan variant/width cases, including mainland bounds and automatic yaw.",
-    "remaining": "Compare tooltip placement and retention after toggling focus, plus cross-browser rasterization of intermediate camera frames. Narrow Japan activation remains unverified where the reference Tokyo marker overlaps the country."
+    "checked": "The ocean and five land path strings match at six widths in Chrome, Firefox, and WebKit, including 78,246 sampled dots. Selecting London centers it at 2× zoom, enlarges the land dots and fades the ocean. Escape resets the view. The 700 ms camera flight uses geometric zoom and the measured ease. Across 852 paired forward/reset frames, translation agrees within 0.008 px, scale within 0.00003 and tilt/yaw within 0.0003 degrees. All five office markers support Tab, Enter, Space and Escape; focused hover stays on the selected target. Country framing matches 23 tested France, Brazil, Russia and Japan variant/width cases, including mainland bounds and automatic yaw. Visible sampled tooltip panels match text, typography, swatches and bounds within 0.017 px at 577 and 286 px in both palettes in Chrome, Firefox and WebKit. Targeted focused-SVG stage leave, blur, country-key reset and arrow-context checks passed across the four marker examples.",
+    "remaining": "Moving from a marker into empty SVG inside a focused chart still retains the marker readout locally; the reference reveals the underlying country context. Compare cross-browser rasterization of intermediate camera frames. Narrow Japan activation remains unverified where the reference Tokyo marker overlaps the country."
   },
   "choropleth-pointer-camera": {
-    "checked": "All 177 country paths and the 16:9 plot match. The idle and London camera bounds match within 0.001 px. Pointer rotation moves in the reference direction and stays still with reduced motion. The 700 ms camera flight uses geometric zoom and the measured ease. Across 852 paired forward/reset frames, translation agrees within 0.008 px, scale within 0.00003 and tilt/yaw within 0.0003 degrees. All five office markers support Tab, Enter, Space and Escape; focused hover stays on the selected target. All 1,010 regular-frame pointer samples agree within 0.000001 degrees; nine irregular-frame samples agree exactly, including frame-gap clamping. Country framing matches 23 tested France, Brazil, Russia and Japan variant/width cases, including mainland bounds and automatic yaw.",
-    "remaining": "Compare tooltip placement and retention after toggling focus, plus cross-browser rasterization of intermediate camera frames. Compare pointer retargeting during a focus-return flight."
+    "checked": "All 177 country paths and the 16:9 plot match. The idle and London camera bounds match within 0.001 px. Pointer rotation moves in the reference direction and stays still with reduced motion. The 700 ms camera flight uses geometric zoom and the measured ease. Across 852 paired forward/reset frames, translation agrees within 0.008 px, scale within 0.00003 and tilt/yaw within 0.0003 degrees. All five office markers support Tab, Enter, Space and Escape; focused hover stays on the selected target. All 1,010 regular-frame pointer samples agree within 0.000001 degrees; nine irregular-frame samples agree exactly, including frame-gap clamping. Country framing matches 23 tested France, Brazil, Russia and Japan variant/width cases, including mainland bounds and automatic yaw. Pointer retargeting during the return from a focused view preserves the original tilt deadline and yaw velocity. Across 460 new paired Chrome states, translation agrees within 0.008 px, scale within 0.00002 and tilt/yaw within 0.0001 degrees. Runtime reduced-motion changes and queued-frame cleanup passed at both widths in Chrome, Firefox and WebKit. Visible sampled tooltip panels match text, typography, swatches and bounds within 0.017 px at 577 and 286 px in both palettes in Chrome, Firefox and WebKit. Targeted focused-SVG stage leave, blur, country-key reset and arrow-context checks passed across the four marker examples.",
+    "remaining": "Moving from a marker into empty SVG inside a focused chart still retains the marker readout locally; the reference reveals the underlying country context. Compare cross-browser rasterization of intermediate camera frames."
   },
   "choropleth-markers": {
-    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. The five infrastructure positions match within 0.001 px, with a pin, circle, diamond, square and triangle.",
-    "remaining": "Compare marker glow, pulse timing and exact label paint."
+    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. The five infrastructure positions match within 0.001 px, with a pin, circle, diamond, square and triangle. Visible sampled tooltip panels match text, typography, swatches and bounds within 0.017 px at 577 and 286 px in both palettes in Chrome, Firefox and WebKit. Targeted focused-SVG stage leave, blur, country-key reset and arrow-context checks passed across the four marker examples.",
+    "remaining": "Moving from a marker into empty SVG inside a focused chart still retains the marker readout locally; the reference reveals the underlying country context. Compare marker glow, pulse timing and exact label paint."
   },
   "choropleth-background": {
-    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. All 13 sign-up values use the measured intensity steps. The backdrop stays fixed during wheel zoom.",
-    "remaining": "Compare the exact background texture and drag timing."
+    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. All 13 sign-up values use the measured intensity steps. The backdrop stays fixed during wheel zoom. Visible sampled tooltip panels match text, typography, swatches and bounds within 0.017 px at 577 and 286 px in both palettes in Chrome, Firefox and WebKit. Keyboard tooltip bounds match exactly at rest; matching countries after zoom and pan agree within 0.015625 px when camera transforms are matched. The shared 96-readout reduced-motion recheck found no animations.",
+    "remaining": "Wheel sensitivity and the keyboard country list after zoom and pan still differ. Compare the backdrop texture, drag timing and other SVG input sequences."
   },
   "histogram-default": {
     "checked": "All 29 twenty-millisecond intervals and their counts agree, including empty bins. The chart draws 23 nonempty bins from 240 requests. Plot dimensions, ticks, grid and sampled keyboard readouts agree on desktop and mobile.",

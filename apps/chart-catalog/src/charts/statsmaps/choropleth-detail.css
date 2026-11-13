@@ -6,11 +6,13 @@
   --choropleth-scale-4: color-mix(in oklab, var(--choropleth-solid) 78%, var(--muted));
   --choropleth-scale-5: var(--choropleth-solid);
   --choropleth-border: var(--background);
+  --choropleth-marker-muted: color-mix(in oklab, var(--muted-foreground) 35%, var(--background));
   inline-size: 100%;
   min-inline-size: 0;
 }
 [data-theme='dark'] .choropleth-detail {
   --choropleth-solid: oklch(from var(--chart-1) max(l, .62) c h);
+  --choropleth-marker-muted: color-mix(in oklab, var(--muted-foreground) 80%, var(--background));
 }
 .choropleth-stage { position: relative; aspect-ratio: 16 / 9; overflow: hidden; }
 .choropleth-detail[data-compact='true'], .choropleth-detail[data-compact='true'] .choropleth-stage { block-size: 100%; }
@@ -24,16 +26,36 @@
 .choropleth-viewport, .choropleth-marker { transform-origin: 0 0; }
 .choropleth-marker text { font-size: 12px; font-weight: 500; fill: var(--foreground); pointer-events: none; }
 .choropleth-marker-pulse { transform-box: fill-box; transform-origin: center; opacity: .24; }
-.choropleth-tooltip { position: absolute; pointer-events: none; z-index: 1; max-inline-size: 175px; }
-.choropleth-tooltip .cartesian-focus-readout { min-inline-size: 140px; }
-.choropleth-tooltip .cartesian-focus-readout-row i { display: none; }
-.choropleth-country-name { display: block; padding: 6px 9px; color: var(--popover-foreground); background: var(--popover); border-radius: 7px; font-size: 12px; box-shadow: 0 3px 12px rgb(0 0 0 / .13); }
+.choropleth-tooltip { position: absolute; pointer-events: none; z-index: 1; inline-size: max-content; }
+.choropleth-tooltip .cartesian-focus-readout { min-inline-size: 140px; max-inline-size: none; backdrop-filter: blur(12px); }
+.choropleth-tooltip .cartesian-focus-readout-title { line-height: 16px; margin-block-end: 8px; white-space: nowrap; }
+.choropleth-tooltip .cartesian-focus-readout-values { display: flex; flex-direction: column; gap: 6px; }
+.choropleth-tooltip .cartesian-focus-readout-row { min-block-size: 20px; align-items: center; }
+.choropleth-tooltip .cartesian-focus-readout-row i { display: block; }
+.choropleth-tooltip .cartesian-focus-readout-row :is(dt, dd) { white-space: nowrap; overflow-wrap: normal; }
 .choropleth-summary { display: grid; gap: 4px; margin-block-start: 12px; font-size: 14px; line-height: 1.4; }
 .choropleth-summary strong { font-weight: 600; }
 .choropleth-summary span { color: var(--muted-foreground); }
 @media (prefers-reduced-motion: no-preference) {
+  .choropleth-tooltip { animation: choropleth-tooltip-fade 120ms; }
+  .choropleth-tooltip .cartesian-focus-readout {
+    transform-origin: 0 0;
+    animation: choropleth-tooltip-enter 120ms backwards;
+  }
+  .choropleth-tooltip[data-placement*='left'] .cartesian-focus-readout {
+    --choropleth-tooltip-enter-x: 20px;
+    transform-origin: 100% 0;
+  }
   .choropleth-backdrop { transition: opacity .3s ease-out; }
   .choropleth-svg :is([data-map-location], [data-map-graticule], [data-map-ocean], [data-map-dot-regions]) { transition: opacity .3s ease-out; }
   .choropleth-marker-pulse { animation: choropleth-pulse 1.9s ease-out var(--pulse-delay, 0ms) infinite; }
+}
+@keyframes choropleth-tooltip-enter {
+  from { opacity: 0; transform: translateX(var(--choropleth-tooltip-enter-x, -20px)) scale(.85); animation-timing-function: linear(0,.084,.25,.422,.572,.692,.782,.849,.896,.929,.952,.968,.979,.986,.991,1); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes choropleth-tooltip-fade {
+  from { opacity: 0; animation-timing-function: linear(0,.084,.25,.422,.572,.692,.782,.849,.896,.929,.952,.968,.979,.986,.991,1); }
+  to { opacity: 1; }
 }
 @keyframes choropleth-pulse { from { transform: scale(1); opacity: .65; } to { transform: scale(2.5); opacity: 0; } }

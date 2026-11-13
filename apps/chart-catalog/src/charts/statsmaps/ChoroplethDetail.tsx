@@ -1,8 +1,9 @@
-import { geoArea, geoGraticule, geoPath } from "d3-geo";
+import { geoArea, geoCentroid, geoGraticule, geoPath } from "d3-geo";
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
-import { CartesianReadout } from "../cartesian/CartesianFocus";
+import { useDelayedTooltipData } from "../tooltip/use-delayed-tooltip-data";
 import { usePlotSize } from "../usePlotSize";
 import { useChoroplethCameraMotion } from "./choropleth-camera-motion";
+import { ChoroplethTooltip } from "./ChoroplethTooltip";
 import { countryKeyboardOrder, infrastructureMarkers, signupCounts, visitorCounts } from "./choropleth-fixtures";
 import {
   countryLevel, countryStatus, detailCountries, detailProjection, dotLattice, mapCaptions, mapScale,
@@ -35,13 +36,6 @@ function pointerPair(points: Map<number, Coordinate>) {
   return { distance: Math.hypot(b[0] - a[0], b[1] - a[1]), midpoint: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] as Coordinate };
 }
 
-function screenPoint(element: SVGGraphicsElement, [x, y]: Coordinate): Coordinate {
-  const matrix = element.getScreenCTM();
-  if (!matrix) return [x, y];
-  const point = new DOMPoint(x, y).matrixTransform(matrix);
-  return [point.x, point.y];
-}
-
 export function ChoroplethDetail({ example, compact = false }: DemoProps) {
   const variant = example.id as ChoroplethVariant;
   const id = useId().replaceAll(":", "");
@@ -65,7 +59,10 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
   const [pitch, setPitch] = useState(0);
   const [focus, setFocus] = useState<Target>();
   const [hover, setHover] = useState<{ target: Target; point: Coordinate }>();
+  const keyboardCountry = useRef<Target | undefined>(undefined);
+  const keyboardMarker = useRef<Target | undefined>(undefined);
   const [selection, setSelection] = useState<Target>();
+  const [tooltipGrace, setTooltipGrace] = useState(false);
   const selectionSize = useRef<{ width: number; height: number } | null>(null);
   const projection = useMemo(() => detailProjection(width, height), [width, height]);
   const model = useMemo(() => {
@@ -82,7 +79,7 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
         const [[left, top], [right, bottom]] = path.bounds({ type: "Polygon", coordinates });
         return Math.min(width, right) - Math.max(0, left) >= 2 && Math.min(height, bottom) - Math.max(0, top) >= 2;
       });
-      return { name, d: path(country) ?? "", at: path.centroid(country) as Coordinate, view,
+      return { name, d: path(country) ?? "", at: projection(geoCentroid(country)) as Coordinate, view,
         level: countryLevel(variant, name, index), keyboardVisible };
     });
     return { areas, grid: showGraticule ? path(graticule) : null, lattice: dots ? dotLattice(width, height, projection, areas) : null };
@@ -103,6 +100,18 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
     }));
   }, [flyable, infrastructure, projection]);
   const active = hover?.target ?? focus;
+  const tooltipRequest = useMemo(() => {
+    if (!active) return null;
+    const point: Coordinate = [...active.at];
+    if (active.marker === undefined) {
+      point[0] = Math.max(60, Math.min(width - 60, point[0]));
+      point[1] = Math.max(60, Math.min(height - 60, point[1]));
+    }
+    point[0] = point[0] * camera.scale + camera.x;
+    point[1] = point[1] * camera.scale + camera.y;
+    return { target: active, point };
+  }, [active, camera, width, height]);
+  const tooltip = useDelayedTooltipData(tooltipRequest, 0, tooltipGrace ? 120 : 0);
   const selectedTarget = selection && selectionSize.current?.width === width && selectionSize.current?.height === height
     ? selection.marker === undefined ? model.areas.find(target => target.name === selection.name) : markerData[selection.marker]
     : undefined;
@@ -128,6 +137,8 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
     setSelection(undefined);
     setFocus(undefined);
     setHover(undefined);
+    keyboardCountry.current = undefined;
+    keyboardMarker.current = undefined;
   }, [width, height]);
 
   useEffect(() => {
@@ -163,18 +174,17 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
     return () => element.removeEventListener("wheel", wheel);
   }, [compact, pannable, plot]);
 
-  function reset() {
+  function reset(clearInspection = true) {
     selectionSize.current = null;
     setCamera(rest);
     setPitch(0);
     setSelection(undefined);
-    setFocus(undefined);
-    setHover(undefined);
+    if (clearInspection) { setTooltipGrace(false); setFocus(undefined); setHover(undefined); keyboardCountry.current = undefined; keyboardMarker.current = undefined; }
   }
 
   function fly(target: Target) {
     if (!flyable || compact || didDrag.current) return;
-    if (selection?.name === target.name) { reset(); return; }
+    if (selection?.name === target.name) { reset(false); return; }
     selectionSize.current = { width, height };
     setSelection(target);
     setHover(current => current?.target.name === target.name ? current : undefined);
@@ -183,9 +193,11 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
 
   function key(event: KeyboardEvent<SVGSVGElement>) {
     if (event.key === "Escape" && (selection || active || camera !== rest || pitch)) {
+      const onMarker = (event.target as Element).hasAttribute("data-map-marker");
+      if (onMarker && !selection && camera === rest && !pitch) return;
       event.preventDefault();
       event.stopPropagation();
-      reset();
+      reset(!onMarker);
       return;
     }
     const center: Coordinate = [width / 2, height / 2];
@@ -211,6 +223,8 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
     const end = targets.length - 1;
     const index = event.key === "Home" ? 0 : event.key === "End" ? end :
       Math.min(end, Math.max(0, current + (arrow[0] || arrow[1])));
+    keyboardCountry.current = targets[index];
+    keyboardMarker.current = undefined;
     setFocus(targets[index]);
     setHover(undefined);
   }
@@ -263,30 +277,38 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
 
   function highlight(target: Target, event: PointerEvent<SVGElement>) {
     if (compact || drag.current?.moved || pinch.current || selection && selection.name !== target.name) return;
-    setHover({ target, point: localPoint(event.clientX, event.clientY) });
+    if (keyboardCountry.current && document.activeElement === motion.svg.current) {
+      // The chart retains its first inspected marker as keyboard context.
+      if (target.marker !== undefined && !keyboardMarker.current) keyboardMarker.current = target;
+    } else setFocus(undefined);
+    setTooltipGrace(target.marker === undefined);
+    setHover(current => current?.target === target ? current : { target, point: localPoint(event.clientX, event.clientY) });
   }
 
-  const dataValue = active && (variant === "choropleth-values" ? visitorCounts.get(active.name)
-    : background ? signupCounts.get(active.name) : clickable || dots ? officeVisitorCounts.get(active.name) : undefined);
-  const marker = active?.marker === undefined ? undefined : markerData[active.marker];
+  const tooltipTarget = tooltip?.target;
+  const dataValue = tooltipTarget && (variant === "choropleth-values" ? visitorCounts.get(tooltipTarget.name)
+    : background ? signupCounts.get(tooltipTarget.name) : clickable || dots ? officeVisitorCounts.get(tooltipTarget.name) : undefined);
+  const marker = tooltipTarget?.marker === undefined ? undefined : markerData[tooltipTarget.marker];
   const activeArea = active?.marker === undefined ? model.areas.find(area => area.name === active?.name) : undefined;
   const activeDotPath = activeArea && model.lattice?.byCountry.get(activeArea.name);
-  const entries = marker ? [{ name: "Location", value: marker.location }]
-    : dataValue === undefined ? [] : [{ name: background ? "Sign-ups" : "Visitors", value: clickable || dots ? `${dataValue}k` : dataValue }];
-  const readoutTitle = active && (patterns && !marker ? `${active.name}: ${countryStatus(active.name)}` : active.name);
-  let hint = hover?.point ?? active?.at;
-  if (!hover && hint && transformed.current && plot.current) {
-    const root = plot.current.getBoundingClientRect();
-    const absolute = screenPoint(transformed.current, hint);
-    hint = [absolute[0] - root.left, absolute[1] - root.top];
-  }
+  const entries = useMemo(() => marker ? [{ name: "Location", value: marker.location, color: "var(--choropleth-marker-muted)" }]
+    : dataValue === undefined ? [] : [{ name: background ? "Sign-ups" : "Visitors", value: clickable || dots ? `${dataValue}k` : dataValue, color: "var(--chart-1)" }], [marker, dataValue, background, clickable, dots]);
+  const readoutTitle = tooltipTarget && (patterns && !marker ? `${tooltipTarget.name}: ${countryStatus(tooltipTarget.name)}` : tooltipTarget.name);
   const stroke = "var(--choropleth-border)";
   const fillArea = (name: string, level: number) => patterns && countryStatus(name) === "beta" ? `url(#${id}-beta)` : mapScale(level);
   const [summary, description] = mapCaptions[variant];
   return <div className="choropleth-detail" data-choropleth={variant} data-compact={compact}>
     <div ref={plot} className="choropleth-stage" data-pannable={pannable} data-flying={flyable}
       data-selected={selectedTarget?.name} onPointerDown={down} onPointerMove={move} onPointerUp={end}
-      onPointerCancel={end} onPointerLeave={event => { if (!drag.current?.moved) end(event); if (event.pointerType !== "touch") setHover(undefined); setPitch(0); }}>
+      onPointerCancel={end} onPointerLeave={event => {
+        if (!drag.current?.moved) end(event);
+        if (event.pointerType !== "touch") {
+          setTooltipGrace(false);
+          setHover(undefined);
+          setFocus(keyboardCountry.current && document.activeElement === motion.svg.current ? keyboardMarker.current ?? keyboardCountry.current : undefined);
+        }
+        setPitch(0);
+      }}>
       {(background || pointerCamera) && <svg className="choropleth-backdrop" aria-hidden="true" viewBox={`0 0 ${width} ${height}`} data-map-backdrop="" opacity={selection && pointerCamera ? 0 : 1}>
         <defs><pattern id={`${id}-backdrop`} width="6" height="6" patternUnits="userSpaceOnUse">
           {background ? <path d="M-1 1 1 -1M0 6 6 0M5 7 7 5" stroke="var(--border)" strokeWidth=".65" />
@@ -296,7 +318,16 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
       </svg>}
       <svg ref={motion.svg} className="choropleth-svg cartesian-focus-surface" viewBox={`0 0 ${width} ${height}`} data-choropleth-width={width} data-choropleth-height={height}
         style={flyable && !compact ? undefined : { transform: angle }} role="img" aria-roledescription="map" aria-label={example.title} tabIndex={compact ? undefined : 0}
-        aria-describedby={compact ? undefined : `${id}-keys`} onBlur={() => setFocus(undefined)} onKeyDown={compact ? undefined : key}
+        aria-describedby={compact ? undefined : `${id}-keys`}
+        onFocus={compact ? undefined : event => {
+          if (event.target !== event.currentTarget) return;
+          keyboardCountry.current = undefined;
+          keyboardMarker.current = undefined;
+          setTooltipGrace(false);
+          setFocus(targets[0]);
+          setHover(undefined);
+        }}
+        onBlur={() => { keyboardCountry.current = undefined; keyboardMarker.current = undefined; setTooltipGrace(false); setFocus(undefined); }} onKeyDown={compact ? undefined : key}
         onClick={flyable && !compact ? () => { if (!didDrag.current) reset(); } : undefined}>
         {!compact && <desc id={`${id}-keys`}>Use arrow keys to inspect countries and locations. {pannable ? "Drag to pan, scroll or pinch to zoom. " : ""}{flyable ? "Press Enter to zoom to the selected place. " : ""}Escape resets the view.</desc>}
         <defs>
@@ -335,7 +366,8 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
           {model.areas.map(area => <path key={area.name} data-map-location={`country:${area.name}`} data-map-level={area.level} data-market-status={patterns ? countryStatus(area.name) : undefined}
             d={area.d} fill={dots ? "transparent" : fillArea(area.name, area.level)} stroke={dots ? "none" : stroke} strokeWidth=".5" strokeLinejoin="round"
             vectorEffect="non-scaling-stroke" opacity={activeArea && activeArea.name !== area.name && !dots ? .4 : 1}
-            onPointerMove={compact ? undefined : event => highlight(area, event)} onPointerLeave={event => { if (event.pointerType !== "touch") setHover(undefined); }}
+            onPointerMove={compact ? undefined : event => highlight(area, event)}
+            onPointerLeave={event => { if (event.pointerType !== "touch" && (!keyboardCountry.current || document.activeElement !== motion.svg.current)) setHover(undefined); }}
             onClick={compact ? undefined : event => { event.stopPropagation(); if (flyable) fly(area); else if (!didDrag.current) setFocus(area); }} />)}
           {activeArea && !dots && <path data-map-country-focus="" d={activeArea.d} fill={fillArea(activeArea.name, activeArea.level)}
             stroke="var(--foreground)" strokeWidth=".85" vectorEffect="non-scaling-stroke" pointerEvents="none" />}
@@ -353,7 +385,8 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
             aria-label={flyable && !compact ? `Zoom to ${target.name}` : undefined}
             onFocus={compact ? undefined : () => { if (!selection || selection.name === target.name) { setFocus(target); setHover(undefined); } }}
             onKeyDown={!flyable || compact ? undefined : event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); fly(target); } }}
-            onPointerMove={compact ? undefined : event => highlight(target, event)} onPointerLeave={event => { if (event.pointerType !== "touch") setHover(undefined); }}
+            onPointerMove={compact ? undefined : event => highlight(target, event)}
+            onPointerLeave={event => { if (event.pointerType !== "touch" && (!keyboardCountry.current || document.activeElement !== motion.svg.current)) { setHover(undefined); setFocus(undefined); } }}
             onClick={compact ? undefined : event => { event.stopPropagation(); if (flyable) fly(target); else setFocus(target); }}>
             {!compact && <circle data-map-marker-hit="" r="22" cy={pin ? -1.14 * radius : 0} fill="transparent" />}
             {pulse && <circle className="choropleth-marker-pulse" r={radius} cy={pin ? -1.9 * radius : 0} stroke={fill} strokeWidth="1.5" fill="none"
@@ -365,11 +398,8 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
           </g>;
         })}
       </svg>
-      {!compact && active && readoutTitle && hint && <div className="choropleth-tooltip"
-        style={{ left: Math.max(0, Math.min(width - 174, hint[0] + 12)), top: Math.max(0, Math.min(height - 58, hint[1] + 10)) }}>
-        {entries.length ? <CartesianReadout label={readoutTitle} entries={entries.map(entry => ({ ...entry, color: "transparent" }))} />
-          : <span className="choropleth-country-name" role="status">{readoutTitle}</span>}
-      </div>}
+      {!compact && <ChoroplethTooltip host={plot} scene={motion.svg} width={width} height={height} label={readoutTitle} entries={entries} point={tooltip?.point}
+        identity={tooltipTarget?.marker === undefined ? "country" : `marker:${tooltipTarget.name}`} />}
     </div>
     {!compact && <div className="choropleth-summary"><strong>{summary}</strong><span>{description}</span></div>}
   </div>;
