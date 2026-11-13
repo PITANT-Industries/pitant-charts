@@ -10,7 +10,7 @@ The [shadcn.io React reference](https://www.shadcn.io/charts) enumerates 44 char
 | Local Chromium render sweep | 331 production-build previews in desktop light, desktop dark, mobile light, and mobile dark |
 | Gallery | Desktop and mobile layout, family filters, search, saved examples across reloads, list view, deep links, theme and usage snippets checked |
 | Live side-by-side comparison | Compare uses the selected variant and theme. Checked live controls and variant navigation on desktop and the stacked dark layout on mobile. |
-| Variant parity notes | 155 variants have targeted behavior findings and specific remaining checks. |
+| Variant parity notes | 240 variants have targeted behavior findings and specific remaining checks. |
 | Donut interaction | Eight donut previews checked for keyboard selection, accessible value and share, and Escape clearing selection. |
 | Representative chart behaviors | Time range, range selection, synchronized sparklines, data table, PNG and SVG export, live pause, gauge controls, tooltip pinning, hierarchy drill-down, loading states, large scatter, heatmap scrolling, map zoom, and globe drag checked |
 | Full behavior and visual comparison | Open |

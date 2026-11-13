@@ -1,4 +1,8 @@
+import { lineFixture } from "./line-fixtures";
 import type { ChartData, ChartExample, ChartSeries } from "../../types";
+import { sparklineFixture } from "./sparkline-fixtures";
+
+import { makeAreaFixture } from "./area-fixtures";
 
 export interface CartesianData {
   categories: string[];
@@ -49,7 +53,6 @@ export function liveValue(index: number, preset: LivePreset) {
 
 export const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const channels = ["Desktop", "Mobile", "Tablet", "Referral", "Organic", "Direct"];
-const services = ["API", "Search", "Billing", "Auth", "Queue", "Media"];
 const regions = ["North", "West", "Central", "East", "South", "International"];
 
 export function dates(count: number, start = Date.UTC(2026, 0, 5)) {
@@ -99,7 +102,8 @@ export function resolveData(example: ChartExample, data?: ChartData): CartesianD
   const categories = data.categories ? [...data.categories] : data.series && !data.rows
     ? Array.from({ length: count }, (_, index) => String(index + 1))
     : fixture.categories;
-  return { categories, series, rows: data.rows ?? fixture.rows };
+  const usesCustomRows = example.family === "line" || (example.family === "sparkline" && Boolean(data.series));
+  return { categories, series, rows: data.rows ?? (usesCustomRows ? undefined : fixture.rows) };
 }
 
 function makeFixture(example: ChartExample): CartesianData {
@@ -123,30 +127,13 @@ function makeFixture(example: ChartExample): CartesianData {
       ] };
     }
     if (id === "line-band-range") return { categories: dates(30, Date.UTC(2026, 5, 1)), series: [{ name: "Temperature (°C)", values: curve(30, 3, 20, 4, 0.11) }] };
-    const count = id === "line-zoom" ? 365 : id === "line-time-range" ? 90 : 30;
+    const variant = lineFixture(id);
+    if (variant) return variant;
+    const count = id === "line-zoom" ? 365 : 30;
     const categories = dates(count, id === "line-zoom" ? Date.UTC(2026, 0, 1) : undefined);
-    const one = ["line-grid", "line-points", "line-dashed", "line-segment", "line-markers", "line-glow", "line-fixed-scale", "line-trend"];
-    let series = points(count, one.includes(id) ? ["Sessions"]
-      : ["line-legend", "line-weekends", "line-export"].includes(id) ? channels.slice(0, 3) : channels.slice(0, 2));
-    if (id.includes("profit-loss")) series = [{ name: "Net profit", values: curve(count, 3, -8, 36, 0.71) }];
-    if (id === "line-dual-axis") series = [
-      { name: "Revenue", values: curve(count, 3, 4900, 1400, 81) },
-      { name: "Conversion", values: curve(count, 2, 44, 13, 0.21).map(value => value / 10) },
-    ];
-    if (id === "line-threshold") series = points(count, ["P95 latency", "Median latency"]);
-    return { categories, series };
+    return { categories, series: points(count, id === "line-segment" ? ["Sessions"] : channels.slice(0, 2)) };
   }
-  if (family === "area") {
-    const count = 30;
-    const categories = id === "area-custom-labels" ? Array.from({ length: 12 }, (_, index) => `Sprint ${index + 1}`)
-      : ["area-forecast", "area-trend"].includes(id) ? months.slice(0, 10) : dates(count);
-    let series = points(categories.length, id === "area-small-multiples" ? regions : ["Revenue", "Costs"]);
-    if (["area-fill", "area-gradient-fill", "area-pattern", "area-steps", "area-reference-band", "area-pattern-fade", "area-fade-bottom", "area-selection", "area-trend"].includes(id)) series = series.slice(0, 1);
-    if (id === "area-reference-band") series = [{ name: "Signups", values: curve(categories.length, 2, 187, 38, 2) }];
-    if (id === "area-dual-axis") series = [{ name: "Sessions", values: curve(count, 1, 870, 160, 17) }, { name: "Conversion", values: curve(count, 4, 42, 12, 0.18).map(value => value / 10) }];
-    if (id === "area-steps") series = [{ name: "Pages", values: [4,4,4,7,7,9,9,9,5,5,4,4,4,2,2,6,6,6,8,8,8,7,7,5,5,5,9,9,6,6] }];
-    return { categories, series };
-  }
+  if (family === "area") return makeAreaFixture(id);
   if (family === "composed") {
     const october = dates(30, Date.UTC(2026, 9, 1));
     const series = (name: string, count: number, seed: number, base: number, swing: number, growth = 0) => ({ name, values: curve(count, seed, base, swing, growth) });
@@ -174,15 +161,7 @@ function makeFixture(example: ChartExample): CartesianData {
     const count = Math.round(preset.window / preset.period) + 1;
     return { categories: Array.from({ length: count }, (_, index) => String(index + 1)), series: [{ name: preset.name, values: Array.from({ length: count }, (_, index) => liveValue(index, preset)) }] };
   }
-  if (family === "sparkline") {
-    const count = id === "sparkline-range" ? 90 : id === "sparkline-stat-card" ? 7 : 24;
-    const names = id === "sparkline-grid" ? Array.from({ length: 48 }, (_, index) => `${services[index % services.length]} ${Math.floor(index / services.length) + 1}`)
-      : ["sparkline-default", "sparkline-synced", "sparkline-table", "sparkline-crosshairs", "sparkline-hover-feel"].includes(id)
-        ? ["Revenue", "Sessions", "Orders"] : ["Sessions"];
-    const series = names.length > 6 ? names.map((name, index) => ({ name, values: curve(count, index, 50 + index % 13, 21, 0.35) })) : points(count, names);
-    if (id === "sparkline-bar-negative") series[0] = { name: "Profit and loss", values: curve(count, 2, -4, 29, 0.5) };
-    return { categories: dates(count), series };
-  }
+  if (family === "sparkline") return sparklineFixture(id);
   if (family === "bar") {
     const categories = id === "bar-sources" ? ["Organic search", "Social media", "Direct", "Paid search", "Referral", "Email"] : months;
     const count = ["bar-stacked"].includes(id) ? 3 : ["bar-grouped", "bar-squares-legend", "bar-synced"].includes(id) ? 2 : 1;

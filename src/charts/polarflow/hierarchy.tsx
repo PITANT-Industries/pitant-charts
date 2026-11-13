@@ -5,10 +5,11 @@ import type { EChartsOption } from "echarts";
 import { Sector } from "recharts";
 import { EChart } from "../EChart";
 import { useChartTheme } from "../theme";
-import { dollars, Legend, number, numeric, Pattern, percent, point, safeText, tone, tooltip, useLoading, type Props } from "./shared";
+import { dollars, Legend, number, numeric, percent, point, safeText, tone, tooltip, useLoading, type Props } from "./shared";
 import type { SunburstNode } from "./upstream/sunburst-data";
 import { buildArcs, geometryFor, ringOptions, sumValues } from "./upstream/sunburst-layout";
 import type { ArcGeometry } from "./upstream/sunburst-layout";
+import { sunburstFixtures } from "./sunburst-fixtures";
 import styles from "./styles.module.css";
 import sunburstStyles from "./sunburst.module.css";
 
@@ -37,6 +38,10 @@ function readHierarchy(rows: readonly Record<string, unknown>[] | undefined): Su
 }
 
 type VisibleArc = ArcGeometry & { opacity: number };
+
+const compactExpense = new Intl.NumberFormat("en-US", {
+  style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1,
+});
 
 function collapseArc(arc: VisibleArc): VisibleArc {
   const center = (arc.a0 + arc.a1) / 2;
@@ -92,10 +97,13 @@ export function Sunburst({ example, compact, data }: Props) {
   const id = example.id;
   const hasBreadcrumb = id === "sunburst-breadcrumb";
   const customHint = id === "sunburst-custom-hint";
-  const root = useMemo((): SunburstNode => ({
-    name: hasBreadcrumb ? "Cloud spending" : "Revenue",
-    children: readHierarchy(data?.rows) ?? branches,
-  }), [data?.rows, hasBreadcrumb]);
+  const customColors = id === "sunburst-segment-colors";
+  const patterned = id === "sunburst-patterns";
+  const root = useMemo((): SunburstNode => {
+    const fixture = sunburstFixtures[id] ?? sunburstFixtures["sunburst-default"];
+    const children = readHierarchy(data?.rows);
+    return children ? { name: fixture.name, children } : fixture;
+  }, [data?.rows, id]);
   const { arcs, rootId, focusById, maxDepth, total } = useMemo(() => buildArcs(root), [root]);
   const initial = hasBreadcrumb ? arcs.find(item => item.depth === 1 && item.hasChildren)?.id : undefined;
   const [selected, setSelected] = useState<string | undefined>(initial);
@@ -110,7 +118,7 @@ export function Sunburst({ example, compact, data }: Props) {
     return geometry && item.value > 0 ? [[item.id, { ...geometry, opacity: 1 }] as const] : [];
   })), [arcs, focus, visibleDepth]);
   const visibleArcs = useArcMorph(targetArcs, compact);
-  const labels = arcs.filter(item => item.parentId === focus.id && item.value > 0);
+  const labels = arcs.filter(item => item.parentId === rootId && item.value > 0);
   const ancestors = focus.id.split(" / ");
   const chart = useRef<SVGSVGElement>(null);
   const visibleIds = [...targetArcs.keys()];
@@ -118,6 +126,8 @@ export function Sunburst({ example, compact, data }: Props) {
   const cx = 140;
   const cy = 132;
   const showLegend = !compact && id === "sunburst-legend";
+  const patternedBranches = patterned ? labels.filter(item => item.name === "Services" || item.name === "Partners") : [];
+
   function go(nextId: string | null, keyboard = false) {
     const next = nextId ?? rootId;
     setSelected(next);
@@ -159,17 +169,24 @@ export function Sunburst({ example, compact, data }: Props) {
       aria-description="Use arrow keys to inspect segments and Enter or Space to zoom into a branch. Press Escape to move back."
       tabIndex={compact ? undefined : 0} onKeyDown={inspect} onFocus={() => setActive(previous => previous ?? visibleIds[0] ?? null)}
       onBlur={() => setActive(null)} onPointerLeave={() => { if (document.activeElement !== chart.current) setActive(null); }}>
-      {id === "sunburst-patterns" && <defs>{arcs.filter(item => item.depth === 1).map(item => <Pattern key={item.id} id={`${uid}-${item.categoryIndex}`} color={tone(theme, item.categoryIndex, item.color)} variant={item.categoryIndex} />)}</defs>}
+      {patternedBranches.length > 0 && <defs>{patternedBranches.map(item =>
+        <pattern key={item.id} id={`${uid}-${item.categoryIndex}`} width="6" height="6" patternUnits="userSpaceOnUse">
+          <rect width="6" height="6" fill={tone(theme, item.categoryIndex, item.color)} fillOpacity=".2" />
+          <path d="M-1 1 1-1 M0 6 6 0 M5 7 7 5" stroke={tone(theme, item.categoryIndex, item.color)} strokeWidth="1.5" />
+        </pattern>
+      )}</defs>}
       {!targetArcs.size && <circle cx={cx} cy={cy} r={radius} fill="none" stroke={theme.grid} strokeWidth="1" />}
       {arcs.map((item) => {
         const geometry = visibleArcs.get(item.id);
         if (!geometry || item.value <= 0 || geometry.a1 - geometry.a0 < .0001) return null;
         const interactive = targetArcs.has(item.id);
         const highlighted = active === item.id || (active && active !== focus.id && item.id.startsWith(`${active} / `));
-        const muted = id === "sunburst-segment-colors" && item.categoryIndex !== 2;
+        const trail = item.id.split(" / ");
+        const muted = customColors && !item.color && trail[1] !== "Social";
+        const pattern = patternedBranches.find(branch => branch.id === item.id || item.id.startsWith(`${branch.id} / `));
         const color = muted ? theme.grid : tone(theme, item.categoryIndex, item.color);
         const tint = Math.min(25, (item.depth - focus.depth - 1) * 9 + (item.arcIndex % 2) * 4);
-        const fill = id === "sunburst-patterns" && item.depth > 1 && item.categoryIndex % 2 === 0 ? `url(#${uid}-${item.categoryIndex})` : `color-mix(in srgb, ${color} ${100 - Math.max(0, tint)}%, var(--card))`;
+        const fill = pattern ? `url(#${uid}-${pattern.categoryIndex})` : `color-mix(in srgb, ${color} ${100 - Math.max(0, tint)}%, var(--card))`;
         const click = interactive && item.hasChildren ? () => go(item.id) : undefined;
         const start = geometry.a0 * toDegrees + 270;
         const end = geometry.a1 * toDegrees + 270;
@@ -186,15 +203,15 @@ export function Sunburst({ example, compact, data }: Props) {
         const rotation = (mid + 360) % 360;
         const readableRotation = rotation > 90 && rotation < 270 ? rotation - 180 : rotation;
         const inset = Math.min(geometry.innerR ? .38 : .18, (end - start) / 8);
-        return <g key={item.id} opacity={geometry.opacity} className={sunburstStyles.segment} data-dimmed={active !== null && active !== focus.id && !highlighted && !active.startsWith(`${item.id} / `)}>
+        return <g key={item.id} opacity={geometry.opacity} className={sunburstStyles.segment} data-sunburst-branch={trail[1]} data-dimmed={active !== null && active !== focus.id && !highlighted && !active.startsWith(`${item.id} / `)}>
           <Sector cx={cx} cy={cy} innerRadius={geometry.innerR ? geometry.innerR + .43 : 0} outerRadius={geometry.outerR - .43 + (highlighted ? 2.5 : 0)}
             startAngle={-start - inset} endAngle={-end + inset} cornerRadius={geometry.innerR ? Math.min(1.25, radialSpace / 6, arcSpace / 8) : 0}
             fill={fill} role={click ? "button" : undefined} aria-label={interactive ? `${item.name}: ${number.format(item.value)}` : undefined}
             onPointerEnter={interactive ? () => setActive(item.id) : undefined} onClick={click}
             style={{ cursor: click ? "pointer" : "default", pointerEvents: interactive ? "auto" : "none" }}>
-            <title>{`${item.trail.join(" › ")} · ${number.format(item.value)}`}</title>
+            <title>{`${trail.join(" › ")} · ${number.format(item.value)}`}</title>
           </Sector>
-          {!customHint && !compact && availableCharacters >= 4 && radialSpace > 12 && arcSpace > 12 && geometry.opacity > .7 && <text pointerEvents="none" textAnchor="middle" dominantBaseline="central" x={tx} y={ty}
+          {!customHint && !patterned && !compact && availableCharacters >= 4 && radialSpace > 12 && arcSpace > 12 && geometry.opacity > .7 && <text pointerEvents="none" textAnchor="middle" dominantBaseline="central" x={tx} y={ty}
             transform={horizontal ? undefined : `rotate(${readableRotation}, ${tx}, ${ty})`}
             className={sunburstStyles.label} data-muted={muted}>{label}</text>}
         </g>;
@@ -206,7 +223,7 @@ export function Sunburst({ example, compact, data }: Props) {
       </g>}
     </svg>
     {showLegend && <ul className={sunburstStyles.legend} aria-label="Visible branches">
-      {labels.map(item => <li key={item.id}><Button type="button" data-active={active === item.id || !!active?.startsWith(`${item.id} / `)}
+      {labels.map(item => <li key={item.id}><Button type="button" data-active={active === item.id || !!active?.startsWith(`${item.id} / `) || focus.id === item.id || focus.id.startsWith(`${item.id} / `)}
         onPointerEnter={() => setActive(item.id)} onPointerLeave={() => setActive(null)} onFocus={() => setActive(item.id)} onBlur={() => setActive(null)}
         onClick={() => { if (item.hasChildren) go(item.id); else setActive(item.id); }}>
         <span className={sunburstStyles.swatch} style={{ background: tone(theme, item.categoryIndex, item.color) }} />
@@ -214,7 +231,12 @@ export function Sunburst({ example, compact, data }: Props) {
       </Button></li>)}
     </ul>}
     </div>
-    {!compact && <div className={sunburstStyles.hint}>{activeArc && active !== focus.id ? <><strong>{activeArc.name}</strong> · {customHint && !data ? dollars.format(activeArc.value * 1000) : number.format(activeArc.value)} · {percent(activeArc.value, total).toFixed(1)}%</> : focus.parentId ? "Select the center to go back" : customHint ? "Focus a segment to inspect its cost" : "Select a branch to zoom in"}</div>}
+    {!compact && <div className={sunburstStyles.hint} data-sunburst-hint="">
+      {activeArc && active !== focus.id ? customHint
+        ? <><strong>{activeArc.id.split(" / ").slice(1).join(" › ")}</strong> {compactExpense.format(activeArc.value).replace(/K$/, "k")} · {percent(activeArc.value, total).toFixed(1)}% of spend</>
+        : activeArc.id.split(" / ").join(" › ")
+        : focus.parentId ? "Click the center to zoom out" : customHint ? "Hover a segment to see its cost" : "Click a segment to zoom in · hover to inspect"}
+    </div>}
     {!compact && <div className={styles.screenReader} role="status" aria-atomic="true">{active === focus.id && focus.parentId
       ? "Back one level" : activeArc ? `${activeArc.id.split(" / ").slice(1).join(" › ")}: level ${activeArc.depth}, value ${number.format(activeArc.value)}` : `Viewing ${focus.name}`}</div>}
   </div>;

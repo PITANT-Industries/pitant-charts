@@ -1,7 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import type { EChartsOption, EChartsType } from "echarts";
 import { Button } from "@ui-sdk/react/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ui-sdk/react/select";
 import { Toggle } from "@ui-sdk/react/toggle";
 import type { ChartPreviewProps } from "../../types";
 import { Choices } from "../../ui/Choices";
@@ -11,22 +10,25 @@ import { ShadcnBasics } from "./ShadcnBasics";
 import { SparklineExamples } from "./Sparkline";
 import { Candles } from "./Candles";
 import { LiveLine } from "./LiveLine";
+import { DeadlineFills, downloadLineChart, LineLegend, LineLoadToggle, LineSkeleton } from "./LineExtras";
 import { buildBar, buildComposed, buildDiverging, buildDumbbell, buildGantt, buildLollipop, buildRanking, buildStream, buildWaterfall } from "./comparisons";
 import { initialLargeCount, minuteLatency, resolveData, type CartesianData } from "./data";
 import { buildLine, categoryAxis, colorFor, initialControls, up, down, valueFormat, type ChartTheme, type Controls } from "./options";
+import { buildArea } from "./area-options";
 import { clampBrush, RangeBrush, type BrushRange } from "./Brush";
 import "./styles.css";
+import "./area-styles.css";
 
 const basics = new Set(["area-default", "bar-default", "line-default"]);
 const connected = new Set(["line-synced", "bar-synced", "area-small-multiples"]);
 const brushExamples = new Set(["line-segment", "area-selection"]);
 const overviewExamples = new Set(["line-brush", "line-linked-brush", "line-date-highlights-brush"]);
-const rangeChoices = [7, 30, 90].map(days => ({ value: String(days), label: `${days} days` }));
 const countChoices = [10000, 50000, 100000].map(count => ({ value: String(count), label: `${count / 1000}k points` }));
-const fillChoices = ["Solid", "Gradient", "Hatched"].map(value => ({ value, label: value }));
+const fillChoices = ["Solid", "Gradient", "Pattern"].map(value => ({ value, label: value }));
 const trendChoices = ["Dashed", "Solid", "Gradient"].map(value => ({ value, label: value }));
 const loadChoices = ["Pulse", "Sweep", "Loaded"].map(value => ({ value, label: value }));
-const exportFormats: { value: "svg" | "png"; label: string }[] = [{ value: "svg", label: "SVG" }, { value: "png", label: "PNG" }];
+const areaTotals = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
+const lineRangeChoices = [7, 30, 90].map(days => ({ value: String(days), label: `${days}d`, ariaLabel: `${days} days` }));
 
 function sliceRange(data: CartesianData, [start, end]: BrushRange): CartesianData {
   return {
@@ -38,6 +40,7 @@ function sliceRange(data: CartesianData, [start, end]: BrushRange): CartesianDat
 
 function getOption(example: ChartPreviewProps["example"], data: CartesianData, theme: ChartTheme, compact: boolean, controls: Controls, loading = false): EChartsOption {
   switch (example.family) {
+    case "area": return buildArea(example, data, theme, compact, controls, loading);
     case "bar": return buildBar(example, data, theme, compact);
     case "composed": return buildComposed(example, data, theme, compact);
     case "diverging": return buildDiverging(example, data, theme, compact);
@@ -48,7 +51,7 @@ function getOption(example: ChartPreviewProps["example"], data: CartesianData, t
     case "bump": return buildRanking(example, data, theme, compact);
     case "stream": return buildStream(example, data, theme, compact);
     case "waterfall": return buildWaterfall(example, data, theme, compact);
-    default: return buildLine(example, data, theme, compact, controls);
+    default: return buildLine(example, data, theme, compact, controls, loading);
   }
 }
 
@@ -62,13 +65,13 @@ export default function Cartesian(props: ChartPreviewProps) {
 }
 
 function CartesianExample({ example, compact = false, data, theme, source }: ChartPreviewProps & { theme: ChartTheme; source: CartesianData }) {
-  const [controls, setControls] = useState<Controls>(initialControls);
+  const [controls, setControls] = useState<Controls>(() => example.id === "line-time-range" ? { ...initialControls, range: 90 } : initialControls);
   const [isLoading, setLoading] = useState(example.id.endsWith("-loading") || example.id === "line-loading-placeholder");
-  const [placeholder, setPlaceholder] = useState("Sweep");
+  const [placeholder, setPlaceholder] = useState(example.id === "area-loading" ? "Pulse" : "Sweep");
   const [pulsePaused, setPulsePaused] = useState(false);
   const [viewTable, setViewTable] = useState(false);
   const [focusedRow, setFocusedRow] = useState(-1);
-  const [exportFormat, setExportFormat] = useState<"png" | "svg">("svg");
+  const [exportFailed, setExportFailed] = useState(false);
   const chartRef = useRef<EChartsType>(null);
   const [pointCrosshair, setPointCrosshair] = useState<{ x: number; y: number } | null>(null);
   const [dragRange, setDragRange] = useState<{ left: number; right: number } | null>(null);
@@ -88,10 +91,13 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
   const range = id === "line-time-range";
   const brushes = brushExamples.has(id);
   const pointOnly = id === "line-crosshair-point";
+  const emphasizePoint = id === "line-points" || id === "line-glow";
   const powerUser = id === "line-large-data";
   const zoom = id === "line-zoom";
   const barPulse = id === "bar-depth";
-  const renderer = powerUser || id === "line-export" && exportFormat === "png" ? "canvas" : "svg";
+  const renderer = powerUser ? "canvas" : "svg";
+  const lineLegend = id === "line-legend" || id === "line-export";
+  const lineLoading = id === "line-loading" || id === "line-loading-placeholder";
   const lastCategory = Math.max(0, source.categories.length - 1);
   const firstVisible = id === "line-linked-brush" ? Math.round(lastCategory * 0.66) : 0;
   const [brushStart, brushEnd] = clampBrush(rangeOverride ?? [firstVisible, lastCategory], lastCategory);
@@ -161,10 +167,16 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
   }, [barPulse, optionsData]);
   const splitOptions = useMemo(() => {
     if (!split) return [];
-    const high = Math.ceil(Math.max(10, ...optionsData.series.flatMap(item => item.values.map(value => value ?? 0))) / 10) * 10;
+    let low = 0, high = 10;
+    if (id === "area-small-multiples") for (const item of optionsData.series) {
+      for (const value of item.values) if (typeof value === "number" && Number.isFinite(value)) {
+        low = Math.min(low, value);
+        high = Math.max(high, value);
+      }
+    }
     return optionsData.series.map((item, index) => {
       const panel = getOption(example, { ...optionsData, series: [{ ...item, color: colorFor(item, index, theme) }] }, theme, compact, view);
-      if (id === "area-small-multiples") panel.yAxis = { ...(Array.isArray(panel.yAxis) ? panel.yAxis[0] : panel.yAxis), max: high };
+      if (id === "area-small-multiples") panel.yAxis = { ...(Array.isArray(panel.yAxis) ? panel.yAxis[0] : panel.yAxis), min: Math.floor(low / 10) * 10, max: Math.ceil(high / 10) * 10 };
       if ((id === "line-linked-brush" || id === "line-synced") && index !== optionsData.series.length - 1) {
         const axis = categoryAxis(optionsData.categories, theme);
         panel.xAxis = { ...axis, axisLabel: { ...axis.axisLabel, show: false } };
@@ -184,31 +196,21 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
     else chartRef.current?.dispatchAction({ type: "hideTip" });
   }
 
-  function exportFile() {
+  async function exportFile(format: "svg" | "png") {
     const chart = chartRef.current;
     if (!chart) return;
-    const url = exportFormat === "svg" ? chart.getSvgDataURL()
-      : chart.getDataURL({ type: "png", pixelRatio: 2, backgroundColor: theme.surface });
-    if (!url) return;
-    const link = document.createElement("a");
-    link.download = `${id}.${exportFormat}`;
-    link.href = url;
-    link.click();
+    setExportFailed(false);
+    try {
+      await downloadLineChart(chart, format, theme.surface);
+    } catch {
+      setExportFailed(true);
+    }
   }
 
-  function movePointCrosshair(event: PointerEvent<HTMLDivElement>) {
+  function updatePointCrosshair(index: number | undefined) {
     const chart = chartRef.current;
-    const host = plotRef.current;
-    if (!chart || !host) return;
-    const bounds = host.getBoundingClientRect();
-    const position = [event.clientX - bounds.left, event.clientY - bounds.top];
-    if (!chart.containPixel({ gridIndex: 0 }, position)) {
-      setPointCrosshair(null);
-      return;
-    }
-    const index = Math.round(chart.convertFromPixel({ xAxisIndex: 0 }, position[0]) as number);
-    const value = optionsData.series[0]?.values[index];
-    if (typeof value !== "number") {
+    const value = index === undefined ? undefined : optionsData.series[0]?.values[index];
+    if (!chart || typeof value !== "number") {
       setPointCrosshair(null);
       return;
     }
@@ -268,7 +270,25 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
     }
   }
 
-  const onEvents: Record<string, (event: any) => void> | undefined = linked ? {
+  const activePointIndex = useRef<number | undefined>(undefined);
+  const onEvents: Record<string, (event: any) => void> | undefined = pointOnly || emphasizePoint ? {
+    updateAxisPointer(event: { axesInfo?: { value: number; axisDim?: string }[] }) {
+      const position = event.axesInfo?.find(axis => axis.axisDim === "x")?.value;
+      if (pointOnly) updatePointCrosshair(position);
+      if (!emphasizePoint || activePointIndex.current === position) return;
+      activePointIndex.current = position;
+      requestAnimationFrame(() => {
+        if (position !== activePointIndex.current) return;
+        chartRef.current?.dispatchAction({ type: "downplay", seriesIndex: 0 });
+        if (position !== undefined) chartRef.current?.dispatchAction({ type: "highlight", seriesIndex: 0, dataIndex: position });
+      });
+    },
+    globalout() {
+      if (pointOnly) updatePointCrosshair(undefined);
+      activePointIndex.current = undefined;
+      if (emphasizePoint) chartRef.current?.dispatchAction({ type: "downplay", seriesIndex: 0 });
+    },
+  } : linked ? {
     updateAxisPointer(event: { axesInfo?: { value: number }[] }) {
       const value = event.axesInfo?.[0]?.value;
       if (typeof value === "number") setFocusedRow(value);
@@ -277,7 +297,8 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
   } : id === "line-markers" ? {
     updateAxisPointer(event: { axesInfo?: { value: number; axisDim?: string }[] }) {
       const position = event.axesInfo?.find(axis => axis.axisDim === "x")?.value;
-      const next = position === 13 ? position : undefined;
+      const events = typeof position === "number" ? optionsData.rows?.[position]?.events : undefined;
+      const next = Array.isArray(events) && events.length > 1 ? position : undefined;
       if (controls.activeMarker !== next) requestAnimationFrame(() => update("activeMarker", next));
     },
     globalout() { if (controls.activeMarker !== undefined) update("activeMarker", undefined); },
@@ -285,73 +306,80 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
 
   if (family === "sparkline") return <SparklineExamples example={example} data={source} compact={compact} theme={theme} />;
   if (basics.has(id)) return <ShadcnBasics family={family} data={source} theme={theme} label={example.title} />;
+  if (id === "line-deadline-fills") return <DeadlineFills example={example} data={source} theme={theme} compact={compact} controls={controls} />;
 
   const legends = id === "line-profit-loss-legend" ? [{ name: "Profit", color: up }, { name: "Loss", color: down }]
     : id === "dumbbell-legend" ? source.series.slice(0, 2).map((item, index) => ({ name: item.name, color: colorFor(item, index, theme) })) : [];
   const selectionText = controls.selection ? controls.selection.map(index => optionsData.categories[index]).join(" – ") : "";
-  const skeleton = isLoading && startLoading && family !== "gantt";
-  const showControls = !compact && (range || brushes || startLoading || tableToggle || id === "line-band-fill" || id === "line-trend"
+  const areaLoading = id === "area-loading" && isLoading;
+  const liveLineLoading = id === "line-loading" && isLoading;
+  const skeleton = isLoading && startLoading && family !== "gantt" && !areaLoading && id !== "line-loading";
+  const showControls = !compact && (range || brushes || startLoading && id !== "line-loading-placeholder" || tableToggle || id === "line-band-fill" || id === "line-trend"
     || id === "line-export" || powerUser || id === "bar-depth" || legends.length > 0);
 
   return (
-    <div className={`cartesian-example${id === "bar-depth" ? ` cartesian-depth${pulsePaused ? " cartesian-depth--paused" : ""}` : ""}`}>
+    <div className={`cartesian-example${id === "area-small-multiples" ? " cartesian-area-multiples" : ""}${id === "bar-depth" ? ` cartesian-depth${pulsePaused ? " cartesian-depth--paused" : ""}` : ""}`}>
       {showControls && <div className="cartesian-controls">
-        {range && <Choices label="Time range" className="cartesian-choice-group" options={rangeChoices} value={String(controls.range)} onChange={days => update("range", Number(days))} />}
+        {range && <Choices label="Time range" className="cartesian-choice-group" options={lineRangeChoices} value={String(controls.range)} onChange={days => update("range", Number(days))} />}
         {brushes && <>
           <span className="cartesian-muted">Drag across the chart to select a range</span>
           <Button disabled={!controls.selection} onClick={() => update("selection", null)}>Clear</Button>
           {selectionText && <output className="cartesian-muted" aria-live="polite">{selectionText}</output>}
         </>}
-        {startLoading && !["line-loading-placeholder", "area-loading"].includes(id) && <Toggle pressed={isLoading} onPressedChange={setLoading}>{id === "gantt-loading" ? "Loading" : isLoading ? "Show data" : "Show loading"}</Toggle>}
+        {startLoading && !lineLoading && id !== "area-loading" && <Toggle pressed={isLoading} onPressedChange={setLoading}>{id === "gantt-loading" ? "Loading" : isLoading ? "Show data" : "Show loading"}</Toggle>}
+        {id === "line-loading" && <LineLoadToggle loading={isLoading} onChange={setLoading} />}
         {id === "area-loading" && <Choices label="Chart state" className="cartesian-choice-group" options={loadChoices} value={isLoading ? placeholder : "Loaded"} onChange={mode => { setLoading(mode !== "Loaded"); if (mode !== "Loaded") setPlaceholder(mode); }} />}
         {id === "bar-depth" && <Toggle pressed={pulsePaused} onPressedChange={setPulsePaused}>{pulsePaused ? "Resume pulse" : "Pause pulse"}</Toggle>}
         {id === "line-band-fill" && <Choices label="Band fill" className="cartesian-choice-group" options={fillChoices} value={controls.fill} onChange={fill => update("fill", fill)} />}
         {id === "line-trend" && <Choices label="Trend stroke" className="cartesian-choice-group" options={trendChoices} value={controls.trend} onChange={trend => update("trend", trend)} />}
         {id === "line-export" && <>
-          <span className="cartesian-muted">Format</span>
-          <Select value={exportFormat} items={exportFormats} onValueChange={(next) => { if (next !== null) setExportFormat(next); }}>
-            <SelectTrigger aria-label="Format"><SelectValue /><span aria-hidden="true">▾</span></SelectTrigger>
-            <SelectContent className="cartesian-format-menu">
-              {exportFormats.map(({ value, label }) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Button onClick={exportFile}>Download chart</Button>
+          <Button aria-label="Download SVG" onClick={() => void exportFile("svg")}>SVG</Button>
+          <Button aria-label="Download PNG" onClick={() => void exportFile("png")}>PNG</Button>
+          {exportFailed && <span role="status" className="cartesian-muted">Chart download failed. Try again.</span>}
         </>}
         {powerUser && !data && <Choices label="Points per series" className="cartesian-choice-group" options={countChoices} value={String(controls.count)} onChange={count => update("count", Number(count))} />}
         {tableToggle && <Toggle pressed={viewTable} onPressedChange={setViewTable}>{viewTable ? "View chart" : "View as table"}</Toggle>}
         {legends.map((item, index) => <Toggle key={index} pressed={index === controls.activeLegend} onMouseEnter={() => update("activeLegend", index)} onMouseLeave={() => update("activeLegend", undefined)} onFocus={() => update("activeLegend", index)} onBlur={() => update("activeLegend", undefined)} onPressedChange={pressed => update("activeLegend", pressed ? index : undefined)}><i className="cartesian-swatch" style={{ backgroundColor: item.color }} />{item.name}</Toggle>)}
       </div>}
-      {skeleton ? <ChartSkeleton family={family} label={example.title} effect={placeholder} /> : (
+      {skeleton ? lineLoading ? <LineSkeleton />
+        : <ChartSkeleton family={family} label={example.title} effect={placeholder} /> : (
         <>
           {!viewTable && (family === "gantt" ? <div className={`cartesian-gantt-scroll${compact ? " cartesian-gantt-scroll--compact" : ""}`} data-gantt-layout={id} aria-busy={isLoading}>
             <div className={`cartesian-gantt-plot${isLoading ? " cartesian-gantt-plot--loading" : ""}`}>
               <EChart key={isLoading ? "loading" : "ready"} option={option} label={example.title} compact={compact} />
             </div>
-          </div> : split ? <div className={`cartesian-panels ${id === "area-small-multiples" ? "cartesian-panels--multiples" : ""}`} ref={panelsRef}>
+          </div> : split ? <div className={`cartesian-panels ${id === "area-small-multiples" ? `cartesian-panels--multiples${compact ? " cartesian-panels--multiples-compact" : ""}` : ""}`} ref={panelsRef}>
             {(compact && id === "area-small-multiples" ? splitOptions.slice(0, 4) : splitOptions).map(({ item, panel }, index) => (
               <div className="cartesian-panel" key={index}>
-                <span>{item.name}</span>
+                {id === "area-small-multiples" ? <div className="cartesian-area-region"><span>{item.name}</span><span>{areaTotals.format(item.values.reduce<number>((total, value) => total + (value ?? 0), 0))}</span></div> : <span>{item.name}</span>}
                 <EChart option={panel} label={`${example.title}, ${item.name}`} compact={compact} group={connection} />
               </div>
             ))}
-          </div> : <div className={`cartesian-plot${brushes && !compact ? " cartesian-plot--selection" : ""}`} ref={plotRef}
+          </div> : <div className={lineLegend && !compact ? id === "line-legend" ? "line-with-side-legend" : "line-with-footer-legend" : "line-single-plot"}>
+          <div className={`cartesian-plot${liveLineLoading ? " line-chart-loading" : ""}${brushes && !compact ? " cartesian-plot--selection" : ""}${id === "area-selection" ? " cartesian-area-selection" : ""}${areaLoading ? ` cartesian-area-loading cartesian-area-loading--${placeholder.toLowerCase()}` : ""}`} aria-busy={areaLoading || liveLineLoading || undefined} ref={plotRef}
             onDoubleClick={zoom && !compact ? () => chartRef.current?.dispatchAction({ type: "dataZoom", start: 0, end: 100 }) : undefined}
             onPointerDown={brushes && !compact ? beginSelection : undefined} onPointerUp={brushes && !compact ? commitSelection : undefined}
             onPointerCancel={brushes && !compact ? clearSelectionDrag : undefined} onLostPointerCapture={brushes && !compact ? clearSelectionDrag : undefined}
-            onKeyDown={brushes && !compact ? selectionKey : undefined}
-            onPointerMove={brushes && !compact ? dragSelection : pointOnly ? movePointCrosshair : undefined} onPointerLeave={pointOnly ? () => setPointCrosshair(null) : undefined}>
-            <EChart option={option} label={example.title} compact={compact} chartRef={chartRef} renderer={renderer}
-              onEvents={onEvents} />
+            onKeyDown={brushes && !compact ? selectionKey : pointOnly ? event => { if (event.key === "Escape") setPointCrosshair(null); } : undefined}
+            onPointerMove={brushes && !compact ? dragSelection : undefined} onBlur={pointOnly ? () => setPointCrosshair(null) : undefined}>
+            <EChart option={option} label={liveLineLoading ? "Loading chart" : example.title} compact={compact || areaLoading || liveLineLoading} chartRef={chartRef} renderer={renderer}
+              mergeUpdates={range || id === "line-loading"} onEvents={onEvents} />
+            {liveLineLoading && <span className="line-skeleton-label" role="status">Loading revenue</span>}
+            {areaLoading && <span className="cartesian-area-loading-status" role="status">Loading orders</span>}
             {barPulse && pulsePosition && <span className="cartesian-bar-pulse" aria-hidden="true" style={{ left: pulsePosition[0] + 3, top: pulsePosition[1] - 3 }} />}
             {dragRange && <div className="cartesian-selection" aria-hidden="true" style={{ left: dragRange.left, width: dragRange.right - dragRange.left }} />}
             {pointOnly && pointCrosshair && <div className="cartesian-point-crosshair" aria-hidden="true"
               style={{ left: pointCrosshair.x, top: pointCrosshair.y, height: Math.max(0, (plotRef.current?.clientHeight ?? 0) - pointCrosshair.y - 25) }} />}
+          </div>
+          {lineLegend && !compact && <LineLegend currency={id === "line-export"} active={view.activeLegend}
+            series={source.series.map((item, index) => ({ ...item, color: colorFor(item, index, theme) }))}
+            onActive={index => update("activeLegend", index)} />}
           </div>)}
           {overview && !compact && <RangeBrush data={source} range={[brushStart, brushEnd]} change={setRangeOverride} theme={theme} showLaunch={id === "line-date-highlights-brush"} />}
           {powerUser && !compact && <div className="cartesian-status">{valueFormat.format(optionsData.categories.length)} points per series{!data ? ` · ${Math.ceil(optionsData.categories.length / 1440)} days at one sample per minute` : ""}</div>}
           {zoom && !compact && <div className="cartesian-status">Ctrl or ⌘ and scroll to zoom · Drag to pan · Double-click to reset</div>}
           {id === "gantt-loading" && isLoading && !compact && <div className="cartesian-status" role="status">Loading schedule</div>}
-          {!compact && (viewTable || linked) && <DataTable data={optionsData} active={focusedRow} onActive={linked ? showRow : undefined} />}
+          {!compact && (tableToggle || linked) && <DataTable data={optionsData} active={focusedRow} onActive={linked ? showRow : undefined} linked={linked} hidden={tableToggle && !viewTable} />}
         </>
       )}
     </div>
@@ -377,7 +405,7 @@ function ChartSkeleton({ family, label, effect }: { family: string; label: strin
   );
 }
 
-function DataTable({ data, active, onActive }: { data: CartesianData; active: number; onActive?: (index: number) => void }) {
+function DataTable({ data, active, onActive, linked, hidden }: { data: CartesianData; active: number; onActive?: (index: number) => void; linked: boolean; hidden: boolean }) {
   const activeRow = useRef<HTMLTableRowElement>(null);
   useEffect(() => {
     if (!onActive || !activeRow.current) return;
@@ -390,16 +418,24 @@ function DataTable({ data, active, onActive }: { data: CartesianData; active: nu
   }, [active, onActive]);
 
   return (
-    <div className="cartesian-table" tabIndex={0} role="region" aria-label="Chart data">
+    <div className={`cartesian-table${hidden ? " line-table-screen-reader" : ""}`} tabIndex={hidden ? undefined : 0} role="region" aria-label="Chart data">
       <table>
-        <thead><tr><th scope="col">Period</th>{data.series.map((item, index) => <th scope="col" key={index}>{item.name}</th>)}</tr></thead>
+        <thead><tr><th scope="col">{linked ? "Week of" : "Period"}</th>{data.series.map((item, index) => <th scope="col" key={index}>{item.name}</th>)}{linked && data.series.length >= 2 && <th scope="col">Conversion</th>}</tr></thead>
         <tbody>{data.categories.map((category, index) => <tr key={index} className={active === index ? "cartesian-row-active" : undefined}
           ref={active === index ? activeRow : undefined} tabIndex={onActive ? 0 : undefined}
           onPointerEnter={onActive ? () => onActive(index) : undefined} onPointerLeave={onActive ? () => onActive(-1) : undefined}
           onFocus={onActive ? () => onActive(index) : undefined} onBlur={onActive ? () => onActive(-1) : undefined}>
           <th scope="row">{category}</th>{data.series.map((item, column) => <td key={column}>{typeof item.values[index] === "number" ? valueFormat.format(item.values[index]!) : "–"}</td>)}
+          {linked && data.series.length >= 2 && <td>{conversion(data, index)}</td>}
         </tr>)}</tbody>
       </table>
     </div>
   );
+}
+
+const conversionFormat = new Intl.NumberFormat("en", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+function conversion(data: CartesianData, index: number) {
+  const trials = data.series[0].values[index], paid = data.series[1].values[index];
+  return typeof trials === "number" && trials > 0 && typeof paid === "number" ? conversionFormat.format(paid / trials) : "–";
 }

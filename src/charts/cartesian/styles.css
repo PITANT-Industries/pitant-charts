@@ -1,4 +1,4 @@
-.cartesian-example, .cartesian-spark-layout {
+.cartesian-example {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -51,10 +51,6 @@
   border-color: var(--chart-2);
 }
 .cartesian-controls label { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted-foreground); }
-.cartesian-format-menu { z-index: 8; min-width: var(--anchor-width, 4rem); padding: 4px; border: 1px solid var(--border); border-radius: 7px; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 8px 22px #18112730; font-size: 11px; }
-.cartesian-format-menu [role="option"] { padding: 5px 8px; border-radius: 4px; cursor: pointer; }
-.cartesian-format-menu [data-highlighted] { background: var(--muted); }
-.cartesian-format-menu [data-selected] { color: var(--primary); }
 .cartesian-muted { color: var(--muted-foreground); font-size: 11px; }
 .cartesian-swatch { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: 0 0 7px; }
 .cartesian-live-halo, .cartesian-live-skeleton { animation: cartesian-pulse 1.25s ease-in-out infinite; }
@@ -93,23 +89,6 @@
 .cartesian-table th:first-child { text-align: left; }
 .cartesian-table th:not(:first-child), .cartesian-table td { text-align: right; }
 .cartesian-row-active { background: var(--muted); }
-.cartesian-sparks { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); min-height: 0; flex: 1; gap: 8px; width: 100%; }
-.cartesian-sparks--single { grid-template-columns: 1fr; }
-.cartesian-sparks--matrix { grid-template-columns: repeat(4, minmax(0, 1fr)); overflow-y: auto; grid-auto-rows: minmax(35px, 1fr); gap: 4px; }
-.cartesian-sparks--table { grid-template-columns: 1fr; gap: 0; }
-.cartesian-spark-item { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
-.cartesian-sparks--table .cartesian-spark-item { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(100px, 2fr); align-items: center; border-bottom: 1px solid var(--border); }
-.cartesian-spark-caption { display: flex; align-items: baseline; flex-wrap: wrap; padding: 1px 3px 2px; gap: 5px; font-size: 9px; color: var(--muted-foreground); }
-.cartesian-spark-caption strong { color: var(--foreground); font-size: 14px; font-variant-numeric: tabular-nums; }
-.cartesian-spark-caption small { font-size: 9px; }
-.cartesian-spark { display: block; width: 100%; flex: 1; min-height: 0; min-width: 0; height: 100%; }
-.cartesian-sparks--table .cartesian-spark { height: 28px; }
-.cartesian-spark:focus-visible { outline: 1px solid var(--chart-1); border-radius: 4px; outline-offset: 2px; }
-.cartesian-spark rect { transition: opacity 140ms ease-out; }
-.cartesian-spark circle { transition: cx 220ms cubic-bezier(.19, 1.4, .35, 1), cy 220ms cubic-bezier(.19, 1.4, .35, 1); }
-.cartesian-spark--stiff circle { transition-duration: 110ms; }
-.cartesian-spark--none circle, .cartesian-spark--none rect { transition: none; }
 @media (prefers-reduced-motion: reduce) {
   .cartesian-live-halo, .cartesian-live-skeleton, .cartesian-gantt-plot--loading, .cartesian-skeleton::after, .cartesian-skeleton--pulse svg, .cartesian-bar-pulse { animation: none; }
-  .cartesian-spark circle, .cartesian-spark rect { transition: none; }
 }

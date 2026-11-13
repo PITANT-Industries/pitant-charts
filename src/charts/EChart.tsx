@@ -13,6 +13,7 @@ export interface EChartProps {
   chartRef?: RefObject<EChartsType | null>
   renderer?: 'canvas' | 'svg'
   onReady?: (instance: EChartsType) => void
+  mergeUpdates?: boolean
 }
 
 const groupUsers = new Map<string, number>()
@@ -37,7 +38,7 @@ function prepareOption(option: EChartsOption) {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? { ...prepared, animation: false } : prepared
 }
 
-export function EChart({ option, label, compact, onEvents, group, chartRef, renderer = 'svg', onReady }: EChartProps) {
+export function EChart({ option, label, compact, onEvents, group, chartRef, renderer = 'svg', onReady, mergeUpdates = false }: EChartProps) {
   const host = useRef<HTMLDivElement>(null)
   const instance = useRef<EChartsType>(null)
   const props = useRef({ onReady, onEvents, option })
@@ -79,9 +80,9 @@ export function EChart({ option, label, compact, onEvents, group, chartRef, rend
 
   useEffect(() => {
     if (!instance.current || applied.current === option) return
-    instance.current.setOption(prepareOption(option), { notMerge: true })
+    instance.current.setOption(prepareOption(option), { notMerge: !mergeUpdates })
     applied.current = option
-  }, [option])
+  }, [mergeUpdates, option])
 
   function handleKey(event: KeyboardEvent<HTMLDivElement>) {
     const chart = instance.current

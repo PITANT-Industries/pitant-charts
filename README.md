@@ -40,6 +40,8 @@ export function OrdersChart() {
 
 Use a sized container and load the stylesheet before applying your shadcn theme. Chart colors resolve from inherited CSS variables, including scope-specific overrides and OKLCH tokens. Changing a theme class, inline style, or `data-theme` on an ancestor refreshes the chart. For a dynamically replaced stylesheet, dispatch `new Event('chart-theme-change')` on `window` after the new styles apply.
 
+Sparkline charts accept nullable sample values and leave a gap at missing samples. The stat card can compare each value with a prior period supplied as `rows: [{ previous: 100 }, ...]`, aligned with the series.
+
 ## Verify changes
 
 ```sh

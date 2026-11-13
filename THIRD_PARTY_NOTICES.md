@@ -3,7 +3,7 @@
 | Source | Adaptations | License |
 | --- | --- | --- |
 | [shadcn/ui registry](https://github.com/shadcn-ui/ui) | Card slots and Recharts line, area and bar examples | [MIT](licenses/shadcn-ui-MIT.md) |
-| [Bklit UI](https://github.com/bklit/bklit-ui) | Gauge notch geometry, sunburst layout, and sign-sensitive line segments | [MIT](licenses/Bklit-UI-MIT.md) |
+| [Bklit UI](https://github.com/bklit/bklit-ui) | Gauge notch geometry, sunburst layout, sign-sensitive line segments, and sparkline fixtures and path builders | [MIT](licenses/Bklit-UI-MIT.md) |
 | [Simplify Charts](https://github.com/simplifyingai/ui.simplifyingai.com) | Density estimation, box plot statistics, and waterfall accumulation | [MIT](licenses/Simplify-Charts-MIT.md) |
 | [EvilCharts registry](https://evilcharts.com/r/echarts-tooltip.json) | Shared chart tooltip and color treatment | [MIT](licenses/EvilCharts-MIT.txt) |
 

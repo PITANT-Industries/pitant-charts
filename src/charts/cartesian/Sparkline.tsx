@@ -1,155 +1,229 @@
-import { useId, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { Choices } from "../../ui/Choices";
 import type { ChartExample, ChartSeries } from "../../types";
 import type { CartesianData } from "./data";
 import { colorFor, down, tint, up, valueFormat, type ChartTheme } from "./options";
+import { sparklinePaths } from "./sparkline-path";
+import styles from "./sparkline.module.css";
 
-const ranges = [7, 30, 90].map(day => ({ value: String(day), label: `${day} days` }));
+const ranges = [7, 30, 90].map(day => ({ value: String(day), label: `${day}D`, ariaLabel: `${day} days` }));
+const compactNumber = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
+const dollars = new Intl.NumberFormat("en", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const compactDollars = new Intl.NumberFormat("en", { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 });
+const crosshairs = ["dashed", "solid", "gradient"] as const;
+const hoverLabels = ["Spring (default)", "Snappy: stiffness 600, damping 45", "No spring", "Bars, no spring"];
+const hoverMotion = ["spring", "snappy", "immediate", "immediate"] as const;
+const matrixKinds = ["area", "line", "bar"] as const;
+type Kind = "line" | "area" | "bar" | "step";
 
 interface SparkProps {
   item: ChartSeries;
+  label: string;
   color: string;
-  kind: "line" | "area" | "bar" | "step";
-  crosshair?: "dashed" | "solid" | "gradient";
-  motion?: "normal" | "stiff" | "none";
+  kind: Kind;
+  crosshair: typeof crosshairs[number];
+  motion?: typeof hoverMotion[number];
   solid?: boolean;
-  staticEnd?: boolean;
-  signed?: boolean;
+  endpoint?: boolean;
+  compact: boolean;
   active: number | null;
-  categories: string[];
+  categories: readonly string[];
+  format: (value: number) => string;
   onActive: (index: number | null) => void;
 }
 
-function Spark({ item, color, kind, crosshair, motion = "normal", solid, staticEnd, signed, active, categories, onActive }: SparkProps) {
+function Spark({ item, label, color, kind, crosshair, motion = "spring", solid, endpoint, compact, active, categories, format, onActive }: SparkProps) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, "");
-  const width = 216, height = 76, pad = 5;
+  const plot = useRef<SVGSVGElement>(null);
+  const [{ width, height }, setSize] = useState({ width: 216, height: 56 });
+  useEffect(() => {
+    const node = plot.current;
+    if (!node || typeof ResizeObserver !== "function") return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width > 12 && height > 12) setSize(previous => previous.width === width && previous.height === height ? previous : { width, height });
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   const values = item.values;
-  const numbers = values.filter((value): value is number => value !== null);
-  const min = numbers.length ? Math.min(...numbers, ...(signed ? [0] : [])) : 0;
-  const max = numbers.length ? Math.max(...numbers, ...(signed ? [0] : [])) : 1;
-  const baseline = signed ? 0 : min;
-  const range = max - min || 1;
-  const xAt = (index: number) => pad + index / Math.max(values.length - 1, 1) * (width - pad * 2);
-  const yAt = (value: number) => height - pad - (value - min) / range * (height - pad * 2);
-  const point = active === null ? undefined : values[active];
-  const line = values.map((value, index) => {
-    if (value === null) return "";
-    const x = xAt(index), y = yAt(value);
-    return index === 0 || values[index - 1] === null ? `M${x},${y}` : kind === "step" ? `H${x}V${y}` : `L${x},${y}`;
-  }).join(" ");
-  const area = values.reduce<{ paths: string[]; start: number | null; previous: number | null }>((state, value, index) => {
-    if (value === null) return { ...state, start: null, previous: null };
-    const x = xAt(index), y = yAt(value);
-    const starts = state.start === null;
-    if (starts) {
-      state.start = index;
-      state.paths.push(`M${x},${yAt(baseline)}L${x},${y}`);
-    } else {
-      state.paths[state.paths.length - 1] += kind === "step" ? `H${x}V${y}` : `L${x},${y}`;
-    }
-    if (index === values.length - 1 || values[index + 1] === null) state.paths[state.paths.length - 1] += `L${x},${yAt(baseline)}Z`;
-    state.previous = value;
-    return state;
-  }, { paths: [], start: null, previous: null }).paths.join(" ");
+  let low = Infinity, high = -Infinity;
+  for (const value of values) {
+    if (value === null || !Number.isFinite(value)) continue;
+    low = Math.min(low, value);
+    high = Math.max(high, value);
+  }
+  if (low === Infinity) low = high = 0;
+  const isBar = kind === "bar";
+  const min = isBar ? Math.min(0, low) : low;
+  const max = isBar ? Math.max(0, high) : high;
+  const pad = 4;
+  const slot = (width - 2 * pad) / Math.max(1, values.length);
+  const xAt = (index: number) => isBar ? pad + (index + .5) * slot : values.length === 1 ? width / 2 : pad + index / Math.max(1, values.length - 1) * (width - 2 * pad);
+  const yAt = (value: number) => min === max ? height / 2 : height - pad - (value - min) / (max - min) * (height - 2 * pad);
+  const { line, area } = isBar ? { line: "", area: "" } : sparklinePaths(values, xAt, yAt, min, kind === "step");
   const current = values.at(-1);
-  const dotIndex = staticEnd ? values.length - 1 : active;
+  const point = active === null ? null : values[active];
+  const dotIndex = endpoint ? values.length - 1 : active;
   const dotValue = dotIndex === null ? null : values[dotIndex];
+  const barWidth = Math.max(1, slot - Math.min(2, slot * .3));
+
   const setPointer = (event: PointerEvent<SVGSVGElement>) => {
-    if (staticEnd || !values.length) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const fraction = (event.clientX - rect.left) / Math.max(1, rect.width);
-    onActive(Math.min(values.length - 1, Math.max(0, Math.round(fraction * (values.length - 1)))));
+    if (endpoint || !values.length) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const fraction = ((event.clientX - bounds.left) / Math.max(1, bounds.width) * width - pad) / (width - pad * 2);
+    const index = isBar ? Math.floor(fraction * values.length) : Math.round(fraction * (values.length - 1));
+    onActive(Math.min(values.length - 1, Math.max(0, index)));
   };
   const setKeyboard = (event: KeyboardEvent<SVGSVGElement>) => {
-    if (staticEnd || !values.length || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    if (endpoint || !values.length) return;
+    if (event.key === "Escape" && active !== null) {
+      event.preventDefault();
+      event.stopPropagation();
+      onActive(null);
+      return;
+    }
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
-    const next = event.key === "Home" ? 0 : event.key === "End" ? values.length - 1 : (active ?? 0) + (event.key === "ArrowRight" ? 1 : -1);
+    const initial = event.key === "ArrowLeft" ? values.length : -1;
+    const next = event.key === "Home" ? 0 : event.key === "End" ? values.length - 1 : (active ?? initial) + (event.key === "ArrowRight" ? 1 : -1);
     onActive(Math.min(values.length - 1, Math.max(0, next)));
   };
-  const barWidth = Math.max(1.5, (width - 2 * pad) / Math.max(1, values.length) * 0.65);
+  const description = active === null ? `latest ${typeof current === "number" ? format(current) : "unavailable"}`
+    : `${categories[active] ?? `Sample ${active + 1}`} ${typeof point === "number" ? format(point) : "unavailable"}`;
+  const fill = solid ? tint(color, .24) : `url(#${id}-fill)`;
 
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" tabIndex={staticEnd ? undefined : 0}
-      aria-label={`${item.name}, ${typeof point === "number" ? `${categories[active ?? 0]} ${valueFormat.format(point)}` : `latest ${current ?? "unavailable"}`}`}
-      className={`cartesian-spark cartesian-spark--${motion}`}
-      onPointerMove={setPointer} onPointerLeave={() => onActive(null)} onKeyDown={setKeyboard} onBlur={() => onActive(null)}>
-      <defs>
-        <linearGradient id={`${id}-fill`} x1="0" x2="0" y1="0" y2="1">
-          <stop stopColor={color} stopOpacity={0.42} /><stop offset="100%" stopColor={color} stopOpacity={0.025} />
-        </linearGradient>
-        <linearGradient id={`${id}-crosshair`} x1="0" x2="0" y1="0" y2="1">
-          <stop stopColor={color} stopOpacity={0} /><stop offset="50%" stopColor={color} stopOpacity={0.9} /><stop offset="100%" stopColor={color} stopOpacity={0} />
-        </linearGradient>
-      </defs>
-      {kind === "bar" ? values.map((value, index) => value === null ? null : (
-        <rect key={index} x={xAt(index) - barWidth / 2} y={Math.min(yAt(value), yAt(baseline))}
-          width={barWidth} height={Math.max(2, Math.abs(yAt(value) - yAt(baseline)))} rx={Math.min(3, barWidth / 3)}
-          fill={signed ? value >= 0 ? up : down : color} opacity={active === null || active === index ? 1 : 0.26} />
-      )) : <>
-        {(kind === "area" || kind === "step") && <path d={area} fill={solid ? tint(color, 0.27) : `url(#${id}-fill)`} />}
-        <path d={line} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round"
-          vectorEffect="non-scaling-stroke" opacity={active !== null && kind === "line" ? 0.32 : 1} />
-        {active !== null && kind === "line" && values.map((value, index) => {
-          if (value === null || index < Math.max(0, active - 1) || index > active || values[index + 1] == null) return null;
-          return <path key={index} d={`M${xAt(index)},${yAt(value)}L${xAt(index + 1)},${yAt(values[index + 1]!)}`}
-            fill="none" stroke={color} strokeWidth={2.5} vectorEffect="non-scaling-stroke" />;
-        })}
-      </>}
-      {active !== null && kind !== "bar" && crosshair && (
-        <line x1={xAt(active)} x2={xAt(active)} y1={0} y2={height} stroke={crosshair === "gradient" ? `url(#${id}-crosshair)` : tint(color, 0.55)}
-          strokeDasharray={crosshair === "dashed" ? "4 3" : undefined} vectorEffect="non-scaling-stroke" />
-      )}
-      {kind !== "bar" && dotIndex !== null && typeof dotValue === "number" && (
-        <circle cx={xAt(dotIndex)} cy={yAt(dotValue)} r={3.6} fill={color} stroke="var(--background)" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
-      )}
-    </svg>
-  );
+  return <svg ref={plot} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img"
+    tabIndex={endpoint || compact || !values.length ? undefined : 0} aria-label={`${label}, ${description}`}
+    className={styles.plot} data-spark-kind={kind} data-spark-motion={motion} data-point-count={values.length}
+    onPointerMove={setPointer} onPointerDown={setPointer} onPointerLeave={() => onActive(null)} onKeyDown={setKeyboard} onBlur={() => onActive(null)}>
+    <defs>
+      {(kind === "area" || kind === "step") && !solid && <linearGradient id={`${id}-fill`} x1="0%" x2="0%" y1="0%" y2="100%">
+        <stop stopColor={color} stopOpacity={.38} /><stop offset="100%" stopColor={color} stopOpacity={.02} />
+      </linearGradient>}
+      {crosshair === "gradient" && <linearGradient id={`${id}-crosshair`} gradientUnits="userSpaceOnUse" x1={0} x2={0} y1={0} y2={height}>
+        <stop stopColor={color} stopOpacity={0} /><stop offset="50%" stopColor={color} stopOpacity={.75} /><stop offset="100%" stopColor={color} stopOpacity={0} />
+      </linearGradient>}
+      {!isBar && active !== null && <clipPath id={`${id}-focus`}><rect x={xAt(Math.max(0, active - 2))} width={xAt(Math.min(active + 2, values.length - 1)) - xAt(Math.max(0, active - 2))} y={0} height={height} /></clipPath>}
+    </defs>
+    {isBar ? <>
+      {min < 0 && max > 0 && <line x1={pad} x2={width - pad} y1={yAt(0)} y2={yAt(0)} stroke="var(--border)" data-zero-line="" />}
+      {values.map((value, index) => value === null || !Number.isFinite(value) ? null : <rect data-spark-bar="" key={index}
+        x={xAt(index) - barWidth / 2} y={Math.min(yAt(value), yAt(0))} width={barWidth}
+        height={Math.max(1, Math.abs(yAt(value) - yAt(0)))} rx={Math.min(2, barWidth / 3)} fill={color}
+        opacity={active === null || active === index ? 1 : .4} />)}
+    </> : <>
+      {(kind === "area" || kind === "step") && <path data-spark-area="" d={area} fill={fill} />}
+      <path d={line} data-spark-stroke="" fill="none" stroke={color} strokeWidth={1.65} strokeLinejoin="round" strokeLinecap="round" opacity={active === null ? 1 : .5} />
+      {active !== null && <path d={line} fill="none" stroke={color} strokeWidth={1.65} clipPath={`url(#${id}-focus)`} />}
+    </>}
+    {active !== null && <g className={styles.guide} style={{ transform: `translateX(${xAt(active)}px)` }}>
+      <line y1={pad} y2={height - pad} stroke={crosshair === "gradient" ? `url(#${id}-crosshair)` : tint(color, .55)}
+        strokeDasharray={crosshair === "dashed" ? "2 2" : undefined} data-spark-guide={crosshair} />
+    </g>}
+    {dotIndex !== null && typeof dotValue === "number" && Number.isFinite(dotValue) && <g className={styles.guide} style={{ transform: `translate(${xAt(dotIndex)}px, ${yAt(dotValue)}px)` }}>
+      <circle r={3} fill={color} stroke="var(--card)" strokeWidth={1.3} data-spark-dot={endpoint ? "end" : "active"} />
+    </g>}
+  </svg>;
+}
+
+function delta(value: number | null | undefined, first: unknown) {
+  return typeof first === "number" && Number.isFinite(first) && first !== 0 && typeof value === "number" && Number.isFinite(value)
+    ? (value - first) / Math.abs(first) * 100 : null;
+}
+
+function numberSummary(value: number | null | undefined, format: (value: number) => string = valueFormat.format) {
+  return typeof value === "number" && Number.isFinite(value) ? format(value) : "–";
+}
+
+function Change({ amount }: { amount: number | null }) {
+  if (amount === null) return null;
+  return <small className={styles.change} style={{ color: amount < 0 ? down : up }}><span aria-hidden="true">{amount < 0 ? "↓" : "↑"}</span> {amount >= 0 ? "+" : "−"}{Math.abs(amount).toFixed(1)}%</small>;
 }
 
 export function SparklineExamples({ example, data, theme, compact }: { example: ChartExample; data: CartesianData; theme: ChartTheme; compact: boolean }) {
   const [indices, setIndices] = useState<Record<number, number | null>>({});
   const [range, setRange] = useState(30);
+  const captionId = useId();
   const { id } = example;
   const table = id === "sparkline-table";
-  const tiles = ["sparkline-default", "sparkline-stat-card", "sparkline-synced"].includes(id);
+  const cards = id === "sparkline-default";
   const shared = id === "sparkline-synced";
   const matrix = id === "sparkline-grid";
   const rangeControl = id === "sparkline-range";
+  const hoverFeel = id === "sparkline-hover-feel";
+  const guideDemo = id === "sparkline-crosshairs";
+  const stat = id === "sparkline-stat-card";
+  const endpoint = id === "sparkline-end-dot";
+  const signed = id === "sparkline-bar-negative";
+  const single = !table && !cards && !shared && !matrix && !hoverFeel && !guideDemo;
   const source = compact && matrix ? data.series.slice(0, 12) : data.series;
-  const kinds = ["line", "area", "bar"] as const;
-  return (
-    <div className="cartesian-spark-layout">
-      {rangeControl && !compact && <div className="cartesian-controls" aria-label="Time range">
-        <Choices label="Time range" className="cartesian-choice-group" options={ranges} value={String(range)} onChange={day => { setRange(Number(day)); setIndices({}); }} />
-      </div>}
-      <div className={`cartesian-sparks ${matrix ? "cartesian-sparks--matrix" : table ? "cartesian-sparks--table" : ""} ${source.length === 1 ? "cartesian-sparks--single" : ""}`}>
-        {source.map((item, index) => {
-          const visible = rangeControl ? { ...item, values: item.values.slice(-range) } : item;
-          const selected = indices[shared ? 0 : index] ?? null;
-          const current = selected === null ? visible.values.at(-1) : visible.values[selected];
-          const previous = selected === null ? visible.values.at(-2) : visible.values[selected - 1];
-          const delta = typeof previous === "number" && typeof current === "number" && previous !== 0 ? ((current - previous) / Math.abs(previous) * 100) : null;
-          const kind = matrix ? kinds[index % 3] : id.includes("-bar") || id === "sparkline-hover-feel" && index === 1 ? "bar"
-            : id === "sparkline-step" ? "step" : id.includes("-area") || id === "sparkline-stat-card" ? "area" : "line";
-          const crosshairs = ["dashed", "solid", "gradient"] as const;
-          const motion = ["normal", "stiff", "none"] as const;
-          const color = table ? typeof delta === "number" && delta < 0 ? down : up : colorFor(item, index, theme);
-          return (
-            <div className="cartesian-spark-item" key={index}>
-              {(tiles || table || matrix || source.length > 1 || id === "sparkline-end-dot") && <div className="cartesian-spark-caption">
-                <span>{id === "sparkline-crosshairs" ? ["Dashed", "Solid", "Gradient"][index] : id === "sparkline-hover-feel" ? ["Spring", "Stiff spring", "Immediate"][index] : item.name}</span>
-                {(tiles || table || id === "sparkline-end-dot") && <strong>{typeof current === "number" ? valueFormat.format(current) : "–"}</strong>}
-                {tiles && !compact && delta !== null && <small style={{ color: delta >= 0 ? up : down }}>{delta >= 0 ? "+" : ""}{delta.toFixed(1)}%</small>}
-              </div>}
-              <Spark item={visible} color={color} kind={kind} solid={id === "sparkline-area-solid"} signed={id === "sparkline-bar-negative"}
-                staticEnd={id === "sparkline-end-dot"} crosshair={id === "sparkline-crosshairs" ? crosshairs[index % 3] : "dashed"}
-                motion={id === "sparkline-hover-feel" ? motion[index % 3] : "normal"} active={selected}
-                categories={rangeControl ? data.categories.slice(-range) : data.categories}
-                onActive={value => setIndices(current => ({ ...current, [shared ? 0 : index]: value }))} />
-            </div>
-          );
-        })}
-      </div>
+  const categories = rangeControl ? data.categories.slice(-range) : data.categories;
+  const previousValues = stat ? data.rows?.flatMap(row => typeof row.previous === "number" && Number.isFinite(row.previous) ? [row.previous] : []) : undefined;
+  const previousMean = previousValues?.length ? previousValues.reduce((sum, value) => sum + value, 0) / previousValues.length : null;
+  const makeSpark = (item: ChartSeries, index: number) => {
+    const selected = indices[shared ? 0 : index] ?? null;
+    const current = selected === null ? item.values.at(-1) : item.values[selected];
+    const change = delta(current, selected === null ? item.values[0] : item.values[selected - 1]);
+    const previous = delta(item.values.at(-1), item.values[0]);
+    const money = table || ["Revenue", "Daily P&L"].includes(item.name);
+    const format = money ? dollars.format : endpoint ? (value: number) => `${valueFormat.format(value)} ms` : valueFormat.format;
+    const summaryFormat = money && !signed ? compactDollars.format : endpoint || signed ? format : compactNumber.format;
+    const color = table ? previous !== null && previous < 0 ? down : up : colorFor(item, guideDemo || hoverFeel && index < 3 ? 0 : index, theme);
+    const kind: Kind = matrix ? matrixKinds[index % 3] : cards ? matrixKinds[index % 3] : hoverFeel ? index === 3 ? "bar" : "line"
+      : id.includes("-bar") ? "bar" : id === "sparkline-step" ? "step" : id.includes("-area") || rangeControl ? "area" : "line";
+    const label = guideDemo ? ["Dashed", "Solid", "Gradient"][index % 3] : hoverFeel ? hoverLabels[index % 4] : item.name;
+    const selectPoint = (value: number | null) => setIndices(state => state[shared ? 0 : index] === value ? state : ({ ...state, [shared ? 0 : index]: value }));
+    const plot = <Spark item={item} label={label} color={color} kind={kind}
+      solid={id === "sparkline-area-solid"} endpoint={endpoint}
+      crosshair={guideDemo ? crosshairs[index % 3] : stat ? "gradient" : "dashed"}
+      motion={hoverFeel ? hoverMotion[index % 4] : undefined} compact={compact} active={selected} categories={categories} format={format} onActive={selectPoint} />;
+    return { plot, label, selected, current, change, previous, format, summaryFormat };
+  };
+
+  if (table) return <div className={styles.tableWrap} role="region" aria-labelledby={captionId} tabIndex={compact ? undefined : 0}>
+    <table className={styles.table}>
+      <caption id={captionId} className={styles.srOnly}>Monthly recurring revenue by plan</caption>
+      <thead><tr><th scope="col">Plan</th><th scope="col">Trend</th><th scope="col">MRR</th><th scope="col">Change</th></tr></thead>
+      <tbody>{source.map((item, index) => {
+        const { plot, previous, summaryFormat } = makeSpark(item, index);
+        return <tr key={index}><th scope="row">{item.name}</th><td>{plot}</td><td>{numberSummary(item.values.at(-1), summaryFormat)}</td><td><Change amount={previous} /></td></tr>;
+      })}</tbody>
+    </table>
+  </div>;
+
+  const layout = matrix ? "matrix" : shared ? "shared" : stat ? "stat" : cards ? "cards" : hoverFeel ? "motion" : single ? "single" : "guides";
+  const caption = (title: string, content: ReactNode) => <div className={styles.caption}><span>{title}</span>{content}</div>;
+  return <div className={styles.layout} data-spark-layout={layout}>
+    {rangeControl && !compact && <div className="cartesian-controls">
+      <Choices label="Time range" className="cartesian-choice-group" options={ranges} value={String(range)} onChange={day => { setRange(Number(day)); setIndices({}); }} />
+    </div>}
+    <div className={styles.items} aria-label={matrix ? "Service trends" : undefined}>
+      {source.map((original, index) => {
+        const item = rangeControl ? { ...original, values: original.values.slice(-range) } : original;
+        const { plot, label, selected, current, change, previous, format, summaryFormat } = makeSpark(item, index);
+        const average = item.values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+        const mean = average.length ? Math.round(average.reduce((sum, value) => sum + value, 0) / average.length) : null;
+        const statChange = selected === null ? delta(mean, previousMean) : delta(current, data.rows?.[selected]?.previous);
+        const selectedLabel = categories[selected ?? Math.max(0, item.values.length - 1)];
+        return <div className={styles.item} key={index}>
+          {(cards || signed || endpoint) && caption(label, signed ? <strong style={{ color: (current ?? 0) < 0 ? down : up }}>{selectedLabel}: {numberSummary(current, format)}</strong>
+            : cards ? <small>{selectedLabel}</small> : <strong>{numberSummary(current, format)}</strong>)}
+          {(guideDemo || hoverFeel) && caption(label, null)}
+          {cards && <div className={styles.metric}><strong>{numberSummary(current, summaryFormat)}</strong><Change amount={change} /></div>}
+          {shared && <div className={styles.seriesKey}><span>{label}</span><strong>{numberSummary(current, summaryFormat)}</strong></div>}
+          <div className={styles.plotWrap}>{plot}
+            {stat && <div className={styles.statReadout}><Change amount={statChange ?? (selected === null ? null : change)} /><strong>{numberSummary(selected === null ? mean : current, format)}</strong><small>{selected === null ? "Daily average" : selectedLabel}</small></div>}
+          </div>
+          {!compact && (rangeControl || single && !stat && !signed && !endpoint) && <div className={styles.summary}>
+            <strong>{rangeControl ? `${numberSummary(mean)} a day on average` : `${numberSummary(current, format)}${selectedLabel ? ` on ${selectedLabel}` : ""}`}</strong>
+            {rangeControl && <small>Over the last {range} days</small>}
+            <Change amount={previous} />
+          </div>}
+        </div>;
+      })}
     </div>
-  );
+    {shared && !compact && <div className={styles.summary}>{categories[indices[0] ?? Math.max(0, categories.length - 1)]}</div>}
+  </div>;
 }

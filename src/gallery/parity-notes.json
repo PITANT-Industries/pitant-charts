@@ -1,15 +1,119 @@
 {
+  "area-default": {
+    "checked": "Two translucent fills compare daily Revenue and Costs across September, with both upper strokes fading at the ends.",
+    "remaining": "Compare exact data, axis styling, and entrance timing."
+  },
+  "area-fill": {
+    "checked": "The August Visitors series uses a dense vertical gradient with 5% opacity at the baseline and no visible top stroke.",
+    "remaining": "Compare the horizontal edge fade and exact daily values."
+  },
+  "area-gradient-fill": {
+    "checked": "The April Subscribers fill uses three theme colors at 0%, 55%, and 100%, with a single upper stroke.",
+    "remaining": "Compare exact color stops and subscriber counts."
+  },
+  "area-pattern": {
+    "checked": "Diagonal hatching stays clipped below the daily Spend line and above its baseline.",
+    "remaining": "Compare the exact line curve and hatch spacing."
+  },
+  "area-mixed": {
+    "checked": "Desktop uses a gradient while Mobile uses a clipped dotted fill. Both series appear in the same tooltip.",
+    "remaining": "Compare precise overlap, fixture values, and dot styling."
+  },
+  "area-forecast": {
+    "checked": "The Revenue fill is continuous. A solid upper stroke ends in September and the dashed stroke continues to December, with all twelve months marked and one value in the tooltip.",
+    "remaining": "Compare exact monthly data and marker transitions."
+  },
+  "area-reference-band": {
+    "checked": "The target area sits between 180 and 240 sign-ups, with two dashed boundaries, inward markers, and two October dates below the lower edge.",
+    "remaining": "Compare exact daily counts, band opacity, and marker geometry."
+  },
+  "area-reference-range": {
+    "checked": "October 12–18 is highlighted with a shaded launch-week range and horizontal rules at its top and bottom.",
+    "remaining": "Compare fixture values and reference-band styling."
+  },
+  "area-background": {
+    "checked": "A diagonal texture fades horizontally and replaces the grid behind the August Requests area.",
+    "remaining": "Compare the texture fade, color and exact request counts."
+  },
+  "area-small-multiples": {
+    "checked": "Six regional weekly charts share a vertical scale. Pointer and keyboard inspection synchronize their week, and narrow screens show two columns.",
+    "remaining": "Compare regional fixture totals, palette, and tooltip placement."
+  },
+  "area-date-highlights": {
+    "checked": "Three October weekends use clipped diagonal stripes. A red rule marks October 15, with the overdue region fading to the right.",
+    "remaining": "Compare hatch styling and transition timing."
+  },
+  "area-trend": {
+    "checked": "A separate least-squares line fades at both ends over ten monthly Desktop points. The tooltip reports only actual visits.",
+    "remaining": "Compare exact fixture values and trend styling."
+  },
+  "area-value-labels": {
+    "checked": "The chart proposes up to five formatted values per device series and suppresses overlaps. The tooltip retains both original values.",
+    "remaining": "Compare exact label positions, collision priorities, and values."
+  },
+  "area-dual-axis": {
+    "checked": "Sessions use the left axis in thousands and Conversion uses its own percent axis. Both values are inspectable in one tooltip.",
+    "remaining": "Compare exact axis range and fixture values."
+  },
+  "area-steps": {
+    "checked": "The Pages line holds each daily value until the next date, then changes vertically.",
+    "remaining": "Compare exact daily counts and step transitions."
+  },
   "area-selection": {
-    "checked": "Mouse and touch drag directly on the chart select a range and show its dates.",
-    "remaining": "Compare the selected fill and hover treatment."
+    "checked": "Mouse and touch drag select a range. Two dashed guides, a shaded area, a brighter stroke and the date output identify the selection.",
+    "remaining": "Compare exact hover, selection, and clearing behavior."
+  },
+  "area-pattern-fade": {
+    "checked": "Diagonal hatching clips to Revenue and fades toward both sides and the baseline. The upper stroke fades horizontally.",
+    "remaining": "Compare texture geometry, exact fade stops, and data."
+  },
+  "area-fade-bottom": {
+    "checked": "The Orders fill holds 50% opacity across the upper 40%, then fades toward the baseline.",
+    "remaining": "Compare exact path and chart colors."
+  },
+  "area-custom-labels": {
+    "checked": "Sprint labels appear on the axis and hover pill, with the matching calendar date and Story points in the tooltip.",
+    "remaining": "Compare pill and tooltip styling."
   },
   "area-loading": {
-    "checked": "Pulse, Sweep, and Loaded switch the placeholder and data states.",
-    "remaining": "Compare the exact skeleton and reveal animation."
+    "checked": "Pulse is selected initially. Pulse and Sweep show muted marks on the same July chart, and Loaded restores Orders tooltips without moving the axes.",
+    "remaining": "Compare the exact pulse and sweep animation and fixture counts."
   },
   "bar-depth": {
     "checked": "Pause pulse and Resume pulse control the bar highlight animation.",
     "remaining": "Compare depth, material styling, and pulse timing."
+  },
+  "line-default": {
+    "checked": "The shadcn-derived chart draws two series. Keyboard inspection shows the active date pill and the Users and Pageviews values.",
+    "remaining": "Compare the complete fixture and entrance timing."
+  },
+  "line-dual-axis": {
+    "checked": "Revenue uses the left dollar axis and Conversion uses the right percentage axis. Hover reports both with their units.",
+    "remaining": "Compare exact values and axis typography."
+  },
+  "line-grid": {
+    "checked": "The single Sessions line sits on a dotted grid with horizontal and vertical guides and abbreviated values.",
+    "remaining": "Compare exact tick spacing and colors."
+  },
+  "line-points": {
+    "checked": "Fourteen ringed signup marks are shown. Inspection enlarges the active mark and dims the remaining marks.",
+    "remaining": "Compare focus and hover easing."
+  },
+  "line-dashed": {
+    "checked": "Five intervals at the end use a six-on, four-off dash pattern. Inspection keeps the Orders label through the transition.",
+    "remaining": "Compare daily values and the seam curvature."
+  },
+  "line-markers": {
+    "checked": "September releases appear over Users and Sessions. Inspecting September 23 fans a three-event cluster into separate marks.",
+    "remaining": "Compare exact event labels and fan-out transition."
+  },
+  "line-legend": {
+    "checked": "Organic, Paid, and Referral legend rows show totals. Pointer hover and keyboard focus dim the other two series.",
+    "remaining": "Compare exact totals and legend spacing."
+  },
+  "line-time-range": {
+    "checked": "The 90-day default switches to 7, 30, or 90 days while preserving the chart instance and September 28 endpoint.",
+    "remaining": "Compare scale animation curves and exact visitor values."
   },
   "line-segment": {
     "checked": "Mouse and touch drag directly on the chart select a range. Clear removes it.",
@@ -31,21 +135,117 @@
     "checked": "Requests, latency, and errors share the same tooltip date.",
     "remaining": "Compare the crosshair animation and panel spacing."
   },
+  "line-table": {
+    "checked": "Ten weekly rows include Trials, Paid, and calculated Conversion. Chart inspection highlights the row, and row focus shows the chart tooltip.",
+    "remaining": "Compare table treatment and focus transition."
+  },
+  "line-projection": {
+    "checked": "Dotted Goal and Trend paths share a ring at the final observed day and extend over six future days.",
+    "remaining": "Compare the trend extrapolation, date spacing, and gradient stops."
+  },
+  "line-projection-manual": {
+    "checked": "A single dashed Forecast connects the last booking value to three explicit future checkpoints.",
+    "remaining": "Compare forecast segment time spacing and source values."
+  },
+  "line-threshold": {
+    "checked": "A solid 250 ms target appears with a heavier p95 stroke and a lighter Median stroke. Both tooltip values have ms units.",
+    "remaining": "Compare the full latency series and exact axis domain."
+  },
+  "line-profit-loss": {
+    "checked": "The Net income line changes green and red at interpolated zero crossings. Keyboard inspection formats the reading as currency.",
+    "remaining": "Compare fixture values and exact line shape."
+  },
+  "line-profit-loss-legend": {
+    "checked": "Profit and Loss legend focus isolate the corresponding sign color while dimming the other line stretches.",
+    "remaining": "Compare the precise hover opacity and legend position."
+  },
+  "line-band": {
+    "checked": "Signups sit inside a shaded Forecast envelope. The tooltip displays the observed value and paired low and high estimates.",
+    "remaining": "Compare remaining daily forecast values and opacity."
+  },
   "line-band-range": {
     "checked": "The temperature range shows both boundaries. The tooltip gives the low and high in degrees Celsius.",
     "remaining": "Compare band styling and chart scale with the reference data."
+  },
+  "line-band-ranges": {
+    "checked": "North and South each have a color-matched range and median line. The tooltip lists both medians and their separate ranges.",
+    "remaining": "Compare exact hourly bounds, colors, and legend placement."
   },
   "line-band-bollinger": {
     "checked": "The band appears after the nine-point warm-up.",
     "remaining": "Compare the remaining band styling and the exact fixture series."
   },
+  "line-band-fill": {
+    "checked": "Keyboard activation switches among Solid, Gradient, and clipped Pattern while retaining the same Forecast limits.",
+    "remaining": "Compare the stripe spacing and fill transition."
+  },
+  "line-band-fade": {
+    "checked": "The band fades over its outer fifths, keeps two dashed edges, and preserves the low and high readout.",
+    "remaining": "Compare the edge fade colors and opacity."
+  },
+  "line-band-edges": {
+    "checked": "The gradient forecast has a dotted upper edge and a hidden lower stroke. Inspection still reports both bounds.",
+    "remaining": "Compare the exact edge spacing and gradient."
+  },
+  "line-weekends": {
+    "checked": "Calendar Saturdays and Sundays are striped behind Scope, Started, and Completed.",
+    "remaining": "Compare the stripe density and exact issue values."
+  },
+  "line-deadline": {
+    "checked": "October 15 is marked by a red line and label. Diagonal shading fades after the deadline.",
+    "remaining": "Compare the label placement and overdue stripe opacity."
+  },
+  "line-deadline-fills": {
+    "checked": "Three panels show the same Completed series and due date with pattern, gradient, and solid fills.",
+    "remaining": "Compare the exact fade masks and compact spacing."
+  },
   "line-date-highlights-brush": {
     "checked": "At mobile width, weekend shading is hidden when dates are dense and appears after zooming in. The launch marker stays on its original date.",
     "remaining": "Compare precise density thresholds and band styling."
   },
+  "line-glow": {
+    "checked": "A color ramp and two clipped radial backdrops render without visible axes. Pointer and keyboard inspection report Sessions.",
+    "remaining": "Compare the pointer highlight, blur strength, and radial positions."
+  },
+  "line-trend": {
+    "checked": "The weekly signup chart switches the least-squares guide among dashed, solid, and gradient strokes. The guide stays out of the data tooltip.",
+    "remaining": "Compare transition curves and exact trend styling."
+  },
+  "line-bollinger": {
+    "checked": "The floating scale shows Close from the first day. The 10-day average and both bounds appear after the warm-up.",
+    "remaining": "Compare closing prices, axis bounds, and line widths."
+  },
+  "line-crosshair-point": {
+    "checked": "The gradient guide starts at the focused Visitors point and runs down to the axis. Pointer and keyboard inspection move it.",
+    "remaining": "Compare the blur strength and marker sizing."
+  },
+  "line-fixed-scale": {
+    "checked": "The CPU view holds its percent scale at 100%, with a labeled top tick and visible headroom.",
+    "remaining": "The reference SVG shows an extra 120% tick even though its copy describes a 100% fixed scale."
+  },
+  "line-straight": {
+    "checked": "The Web and Mobile paths use straight point-to-point segments. Both are available during inspection.",
+    "remaining": "Compare responsive tick counts and the September values."
+  },
+  "line-export": {
+    "checked": "Direct keyboard-accessible SVG and PNG actions produce valid files from the current rendered chart. The legend totals show all three plans.",
+    "remaining": "Compare inclusion of surrounding card content and exact totals."
+  },
   "line-large-data": {
     "checked": "The Canvas chart displays minute-sampled p50 and p95 series. It starts at 50,000 points and switches to 10,000 or 100,000. The tooltip reports both raw values.",
     "remaining": "The nearest displayed minute can be affected by decimation. Compare lookup behavior and rendering performance at the largest setting."
+  },
+  "line-loading": {
+    "checked": "The Revenue plot keeps its chart instance when Loading and Ready are switched. Loading suppresses data inspection and Ready restores it.",
+    "remaining": "Compare shimmer movement and the handover timing."
+  },
+  "chart-data-table": {
+    "checked": "The six-period Revenue and Expenses table is accessible with the plot visible and becomes the visual view when activated.",
+    "remaining": "Compare the displayed table formatting and layout."
+  },
+  "line-loading-placeholder": {
+    "checked": "The standalone skeleton shows a loading status and has no interaction controls. The diagonal sweep respects reduced motion.",
+    "remaining": "Compare the exact skeleton curve and motion timing."
   },
   "scatter-default": {
     "checked": "The tooltip groups both series for a week, and unrelated marks blur during inspection.",
@@ -207,6 +407,66 @@
     "checked": "The chart reports its busy state and reveals marks from the interval bottoms.",
     "remaining": "Compare animation and timing."
   },
+  "sparkline-default": {
+    "checked": "Three storefront cards show Revenue as an area, Visitors as a line, and Orders as bars. Hover updates the selected card’s date and metric independently.",
+    "remaining": "Compare colors, metric formatting, and focus animation."
+  },
+  "sparkline-line": {
+    "checked": "The 24-point revenue line is smoothed. Keyboard inspection shows the November 8 value of $4,587 and a point marker.",
+    "remaining": "Compare the chart’s vertical domain and focus fade."
+  },
+  "sparkline-area": {
+    "checked": "A gradient fills the area below the smoothed 24-day visitor line. The last day reads 1,286.",
+    "remaining": "Compare the gradient stops and vertical domain."
+  },
+  "sparkline-area-solid": {
+    "checked": "A uniform fill sits below the 24-day visitor line. Keyboard inspection reads the active point.",
+    "remaining": "Compare exact fill opacity and axis-free geometry."
+  },
+  "sparkline-bar": {
+    "checked": "Twenty-four order bars grow from zero. The active bar stays bright, and inspection shows 176 orders on November 8.",
+    "remaining": "Compare bar rounding, spacing, and hover easing."
+  },
+  "sparkline-bar-negative": {
+    "checked": "Twenty P&L bars extend above and below zero, with a currency readout that shows −$200 on the final day.",
+    "remaining": "Compare bar spacing, rounding, and baseline styling."
+  },
+  "sparkline-end-dot": {
+    "checked": "A fixed marker remains at the last point during pointer movement. The p95 latency readout is 283 ms.",
+    "remaining": "Compare the end-marker styling and line interpolation."
+  },
+  "sparkline-step": {
+    "checked": "Eighteen weekly points draw midpoint steps and a filled area. Keyboard inspection reaches the final 25 paid seats.",
+    "remaining": "Compare vertical scale and hover treatment."
+  },
+  "sparkline-crosshairs": {
+    "checked": "Three copies of the line show dashed, solid, and gradient guides under pointer inspection.",
+    "remaining": "Compare guide opacity and marker motion."
+  },
+  "sparkline-hover-feel": {
+    "checked": "Three matching lines demonstrate regular easing, faster easing, and immediate hover. A fourth full-width bar example also updates immediately. Reduced motion makes all four immediate.",
+    "remaining": "Compare exact spring dynamics, geometry, and timing."
+  },
+  "sparkline-synced": {
+    "checked": "Inspecting any storefront series moves all three chart markers, updates all three readings, and changes the shared date. Escape clears the inspection.",
+    "remaining": "Compare marker transition timing and panel alignment."
+  },
+  "sparkline-table": {
+    "checked": "Four plan rows use a semantic table with Trend, MRR, and Change columns. The keyboard can inspect a row’s sparkline independently.",
+    "remaining": "Compare table spacing and hover treatments."
+  },
+  "sparkline-stat-card": {
+    "checked": "A seven-point sessions chart shows the daily average at rest. Keyboard inspection replaces it with the active weekday and value.",
+    "remaining": "Compare the weekly comparison series and exact card geometry."
+  },
+  "sparkline-range": {
+    "checked": "The keyboard and pointer select 7, 30, or 90 samples. Changing range updates the average and period summary.",
+    "remaining": "Compare the exact daily user series, range summaries, and motion."
+  },
+  "sparkline-grid": {
+    "checked": "The detailed preview contains 48 services with 20 samples per chart, repeating area, line, and bar. The final row remains reachable at mobile width.",
+    "remaining": "Compare service colors and grid spacing."
+  },
   "pie-center-custom": {
     "checked": "Caller-supplied center content receives the focused segment, value, total, and share.",
     "remaining": "Compare the built-in typography and digit animation."
@@ -271,6 +531,22 @@
     "checked": "Three areas sweep in and show their edge markers at the selected quarter hour. Keyboard focus wraps across midnight.",
     "remaining": "Compare the exact sweep and area geometry."
   },
+  "gauge-default": {
+    "checked": "Forty track notches report 66% attainment and display a separate $428,000 ARR readout.",
+    "remaining": "Compare arc spacing, font scale, and the entrance easing."
+  },
+  "gauge-semicircle": {
+    "checked": "Forty rounded notches span the upper half of the dial, with a two-color theme gradient and a 64% CPU reading.",
+    "remaining": "Compare notch shape, gradient treatment, and spacing around the center readout."
+  },
+  "gauge-linear": {
+    "checked": "The 24-pixel horizontal track uses 30 rectangular notches, 42% progress, and a separate 4.2K downloads readout.",
+    "remaining": "Compare label alignment and notch reveal timing."
+  },
+  "gauge-linear-gradient": {
+    "checked": "The 24-pixel track contains 72 short rounded notches. Active notches share a theme gradient through the 72% storage reading.",
+    "remaining": "Compare individual notch rounding and gradient stops at narrow widths."
+  },
   "gauge-fixed": {
     "checked": "Three gauges retain 160 × 160 pixel dimensions on desktop and mobile.",
     "remaining": "Compare label placement and exact arc treatment."
@@ -282,6 +558,58 @@
   "gauge-dial": {
     "checked": "Next reading cycles through all six readings and returns to the first.",
     "remaining": "Compare the dial, ruler ticks, and needle appearance."
+  },
+  "gauge-arc-styles": {
+    "checked": "Three dials show the same 64% reading through notches, a solid track, and a progress ring with a muted remainder.",
+    "remaining": "Compare track thickness and caption placement."
+  },
+  "gauge-ruler": {
+    "checked": "The three ruler variants have 51 inside ticks, 21 outside ticks labeled at the ends, and 17 RPM ticks labeled 0k through 8k. The RPM dial displays 4.2.",
+    "remaining": "Compare tick lengths, contrast, and label alignment."
+  },
+  "gauge-needles": {
+    "checked": "Four 62% dials use line, gradient, triangle, and four-point needles with a shared 51-tick inner ruler.",
+    "remaining": "Compare needle outlines, angle offsets, and glow."
+  },
+  "gauge-needle-tips": {
+    "checked": "Three triangular tips point to the same 62% position at progressively longer lengths, from inside the track through its edge and outer scale.",
+    "remaining": "Compare the precise offsets at each tip and scale."
+  },
+  "gauge-zones": {
+    "checked": "Store 1 shows three outer bands at 78%. Store 2 colors its 92% reading by track segment. Store 3 combines both zone treatments at 92%.",
+    "remaining": "Compare the joins between adjacent colored arcs and the colors in both themes."
+  },
+  "gauge-sectors": {
+    "checked": "Three 68% sector dials use conic, radial, and diagonal pattern fills. Conic and pattern use a progress ring, and radial uses a solid track.",
+    "remaining": "Compare wedge opacity, stripe spacing, and radial gradients."
+  },
+  "gauge-progress-ring": {
+    "checked": "Both 71% dials include an active ring and a muted remainder. One has forty inner notches and the other uses only the thicker ring.",
+    "remaining": "Compare the difference in ring weights and gap treatment."
+  },
+  "gauge-dots": {
+    "checked": "The 83 health score lights five rings of 237 dots behind a solid arc and seven rings of 329 dots behind a progress ring.",
+    "remaining": "Compare dot coordinates, radius, and the boundary between lit and muted dots."
+  },
+  "gauge-glow": {
+    "checked": "The 74% output dials apply an SVG bloom to active notches or the solid fill.",
+    "remaining": "Compare bloom spread and intensity, especially in dark mode."
+  },
+  "gauge-center-disc": {
+    "checked": "Both 68% hiring dials have a centered ringed disc. One masks the conic sector at the disc edge and one layers the disc over the needle.",
+    "remaining": "Compare disc size, stroke opacity, and label alignment."
+  },
+  "gauge-fan-duty": {
+    "checked": "The 72% duty gauge shows a short needle, a 0 to 100 ruler, an 80% red limit band, and readouts for speed, inlet temperature, and limit.",
+    "remaining": "Compare the exact starting angle and spacing of the metric row."
+  },
+  "gauge-speedometer": {
+    "checked": "The dial reports 228 km/h with 90 notches, a red line above 200 km/h, 27 ruler ticks, 209 background dots, and average, top, and gear readouts.",
+    "remaining": "Compare the reference radius, glow, and red-line treatment at the threshold."
+  },
+  "gauge-throughput": {
+    "checked": "A 0 to 800 ruler surrounds a 518 t/day readout with a triangle needle, ring, sector, and disc. The target, yesterday, and change readouts are present.",
+    "remaining": "Compare the sector edge treatment and relative positioning of the dial layers."
   },
   "gauge-live-load": {
     "checked": "The gauge updates every 1.8 seconds. The Now, Average, and Peak readouts update with the readings.",
@@ -344,16 +672,28 @@
     "remaining": "Compare the delay and easing of the reveal."
   },
   "sunburst-default": {
-    "checked": "Arrow keys inspect segments, Enter drills into a branch, and Escape moves back up. Focus remains in the chart.",
-    "remaining": "Compare branch geometry and the drill animation at each depth."
+    "checked": "Four revenue branches total $1.18M, with Product at 37%. Arrow keys inspect segment paths, Enter zooms into a branch, and Escape goes back while keeping focus on the chart.",
+    "remaining": "Compare finer-grained fixture values, branch geometry, and drill timing at each depth."
   },
   "sunburst-breadcrumb": {
-    "checked": "Breadcrumb buttons jump back to the selected ancestor after drill-down.",
-    "remaining": "Compare breadcrumb labels and transitions with the source hierarchy."
+    "checked": "The chart opens on Cloud spend › Platform. Its Compute, Database, and Networking branches match the initial reference hierarchy, and the root breadcrumb returns to the overview.",
+    "remaining": "Compare the values of individual services and cloud teams, and the breadcrumb transitions."
+  },
+  "sunburst-segment-colors": {
+    "checked": "The 3,000-session Social branch remains colored while other branches are muted. LinkedIn, X, and YouTube use distinct colors.",
+    "remaining": "Compare individual channel values, exact color assignments, and highlight timing."
+  },
+  "sunburst-patterns": {
+    "checked": "Only Services and Partners use diagonal stripes. The $1.38M fiscal revenue hierarchy leaves the Subscriptions and Expansion branches solid and hides arc labels.",
+    "remaining": "Compare individual leaf values, stripe treatment, and interactive highlighting."
   },
   "sunburst-legend": {
-    "checked": "The legend displays shares, highlights the matching branch on hover, and drills into it on click.",
-    "remaining": "Compare branch order, legend styling, and touch behavior."
+    "checked": "The five department totals and shares match, starting with Engineering at 124 people and 51%. The legend stays visible while keyboard selection zooms into a department.",
+    "remaining": "Compare remaining team values, legend styling, and touch behavior."
+  },
+  "sunburst-custom-hint": {
+    "checked": "The operating-expense chart hides segment labels and reports compact costs and percentage of spend for the active path, including Payroll at $768k and 66.0%.",
+    "remaining": "Compare facilities fixture details, geometry, and pointer highlight transitions."
   },
   "sankey-default": {
     "checked": "The source, intermediate, and destination layers have 6, 5, and 3 nodes. All 33 links use gradients.",

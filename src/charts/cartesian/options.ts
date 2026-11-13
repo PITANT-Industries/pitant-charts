@@ -2,6 +2,7 @@ import type { CustomSeriesOption, DefaultLabelFormatterCallbackParams, EChartsOp
 import type { ChartExample, ChartSeries } from "../../types";
 import type { useChartTheme } from "../theme";
 import { initialLargeCount, type CartesianData } from "./data";
+import { lineDate, lineMoney, lineTooltip, type BandBounds } from "./line-format";
 import { escapeTooltipHtml } from "../evil-tooltip";
 import { splitProfitLossSegments, withAlpha } from "./upstream";
 
@@ -93,6 +94,7 @@ export interface Controls {
   count: number;
   activeLegend?: number;
   activeMarker?: number;
+  deadlineFill?: "pattern" | "gradient" | "solid";
   brushOffset?: number;
   brushLength?: number;
   chartWidth?: number;
@@ -149,25 +151,24 @@ function markRange(start: number, end: number, color: string | ReturnType<typeof
   ] satisfies NonNullable<NonNullable<LineSeriesOption["markArea"]>["data"]>[number];
 }
 
-function releaseEvents(values: readonly (number | null)[], active: number | undefined): NonNullable<NonNullable<LineSeriesOption["markPoint"]>["data"]> {
-  const releases = [
-    [3, "Release", "v1.0"], [8, "Patch", "v1.1"], [13, "Release", "v1.2"],
-    [13, "Hotfix", "v1.2.1"], [23, "Launch", "v2.0"],
-  ] as const;
-  return releases.flatMap(([position, name, value], marker) => {
-    if (position >= values.length || marker === 3 && active !== position) return [];
-    const paired = position === 13;
-    const expanded = paired && active === position;
-    const label = paired && !expanded ? "2" : undefined;
-    return [{
-      name: label ? "Release and hotfix" : name,
-      coord: [position, values[position] ?? 0],
-      value,
-      symbol: paired ? "circle" : "pin",
-      symbolOffset: expanded ? [marker === 3 ? 12 : -12, -9] : paired ? [0, -9] : undefined,
-      symbolSize: paired ? 17 : 21,
-      label: label ? { show: true, color: "#fff", formatter: label, fontSize: 9 } : { show: false },
-    }];
+function releaseEvents(data: CartesianData, values: readonly (number | null)[], active: number | undefined): NonNullable<NonNullable<LineSeriesOption["markPoint"]>["data"]> {
+  return data.categories.flatMap((_, position) => {
+    const events = data.rows?.[position]?.events;
+    const value = values[position];
+    if (!Array.isArray(events) || events.length === 0 || typeof value !== "number") return [];
+    const names = events.filter((event): event is string => typeof event === "string");
+    if (!names.length) return [];
+    const cluster = names.length > 1;
+    const expanded = cluster && active === position;
+    return (expanded ? names : [names.join(", ")]).map((name, index) => ({
+      name,
+      coord: [position, value],
+      value: name,
+      symbol: "circle",
+      symbolOffset: [expanded ? (index - (names.length - 1) / 2) * 21 : 0, expanded && index % 2 === 0 ? -25 : -13],
+      symbolSize: 19,
+      label: { show: true, color: "#fff", formatter: cluster && !expanded ? String(names.length) : name.split(" ")[0], fontSize: 9 },
+    }));
   });
 }
 
@@ -231,41 +232,56 @@ function clippedTexture(
   };
 }
 
-function buildBand(item: ChartSeries, index: number, theme: ChartTheme, id: string, fill: string, controlsAxis = 0): (LineSeriesOption | CustomSeriesOption)[] {
-  const color = colorFor(item, index, theme);
+function bandBounds(data: CartesianData, item: ChartSeries, id: string): BandBounds {
   const stats = id.includes("bollinger") ? movingStats(item.values, 10) : null;
   const center = stats ? stats.map(value => value?.average ?? null) : item.values;
-  const widths = center.map((value, position) => value === null ? null
-    : stats ? (stats[position]?.deviation ?? 0) * 2
-      : Math.max(4, Math.abs(value) * (0.14 + Math.sin(position * 0.19) * 0.035)));
-  const lower = center.map((value, position) => value === null ? null : value - (widths[position] ?? 0));
-  const width = widths.map(value => value === null ? null : value * 2);
-  const upper = center.map((value, position) => value === null ? null : value + (widths[position] ?? 0));
+  const bounds = center.map((value, index) => {
+    if (value === null) return { low: null, high: null };
+    const row = data.rows?.[index];
+    const configured = id === "line-band-ranges" ? row?.[item.name] : row;
+    if (!stats && configured && typeof configured === "object" && "low" in configured && "high" in configured &&
+        typeof configured.low === "number" && typeof configured.high === "number" && configured.low <= configured.high) {
+      return { low: configured.low, high: configured.high };
+    }
+    const spread = stats ? (stats[index]?.deviation ?? 0) * 2 : Math.max(4, Math.abs(value) * (0.14 + Math.sin(index * 0.19) * 0.035));
+    return { low: value - spread, high: value + spread };
+  });
+  return { lower: bounds.map(({ low }) => low), upper: bounds.map(({ high }) => high) };
+}
+
+function buildBand(item: ChartSeries, index: number, theme: ChartTheme, id: string, fill: string, bounds: BandBounds): (LineSeriesOption | CustomSeriesOption)[] {
+  const color = colorFor(item, index, theme);
+  const { lower, upper } = bounds;
+  const width = upper.map((value, position) => value === null ? null : value - (lower[position] ?? 0));
   const fade = id === "line-band-fade";
   const topOnly = id === "line-band-edges";
   const rangeOnly = id === "line-band-range";
+  const noEdges = id === "line-band-ranges";
+  const floating = id === "line-bollinger";
   const style = fade
     ? { type: "linear" as const, x: 0, y: 0, x2: 1, y2: 0, colorStops: [
       { offset: 0, color: tint(color, 0) }, { offset: 0.2, color: tint(color, 0.29) },
       { offset: 0.8, color: tint(color, 0.29) }, { offset: 1, color: tint(color, 0) },
     ] }
-    : fill === "Solid" || fill === "Hatched" ? tint(color, 0.21)
+    : fill === "Solid" || fill === "Pattern" ? tint(color, 0.21)
       : gradient(tint(color, 0.38), tint(color, 0.09));
   const invisible = { show: false };
-  const bandName = id === "line-band-ranges" ? `${item.name} ` : "";
-  const edgeColor = fade ? strokeFade(color) : color;
-  const visibleStyle = { color: edgeColor, width: 1, opacity: rangeOnly ? 0.95 : 0.72 };
-  const upperName = rangeOnly ? "High" : `${bandName}Upper estimate`;
-  const lowerName = rangeOnly ? "Low" : `${bandName}Lower estimate`;
+  const bandName = noEdges ? `${item.name} ` : "";
+  const edgeColor = fade ? strokeFade(color) : floating ? theme.colors[2] : color;
+  const visibleStyle = { color: edgeColor, width: topOnly || floating ? 1.5 : 1, opacity: noEdges ? 0 : rangeOnly ? 0.95 : 0.72 };
+  const upperName = rangeOnly ? "High" : floating ? "Upper band" : `${bandName}Upper estimate`;
+  const lowerName = rangeOnly ? "Low" : floating ? "Lower band" : `${bandName}Lower estimate`;
   return [
-    { ...lineFor({ name: "Band lower", values: lower }, index, theme), yAxisIndex: controlsAxis, stack: `band-${index}`, stackStrategy: "all", silent: true, lineStyle: { opacity: 0 }, tooltip: invisible, z: 1 },
-    { ...lineFor({ name: "Band width", values: width }, index, theme), yAxisIndex: controlsAxis, stack: `band-${index}`, stackStrategy: "all", silent: true, lineStyle: { opacity: 0 }, tooltip: invisible, z: 1,
-      areaStyle: { opacity: 1, color: style } },
-    { ...lineFor({ name: upperName, values: upper }, index, theme), yAxisIndex: controlsAxis, z: 2,
-      lineStyle: { ...visibleStyle, type: topOnly ? "dotted" : fade ? "dashed" : "solid" } },
-    { ...lineFor({ name: lowerName, values: lower }, index, theme), yAxisIndex: controlsAxis, z: 2,
-      lineStyle: { ...visibleStyle, opacity: topOnly ? 0 : visibleStyle.opacity, type: fade ? "dashed" : "solid" } },
-    ...(fill === "Hatched" ? [clippedTexture(tint(color, 0.48), upper, lower, controlsAxis, "hatch")] : []),
+    ...(!floating ? [
+      { ...lineFor({ name: "Band lower", values: lower }, index, theme), stack: `band-${index}`, stackStrategy: "all" as const, silent: true, lineStyle: { opacity: 0 }, tooltip: invisible, z: 1 },
+      { ...lineFor({ name: "Band width", values: width }, index, theme), stack: `band-${index}`, stackStrategy: "all" as const, silent: true, lineStyle: { opacity: 0 }, tooltip: invisible, z: 1,
+        areaStyle: { opacity: 1, color: style } },
+    ] : []),
+    { ...lineFor({ name: upperName, values: upper }, index, theme), z: 2,
+      lineStyle: { ...visibleStyle, type: topOnly ? [1, 3] : fade ? [4, 4] : "solid" } },
+    { ...lineFor({ name: lowerName, values: lower }, index, theme), z: 2,
+      lineStyle: { ...visibleStyle, opacity: topOnly ? 0 : visibleStyle.opacity, type: fade ? [4, 4] : "solid" } },
+    ...(fill === "Pattern" ? [clippedTexture(tint(color, 0.48), upper, lower, 0, "hatch")] : []),
   ];
 }
 
@@ -282,92 +298,112 @@ function formattedTooltip(unit: string, fullData?: CartesianData) {
   };
 }
 
-function weekendStripes(lastIndex: number, offset: number, theme: ChartTheme): CustomSeriesOption {
-  const saturday = 3 - offset % 7;
-  const weekendStarts: number[] = [];
-  for (let index = saturday; index <= lastIndex; index += 7) {
-    if (index >= -1) weekendStarts.push(index);
-  }
+function dateStripes(lastIndex: number, spans: readonly [number, number][], color: string, fade = false): CustomSeriesOption {
   return {
-    type: "custom", name: "Weekends", data: weekendStarts, silent: true, z: 0, clip: true,
+    type: "custom", name: "Date highlights", data: spans, silent: true, z: 0, clip: true,
     animation: false, tooltip: { show: false }, encode: { x: -1, y: -1 },
     renderItem: (params, api) => {
       const box = params.coordSys as unknown as { x: number; y: number; width: number; height: number };
       const dayWidth = box.width / Math.max(1, lastIndex);
-      const day = Number(api.value(0));
-      const left = Math.max(box.x, box.x + (day - 0.5) * dayWidth);
-      const right = Math.min(box.x + box.width, box.x + (day + 1.5) * dayWidth);
+      const left = Math.max(box.x, box.x + Number(api.value(0)) * dayWidth);
+      const right = Math.min(box.x + box.width, box.x + Number(api.value(1)) * dayWidth);
       if (right <= left) return;
       const bottom = box.y + box.height;
       const lines = Array.from({ length: Math.ceil((box.height + right - left) / 6) }, (_, index) => {
         const x = left - box.height + index * 6;
-        return { type: "line" as const, shape: { x1: x, y1: bottom, x2: x + box.height, y2: box.y }, style: { stroke: tint(theme.muted, 0.3), lineWidth: 1 } };
+        const progress = (x + box.height / 2 - left) / (right - left);
+        return { type: "line" as const, shape: { x1: x, y1: bottom, x2: x + box.height, y2: box.y },
+          style: { stroke: color, lineWidth: 1, opacity: fade ? Math.max(0, Math.min(1, 1 - progress)) : 1 } };
       });
       return { type: "group", clipPath: { type: "rect", shape: { x: left, y: box.y, width: right - left, height: box.height } }, children: lines };
     },
   };
 }
 
-export function buildLine(example: ChartExample, data: CartesianData, theme: ChartTheme, compact: boolean, controls: Controls): EChartsOption {
-  const { id, family } = example;
+function glowBackdrop(item: ChartSeries, color: string, accent: string): CustomSeriesOption {
+  return {
+    type: "custom", name: "Backlight", data: [0], silent: true, z: 1, animation: false,
+    tooltip: { show: false }, encode: { x: -1, y: -1 },
+    renderItem: (params, api) => {
+      const box = params.coordSys as unknown as { x: number; y: number; width: number; height: number };
+      const points = item.values.flatMap((value, position) => value === null ? [] : [api.coord([position, value])]);
+      if (points.length < 2) return;
+      const shape = { points: [[box.x, box.y], [box.x + box.width, box.y], ...points.reverse()] };
+      return { type: "group", children: ([[0.26, color], [0.75, accent]] as const).map(([x, tone]) => ({
+        type: "polygon", shape,
+        style: { fill: { type: "radial", x, y: 0.33, r: 0.65, colorStops: [
+          { offset: 0, color: tint(tone, 0.32) }, { offset: 0.55, color: tint(tone, 0.1) }, { offset: 1, color: tint(tone, 0) },
+        ] } },
+      })) };
+    },
+  };
+}
+
+export function buildLine(example: ChartExample, data: CartesianData, theme: ChartTheme, compact: boolean, controls: Controls, loading = false): EChartsOption {
+  const { id } = example;
   const option = baseOption(data, theme, compact);
-  const area = family === "area";
   const xAxis = categoryAxis(data.categories, theme);
   const fixed = id === "line-fixed-scale";
   const twoAxes = id.includes("dual-axis") && data.series.length > 1;
   const points = id === "line-points";
-  const bars = id === "line-weekends" || id === "area-date-highlights";
-  const interval = id === "area-reference-range";
-  const deadline = id === "line-deadline" || id === "line-deadline-fills" || id === "area-date-highlights";
+  const weekend = id === "line-weekends";
+
+  const deadline = id === "line-deadline" || id === "line-deadline-fills";
   const group = id === "line-date-highlights-brush";
   const loss = id === "line-profit-loss" || id === "line-profit-loss-legend";
-  const dashed = id === "line-dashed" || id === "area-forecast";
-  const rangeBand = id === "area-reference-band";
-  const background = id === "area-background";
+  const dashed = id === "line-dashed";
+
+  const glow = id === "line-glow";
+  const showY = ["line-dual-axis", "line-grid", "line-table", "line-threshold", "line-fixed-scale", "line-export", "line-large-data"].includes(id);
+  const decimals = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
+  const lineValueTick = (value: number) => id === "line-dual-axis" || id === "line-export" ? `$${decimals.format(value)}`
+    : fixed ? `${value}%` : id === "line-threshold" ? `${value} ms` : decimals.format(value);
   const timeAxis = { ...xAxis, axisLabel: { ...xAxis.axisLabel, formatter: (value: string) => value },
     splitLine: id === "line-grid" ? { show: true, lineStyle: { color: theme.grid, type: "dotted" as const } } : undefined };
-  const yAxis = { ...numericAxis(theme, !background), min: fixed ? 0 : undefined, max: fixed ? 100 : undefined };
+  const yDefaults = numericAxis(theme, !glow);
+  const yAxis = {
+    ...yDefaults,
+    min: fixed ? 0 : undefined,
+    max: fixed ? 100 : undefined,
+    interval: fixed ? 20 : undefined,
+    axisLabel: { ...yDefaults.axisLabel, show: showY, formatter: lineValueTick },
+    splitLine: id === "line-grid" ? { show: true, lineStyle: { color: theme.grid, type: "dotted" as const } } : yDefaults.splitLine,
+  };
   option.xAxis = timeAxis;
   option.yAxis = twoAxes ? [
-    { ...yAxis, axisLabel: { ...yAxis.axisLabel, formatter: id === "line-dual-axis" ? "${value}" : "{value}" } },
+    yAxis,
     { ...numericAxis(theme, false), position: "right", axisLabel: { ...yAxis.axisLabel, formatter: "{value}%" } },
   ] : yAxis;
   if (twoAxes) option.grid = { top: 12, bottom: 25, left: compact ? 32 : 52, right: compact ? 32 : 46 };
-  if (id === "line-crosshair-point") {
+  if (id === "line-crosshair-point" || glow) {
     option.tooltip = { ...option.tooltip, axisPointer: { type: "none" } };
+  }
+  if (glow) {
+    option.grid = { top: 5, bottom: 5, left: 5, right: 5 };
+    option.xAxis = { ...timeAxis, axisLabel: { ...timeAxis.axisLabel, show: false } };
+  }
+  if (!showY && !glow && !["line-brush", "line-linked-brush", "line-date-highlights-brush", "line-zoom", "line-synced"].includes(id)) {
+    option.grid = { top: 10, bottom: 26, left: 17, right: 18 };
   }
   const markAreas: NonNullable<NonNullable<LineSeriesOption["markArea"]>["data"]> = [];
   const markLines: NonNullable<NonNullable<LineSeriesOption["markLine"]>["data"]> = [];
   const lastIndex = Math.max(0, data.categories.length - 1);
-  const due = Math.floor(lastIndex * 0.64);
+  const datedDue = data.categories.findIndex(category => { const date = lineDate(category); return date?.getUTCMonth() === 9 && date.getUTCDate() === 15; });
+  const due = datedDue < 0 ? Math.floor(lastIndex * 0.64) : datedDue;
   const brushOffset = controls.brushOffset ?? 0;
-  if (bars) {
-    for (let index = 5; index <= lastIndex; index += 7) {
-      markAreas.push(markRange(Math.max(0, index), Math.min(index + 1, lastIndex), tint(theme.muted, 0.08), pattern(tint(theme.muted, 0.22))));
-    }
-  }
   if (deadline) {
-    markLines.push({ xAxis: due, name: "Deadline", lineStyle: { color: down, type: "solid" }, label: { formatter: "Deadline" } });
-    markAreas.push(markRange(due, lastIndex, id === "line-deadline-fills" ? tint(down, 0.18) : tint(down, 0.075), pattern(tint(down, 0.17))));
+    markLines.push({ xAxis: due, name: "Deadline", lineStyle: { color: down, type: "solid" }, label: { show: id !== "line-deadline-fills", formatter: `Due ${data.categories[due] ?? ""}`, position: "insideStartTop" } });
+    if (controls.deadlineFill === "gradient" || controls.deadlineFill === "solid") {
+      const fill = controls.deadlineFill === "gradient" ? gradient(tint(down, 0.32), tint(down, 0), true) : tint(down, 0.18);
+      markAreas.push(markRange(due, lastIndex, fill));
+    }
   }
   const launch = Math.round(((controls.brushLength ?? data.categories.length) - 1) * 0.69) - brushOffset;
   if (group && launch >= 0 && launch <= lastIndex) {
     markLines.push({ xAxis: launch, name: "Launch", lineStyle: { color: down, type: "solid" }, label: { formatter: "Launch" } });
     markAreas.push(markRange(launch, lastIndex, gradient(tint(down, 0.18), tint(down, 0), true), pattern(tint(down, 0.25))));
   }
-  if (interval) {
-    const start = Math.floor(lastIndex * 0.29), end = Math.floor(lastIndex * 0.59);
-    markAreas.push(markRange(start, end, tint(theme.colors[0], 0.16)));
-    for (const value of [start, end]) markLines.push({ xAxis: value, lineStyle: { color: theme.colors[0], type: "solid" }, label: { show: false } });
-  }
-  if (background) markAreas.push(markRange(0, lastIndex, transparent, pattern(tint(theme.muted, 0.17))));
-  if (rangeBand) {
-    const low = 180;
-    const high = 240;
-    markAreas.push([{ yAxis: low, itemStyle: { color: tint(theme.colors[1], 0.15) } }, { yAxis: high }]);
-    for (const value of [low, high]) markLines.push({ yAxis: value, lineStyle: { color: theme.colors[1], type: "dashed" }, label: { show: false } });
-  }
-  if (id === "line-threshold") markLines.push({ yAxis: 82, name: "Target", lineStyle: { color: down, type: "solid" }, label: { formatter: "Target" } });
+  if (id === "line-threshold") markLines.push({ yAxis: 250, name: "Target", lineStyle: { color: down, type: "solid" }, label: { formatter: "250 ms target", position: "insideEndTop" } });
   if (loss) markLines.push({ yAxis: 0, lineStyle: { color: theme.muted, type: "solid" }, label: { show: false } });
   if (controls.selection) {
     const [start, end] = controls.selection;
@@ -376,10 +412,16 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
   }
   const series: (LineSeriesOption | CustomSeriesOption)[] = [];
   const hasBand = id.startsWith("line-band") || id === "line-bollinger";
-  if (hasBand || id === "line-large-data" || id === "line-synced") {
+  const detailedTooltip = ["line-dual-axis", "line-grid", "line-points", "line-dashed", "line-markers", "line-legend", "line-time-range", "line-table", "line-projection", "line-projection-manual", "line-threshold", "line-profit-loss", "line-profit-loss-legend", "line-weekends", "line-deadline", "line-deadline-fills", "line-glow", "line-trend", "line-crosshair-point", "line-fixed-scale", "line-straight", "line-export", "line-loading", "chart-data-table"].includes(id);
+  if (hasBand || detailedTooltip || id === "line-large-data" || id === "line-synced") {
     const label = data.series[0]?.name ?? "";
     const units = id === "line-band-range" ? " °C" : id === "line-large-data" || label === "p95 latency" ? " ms" : label === "Error rate" ? "%" : "";
-    option.tooltip = { ...option.tooltip, backgroundColor: "transparent", borderWidth: 0, padding: 0, extraCssText: "box-shadow:none;", formatter: formattedTooltip(units, id === "line-large-data" ? data : undefined) };
+    const bandPairs = hasBand && id !== "line-band-range" && id !== "line-band-bollinger" && id !== "line-bollinger"
+      ? data.series.slice(0, id === "line-band-ranges" ? data.series.length : 1).map(item => bandBounds(data, item, id)) : [];
+    const formatter = detailedTooltip || bandPairs.length || id === "line-bollinger" ? lineTooltip(id, data, bandPairs)
+      : formattedTooltip(units, id === "line-large-data" ? data : undefined);
+    option.tooltip = { ...option.tooltip, backgroundColor: "transparent", borderWidth: 0, padding: 0, extraCssText: "box-shadow:none;", formatter };
+
     if (id === "line-large-data") {
       option.xAxis = { ...timeAxis, axisLabel: { ...timeAxis.axisLabel, interval: Math.max(0, Math.round(data.categories.length / 4) - 1), formatter: (value: string) => value.split(",")[0] } };
       option.animation = false;
@@ -387,31 +429,28 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
     if (id === "line-synced" && units) option.yAxis = { ...yAxis, axisLabel: { ...yAxis.axisLabel, formatter: `{value}${units}` } };
   }
   const addBand = (item: ChartSeries, index: number) => {
-    if (hasBand && (index === 0 || id === "line-band-ranges")) series.push(...buildBand(item, index, theme, id, controls.fill));
+    if (hasBand && (index === 0 || id === "line-band-ranges")) {
+      const fill = id === "line-band" || id === "line-band-ranges" ? "Solid" : controls.fill;
+      series.push(...buildBand(item, index, theme, id, fill, bandBounds(data, item, id)));
+    }
   };
   data.series.forEach((item, index) => {
     addBand(item, index);
     if (id === "line-band-range") return;
     const color = colorFor(item, index, theme);
-    const solidFill = id === "area-fill";
-    const patterned = (id === "area-pattern" || id === "area-pattern-fade" || id === "area-mixed" && index === 1);
-    const fill = id === "area-gradient-fill"
-      ? { ...gradient(tint(theme.colors[0], 0.58), tint(theme.colors[2], 0.04)), colorStops: [
-        { offset: 0, color: tint(theme.colors[0], 0.7) },
-        { offset: 0.47, color: tint(theme.colors[1], 0.42) },
-        { offset: 1, color: tint(theme.colors[2], 0.05) },
-      ] }
-      : solidFill ? tint(color, 0.53) : gradient(tint(color, 0.35), tint(color, 0.02));
-    const lineStyle = id === "line-glow" ? { color, width: 3, shadowBlur: 17, shadowColor: tint(color, 0.8) }
-      : { color, width: solidFill || loss ? 0 : id === "line-threshold" && index === 0 ? 3 : 2.3 };
-    const eventMarkers = id === "line-markers" ? releaseEvents(item.values, controls.activeMarker) : [];
+    const legend = id === "line-legend" || id === "line-export";
+    const dimmed = legend && controls.activeLegend !== undefined && controls.activeLegend !== index;
+    const lineStyle = glow ? { color: gradient(theme.colors[1], color, true), width: 2.5, shadowBlur: 17, shadowColor: tint(color, 0.8) }
+      : { color, opacity: dimmed ? 0.3 : 1, width: loss ? 0 : id === "line-threshold" && index === 0 ? 3 : 2.5 };
+    const eventMarkers = id === "line-markers" && index === 0 ? releaseEvents(data, item.values, controls.activeMarker) : [];
+
     const regular = lineFor(item, index, theme, {
-      data: [...item.values], lineStyle, itemStyle: { color, borderColor: color, borderWidth: points ? 1.4 : 0 },
-      smooth: id === "line-straight" || loss || id === "line-large-data" || id === "area-steps" ? false : 0.22,
-      showSymbol: points, symbol: points ? "emptyCircle" : "circle", symbolSize: points ? 7 : 6,
+      data: [...item.values], lineStyle: loading ? { ...lineStyle, color: tint(theme.muted, 0.5) } : lineStyle, itemStyle: { color, borderColor: color, borderWidth: points ? 1.4 : 0 },
+      smooth: id === "line-straight" || loss || id === "line-large-data" ? false : 0.22,
+      showSymbol: points, showAllSymbol: points, symbol: points ? "emptyCircle" : "circle", symbolSize: points ? 8 : 6,
+      emphasis: { focus: points ? "self" : "series", scale: points ? 1.5 : 1.4, lineStyle: glow ? { width: 4, shadowBlur: 26 } : undefined },
+      blur: points ? { itemStyle: { opacity: 0.24 }, lineStyle: { opacity: 0.9 } } : undefined,
       yAxisIndex: twoAxes ? Math.min(index, 1) : 0,
-      step: id === "area-steps" ? "end" : false,
-      areaStyle: area ? { color: fill, opacity: 1 } : undefined,
       markArea: index === 0 && markAreas.length ? { silent: true, data: markAreas } : undefined,
       markLine: index === 0 && markLines.length ? { symbol: ["none", "none"], silent: true, label: { color: theme.muted, fontSize: 9 }, data: markLines } : undefined,
       markPoint: eventMarkers.length ? { symbol: "pin", symbolSize: 24, label: { show: false }, tooltip: { formatter: "{b}: {c}" }, data: eventMarkers } : undefined,
@@ -419,46 +458,57 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
       z: 3 + index,
     });
     if (dashed) {
-      const split = Math.max(1, item.values.length - (area ? 3 : 5));
+      const split = Math.max(0, item.values.length - 6);
       series.push({ ...regular, data: item.values.map((value, position) => position <= split ? value : null) });
-      series.push({ ...regular, name: area ? "Forecast" : "Provisional", data: item.values.map((value, position) => position >= split ? value : null),
-        lineStyle: { ...lineStyle, type: "dashed" }, markArea: undefined, markLine: undefined });
+      series.push({ ...regular, name: regular.name, data: item.values.map((value, position) => position >= split ? value : null),
+        lineStyle: { ...lineStyle, type: [6, 4] }, markArea: undefined, markLine: undefined });
+    } else if (id === "line-bollinger") {
+      series.unshift(regular);
     } else {
       series.push(regular);
     }
-    if (patterned) series.push(clippedTexture(tint(color, 0.45), item.values, null, twoAxes ? Math.min(index, 1) : 0, id === "area-mixed" ? "dots" : "hatch", id === "area-pattern-fade"));
+    if (glow) series.push(glowBackdrop(item, color, theme.colors[2]));
     if (loss) series.push(signedStroke(item, controls.activeLegend));
-    if (id === "area-value-labels") series.push({
-      ...lineFor(item, index, theme), type: "line", showSymbol: true, symbol: "circle", symbolSize: 1,
-      data: item.values.map((value, position) => position % Math.max(1, Math.ceil(item.values.length / 5)) === 0 ? value : null),
-      lineStyle: { opacity: 0 }, label: { show: true, position: "top", color: theme.text, fontSize: 9 },
-      tooltip: { show: false }, silent: true,
-    });
     if (id === "line-bollinger" && index === 0) {
-      series.push(lineFor({ name: "Moving average", values: movingStats(item.values, 10).map(value => value?.average ?? null) }, index + 1, theme, { smooth: false, lineStyle: { type: "dashed" } }));
+      series.push(lineFor({ name: "10-day average", values: movingStats(item.values, 10).map(value => value?.average ?? null) }, index + 1, theme, { smooth: false }));
       option.yAxis = { ...yAxis, scale: true };
     }
   });
-  if (id === "line-legend" && !compact) {
-    option.legend = seriesLegend(data.series, theme);
-    option.grid = { top: 12, bottom: 48, left: 48, right: 19 };
-  }
-  if (id === "line-trend" || id === "area-trend") data.series.forEach((item, index) => {
+  if (id === "line-trend") data.series.forEach((item, index) => {
     const color = theme.colors[(index + 2) % theme.colors.length];
     series.push(lineFor({ name: `${item.name} trend`, values: trendValues(item.values) }, index, theme, {
-      smooth: false, lineStyle: { color: id === "area-trend" || controls.trend === "Gradient" ? strokeFade(color) : color,
-        width: 2, type: id === "line-trend" && controls.trend === "Dashed" ? "dashed" : "solid" }, z: 6,
+      smooth: false, lineStyle: { color: controls.trend === "Gradient" ? strokeFade(color) : color,
+        width: 2, type: controls.trend === "Dashed" ? [6, 4] : "solid" }, z: 6, tooltip: { show: false }, silent: true,
     }));
   });
   if (id === "line-projection" || id === "line-projection-manual") {
-    const future = ["Week +1", "Week +2", "Week +3", "Week +4", "Week +5"];
-    option.xAxis = categoryAxis([...data.categories, ...future], theme);
-    const last = data.series[0]?.values.at(-1) ?? 0;
-    const projection = (name: string, values: number[], index: number) =>
-      lineFor({ name, values: [...Array.from({ length: lastIndex }, () => null), last, ...values] }, index, theme,
-        { lineStyle: { type: "dashed", width: 2 }, showSymbol: true, symbol: "emptyCircle", symbolSize: 5, smooth: false });
-    series.push(projection(id === "line-projection-manual" ? "Plan" : "Trend", future.map((_, i) => last + (i + 1) * (id === "line-projection-manual" ? [3, 5, 4, 5, 6][i] : 3)), 2));
-    if (id === "line-projection") series.push(projection("Target", future.map((_, i) => last + (i + 1) * 6), 1));
+    const primary = data.series[0];
+    const final = primary?.values[lastIndex];
+    const manual = id === "line-projection-manual";
+    const future = (data.rows ?? []).flatMap(row => {
+      const projected = manual ? row.forecast : row.goal;
+      return typeof row.category === "string" && typeof projected === "number" ? [{ category: row.category, projected }] : [];
+    });
+    if (typeof final === "number" && future.length) {
+      option.xAxis = categoryAxis([...data.categories, ...future.map(row => row.category)], theme);
+      const initial = Array.from<null>({ length: lastIndex }).fill(null);
+      const prediction = (name: string, values: number[], index: number) => {
+        const color = theme.colors[index % theme.colors.length];
+        return lineFor({ name, values: [...initial, final, ...values] }, index, theme, {
+          lineStyle: { color, type: manual ? [6, 4] : [1, 4], width: 2, cap: "round" }, smooth: false,
+        });
+      };
+      series.push(prediction(manual ? "Forecast" : "Goal", future.map(row => row.projected), 1));
+      if (!manual) {
+        const fit = trendValues(primary.values.slice(-10));
+        const drift = ((fit.at(-1) ?? final) - (fit[0] ?? final)) / Math.max(1, fit.length - 1);
+        series.push(prediction("Trend", future.map((_, index) => Math.round(final + drift * (index + 1))), 2));
+        series.push({
+          type: "line", name: "Forecast start", data: [...initial, final], lineStyle: { opacity: 0 },
+          showSymbol: true, symbol: "emptyCircle", symbolSize: 10, itemStyle: { color: theme.colors[0] }, silent: true, tooltip: { show: false },
+        });
+      }
+    }
   }
   if (id === "line-zoom" && !compact) {
     option.dataZoom = [{ type: "inside", start: 0, end: 100, zoomOnMouseWheel: false, moveOnMouseMove: true }];
@@ -467,9 +517,21 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
     option.animationDuration = 180;
     option.animationDurationUpdate = 90;
   }
-  if (group && ((controls.chartWidth ?? 0) - 64) / Math.max(1, data.categories.length) >= 6) {
-    series.push(weekendStripes(lastIndex, brushOffset, theme));
+  if (weekend || group && ((controls.chartWidth ?? 0) - 64) / Math.max(1, data.categories.length) >= 6) {
+    const spans: [number, number][] = [];
+    data.categories.forEach((label, index) => {
+      const weekday = lineDate(label)?.getUTCDay();
+      if (weekday === 6) spans.push([index - 0.5, index + 1.5]);
+      if (weekday === 0 && index === 0) spans.push([-0.5, 0.5]);
+    });
+    if (spans.length) series.push(dateStripes(lastIndex, spans, tint(theme.muted, 0.3)));
   }
+  if ((id === "line-deadline" || id === "line-deadline-fills") && (!controls.deadlineFill || controls.deadlineFill === "pattern")) {
+    series.push(dateStripes(lastIndex, [[due, lastIndex]], tint(down, 0.29), true));
+  }
+  if (loading) option.tooltip = { ...option.tooltip, show: false, triggerOn: "none" };
+  else if (id === "line-loading") option.tooltip = { ...option.tooltip, show: true, triggerOn: "mousemove|click|mousewheel" };
+  if (id === "line-time-range") option.animationDurationUpdate = 580;
   option.series = series;
   return option;
 }
