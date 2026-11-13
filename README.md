@@ -70,4 +70,6 @@ GitHub Actions checks the industrial packages, dashboard package, and catalog. T
 
 ## License
 
-The core, industrial React, and dashboard packages include MIT licenses. The catalog and dashboard package carry notices for third-party code and assets. [Licensing scope](docs/licensing.md) · [Catalog notices](apps/chart-catalog/THIRD_PARTY_NOTICES.md) · [Dashboard notices](packages/charts-ui/THIRD_PARTY_NOTICES.md)
+PITANT-owned source code is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, you can obtain one from [Mozilla](https://mozilla.org/MPL/2.0/).
+
+The chart packages include source, and third-party code and assets carry their upstream notices. [License](LICENSE) · [Licensing and source access](docs/licensing.md) · [Catalog notices](apps/chart-catalog/THIRD_PARTY_NOTICES.md) · [Dashboard notices](packages/charts-ui/THIRD_PARTY_NOTICES.md)

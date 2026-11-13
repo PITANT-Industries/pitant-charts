@@ -204,3 +204,7 @@ installs every block, typechecks, and bundles the consumer.
   genealogy that belongs to alarm, batch, audit, or compliance repos.
 - The export must be a signed regulator record. Use future compliance/evidence
   handoff surfaces for that path.
+
+## License
+
+PITANT-owned code is available under MPL-2.0. [License](LICENSE) · [Source access](SOURCE.md)

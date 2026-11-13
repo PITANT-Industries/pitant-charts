@@ -10,6 +10,9 @@ const react = JSON.parse(
 if (core.version !== react.version) {
   throw new Error(`Industrial package versions differ: ${core.version} and ${react.version}`)
 }
+if (core.license !== 'MPL-2.0' || react.license !== core.license) {
+  throw new Error('Industrial package licenses must match the repository MPL-2.0 license.')
+}
 
 const expectedRef = `refs/tags/industrial-v${core.version}`
 if (process.env.PUBLISH_DRY_RUN !== 'true' && process.env.GITHUB_REF !== expectedRef) {

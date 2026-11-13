@@ -67,4 +67,4 @@ The optional theme provides the same `--chart-1` through `--chart-8` series toke
 
 ## License
 
-Original code is MIT. The adapted sunburst layout and Warpdrive theme retain their upstream copyright notices. See [third-party notices](THIRD_PARTY_NOTICES.md).
+PITANT-owned code is licensed under MPL-2.0. The adapted sunburst layout and Warpdrive theme retain their upstream terms. [License](LICENSE) · [Source access](SOURCE.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)

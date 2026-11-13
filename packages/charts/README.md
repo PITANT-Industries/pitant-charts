@@ -153,3 +153,7 @@ const svg = commandFrameToSvg(frame, {
   Those are future PITANT compliance surfaces.
 - The data crosses tenant, site, or evidence boundaries without upstream scope
   checks.
+
+## License
+
+PITANT-owned code is available under MPL-2.0. [License](LICENSE) · [Source access](SOURCE.md)

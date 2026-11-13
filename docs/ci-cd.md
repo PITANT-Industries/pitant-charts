@@ -28,7 +28,7 @@ bun run release:check
 ## Deliver the chart catalog
 
 1. Use the intended `main` commit after the chart catalog check passes. The workflow artifact is named `chart-catalog-site-<commit>` so the build can be traced to its source.
-2. Build locally with `bun run catalog:site`, or use the verified artifact for that commit. The result is `dist/` with `index.html`, static assets, and third-party notices and licenses. `.openai/hosting.json` binds the checkout to the existing private Sites project.
+2. Build locally with `bun run catalog:site`, or use the verified artifact for that commit. The result is `dist/` with `index.html`, static assets, the license, third-party notices, and `chart-catalog-source.tgz`. The gallery footer links to the exact source archive for the deployed build. `.openai/hosting.json` binds the checkout to the existing private Sites project.
 3. Use the Sites publishing workflow to sync the exact source commit, package the matching build, and deploy it to the existing private gallery.
 4. Confirm the deployed source commit and open a chart, its **Compare** tab, and the parity view. To roll back, redeploy a previously verified version of the same Site.
 

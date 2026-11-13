@@ -1,17 +1,17 @@
 # Licensing and third-party notices
 
-`@pitant/charts`, `@pitant/charts-react`, and `pitant-charts` include MIT license files and declare MIT in their package manifests. The catalog is a private npm workspace in a public GitHub repository. It has third-party notices and its manifest has no license field. The repository currently has no root license file. [Core license](../packages/charts/LICENSE) · [Industrial React license](../packages/charts-react/LICENSE) · [Dashboard license](../packages/charts-ui/LICENSE)
+PITANT-owned source in this repository is available under the Mozilla Public License 2.0. The repository README and the source guide in each distribution provide the MPL Exhibit A notice. Keep any separate upstream notices with the files they cover. Earlier versions distributed under MIT remain available under the terms that accompanied those copies. [MPL-2.0](../LICENSE) · [Dashboard MIT notice](../packages/charts-ui/LICENSE-MIT) · [Core MIT notice](../packages/charts/LICENSE-MIT) · [Industrial React MIT notice](../packages/charts-react/LICENSE-MIT)
 
-## License options for PITANT-owned code
+## Use and redistribute PITANT Charts
 
-| License | When it fits |
-| --- | --- |
-| [MIT](https://opensource.org/license/mit) | Keeps the existing package terms and supports adoption in commercial and open-source applications. Redistributed copies retain the copyright and permission notices. |
-| [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) | A permissive option if PITANT wants an explicit contributor patent grant and patent termination terms. The distribution requirements include applicable notices and attribution. |
-| [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/FAQ/) | A file-level copyleft option if PITANT wants recipients of distributed software to have access to modifications to covered files. Applications can combine those files with differently licensed code. |
+You can use PITANT Charts in commercial, proprietary, and open-source apps. If you distribute MPL-covered code, make the corresponding source of those files, including your modifications, available to recipients under MPL-2.0 and tell them how to obtain it. Separate application files can carry their own terms. For a web app, compiled JavaScript sent to users counts as distribution. Keep a source link or source archive for the version you ship. [MPL §§ 3.1–3.4](https://www.mozilla.org/en-US/MPL/2.0/) · [Mozilla FAQ on distribution and minified JavaScript](https://www.mozilla.org/en-US/MPL/2.0/FAQ/)
 
-MIT is the closest fit if the goal is broad reuse with the terms the shipped packages already use. To establish a repository-wide default, confirm the intended copyright holder and the rights to license the original catalog, documentation, and configuration. Then add a root `LICENSE` that describes the intended scope and align package metadata where applicable. [GitHub repository licensing guide](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository)
+Each PITANT chart package archive includes the preferred library source under `src/` and the license. The static gallery build links to `chart-catalog-source.tgz`, which contains the catalog source used for that build, and to its license. Keep these files with the artifacts you distribute. [Build and delivery](ci-cd.md#deliver-the-chart-catalog)
 
-## Preserve third-party terms
+## Share improvements upstream
 
-Upstream terms continue to apply to vendored source, libraries, fonts, and other assets. The catalog uses MIT components and adaptations, Apache-2.0 for Apache ECharts and Vercel Labs UI SDK, BSD-3-Clause for the bundled D3 Sankey version, ISC for Lucide and the listed TopoJSON packages, and OFL-1.1 for the bundled font families. Before distributing an archive or gallery build, review the licenses and applicable notice files for what it contains. Keep original attribution in adapted source and retain ECharts’ `NOTICE` where applicable. [Catalog notices](../apps/chart-catalog/THIRD_PARTY_NOTICES.md) · [Dashboard notices](../packages/charts-ui/THIRD_PARTY_NOTICES.md)
+Open a pull request when you want a fix or improvement to become part of PITANT Charts. The MPL requires covered source to be available to recipients when you distribute it. Upstream pull requests are voluntary. [Contribution guide](../CONTRIBUTING.md)
+
+## Preserve upstream terms
+
+Vendored source, libraries, fonts, and other assets retain their upstream terms. The catalog includes MIT components and adaptations, Apache-2.0 for Apache ECharts and Vercel Labs UI SDK, BSD-3-Clause for D3 Sankey, ISC for Lucide and TopoJSON packages, and OFL-1.1 for the font families. Keep the notices for the code and assets included in your distribution. [Catalog notices](../apps/chart-catalog/THIRD_PARTY_NOTICES.md) · [Dashboard notices](../packages/charts-ui/THIRD_PARTY_NOTICES.md)

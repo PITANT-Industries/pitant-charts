@@ -18,7 +18,7 @@ The dashboard package and catalog workspace share a version. The industrial core
    npm pack --ignore-scripts ./apps/chart-catalog
    ```
 
-3. Install the relevant archive in a React app and exercise the affected charts and styles. Check license and notice files in what you distribute.
+3. Install the relevant archive in a React app and exercise the affected charts and styles. Confirm the archive includes its MPL license, corresponding source, and third-party notices where applicable.
 4. For a gallery update, use the verified build and exact `main` commit with the private Sites workflow. [Gallery delivery](ci-cd.md#deliver-the-chart-catalog)
 
 ## Industrial npm release

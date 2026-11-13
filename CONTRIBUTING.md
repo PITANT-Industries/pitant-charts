@@ -28,4 +28,4 @@ Use `bunx lefthook install` to enable local pre-commit hooks if needed. The hook
 - For a catalog example, compare it with the reference at the widths and themes affected by the change. Record the checked behavior and any open differences in `apps/chart-catalog/src/gallery/parity-notes.json`. Check keyboard and pointer or touch states when the variant supports them.
 - Preserve license and attribution files for borrowed code or assets. Update the relevant third-party notices when adding a dependency or adapting upstream source. [Licensing scope](docs/licensing.md)
 
-Open a pull request against `main` and include the verification you ran. For packaging and deployment procedures, see the [CI and delivery guide](docs/ci-cd.md) and [release checklist](docs/release-checklist.md).
+Open a pull request against `main` and include the verification you ran. Contributions to PITANT-owned source are offered under MPL-2.0. Make sure you have the rights to contribute the material you submit. For packaging and deployment procedures, see the [CI and delivery guide](docs/ci-cd.md) and [release checklist](docs/release-checklist.md).

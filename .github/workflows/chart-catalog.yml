@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'apps/chart-catalog/**'
+      - 'LICENSE'
       - 'packages/charts-ui/package.json'
       - 'package.json'
       - 'bunfig.toml'
@@ -15,6 +16,7 @@ on:
     branches: [main]
     paths:
       - 'apps/chart-catalog/**'
+      - 'LICENSE'
       - 'packages/charts-ui/package.json'
       - 'package.json'
       - 'bunfig.toml'
@@ -45,8 +47,10 @@ jobs:
         run: |
           bun run catalog:site
           test -f dist/index.html
+          cmp LICENSE dist/LICENSE
           test -f dist/THIRD_PARTY_NOTICES.md
           test -f dist/licenses/dependencies/echarts-6.1.0-NOTICE
+          tar -xOzf dist/chart-catalog-source.tgz src/index.ts | cmp apps/chart-catalog/src/index.ts -
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:

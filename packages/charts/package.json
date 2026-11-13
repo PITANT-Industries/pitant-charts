@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "WebGPU-first TypeScript chart core for high-density industrial time-series",
   "type": "module",
-  "license": "MIT",
+  "license": "MPL-2.0",
   "author": "Ali",
   "repository": {
     "type": "git",
@@ -33,6 +33,11 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
+    "src",
+    "tsconfig.json",
+    "SOURCE.md",
+    "tsup.config.ts",
+    "LICENSE-MIT",
     "dist",
     "styles",
     "README.md",

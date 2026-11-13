@@ -9,6 +9,9 @@ const targets: string[] = Object.values(manifest.exports).flatMap((entry) =>
 )
 const expected = [
   'LICENSE',
+  'LICENSE-MIT',
+  'SOURCE.md',
+  'src/standalone/index.ts',
   'README.md',
   'PALETTE.md',
   'THIRD_PARTY_NOTICES.md',
@@ -22,11 +25,11 @@ for (const file of expected) {
   if (!files.has(`package/${file}`)) throw Error(`Missing from tarball: ${file}`)
 }
 for (const file of files) {
-  if (/^package\/(?:node_modules|src|\.openai|dist-catalog)\//.test(file)) {
+  if (/^package\/(?:node_modules|\.openai|dist-catalog)\//.test(file)) {
     throw Error(`Unexpected tarball entry: ${file}`)
   }
 }
-if (manifest.license !== 'MIT' || Object.keys(manifest.dependencies).join() !== 'recharts') {
+if (manifest.license !== 'MPL-2.0' || Object.keys(manifest.dependencies).join() !== 'recharts') {
   throw Error('Unexpected package license or runtime dependencies')
 }
 console.log(`Verified ${manifest.name}@${manifest.version}: exports, notices and package contents`)

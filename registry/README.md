@@ -3,6 +3,9 @@
 This folder contains the first shadcn-compatible registry blocks for
 `@pitant/charts` and `@pitant/charts-react`.
 
+Registry source files carry MPL-2.0 notices that travel with the components
+when installed. [Licensing and source access](../docs/licensing.md)
+
 ## Items
 
 | Item | Target |
