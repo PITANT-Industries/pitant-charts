@@ -4,6 +4,7 @@ import { Sector } from 'recharts'
 import { useChartTheme } from '../theme'
 import { dollars, metrics, number, Pattern, point, sum, tone } from './shared'
 import type { Props } from './shared'
+import { useAnimatedNumber } from './useAnimatedNumber'
 import styles from './donut.module.css'
 
 const fixtures = {
@@ -18,6 +19,7 @@ const fixtures = {
 } satisfies Record<string, { label: string; names: string[]; values: number[]; currency?: boolean }>
 
 const fallback = { label: 'Total', names: ['Platform', 'Services', 'Marketplace', 'Support', 'Other'], values: [470, 285, 192, 140, 108] }
+const percentage = new Intl.NumberFormat('en', { style: 'percent', maximumFractionDigits: 1 })
 
 export function usesDonut(id: string) {
   return Object.hasOwn(fixtures, id)
@@ -43,7 +45,8 @@ export function Donut({ example, compact, data, renderCenter }: Props) {
   const value = row?.value ?? total
   const share = total ? value / total : 0
   const format = !data && 'currency' in fixture && fixture.currency ? dollars : number
-  const percentage = new Intl.NumberFormat('en', { style: 'percent', maximumFractionDigits: 1 })
+  const display = useAnimatedNumber(value, !compact && !half)
+  const visibleValue = format.format(Number.isInteger(value) ? Math.round(display) : display)
   const height = half ? 174 : 260
   const cx = 150
   const cy = half ? 145 : 130
@@ -114,7 +117,7 @@ export function Donut({ example, compact, data, renderCenter }: Props) {
         {renderCenter ? <foreignObject x={cx - 60} y={labelY - 39} width="120" height="72" pointerEvents="none"><div className={styles.custom}>{renderCenter({ name: row?.name ?? null, value, total, share })}</div></foreignObject> : (!half || row || !rows.length) && (
           <g textAnchor="middle" pointerEvents="none" aria-hidden="true">
             {custom && <text className={styles.caption} x={cx} y={labelY - 26}>{centerTitle}</text>}
-            <text className={styles.value} x={cx} y={labelY} style={{ fontSize: format.format(value).length > 8 ? 22 : undefined }}>{format.format(value)}</text>
+            <text className={styles.value} x={cx} y={labelY} style={{ fontSize: visibleValue.length > 8 ? 22 : undefined }}>{visibleValue}</text>
             <text className={styles.caption} x={cx} y={labelY + 19}>{custom ? 'Units sold' : centerTitle}</text>
             {example.id === 'pie-center-share' && row && <text className={styles.share} x={cx} y={labelY + 34}>{percentage.format(share)} of total</text>}
           </g>

@@ -1,37 +1,13 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import type { ReactNode } from "react";
 import { useChartTheme } from "../theme";
 import { arc, Controls, Legend, metrics, number, Pattern, percent, point, sector, seriesData, sum, tone, type Props } from "./shared";
 import { Donut, usesDonut } from "./Donut";
+import { useAnimatedNumber } from "./useAnimatedNumber";
 import styles from "./styles.module.css";
 
 const pieNames = ["Platform", "Services", "Marketplace", "Support", "Other"];
 const pieValues = [470, 285, 192, 140, 108];
-
-function useAnimatedNumber(value: number, enabled: boolean) {
-  const previous = useRef(value);
-  const [display, setDisplay] = useState(value);
-  useEffect(() => {
-    if (!enabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      previous.current = value;
-      setDisplay(value);
-      return;
-    }
-    const start = performance.now();
-    const from = previous.current;
-    let frame = 0;
-    function update(time: number) {
-      const elapsed = Math.min(1, (time - start) / 240);
-      const next = from + (value - from) * (1 - (1 - elapsed) ** 3);
-      previous.current = next;
-      setDisplay(next);
-      if (elapsed < 1) frame = requestAnimationFrame(update);
-    }
-    frame = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(frame);
-  }, [value, enabled]);
-  return enabled ? display : value;
-}
 
 function CustomCenter({ x, y, children }: { x: number; y: number; children: ReactNode }) {
   return <foreignObject x={x - 50} y={y - 34} width="100" height="68" pointerEvents="none">
