@@ -14,6 +14,7 @@ The [shadcn.io React reference](https://www.shadcn.io/charts) enumerates 44 char
 | Donut interaction | Eight donut previews checked for keyboard selection, accessible value and share, and Escape clearing selection. |
 | Representative chart behaviors | Time range, range selection, synchronized sparklines, data table, PNG and SVG export, live pause, gauge controls, tooltip pinning, hierarchy drill-down, loading states, large scatter, heatmap scrolling, map zoom, and globe drag checked |
 | Tooltip sample readouts | All 270 captured date and value readouts match across 11 variants. Desktop and mobile checks cover matching tick layouts, panel typography and paint, guide styles, pinning, and reduced motion. Narrow tooltips stay inside the library plot when the reference extends beyond the left edge. |
+| Rolling axis labels | Area and tooltip examples share a rolling month and day pill. Across 22 desktop and mobile tooltip profiles, all 59 visible sampled pills match reference bounds, colors, and font metrics. Undated categories use one column. |
 | Matched hierarchy geometry | At desktop widths, mean node position differences are 0.005 px for the radial tree and 0.033 px for the network. The default treemap's five group boxes average 1.19 px difference at desktop width and 0.64 px at narrow width. |
 | Default Cartesian geometry | All 30 dates match for each of the default area and line examples. The default bar matches all six monthly values, 83.61 px bar width at a 728 px plot, and idle-bar dimming. |
 | Matched stacked bars and latency threshold | Stacked marks differ by at most 0.008 px across three matched sizes. The p95 and median line paths differ by under 0.001 px, and all 60 readout values match. |
@@ -39,14 +40,14 @@ The [shadcn.io React reference](https://www.shadcn.io/charts) enumerates 44 char
 | Tree and Network | All seven examples match the measured plot dimensions, including the logical SVG viewport of the horizontal trees. Measured node and link coordinates differ by at most 0.009 px. All 123 captured node readouts agree at both widths. |
 | Sunburst and Treemap | All six Sunburst examples match the measured plot sizes and wedge paths within 0.03 px. Across the four Treemap examples, 472 measured tiles match within 0.005 px, 622 label checks agree, and 130 keyboard and 20 pointer readouts match. Leaf activation drills into its visible ancestor, and the full-width breadcrumb returns to the parent. |
 | Scatter Jitter and Large Data | Jitter matches 522 mark coordinates within 0.009 px and all 522 keyboard readouts. Large Data matches every dot position and radius in the 10,000- and 50,000-point fixtures at two widths, with all 48 sampled date, group, and duration readouts matching. The library also provides a 500,000-point density mode, zoom, and reset. |
-| Area overlays and readouts | 84 reference samples match across forecast, target band, highlighted range, and trend. Geometry of the overlays, paths, and grids matches within 0.005 px at both tested sizes. |
+| Area overlays and readouts | 84 reference samples match across forecast, target band, highlighted range, and trend. Forty focus states match within 0.00004 px. The measured 120 ms inspection motion, 420 ms overlay fades, and forecast marker sequence also agree. |
 | Sankey geometry and inspection | Across nine variants at three matched sizes, 86 node bounds and 166 weighted link paths align within 0.0051 px. All 238 captured keyboard readouts match. |
 | Radar geometry and inspection | All 96 series scores match across nine variants. Rings, spokes, labels, dots and profiles align within 0.0051 px at measured desktop and narrow sizes. |
 | Heatmap geometry and inspection | All 11 variants were measured at three plot widths. Marks, axes and rules align within 0.005 px, with every captured level matching. Keyboard, touch and the fixed weekday rail were checked. |
 | Live-line layout and controls | All nine variants were checked in both themes at desktop and mobile widths for plot dimensions, clock labels, keyboard and touch inspection, and reduced motion. The demo feed is simulated. Pause freezes the visible window and Resume catches up. |
 | Uncertainty, Bump, and Slope | All 11 variants were compared at desktop and mobile widths. Measured ranking paths, interval marks, and ribbon and forecast paths match. Keyboard inspection, loading states, and the Bump legend were checked. |
 | Waffle, Marimekko, Stream, and Diverging | All 13 variants were checked at both widths, with ready-state mark geometry within 0.023 px and the Diverging skeleton within 0.31 px. Touch, keyboard, and caller data were exercised. |
-| Choropleth | All 177 paths match across nine variants at both tested widths. The two graticules match, all 20 office and infrastructure marker centers agree within 0.001 px, and the three camera variants center the selected marker and reset. Coastline classification in the dot lattice still differs. |
+| Choropleth | All 177 paths match across nine variants at both tested widths. The two graticules and all 20 office and infrastructure marker centers agree within 0.001 px. In the dot-grid variant, all 78,246 sampled land and ocean dots match the corresponding browser’s reference across six widths in Chrome, Firefox, and WebKit. |
 | Bubble Map, Route Map, Globe, and Vector Field | All 13 variants match the reference plot sizes. Measured marker and vector geometry matches within 0.008 px, and route paths agree. Chrome checks included 588 desktop keyboard readouts, mobile touch, loading controls, and globe rotation. |
 | Full behavior and visual comparison | Open |
 
@@ -54,13 +55,14 @@ The [shadcn.io React reference](https://www.shadcn.io/charts) enumerates 44 char
 
 The gallery’s **Parity review** lists coverage by family and searches checked behavior and remaining gaps. The **Compare** tab shows the live reference and current notes for each variant. All 331 entries have targeted checks and an explicit remaining comparison. The render checks establish that a preview mounted and showed chart output. Full parity still requires comparing chart geometry, styling, animation, and pointer and keyboard interactions across the supported profiles.
 
-The previews use local fixtures and inherit chart theme tokens. Compare can apply the reference palette and font to the library pane. Remaining comparisons include forecast marker motion, Treemap zoom and exit timing, and chart-specific loading and hover effects. [Polar, flow, and hierarchy notes](src/charts/polarflow/PARITY.md)
+The previews use local fixtures and inherit chart theme tokens. Compare can apply the reference palette and font to the library pane. The per-example notes track remaining exact paint, animation, and input comparisons. [Polar, flow, and hierarchy notes](src/charts/polarflow/PARITY.md)
 
 ## Repeat the render audit
 
-The audit uses Python Playwright and defaults to Chromium. Pass `CHROMIUM_PATH` for an installed Chromium or Chrome binary. Select another installed engine with `--browser firefox`, `--browser webkit`, or `--browser edge`. The Edge option requires Microsoft Edge.
+The audit uses Python Playwright and defaults to Chromium. Pass `CHROMIUM_PATH` for an installed Chromium or Chrome binary. Select another installed engine with `--browser firefox`, `--browser webkit`, or `--browser edge`. The Edge option uses the installed stable channel or an explicit `EDGE_PATH`. Add `--compare` to check the live reference plot sizes at desktop and mobile widths.
 
 ```sh
 python scripts/audit-renders.py --reference
 python scripts/audit-renders.py --local http://127.0.0.1:4173/
+python scripts/audit-renders.py --local http://127.0.0.1:4173/ --browser edge --compare
 ```

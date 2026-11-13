@@ -60,8 +60,8 @@
 .pinSummary { padding: 10px 36px 8px 12px; }
 .pinSummary .date { margin-bottom: 2px; color: var(--tooltip-muted); }
 .pinSummary .revenue { font-size: 18px; }
-.pinDisclosure { display: grid; grid-template-rows: 0fr; visibility: hidden; }
-.panel[data-pinned='true'] .pinDisclosure { grid-template-rows: 1fr; visibility: visible; }
+.pinDisclosure { display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden; }
+.panel[data-pinned='true'] .pinDisclosure { grid-template-rows: 1fr; opacity: 1; visibility: visible; }
 .pinClip { min-block-size: 0; overflow: hidden; }
 .pinBreakdown {
   display: grid;
@@ -74,13 +74,11 @@
 .pinSeries strong { font-weight: 400; }
 .pinTrack { block-size: 6px; border-radius: 999px; background: color-mix(in srgb, var(--tooltip-text) 6%, var(--tooltip-bg)); }
 .pinTrack > div { block-size: 100%; border-radius: inherit; }
-.axisPill { fill: var(--chart-axis-pill-background, oklch(.922 0 0)); }
-.axisText { fill: var(--chart-axis-pill-foreground, oklch(.205 0 0)); }
-:global([data-theme='dark']) .axisPill, :global(.dark) .axisPill { fill: var(--chart-axis-pill-background, oklch(.205 0 0)); }
-:global([data-theme='dark']) .axisText, :global(.dark) .axisText { fill: var(--chart-axis-pill-foreground, oklch(.922 0 0)); }
+.axisPill { fill: var(--chart-axis-pill-background, var(--chart-focus-pill, var(--primary, oklch(0 0 0)))); }
+.axisText { fill: var(--chart-axis-pill-foreground, var(--chart-focus-pill-text, var(--primary-foreground, oklch(.985 0 0)))); }
 @media (prefers-reduced-motion: no-preference) {
-  .pinDisclosure { transition: grid-template-rows 240ms ease-out, visibility 240ms allow-discrete; }
-  .panel:is([data-tooltip-motion='eased'], [data-tooltip-motion='matched']), .matchedGuide {
+  .pinDisclosure { transition: grid-template-rows 260ms cubic-bezier(.22, 1, .36, 1), opacity 180ms ease-out, visibility 180ms allow-discrete; }
+  .panel:is([data-tooltip-motion='eased'], [data-tooltip-motion='matched']) {
     transition: transform 200ms cubic-bezier(.14,.5,.21,1);
     transition-timing-function: linear(0, .22 8%, .56 17%, .78 25%, .90 33%, .956 42%, .981 50%, .992 58%, .997 67%, 1);
   }

@@ -9,9 +9,17 @@
 .frame[data-compact] .stage > svg { height: 100%; }
 .stage > svg:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 8px; }
 .branch { cursor: pointer; }
-.stage [data-dimmed] { opacity: .4; }
+@property --treemap-focus-opacity {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+.stage :is([data-path], [data-mark='treemap-back'], [data-treemap-exit-key]) {
+  opacity: min(var(--treemap-focus-opacity, 1), var(--treemap-layout-opacity, 1));
+}
+.stage [data-dimmed] { --treemap-focus-opacity: .4; }
+.stage[data-inspecting] [data-treemap-exit-key]:not([data-dimmed]) { --treemap-focus-opacity: .4; }
 .stage .loadingExit { position: absolute; inset: 0; pointer-events: none; }
-.stage [data-path] > rect { transform-box: fill-box; transform-origin: top left; }
 @keyframes arrive { from { opacity: 0; transform: scale(.82); } to { transform: none; } }
 @keyframes showSkeleton { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pulse {
@@ -20,7 +28,10 @@
   64%, 100% { opacity: .32; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .stage :is([data-path], [data-mark='treemap-back']) { transition: opacity 120ms ease-out; }
+  .stage :is([data-path], [data-mark='treemap-back'], [data-treemap-exit-key]) {
+    transition: --treemap-focus-opacity 120ms ease-out;
+    transition-timing-function: linear(0, .084, .25, .422, .572, .692, .782, .849, .896, .929, .952, .968, .979, .986, .991, 1);
+  }
   .stage [data-entering] {
     transform-box: fill-box;
     transform-origin: center;
@@ -32,7 +43,9 @@
 .tooltip {
   position: absolute;
   z-index: 1;
-  min-width: 140px;
+  box-sizing: border-box;
+  min-width: min(140px, 100%);
+  max-width: 100%;
   width: max-content;
   padding: 10px 12px;
   border-radius: 10px;
@@ -42,6 +55,7 @@
   pointer-events: none;
   font-size: 14px;
   line-height: 20px;
+  overflow-wrap: anywhere;
 }
 .tooltip dl { margin: 0; }
 .tipTitle { margin-bottom: 8px; font-size: 12px; line-height: 16px; font-weight: 500; }

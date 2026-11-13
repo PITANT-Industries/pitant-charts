@@ -39,3 +39,39 @@ jobs:
           bun run test
           bun run build
           node scripts/check-workspace.mjs --pack
+
+  edge-catalog:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - run: bun run catalog:site
+      - run: python -m pip install playwright==1.65.1
+      - name: Render all examples in Edge
+        shell: pwsh
+        run: |
+          $site = Start-Process -FilePath bun -ArgumentList 'run','--filter','@pitant/chart-catalog','preview','--port','4173','--strictPort','--outDir','../../dist' -PassThru
+          try {
+            $ready = $false
+            for ($attempt = 0; $attempt -lt 30; $attempt++) {
+              try {
+                $ready = (Invoke-WebRequest -Uri http://127.0.0.1:4173/ -TimeoutSec 1).StatusCode -eq 200
+                if ($ready) { break }
+              } catch {
+                Start-Sleep -Milliseconds 500
+              }
+            }
+            if (-not $ready) { throw 'Chart catalog server did not become ready' }
+            python apps/chart-catalog/scripts/audit-renders.py --browser edge --local http://127.0.0.1:4173/ --workers 3
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            python apps/chart-catalog/scripts/audit-renders.py --browser edge --local http://127.0.0.1:4173/ --compare --workers 3
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Stop-Process -Id $site.Id -ErrorAction SilentlyContinue
+          }

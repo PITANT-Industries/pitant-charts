@@ -20,6 +20,7 @@ const pinPath = (radius: number) => `M0 0L${-.82 * radius} ${-1.33 * radius}A${r
 const markerRadii = [5.5, 5, 6, 4.4, 5.25];
 const featureNames = [...countryKeyboardOrder.keys()];
 const mainShapes = [undefined, undefined, "M0 -6L6 0 0 6 -6 0Z", "M-4.4 -4.4H4.4V4.4H-4.4Z", "M0 -5.75L5.25 3.5H-5.25Z"];
+const dotFadeStops = [[0, 0], [20, 1], [80, 1], [100, 0]];
 
 function zoomAround(camera: Camera, from: Coordinate, to: Coordinate, ratio: number): Camera {
   const scale = Math.max(1, Math.min(7, camera.scale * ratio));
@@ -52,9 +53,11 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
   const showGraticule = clickable || variant === "choropleth-graticule";
   const flyable = clickable || pointerCamera || dots;
   const pannable = background || variant === "choropleth-default";
-  const { plot, width, height } = usePlotSize<HTMLDivElement>(577, 324.5625);
+  const { plot, width, height: measuredHeight } = usePlotSize<HTMLDivElement>(577, 324.5625);
+  const height = compact ? measuredHeight : width * 9 / 16;
   const transformed = useRef<SVGGElement>(null);
   const pointers = useRef(new Map<number, Coordinate>());
+  const motionPreference = useRef<MediaQueryList>(null);
   const drag = useRef<{ id: number; start: Coordinate; origin: Camera; moved: boolean } | null>(null);
   const pinch = useRef<{ distance: number; midpoint: Coordinate; origin: Camera } | null>(null);
   const didDrag = useRef(false);
@@ -76,7 +79,7 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
       return { name, d: path(country) ?? "", at: path.centroid(country) as Coordinate,
         level: countryLevel(variant, name, index), keyboardVisible };
     });
-    return { areas, grid: showGraticule ? path(graticule) : null, lattice: dots ? dotLattice(width, height, projection) : null };
+    return { areas, grid: showGraticule ? path(graticule) : null, lattice: dots ? dotLattice(width, height, projection, areas) : null };
   }, [compact, dots, height, projection, showGraticule, variant, width]);
   const targets = useMemo(() => {
     const byName = new Map(model.areas.map(area => [area.name, area]));
@@ -104,6 +107,18 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
   const angle = rotateX || rotateY
     ? `perspective(1600px) translateY(10%) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-10%)`
     : undefined;
+
+  useEffect(() => {
+    if (!pointerCamera || compact) return;
+    const preference = matchMedia("(prefers-reduced-motion: reduce)");
+    motionPreference.current = preference;
+    const update = () => { if (preference.matches) setPitch(0); };
+    preference.addEventListener("change", update);
+    return () => {
+      motionPreference.current = null;
+      preference.removeEventListener("change", update);
+    };
+  }, [compact, pointerCamera]);
 
   function localPoint(clientX: number, clientY: number): Coordinate {
     const bounds = plot.current?.getBoundingClientRect();
@@ -194,7 +209,9 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
   function move(event: PointerEvent<HTMLDivElement>) {
     if (compact) return;
     const point = localPoint(event.clientX, event.clientY);
-    if (pointerCamera && !selection && event.pointerType !== "touch") setPitch(Math.max(-16, Math.min(16, (point[0] / width - .5) * 32)));
+    if (pointerCamera && !selection && event.pointerType !== "touch" && motionPreference.current?.matches === false) {
+      setPitch(Math.max(-14, Math.min(14, (.5 - point[0] / width) * 28)));
+    }
     if (pointers.current.has(event.pointerId)) pointers.current.set(event.pointerId, point);
     const pendingPinch = pinch.current;
     if (pendingPinch) {
@@ -229,6 +246,7 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
     : background ? signupCounts.get(active.name) : clickable || dots ? officeVisitorCounts.get(active.name) : undefined);
   const marker = active?.marker === undefined ? undefined : markerData[active.marker];
   const activeArea = active?.marker === undefined ? model.areas.find(area => area.name === active?.name) : undefined;
+  const activeDotPath = activeArea && model.lattice?.byCountry.get(activeArea.name);
   const entries = marker ? [{ name: "Location", value: marker.location }]
     : dataValue === undefined ? [] : [{ name: background ? "Sign-ups" : "Visitors", value: clickable || dots ? `${dataValue}k` : dataValue }];
   const readoutTitle = active && (patterns && !marker ? `${active.name}: ${countryStatus(active.name)}` : active.name);
@@ -257,16 +275,38 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
         aria-describedby={compact ? undefined : `${id}-keys`} onBlur={() => setFocus(undefined)} onKeyDown={compact ? undefined : key}
         onClick={flyable && !compact ? () => { if (!didDrag.current) reset(); } : undefined}>
         {!compact && <desc id={`${id}-keys`}>Use arrow keys to inspect countries and locations. {pannable ? "Drag to pan, scroll or pinch to zoom. " : ""}{flyable ? "Press Enter to zoom to the selected place. " : ""}Escape resets the view.</desc>}
-        <defs><pattern id={`${id}-beta`} width="6" height="6" patternUnits="userSpaceOnUse">
-          <rect width="6" height="6" fill="var(--choropleth-scale-2)" />
-          <path d="M-1 1 1 -1M0 6 6 0M5 7 7 5" stroke="var(--choropleth-scale-4)" strokeWidth="2" />
-        </pattern></defs>
+        <defs>
+          {patterns && <pattern id={`${id}-beta`} width="6" height="6" patternUnits="userSpaceOnUse">
+            <rect width="6" height="6" fill="var(--choropleth-scale-2)" />
+            <path d="M-1 1 1 -1M0 6 6 0M5 7 7 5" stroke="var(--choropleth-scale-4)" strokeWidth="2" />
+          </pattern>}
+          {dots && <>
+            <linearGradient id={`${id}-dot-fade-x`}>
+              {dotFadeStops.map(([offset, opacity]) => <stop key={offset} offset={`${offset}%`} stopColor="white" stopOpacity={opacity} />)}
+            </linearGradient>
+            <linearGradient id={`${id}-dot-fade-y`} x2="0" y2="1">
+              {dotFadeStops.map(([offset, opacity]) => <stop key={offset} offset={`${offset}%`} stopColor="white" stopOpacity={opacity} />)}
+            </linearGradient>
+            <mask id={`${id}-dot-mask-x`} x="0" y="0" width={width} height={height} maskUnits="userSpaceOnUse">
+              <rect width={width} height={height} fill={`url(#${id}-dot-fade-x)`} />
+            </mask>
+            <mask id={`${id}-dot-mask`} x="0" y="0" width={width} height={height} maskUnits="userSpaceOnUse">
+              <g mask={`url(#${id}-dot-mask-x)`}>
+                <rect width={width} height={height} fill={`url(#${id}-dot-fade-y)`} />
+              </g>
+            </mask>
+          </>}
+        </defs>
         <g ref={transformed} className="choropleth-viewport" data-map-viewport="" style={{ transform: `translate(${x}px,${y}px) scale(${scale})` }}>
           {model.grid && <path data-map-graticule="" d={model.grid} fill="none" stroke="var(--border)" strokeWidth=".5" vectorEffect="non-scaling-stroke" opacity={selection ? .15 : 1} />}
-          {model.lattice && <g aria-hidden="true" fill="none" strokeLinecap="round">
-            <path data-map-ocean="" d={model.lattice.ocean} stroke={mapScale(1)} strokeWidth="2.695" opacity={selection ? .04 : .35} />
-            {model.lattice.land.map(({ name, path }) => <path key={name} d={path} data-map-land={name} stroke={mapScale(countryLevel(variant, name, 0))}
-              strokeWidth={selection ? 6.3 : 4.9} opacity={activeArea && activeArea.name !== name ? .5 : 1} />)}
+          {model.lattice && <g aria-hidden="true" fill="none" strokeLinecap="round" pointerEvents="none" mask={`url(#${id}-dot-mask)`}>
+            <path data-map-ocean="" d={model.lattice.ocean} stroke={mapScale(1)} strokeWidth="2.695" opacity={selectedTarget ? 0 : .35} />
+            <g data-map-dot-land="" strokeWidth={selectedTarget ? 6.3 : 4.9}>
+              <g data-map-dot-regions="" opacity={activeArea ? .5 : 1}>
+                {model.lattice.land.map(({ level, path }) => <path key={level} d={path} data-map-land={level} stroke={mapScale(level)} />)}
+              </g>
+              {activeArea && activeDotPath && <path data-map-dot-focus={activeArea.name} d={activeDotPath} stroke={mapScale(activeArea.level)} />}
+            </g>
           </g>}
           {model.areas.map(area => <path key={area.name} data-map-location={`country:${area.name}`} data-map-level={area.level} data-market-status={patterns ? countryStatus(area.name) : undefined}
             d={area.d} fill={dots ? "transparent" : fillArea(area.name, area.level)} stroke={dots ? "none" : stroke} strokeWidth=".5" strokeLinejoin="round"
