@@ -1,0 +1,115 @@
+.reference-bar {
+  min-inline-size: 0;
+  inline-size: 100%;
+  container-type: inline-size;
+}
+
+.reference-bar-layout { min-inline-size: 0; }
+.reference-bar-layout[data-bar-layout='legend'] { display: grid; gap: 24px; }
+.reference-bar-plots { min-inline-size: 0; }
+.reference-bar-panel {
+  position: relative;
+  inline-size: 100%;
+  aspect-ratio: 2;
+}
+.reference-bar-layout[data-bar-layout='synced'] .reference-bar-panel { aspect-ratio: 3; }
+.reference-bar-panel > svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  touch-action: pan-y;
+  overflow: visible;
+}
+.reference-bar-panel-title {
+  min-block-size: 24px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.reference-bar-panel-title:not(:first-child) { margin-block-start: 16px; }
+.reference-bar-grid { mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
+.reference-bar-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-end: 12px;
+}
+.reference-bar-controls button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--foreground);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding-inline: 10px;
+  min-block-size: 32px;
+  font: inherit;
+  font-size: .8rem;
+  cursor: pointer;
+}
+.reference-bar-controls button:hover, .reference-bar-controls button[aria-pressed='true'] { background: var(--muted); }
+.reference-bar-controls button:focus-visible, .reference-bar-legend-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.reference-bar-footer {
+  display: grid;
+  gap: 6px;
+  margin-block-start: 12px;
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+.reference-bar-footer strong { font-weight: 500; color: var(--foreground); }
+.reference-bar-legend { align-self: center; }
+.reference-bar-legend p { margin: 0 0 12px; font-size: 14px; font-weight: 600; line-height: 20px; }
+.reference-bar-legend ul { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.reference-bar-legend-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  inline-size: 100%;
+  min-block-size: 32px;
+  background: transparent;
+  color: var(--foreground);
+  border: 0;
+  border-radius: 6px;
+  text-align: start;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  cursor: pointer;
+}
+.reference-bar-legend-item:hover, .reference-bar-legend-item[aria-pressed='true'] { background: var(--muted); }
+.reference-bar-legend-item i { inline-size: 10px; block-size: 10px; border-radius: 50%; }
+.reference-bar-legend-item span { font-weight: 500; }
+.reference-bar-legend-item strong { color: var(--muted-foreground); font-weight: 400; font-variant-numeric: tabular-nums; }
+.reference-bar-legend-item[data-dimmed='true'] { opacity: .48; }
+.reference-bar-readout { position: absolute; inline-size: max-content; pointer-events: none; z-index: 1; }
+.reference-bar-readout > .cartesian-focus-readout { min-inline-size: 140px; max-inline-size: min(180px, 100cqw - 12px); }
+.reference-bar-readout .cartesian-focus-readout-title { margin-block-end: 8px; line-height: 16px; }
+.reference-bar-readout .cartesian-focus-readout-row:last-child { min-height: 20px; }
+.reference-bar-pulse, .reference-bar-shimmer { opacity: 0; }
+.reference-bar[data-bar-compact='true'] { block-size: 100%; }
+.reference-bar[data-bar-compact='true'] .reference-bar-layout,
+.reference-bar[data-bar-compact='true'] .reference-bar-plots,
+.reference-bar[data-bar-compact='true'] .reference-bar-panel { block-size: 100%; }
+@container (min-width: 608px) {
+  .reference-bar-layout[data-bar-layout='legend'] { grid-template-columns: minmax(0, 1fr) 176px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .reference-bar :is([data-bar-column], .reference-bar-legend-item) { transition: opacity 140ms ease-out; }
+  .reference-bar-shimmer { opacity: 1; animation: bar-shimmer 2s linear infinite; }
+  .reference-bar [data-bar-grow] { animation: bar-grow 1.25s cubic-bezier(.85, 0, .15, 1) both; }
+  .reference-bar-pulse { animation: bar-depth-pulse 2.2s ease-in-out infinite; }
+  .reference-bar-pulse[data-paused='true'] { animation-play-state: paused; }
+}
+@keyframes bar-shimmer {
+  from { translate: calc(-1 * var(--bar-shimmer-travel)); }
+  to { translate: var(--bar-shimmer-travel); }
+}
+@keyframes bar-grow { from { transform: scaleY(.001); } }
+@keyframes bar-depth-pulse {
+  0% { translate: 0 0; opacity: 1; }
+  82%, 100% { translate: 0 var(--bar-pulse-travel); opacity: 1; }
+}

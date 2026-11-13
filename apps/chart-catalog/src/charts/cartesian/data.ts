@@ -1,6 +1,7 @@
 import { livePreset, liveValue } from "./live-fixtures";
 import { comparisonFixture } from "./comparison-fixtures";
 import { barFixture } from "./bar-fixtures";
+import { composedFixture } from "./composed-fixtures";
 import { candleFixture } from "./candle-fixtures";
 import { lineFixture } from "./line-fixtures";
 import type { ChartData, ChartExample, ChartSeries } from "../../types";
@@ -74,13 +75,17 @@ function points(count: number, names: string[], base = 58) {
 export function resolveData(example: ChartExample, data?: ChartData): CartesianData {
   const fixture = makeFixture(example);
   if (!data) return fixture;
-  const series = data.series ? [...data.series] : fixture.series;
+  const suppliedCandles = (example.family === "candlestick" || example.id === "composed-price-volume") && data.rows;
+  const rowsOnlyMarket = example.id === "composed-price-volume" && suppliedCandles;
+  const series = data.series ? [...data.series] : rowsOnlyMarket ? [
+    { name: "Close", values: rowsOnlyMarket.map(row => typeof row.close === "number" ? row.close : null) },
+    { name: "Volume (M)", values: rowsOnlyMarket.map(row => typeof row.volume === "number" ? row.volume : null) },
+  ] : fixture.series;
   const count = Math.max(0, ...series.map(item => item.values.length));
-  const suppliedCandles = example.family === "candlestick" && data.rows;
   const categories = data.categories ? [...data.categories] : suppliedCandles
     ? suppliedCandles.map((row, index) => String(row.category ?? row.date ?? index + 1))
     : data.series && !data.rows ? Array.from({ length: count }, (_, index) => String(index + 1)) : fixture.categories;
-  const usesCustomRows = example.family === "line"
+  const usesCustomRows = example.family === "line" || example.family === "composed"
     || (["candlestick", "sparkline"].includes(example.family) && Boolean(data.series));
   return { categories, series, rows: data.rows ?? (usesCustomRows ? undefined : fixture.rows) };
 }
@@ -113,28 +118,7 @@ function makeFixture(example: ChartExample): CartesianData {
     return { categories, series: points(count, id === "line-segment" ? ["Sessions"] : channels.slice(0, 2)) };
   }
   if (family === "area") return makeAreaFixture(id);
-  if (family === "composed") {
-    const october = dates(30, Date.UTC(2026, 9, 1));
-    const series = (name: string, count: number, seed: number, base: number, swing: number, growth = 0) => ({ name, values: curve(count, seed, base, swing, growth) });
-    if (id === "composed-stacked") return { categories: october.slice(11, 25), series: [series("Organic", 14, 4, 400, 125, 4), series("Paid", 14, 9, 205, 72, 2)] };
-    if (id === "composed-target" || id === "composed-grouped") {
-      const target = id === "composed-target";
-      const categories = dates(78, Date.UTC(2026, 7, target ? 3 : 17)).filter((_, index) => index % 7 === 0);
-      const n = categories.length;
-      if (target) return { categories, series: [series("Revenue", n, 2, 112, 13, 4), { name: "Target", values: categories.map((_, index) => 117 + 4 * index) }] };
-      return { categories, series: [series("Signups", n, 2, 1760, 320, 40), series("Activations", n, 7, 1320, 210, 34), { name: "Goal", values: categories.map(() => 1900) }] };
-    }
-    if (id === "composed-signal") return { categories: october, series: [series("Signups", 30, 2, 129, 36, 1.5)] };
-    if (id === "composed-profit-loss") return { categories: october, series: [series("P&L", 30, 2, -2100, 1800, 211), series("Trades", 30, 7, 39, 19, 0.8)] };
-    if (id === "composed-price-volume") {
-      const close = curve(30, 1, 17_200, 1_740, 133).map(value => value / 100);
-      return { categories: october, series: [{ name: "Close", values: close }, series("Volume (M)", 30, 6, 59, 27, .55)], rows: close.map((value, index) => {
-        const open = close[index - 1] ?? value - 2.1;
-        return { open, close: value, low: Math.min(open, value) - 1.12 - index % 3, high: Math.max(open, value) + 1.23 + index % 4 };
-      }) };
-    }
-    return { categories: october, series: [series("Revenue", 30, 4, 72, 29, 1.26), series("Units", 30, 9, 38, 13, .48)] };
-  }
+  if (family === "composed") return composedFixture(id);
   if (family === "live-line") {
     const preset = livePreset(id);
     const count = preset.seed.length;

@@ -54,9 +54,6 @@
 .cartesian-swatch { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: 0 0 7px; }
 .cartesian-live-halo, .cartesian-live-skeleton { animation: cartesian-pulse 1.25s ease-in-out infinite; }
 .cartesian-live-halo { transform-box: fill-box; transform-origin: center; }
-.cartesian-bar-pulse { position: absolute; width: 14px; height: 14px; border-radius: 50%; margin: -7px 0 0 -7px; background: var(--chart-1); pointer-events: none; animation: cartesian-bar-pulse 1.7s ease-out infinite; }
-.cartesian-depth--paused .cartesian-bar-pulse { animation-play-state: paused; }
-@keyframes cartesian-bar-pulse { 0% { transform: scale(.75); opacity: .65; } 72%, 100% { transform: scale(2.4); opacity: 0; } }
 .cartesian-panels { display: grid; grid-auto-rows: minmax(50px, 1fr); flex: 1; width: 100%; min-height: 0; gap: 2px; }
 .cartesian-panels--multiples { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .cartesian-panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
@@ -89,7 +86,7 @@
 .cartesian-table th:not(:first-child), .cartesian-table td { text-align: right; }
 .cartesian-row-active { background: var(--muted); }
 @media (prefers-reduced-motion: reduce) {
-  .cartesian-live-halo, .cartesian-live-skeleton, .cartesian-gantt-plot--loading, .cartesian-skeleton::after, .cartesian-skeleton--pulse svg, .cartesian-bar-pulse { animation: none; }
+  .cartesian-live-halo, .cartesian-live-skeleton, .cartesian-gantt-plot--loading, .cartesian-skeleton::after, .cartesian-skeleton--pulse svg { animation: none; }
 }
 
 

@@ -1,0 +1,49 @@
+.composed-detail {
+  display: grid;
+  width: 100%;
+  gap: 20px;
+  align-content: start;
+}
+
+.composed-detail-plot {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2;
+}
+
+.composed-detail-plot > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  font-family: inherit;
+  touch-action: pan-y;
+}
+
+.chart-preview--compact .composed-detail {
+  height: 100%;
+  align-content: center;
+}
+
+.chart-preview--compact .composed-detail-plot {
+  max-height: 100%;
+}
+
+.composed-detail-readout {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.composed-detail-summary {
+  display: grid;
+  gap: 2px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.composed-detail-summary strong {
+  color: var(--foreground);
+  font-weight: 500;
+}

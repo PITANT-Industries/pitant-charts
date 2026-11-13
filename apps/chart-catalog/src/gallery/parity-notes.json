@@ -1,163 +1,163 @@
 {
   "area-default": {
-    "checked": "All 30 September Revenue and Costs dates match. At a 728 × 364 px plot, the two filled traces and grid align with the reference within 0.5 px. Keyboard inspection exposes both values.",
-    "remaining": "Compare exact fade and entrance timing across themes."
+    "checked": "The Revenue and Costs series use the September fixture, faded edges, adaptive date ticks and the same plot dimensions on desktop and mobile. The first date shows 12,000 revenue and 8,500 costs.",
+    "remaining": "Compare the entrance transition and the exact color and alignment of the active marker and tooltip."
   },
   "area-fill": {
-    "checked": "The August Visitors series uses a dense vertical gradient with 5% opacity at the baseline and no visible top stroke.",
-    "remaining": "Compare the horizontal edge fade and exact daily values."
+    "checked": "The 31 August visitor counts, fill-only geometry, five horizontal guides and responsive date ticks agree in the sampled Compare views. The fill fades from 60% to 5%.",
+    "remaining": "Compare the gradient at the plot edges and during inspection."
   },
   "area-gradient-fill": {
-    "checked": "The April Subscribers fill uses three theme colors at 0%, 55%, and 100%, with a single upper stroke.",
-    "remaining": "Compare exact color stops and subscriber counts."
+    "checked": "The April subscriber curve, responsive ticks and all three gradient stops are reproduced. Keyboard inspection shows 8,224 on April 1 and 10,574 on April 30.",
+    "remaining": "Compare gradient paint and tooltip motion in both palettes."
   },
   "area-pattern": {
-    "checked": "Diagonal hatching stays clipped below the daily Spend line and above its baseline.",
-    "remaining": "Compare the exact line curve and hatch spacing."
+    "checked": "The September Spend series uses diagonal hatching, the reference area outline and responsive date ticks. Keyboard inspection shows 4,240 on September 1 and 5,170 on September 30.",
+    "remaining": "Compare the hatch density, opacity and reveal frame by frame."
   },
   "area-mixed": {
-    "checked": "Desktop uses a gradient while Mobile uses a clipped dotted fill. Both series appear in the same tooltip.",
-    "remaining": "Compare precise overlap, fixture values, and dot styling."
+    "checked": "The June Desktop gradient and Mobile dot fill use the reference curves and axes. Both series appear in the keyboard readout, including 303 Desktop and 190 Mobile on June 1.",
+    "remaining": "Compare the dots’ spacing, size and opacity at different display densities."
   },
   "area-forecast": {
-    "checked": "All 12 monthly revenue dates and values match the live reference, including $81,200 in December. A continuous area connects nine months of actuals to a three-month dashed forecast. The two traces and all 24 marker circles match measured bounds within 0.005 px at 728 × 364 and 358 × 179. Pointer, keyboard and touch show the selected date, revenue, enlarged ring and guide.",
-    "remaining": "Compare exact tooltip typography, rolling date-label motion, and the full marker reveal and hover timing across browsers."
+    "checked": "The monthly Revenue fill, circle markers, solid actual segment and dashed forecast tail agree in desktop and mobile geometry. January reads 48,200 and December reads 81,200.",
+    "remaining": "Compare marker timing, fade and pointer transitions frame by frame."
   },
   "area-reference-band": {
-    "checked": "All 31 October sign-up dates and values match the live reference, including the 176 and 178 lows on October 14 and 15. The 180–240 band, two dashed rules, inward markers, and area bounds match within 0.005 px at 728 × 364 and 358 × 179. Pointer, keyboard and touch select the reference readouts.",
-    "remaining": "Compare exact tooltip typography, axis label fade, and hover and reveal timing across browsers."
+    "checked": "The October Sign-ups chart has an exact 180–240 target band, two dashed limits, triangular markers and a numeric axis. Desktop and mobile date ticks and sampled keyboard values agree.",
+    "remaining": "Compare band and marker paint at the plot edges and during inspection."
   },
   "area-reference-range": {
-    "checked": "All 31 October dates and install values match the live reference. October 12–18 totals 18,490 installs. The full-height range, its solid top and bottom rules, and the area bounds match within 0.005 px at 728 × 364 and 358 × 179. Pointer, keyboard and touch select the reference readouts.",
-    "remaining": "Compare exact tooltip typography, axis label fade, and hover and reveal timing across browsers."
+    "checked": "October 12–18 is marked across the reference Installs curve with a full-height highlight. The area path and adaptive date ticks agree in desktop and mobile Compare views.",
+    "remaining": "Compare highlight opacity and tooltip transitions."
   },
   "area-background": {
-    "checked": "A diagonal texture fades horizontally and replaces the grid behind the August Requests area.",
-    "remaining": "Compare the texture fade, color and exact request counts."
+    "checked": "The August Requests area and responsive date ticks agree in both sampled views. The diagonal background covers the plot and replaces the ordinary horizontal grid.",
+    "remaining": "Compare the background’s horizontal fade and exact stripe paint."
   },
   "area-small-multiples": {
-    "checked": "Six regional weekly charts share a vertical scale. Pointer and keyboard inspection synchronize their week, and narrow screens show two columns.",
-    "remaining": "Compare regional fixture totals, palette, and tooltip placement."
+    "checked": "The six regional curves share the reference scale and 8:5 plot geometry. All six totals agree, from 92.7K for North America to 15K for Africa. Inspection follows the same week across all panels.",
+    "remaining": "Compare how the readouts appear and disappear together while moving across region boundaries."
   },
   "area-date-highlights": {
-    "checked": "Three October weekends use clipped diagonal stripes. A red rule marks October 15, with the overdue region fading to the right.",
-    "remaining": "Compare hatch styling and transition timing."
+    "checked": "The October completion curve uses the reference Catmull–Rom geometry, three hatched weekends and an October 15 deadline with a shaded overdue interval. The deadline reads 33 completed issues.",
+    "remaining": "Compare weekend stripe opacity and deadline paint at intermediate widths."
   },
   "area-trend": {
-    "checked": "All ten monthly Desktop dates and values match the live reference. The elapsed-time least-squares fit uses a 2.5 px stroke with a two-color edge fade. Fit, fill, and trace bounds match within 0.005 px at 728 × 364 and 358 × 179. Pointer, keyboard and touch report only the measured series.",
-    "remaining": "Compare exact tooltip typography, rolling date-label motion, and the full trend and area reveal across browsers."
+    "checked": "The ten-month Desktop area and the gradient regression overlay agree with the measured date scale and grid. The sampled keyboard readout agrees, from 186 in January to 377 in October.",
+    "remaining": "Compare the trend fade and inspection transitions."
   },
   "area-value-labels": {
-    "checked": "The chart proposes up to five formatted values per device series and suppresses overlaps. The tooltip retains both original values.",
-    "remaining": "Compare exact label positions, collision priorities, and values."
+    "checked": "The 24-month Desktop and Mobile curves agree in both Compare views. Endpoint and interior labels adapt to the plot width with collision avoidance.",
+    "remaining": "Compare exact label widths, collision decisions and placement at intermediate sizes."
   },
   "area-dual-axis": {
-    "checked": "Sessions use the left axis in thousands and Conversion uses its own percent axis. Both values are inspectable in one tooltip.",
-    "remaining": "Compare exact axis range and fixture values."
+    "checked": "The September Sessions and Conversion curves agree in both sampled views with separate 0–7k and 0–5% axes. The first tooltip reports 4,200 and 3.4.",
+    "remaining": "Compare label paint and the two-marker hover emphasis."
   },
   "area-steps": {
-    "checked": "The Pages line holds each daily value until the next date, then changes vertically.",
-    "remaining": "Compare exact daily counts and step transitions."
+    "checked": "The September Pages curve uses the same step-after coordinates, including unchanged consecutive values, and the same five numeric ticks. The sampled keyboard values agree.",
+    "remaining": "Compare the filled baseline edge and transition paint."
   },
   "area-selection": {
-    "checked": "Mouse and touch drag select a range. Two dashed guides, a shaded area, a brighter stroke and the date output identify the selection.",
-    "remaining": "Compare exact hover, selection, and clearing behavior."
+    "checked": "The September Signups area and ticks agree in both sampled Compare views. Pointer drag shades a range, Shift with arrow keys extends it, and Escape clears it.",
+    "remaining": "Compare range fill, endpoint hit areas and transient drag behavior with the reference."
   },
   "area-pattern-fade": {
-    "checked": "Diagonal hatching clips to Revenue and fades toward both sides and the baseline. The upper stroke fades horizontally.",
-    "remaining": "Compare texture geometry, exact fade stops, and data."
+    "checked": "The September Revenue curve uses a diagonal pattern, vertical fill fade and horizontal stroke fade. The area path and sampled dates agree at both widths.",
+    "remaining": "Compare hatch density, opacity and the fade at each edge."
   },
   "area-fade-bottom": {
-    "checked": "The Orders fill holds 50% opacity across the upper 40%, then fades toward the baseline.",
-    "remaining": "Compare exact path and chart colors."
+    "checked": "The September Orders curve agrees with the reference and keeps its 50% fill through the first 40% before fading out. Keyboard inspection reads 700 on September 1 and 886 on September 30.",
+    "remaining": "Compare the bottom gradient and hover paint."
   },
   "area-custom-labels": {
-    "checked": "Sprint labels appear on the axis and hover pill, with the matching calendar date and Story points in the tooltip.",
-    "remaining": "Compare pill and tooltip styling."
+    "checked": "The 12 sprint values use the reference date scale while the axis and focus pill display sprint names. The tooltip retains the calendar date and story points.",
+    "remaining": "Compare intermediate-width label breakpoints and exact focus pill size."
   },
   "area-loading": {
-    "checked": "Pulse is selected initially. Pulse and Sweep show muted marks on the same July chart, and Loaded restores Orders tooltips without moving the axes.",
-    "remaining": "Compare the exact pulse and sweep animation and fixture counts."
+    "checked": "Pulse and Sweep use the reference placeholder curve. Loaded reveals the July fixture totaling 14,785 orders. The controls retain keyboard support, and loading animation respects reduced motion.",
+    "remaining": "Compare shimmer timing and the reference’s transition from placeholder geometry to the loaded curve."
   },
   "bar-default": {
-    "checked": "All six monthly revenue values match. At 728 px plot width the bars now measure 83.61 px, matching the reference. Hover dims unselected bars.",
-    "remaining": "Compare exact fade and entrance timing across themes."
+    "checked": "Six rounded monthly revenue marks, responsive month labels, and focus readout. Bounds matched the live reference in desktop light and mobile dark Compare.",
+    "remaining": "Recharts rounds the desktop canvas height to 289px for a 288.5px reference, and the entrance choreography uses local timing."
   },
   "bar-grouped": {
-    "checked": "Six pairs show Revenue and Profit on the same abbreviated numeric axis. June inspection reports 21,200 and 8,800.",
-    "remaining": "Compare corner treatment, hover dimming, and group spacing."
+    "checked": "Six Revenue and Profit pairs, abbreviated value ticks, rounded bar positions, focus markers, and keyboard inspection.",
+    "remaining": "Entrance and hover transitions use local timing."
   },
   "bar-stacked": {
-    "checked": "Organic, Paid, and Referral form 18 rounded segments. Their measured bounds differ from the live reference by at most 0.008 px across three matched sizes. The June readout reports 1,520, 840, and 420.",
-    "remaining": "Compare entrance timing, exact paint, and hover transitions."
+    "checked": "Eighteen segments with rounded tops, two-pixel gaps, and corrected mobile insets. Bar bounds are within 0.02px in the measured Compare layouts.",
+    "remaining": "The reference animates the stack on entrance."
   },
   "bar-values": {
-    "checked": "Twelve orders bars show formatted values above the marks. November’s label and keyboard readout both show 1,120.",
-    "remaining": "Compare exact text positioning and narrower-container label density."
+    "checked": "Twelve Orders bars, with centered in-bar values, rotation for narrow bars, and responsive suppression when values cannot fit. Labels and mark bounds matched on desktop and mobile.",
+    "remaining": "Label visibility for arbitrary caller text uses local fitting rules."
   },
   "bar-profit-loss": {
-    "checked": "Eight monthly profit bars share a zero baseline and use the same theme color above and below zero. Keyboard inspection shows April’s −3,400.",
-    "remaining": "Compare zero-line contrast, corner geometry, and hover fading."
+    "checked": "Eight signed bars, continuous zero line, abbreviated ticks, mobile label culling, and correct negative hover and keyboard values.",
+    "remaining": "Entrance and hover transitions use local timing."
   },
   "bar-sources": {
-    "checked": "Six horizontal bars descend from Organic to Email, with no numeric-axis ticks. Keyboard inspection reports 4,250 visits for Organic.",
-    "remaining": "Compare widths, category text spacing, and pointer focus effects."
+    "checked": "Six descending horizontal bars and category labels, with no numeric grid. Selection dims the other sources and places the readout beside the selected bar.",
+    "remaining": "Entrance and hover transitions use local timing."
   },
   "bar-squares": {
-    "checked": "Twelve revenue columns use rounded square segments, partially filled end segments, muted tracks, and a blended fill. The final month reports 25,100.",
-    "remaining": "Compare segment spacing, exact color stops, and entrance timing."
+    "checked": "Twelve rounded square columns, three-pixel gaps, muted tracks, and per-square blended fills. Segment bounds and counts matched on desktop and mobile.",
+    "remaining": "Entrance and hover transitions use local timing."
   },
   "bar-squares-legend": {
-    "checked": "Grouped Revenue and Profit square columns show exact totals of $95,000 and $34,800 in a side legend. Focusing Revenue dims the Profit marks and legend row.",
-    "remaining": "Compare active series fading, square count by width, and exact legend alignment."
+    "checked": "Grouped square columns, gradient Revenue and solid Profit, totals of $95,000 and $34,800, responsive legend, and focus and press interactions.",
+    "remaining": "The local legend also supports keyboard and touch pinning."
   },
   "bar-depth": {
-    "checked": "Pause pulse and Resume pulse control the bar highlight animation.",
-    "remaining": "Compare depth, material styling, and pulse timing."
+    "checked": "Six layered columns with responsive top and side faces, glass shading, a clipped June pulse, and a pause/resume control. Face bounds matched within 0.02px.",
+    "remaining": "The CSS pulse and the reference wave use different animation timing."
   },
   "bar-synced": {
-    "checked": "Revenue and Orders use two linked twelve-month panels with one visible month axis. Keyboard inspection on Revenue synchronizes both June tooltips, reporting 64,400 and 488.",
-    "remaining": "Compare pointer highlighting, tooltip positioning, and inter-panel spacing."
+    "checked": "Two matching-height plots share a month axis and highlight, with a readout in the active panel and a synchronized revenue-per-order footer.",
+    "remaining": "The local keyboard selection also works at narrow widths where the pointer target is small."
   },
   "bar-loading": {
-    "checked": "The eight-month grid and neutral bars remain in place while fetching orders. Space switches the loading control without remounting the plot, and August then reports 1,830.",
-    "remaining": "Compare shimmer treatment and exact per-bar reveal timing."
+    "checked": "Eight deterministic placeholders with a masked sweep, reduced-motion support, and a toggle that reveals the Orders bars and updates the status without remounting the chart.",
+    "remaining": "Bar reveal uses local CSS timing."
   },
   "line-default": {
     "checked": "All 30 October dates match for Users and Pageviews. At a 728 × 364 px plot, trace bounds and grid match within 0.5 px. Keyboard inspection shows the active date pill and both values.",
     "remaining": "Compare exact edge fades, marker treatment, and entrance timing."
   },
   "line-dual-axis": {
-    "checked": "Revenue uses the left dollar axis and Conversion uses the right percentage axis. Hover reports both with their units.",
-    "remaining": "Compare exact values and axis typography."
+    "checked": "Both paths and the dollar and percentage axes match the live reference at both sizes.",
+    "remaining": "Compare cursor highlight fades and tooltip placement."
   },
   "line-grid": {
-    "checked": "The single Sessions line sits on a dotted grid with horizontal and vertical guides and abbreviated values.",
-    "remaining": "Compare exact tick spacing and colors."
+    "checked": "The SVG has six horizontal and fourteen vertical grid lines, matching ticks and sampled tooltip values.",
+    "remaining": "Compare cursor highlight fade and exact tooltip positioning."
   },
   "line-points": {
-    "checked": "Fourteen ringed signup marks are shown. Inspection enlarges the active mark and dims the remaining marks.",
-    "remaining": "Compare focus and hover easing."
+    "checked": "All fourteen sign-up values, path and tick coordinates match. Each point has a 4px dot and 8px ring.",
+    "remaining": "Compare active-marker animation and exact colors."
   },
   "line-dashed": {
-    "checked": "Five intervals at the end use a six-on, four-off dash pattern. Inspection keeps the Orders label through the transition.",
-    "remaining": "Compare daily values and the seam curvature."
+    "checked": "The solid line and five-point provisional tail share a join and match reference path coordinates.",
+    "remaining": "Compare tail gradient and cursor highlight fades."
   },
   "line-markers": {
-    "checked": "September releases appear over Users and Sessions. Inspecting September 23 fans a three-event cluster into separate marks.",
-    "remaining": "Compare exact event labels and fan-out transition."
+    "checked": "Three date marker positions and the two line paths match. The September 23 cluster expands to show its three events.",
+    "remaining": "Match event descriptions in the data tooltip and cluster animation."
   },
   "line-legend": {
-    "checked": "Organic, Paid, and Referral legend rows show totals. Pointer hover and keyboard focus dim the other two series.",
-    "remaining": "Compare exact totals and legend spacing."
+    "checked": "The three exact daily series, totals and side/stacked layout match. Paid can be isolated through pointer hover and keyboard focus.",
+    "remaining": "Compare exact legend and inactive series paint."
   },
   "line-time-range": {
-    "checked": "The 90-day default switches to 7, 30, or 90 days while preserving the chart instance and September 28 endpoint.",
-    "remaining": "Compare scale animation curves and exact visitor values."
+    "checked": "90d path and values match at both sizes. The 7d, 30d and 90d choices show 7, 30 and 90 points with the measured ticks and grid counts.",
+    "remaining": "Compare scale easing during range changes."
   },
   "line-segment": {
-    "checked": "Mouse and touch drag directly on the chart select a range. Clear removes it.",
-    "remaining": "Compare selection guides and exact date fixtures."
+    "checked": "The 45-day path and all chart ticks match. Drag updates a selected range and announces its dates. Escape clears the range.",
+    "remaining": "Compare the selection surface, date-strip and drag treatment against the live reference."
   },
   "line-brush": {
     "checked": "The overview window pans and resizes. Its handles respond to the keyboard, and Escape restores the range after a drag.",
@@ -180,92 +180,92 @@
     "remaining": "Compare table treatment and focus transition."
   },
   "line-projection": {
-    "checked": "Dotted Goal and Trend paths share a ring at the final observed day and extend over six future days.",
-    "remaining": "Compare the trend extrapolation, date spacing, and gradient stops."
+    "checked": "Actual, goal and trend geometry match, with measured forecast endpoint positions and a ring at the last observed date.",
+    "remaining": "Compare projection paint and interactive highlighting."
   },
   "line-projection-manual": {
-    "checked": "A single dashed Forecast connects the last booking value to three explicit future checkpoints.",
-    "remaining": "Compare forecast segment time spacing and source values."
+    "checked": "Actual and forecast geometry match, including three future booking checkpoints and time ticks.",
+    "remaining": "Compare forecast hover treatment and paint."
   },
   "line-threshold": {
     "checked": "The 250 ms target and the p95 and Median line geometry match at three plot sizes. All 60 values match the live reference through keyboard inspection.",
     "remaining": "Compare the threshold highlight paint, transitions, and exact tooltip typography."
   },
   "line-profit-loss": {
-    "checked": "The Net income line changes green and red at interpolated zero crossings. Keyboard inspection formats the reading as currency.",
-    "remaining": "Compare fixture values and exact line shape."
+    "checked": "All sample net income values, crossings and axis coordinates match. Positive and negative stretches are split at zero.",
+    "remaining": "Compare exact line colors and focus paint."
   },
   "line-profit-loss-legend": {
-    "checked": "Profit and Loss legend focus isolate the corresponding sign color while dimming the other line stretches.",
-    "remaining": "Compare the precise hover opacity and legend position."
+    "checked": "The weekly path, zero crossings, and desktop/mobile date ticks match. Profit and Loss legend focus isolates each sign color.",
+    "remaining": "Compare sign isolation opacity and legend paint."
   },
   "line-band": {
-    "checked": "Signups sit inside a shaded Forecast envelope. The tooltip displays the observed value and paired low and high estimates.",
-    "remaining": "Compare remaining daily forecast values and opacity."
+    "checked": "The exact signup and forecast bounds match in desktop/mobile paths and sampled tooltip.",
+    "remaining": "Compare cursor fades and exact tooltip placement."
   },
   "line-band-range": {
-    "checked": "The temperature range shows both boundaries. The tooltip gives the low and high in degrees Celsius.",
-    "remaining": "Compare band styling and chart scale with the reference data."
+    "checked": "The low/high temperature boundaries and scale match at both sizes. The readout gives the measured range.",
+    "remaining": "Compare band paint and active boundary marks."
   },
   "line-band-ranges": {
-    "checked": "North and South each have a color-matched range and median line. The tooltip lists both medians and their separate ranges.",
-    "remaining": "Compare exact hourly bounds, colors, and legend placement."
+    "checked": "Both median paths and range envelopes match. The readout shows the two values and separate ranges.",
+    "remaining": "Compare legend and band paint."
   },
   "line-band-bollinger": {
-    "checked": "The band appears after the nine-point warm-up.",
-    "remaining": "Compare the remaining band styling and the exact fixture series."
+    "checked": "The exact Price fixture, Bollinger boundaries and ten-day average match at both sizes.",
+    "remaining": "Compare the band and active marker paint."
   },
   "line-band-fill": {
-    "checked": "Keyboard activation switches among Solid, Gradient, and clipped Pattern while retaining the same Forecast limits.",
-    "remaining": "Compare the stripe spacing and fill transition."
+    "checked": "Solid, Gradient and Pattern switch the same forecast envelope. The fill opacities and measured outline paths match.",
+    "remaining": "Compare stripe spacing and fill transition."
   },
   "line-band-fade": {
-    "checked": "The band fades over its outer fifths, keeps two dashed edges, and preserves the low and high readout.",
-    "remaining": "Compare the edge fade colors and opacity."
+    "checked": "Both dashed outlines and the bounds match. The band fades over its first and last fifth.",
+    "remaining": "Compare fade and cursor opacity."
   },
   "line-band-edges": {
-    "checked": "The gradient forecast has a dotted upper edge and a hidden lower stroke. Inspection still reports both bounds.",
-    "remaining": "Compare the exact edge spacing and gradient."
+    "checked": "The upper outline uses the measured 1px/3px dash pattern and the tooltip retains both measured bounds.",
+    "remaining": "Compare exact gradient paint."
   },
   "line-weekends": {
-    "checked": "Calendar Saturdays and Sundays are striped behind Scope, Started, and Completed.",
-    "remaining": "Compare the stripe density and exact issue values."
+    "checked": "The three measured issue series and three weekend spans match.",
+    "remaining": "Compare hatch density and color."
   },
   "line-deadline": {
-    "checked": "October 15 is marked by a red line and label. Diagonal shading fades after the deadline.",
-    "remaining": "Compare the label placement and overdue stripe opacity."
+    "checked": "The three issue paths match with the rule at October 15 and the overdue region beginning at that date.",
+    "remaining": "Compare hatch paint, fade and deadline label."
   },
   "line-deadline-fills": {
-    "checked": "Three panels show the same Completed series and due date with pattern, gradient, and solid fills.",
-    "remaining": "Compare the exact fade masks and compact spacing."
+    "checked": "All three panels render the same measured Completed path. Desktop uses three columns and mobile stacks the panels.",
+    "remaining": "Compare clipping and fill paint. The PITANT panels also expose keyboard and pointer readouts."
   },
   "line-date-highlights-brush": {
     "checked": "At mobile width, weekend shading is hidden when dates are dense and appears after zooming in. The launch marker stays on its original date.",
     "remaining": "Compare precise density thresholds and band styling."
   },
   "line-glow": {
-    "checked": "A color ramp and two clipped radial backdrops render without visible axes. Pointer and keyboard inspection report Sessions.",
-    "remaining": "Compare the pointer highlight, blur strength, and radial positions."
+    "checked": "The full-bleed 28-point geometry and sampled tooltip match, with two radial backdrops clipped above the line.",
+    "remaining": "Compare radial gradient centers, blur strength and active glow paint."
   },
   "line-trend": {
-    "checked": "The weekly signup chart switches the least-squares guide among dashed, solid, and gradient strokes. The guide stays out of the data tooltip.",
-    "remaining": "Compare transition curves and exact trend styling."
+    "checked": "The measured weekly series and fitted trend path match. The guide switches between Dashed, Solid and Gradient.",
+    "remaining": "Compare trend style paint and transitions."
   },
   "line-bollinger": {
-    "checked": "The floating scale shows Close from the first day. The 10-day average and both bounds appear after the warm-up.",
-    "remaining": "Compare closing prices, axis bounds, and line widths."
+    "checked": "All four floating Bollinger paths, the nonzero Y domain and sampled readout match.",
+    "remaining": "Compare band color and active point paint."
   },
   "line-crosshair-point": {
-    "checked": "The gradient guide starts at the focused Visitors point and runs down to the axis. Pointer and keyboard inspection move it.",
-    "remaining": "Compare the blur strength and marker sizing."
+    "checked": "The Visitors path and sampled tooltip match. The guide starts at the active point and fades toward the axis.",
+    "remaining": "Compare the guide blur and active marker paint."
   },
   "line-fixed-scale": {
-    "checked": "The CPU view holds its percent scale at 100%, with a labeled top tick and visible headroom.",
-    "remaining": "The reference SVG shows an extra 120% tick even though its copy describes a 100% fixed scale."
+    "checked": "The measured CPU path and fixed 0%–120% ticks match, including the live chart’s extra 120% tick.",
+    "remaining": "Compare cursor highlights and tooltip placement."
   },
   "line-straight": {
-    "checked": "The Web and Mobile paths use straight point-to-point segments. Both are available during inspection.",
-    "remaining": "Compare responsive tick counts and the September values."
+    "checked": "Both polylines and width-dependent date ticks match the live chart.",
+    "remaining": "Compare cursor fades and exact tooltip placement."
   },
   "line-export": {
     "checked": "Direct keyboard-accessible SVG and PNG actions produce valid files from the current rendered chart. The legend totals show all three plans.",
@@ -276,16 +276,16 @@
     "remaining": "The nearest displayed minute can be affected by decimation. Compare lookup behavior and rendering performance at the largest setting."
   },
   "line-loading": {
-    "checked": "The Revenue plot keeps its chart instance when Loading and Ready are switched. Loading suppresses data inspection and Ready restores it.",
-    "remaining": "Compare shimmer movement and the handover timing."
+    "checked": "Loading and Ready states use the measured revenue path and grid. Ready exposes keyboard inspection.",
+    "remaining": "Compare the loading animation and Ready palette."
   },
   "chart-data-table": {
     "checked": "The six-period Revenue and Expenses table is accessible with the plot visible and becomes the visual view when activated.",
     "remaining": "Compare the displayed table formatting and layout."
   },
   "line-loading-placeholder": {
-    "checked": "The standalone skeleton shows a loading status and has no interaction controls. The diagonal sweep respects reduced motion.",
-    "remaining": "Compare the exact skeleton curve and motion timing."
+    "checked": "The placeholder uses the measured 2:1 plot and four dashed horizontal grid lines.",
+    "remaining": "Compare the shimmer, loading-text animation and placeholder paint."
   },
   "scatter-default": {
     "checked": "All 24 weekly Organic and Referral readouts match. At both tested plot sizes, the 48 point centers and horizontal grid match within 0.005 px. Pointer or keyboard selection shows both rings for the week and blurs and dims the other marks.",
@@ -336,48 +336,48 @@
     "remaining": "Compare pixel-level stripe treatment, footer typography and entrance timing."
   },
   "composed-default": {
-    "checked": "The chart shows run-rate area, units bars, and revenue line with dollar labels.",
-    "remaining": "Compare exact data, axis scale, and transitions."
+    "checked": "The 30 daily Units, Revenue and Run rate readouts match. Bars and grid align at desktop and mobile plot widths.",
+    "remaining": "Compare active-state fades and the revenue and area entrance transitions."
   },
   "composed-target": {
-    "checked": "Revenue bars share the plot with a four-week trend area and rising target.",
-    "remaining": "Compare chart scale and trend styling."
+    "checked": "All twelve Revenue, Target and Trend readouts match. The bars, two lines and trend fill align at both measured plot widths.",
+    "remaining": "Compare the date pill and the full target and trend transitions."
   },
   "composed-grouped": {
-    "checked": "Signups and Activations appear side by side under a Goal line.",
-    "remaining": "Compare spacing and legend styling."
+    "checked": "All ten weekly signup, activation and goal readouts match. Both bar groups and the goal line align at desktop and mobile plot widths.",
+    "remaining": "Compare focus styling and the group reveal timing."
   },
   "composed-stacked": {
-    "checked": "Organic and Paid stack with a measured two-pixel gap. The chart excludes a goal series.",
-    "remaining": "Compare exact bar rounding and tooltip formatting."
+    "checked": "All 14 daily Organic and Paid readouts match. Each stacked segment aligns within 0.005 px at both measured plot widths.",
+    "remaining": "Compare the hover isolation and stacked reveal timing."
   },
   "composed-band": {
-    "checked": "A gradient expected range with dashed boundaries appears with Units and Revenue. The tooltip names the low and high.",
-    "remaining": "Compare band opacity and edge motion."
+    "checked": "All 30 expected ranges, unit counts and revenues match. Bars, band edges and the revenue path align at both measured plot widths.",
+    "remaining": "Compare the band paint, hover guides and reveal timing."
   },
   "composed-date-highlights": {
-    "checked": "Weekend stripes are clipped to the plot and Quarter close is marked.",
-    "remaining": "Compare fixture dates and stripe texture."
+    "checked": "All 30 daily unit and revenue readouts match. Weekend stripes and the quarter-close annotation share the date axis.",
+    "remaining": "Compare stripe paint, annotation bounds and selected-column opacity."
   },
   "composed-trend": {
-    "checked": "Each series has a least-squares trend guide. The guide uses a faded or dotted treatment and stays out of the tooltip.",
-    "remaining": "Compare fixture data and the guide fade."
+    "checked": "All 30 daily readouts match. Separate least-squares fits follow revenue and units, with measured endpoints within 0.032 px.",
+    "remaining": "Compare fade stops and focus and reveal timing for both fits."
   },
   "composed-y-domains": {
-    "checked": "Bars stay in the bottom third while the line uses the upper plot range.",
-    "remaining": "Compare the exact division and labeled ticks."
+    "checked": "All 30 daily revenue and unit readouts match. Units and revenue use independent scales and their marks align at the measured sizes.",
+    "remaining": "Compare exact marker treatment and selected-column dimming."
   },
   "composed-price-volume": {
-    "checked": "A right-side price axis, candles, quiet volume, and a five-day average share the plot and tooltip.",
-    "remaining": "Compare market data and marker treatment."
+    "checked": "All 30 Close, Volume and five-day average readouts match. The wick and body bounds align within 0.016 px at the measured plot sizes.",
+    "remaining": "Compare candle paint, edge fades and focus transitions."
   },
   "composed-signal": {
-    "checked": "Daily points sit behind a calculated seven-day moving average.",
-    "remaining": "Compare line interpolation and point opacity."
+    "checked": "All 30 Signup and seven-day average readouts match. The point centers align within 0.005 px at the measured sizes.",
+    "remaining": "Compare point paint, the average curve and its selection and entrance timing."
   },
   "composed-profit-loss": {
-    "checked": "The running line crosses zero with different gain and loss colors over trade bars.",
-    "remaining": "Compare crossing geometry and colors."
+    "checked": "All 30 P&L and Trades readouts match. The signed line crosses zero and the trade bars align at both measured plot widths.",
+    "remaining": "Compare the signed stroke paint and focus and reveal timing."
   },
   "live-line-default": {
     "checked": "A 30-second window receives a demo trade every 600 ms. The faded stroke and fill end in a 4 px dot, a dashed live value rule and a 24 px badge. Five clock labels and pointer, keyboard and touch inspection work at both measured widths.",
