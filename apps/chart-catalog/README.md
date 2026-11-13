@@ -8,6 +8,8 @@ From the PITANT Charts repository root, run `bun install --frozen-lockfile` and 
 
 Open the URL printed by Vite. Search or filter by family, switch to list view, and save examples for later. The browser stores saved charts and theme preferences. A variant’s URL opens it directly. **Compare** puts the local chart alongside the live shadcn.io preview and shows the available parity notes. **Match reference styling** applies the measured palette and Hanken Grotesk typeface to the local comparison chart. For variants with verified plot sizes, Compare uses the reference plot proportions and fits fixed-size charts to narrow panes. **Code** shows how to use the example in React. **Parity review** tracks notes for each family, with a filter for variants that have measured plot sizing.
 
+The gallery uses Hanken Grotesk, neutral surfaces, and a blue accent in both themes. The header theme button switches the gallery and its charts together. The Compare palette uses the measured colors from the reference preview.
+
 Search within **Parity review** to find checked behavior and remaining gaps by keyword. Copy the URL while **Compare** or **Code** is selected to share that view of the variant.
 
 [Component index and progress](https://chatgpt.com/space/page_158565692cf88191bb821bf62112a8d1)

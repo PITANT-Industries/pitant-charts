@@ -6,6 +6,7 @@ export interface ChartTheme {
   grid: string
   surface: string
   text: string
+  fontFamily: string
 }
 
 export const fallbackChartTheme: ChartTheme = {
@@ -14,6 +15,7 @@ export const fallbackChartTheme: ChartTheme = {
   grid: '#e9e8f0',
   surface: '#ffffff',
   text: '#211d35',
+  fontFamily: 'system-ui, sans-serif',
 }
 
 export const ChartThemeContext = createContext<ChartTheme>(fallbackChartTheme)
@@ -44,6 +46,7 @@ export function readChartTheme(element: HTMLElement): ChartTheme {
       grid: color('--border', fallback.grid),
       surface: color('--card', fallback.surface),
       text: color('--foreground', fallback.text),
+      fontFamily: getComputedStyle(element).fontFamily || fallback.fontFamily,
     }
   } finally {
     probe.remove()

@@ -233,7 +233,10 @@ export function Gallery() {
   const searchField = useRef<HTMLInputElement>(null)
   const results = useRef<HTMLElement>(null)
 
-  useEffect(() => { document.documentElement.dataset.theme = theme }, [theme])
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0a0a0a' : '#ffffff')
+  }, [theme])
   useEffect(() => {
     const desktop = matchMedia('(min-width: 851px)')
     const close = () => { if (desktop.matches) setNavigationOpen(false) }
