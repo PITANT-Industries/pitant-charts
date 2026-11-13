@@ -157,7 +157,15 @@ export function buildScatterPlotRenderPlan(
     1,
     Math.floor(options.density?.minPointCount ?? maxRenderedPoints),
   )
-  const filteredPointCount = countFilteredScatterPoints(visibleSeries, xRange, yRange)
+  // Mode selection only needs to reach the density threshold. Density binning
+  // counts every accepted point below, so a full preliminary scan is redundant.
+  const modePointLimit =
+    options.density?.enabled === false
+      ? Number.POSITIVE_INFINITY
+      : options.density?.enabled === true
+        ? densityMinPointCount
+        : maxRenderedPoints + 1
+  let filteredPointCount = countFilteredScatterPoints(visibleSeries, xRange, yRange, modePointLimit)
   const mode = resolveScatterMode({
     densityEnabled: options.density?.enabled,
     filteredPointCount,
@@ -165,6 +173,7 @@ export function buildScatterPlotRenderPlan(
     minPointCount: densityMinPointCount,
   })
   const seriesPlans: ScatterPlannedSeries[] = []
+  if (mode === 'density') filteredPointCount = 0
   let sourcePointCount = 0
   let renderedPointCount = 0
   let densityCellCount = 0
@@ -180,7 +189,6 @@ export function buildScatterPlotRenderPlan(
 
     sourcePointCount += sourceCount
     const color = source.color ?? getDefaultColor(seriesIndex)
-    const filteredForSeries = countFilteredSeriesPoints(source, sourceCount, xRange, yRange)
     const planned =
       mode === 'density'
         ? buildDensitySeries(source, {
@@ -196,7 +204,7 @@ export function buildScatterPlotRenderPlan(
           })
         : buildPointSeries(source, {
             color,
-            filteredPointCount: filteredForSeries,
+            filteredPointCount: countFilteredSeriesPoints(source, sourceCount, xRange, yRange),
             maxRenderedPoints,
             pointSize: source.pointSize ?? options.pointSize ?? DEFAULT_POINT_SIZE,
             sourceCount,
@@ -207,6 +215,7 @@ export function buildScatterPlotRenderPlan(
 
     renderedPointCount += planned.renderedPointCount
     densityCellCount += planned.densityCellCount
+    if (mode === 'density') filteredPointCount += planned.filteredPointCount
     seriesPlans.push(planned)
   }
 
@@ -370,45 +379,66 @@ function buildPointSeries(
   }
 }
 
-function buildDensitySeries(
+interface DensitySeriesOptions {
+  color: RgbaColor
+  columns: number
+  rows: number
+  sourceCount: number
+  xOrigin: number
+  xRange: NumericRange
+  yRange: NumericRange
+  minAlpha: number
+  maxAlpha: number
+}
+
+function binDensityPoints(
   source: ScatterPlotSeries,
-  options: {
-    color: RgbaColor
-    columns: number
-    rows: number
-    sourceCount: number
-    xOrigin: number
-    xRange: NumericRange
-    yRange: NumericRange
-    minAlpha: number
-    maxAlpha: number
-  },
-): ScatterPlannedSeries {
+  options: DensitySeriesOptions,
+): { counts: Uint32Array; touched: number[]; filteredPointCount: number; maxCount: number } {
   const cellCount = options.columns * options.rows
   const counts = new Uint32Array(cellCount)
   const touched: number[] = []
+  const xValues = source.x
+  const yValues = source.y
+  const sourceCount = options.sourceCount
+  const columns = options.columns
+  const rows = options.rows
   const xMin = options.xRange[0]
+  const xMax = options.xRange[1]
   const yMin = options.yRange[0]
-  const xSpan = Math.max(Number.EPSILON, options.xRange[1] - options.xRange[0])
-  const ySpan = Math.max(Number.EPSILON, options.yRange[1] - options.yRange[0])
-  const cellWidth = xSpan / options.columns
-  const cellHeight = ySpan / options.rows
+  const yMax = options.yRange[1]
+  const xSpan = Math.max(Number.EPSILON, xMax - xMin)
+  const ySpan = Math.max(Number.EPSILON, yMax - yMin)
+  const finiteBounds =
+    Number.isFinite(xMin) &&
+    Number.isFinite(xMax) &&
+    Number.isFinite(yMin) &&
+    Number.isFinite(yMax) &&
+    Number.isFinite(xSpan) &&
+    Number.isFinite(ySpan) &&
+    Number.isFinite(columns) &&
+    Number.isFinite(rows)
   let filteredPointCount = 0
   let maxCount = 0
 
-  for (let index = 0; index < options.sourceCount; index++) {
-    const x = source.x[index]
-    const y = source.y[index]
+  for (let index = 0; index < sourceCount; index++) {
+    const x = xValues[index] as number
+    const y = yValues[index] as number
     if (
-      !isFiniteNumber(x) ||
-      !isFiniteNumber(y) ||
-      !isPointInRange(x, y, options.xRange, options.yRange)
+      !(x >= xMin && x <= xMax && y >= yMin && y <= yMax) ||
+      (!finiteBounds && (!isFiniteNumber(x) || !isFiniteNumber(y)))
     ) {
       continue
     }
-    const column = clamp(Math.floor(((x - xMin) / xSpan) * options.columns), 0, options.columns - 1)
-    const row = clamp(Math.floor(((y - yMin) / ySpan) * options.rows), 0, options.rows - 1)
-    const cellIndex = row * options.columns + column
+    // Finite inclusive bounds already reject invalid values and negative bins.
+    // Retain division before multiplication to preserve exact bin boundaries.
+    const columnValue = Math.floor(((x - xMin) / xSpan) * columns)
+    const rowValue = Math.floor(((y - yMin) / ySpan) * rows)
+    const column = finiteBounds
+      ? Math.min(columns - 1, columnValue)
+      : clamp(columnValue, 0, columns - 1)
+    const row = finiteBounds ? Math.min(rows - 1, rowValue) : clamp(rowValue, 0, rows - 1)
+    const cellIndex = row * columns + column
     const current = counts[cellIndex] ?? 0
     if (current === 0) touched.push(cellIndex)
     const next = current + 1
@@ -417,6 +447,20 @@ function buildDensitySeries(
     filteredPointCount += 1
   }
 
+  return { counts, touched, filteredPointCount, maxCount }
+}
+
+function buildDensitySeries(
+  source: ScatterPlotSeries,
+  options: DensitySeriesOptions,
+): ScatterPlannedSeries {
+  const { counts, touched, filteredPointCount, maxCount } = binDensityPoints(source, options)
+  const xMin = options.xRange[0]
+  const yMin = options.yRange[0]
+  const xSpan = Math.max(Number.EPSILON, options.xRange[1] - xMin)
+  const ySpan = Math.max(Number.EPSILON, options.yRange[1] - yMin)
+  const cellWidth = xSpan / options.columns
+  const cellHeight = ySpan / options.rows
   const cells: ScatterDensityCell[] = []
   const alphaSpan = Math.max(0, options.maxAlpha - options.minAlpha)
   const logMax = Math.log1p(maxCount)
@@ -460,11 +504,13 @@ function countFilteredScatterPoints(
   series: readonly ScatterPlotSeries[],
   xRange: NumericRange,
   yRange: NumericRange,
+  stopAt: number,
 ): number {
   let count = 0
   for (const item of series) {
     const sourceCount = Math.min(item.x.length, item.y.length)
-    count += countFilteredSeriesPoints(item, sourceCount, xRange, yRange)
+    count += countFilteredSeriesPoints(item, sourceCount, xRange, yRange, stopAt - count)
+    if (count >= stopAt) return count
   }
   return count
 }
@@ -474,13 +520,28 @@ function countFilteredSeriesPoints(
   sourceCount: number,
   xRange: NumericRange,
   yRange: NumericRange,
+  stopAt = Number.POSITIVE_INFINITY,
 ): number {
+  const xValues = series.x
+  const yValues = series.y
+  const xMin = xRange[0]
+  const xMax = xRange[1]
+  const yMin = yRange[0]
+  const yMax = yRange[1]
   let count = 0
   for (let index = 0; index < sourceCount; index++) {
-    const x = series.x[index]
-    const y = series.y[index]
-    if (isFiniteNumber(x) && isFiniteNumber(y) && isPointInRange(x, y, xRange, yRange)) {
+    const x = xValues[index]
+    const y = yValues[index]
+    if (
+      isFiniteNumber(x) &&
+      isFiniteNumber(y) &&
+      x >= xMin &&
+      x <= xMax &&
+      y >= yMin &&
+      y <= yMax
+    ) {
       count += 1
+      if (count >= stopAt) return count
     }
   }
   return count

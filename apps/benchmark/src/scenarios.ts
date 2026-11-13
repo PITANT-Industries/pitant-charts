@@ -1483,6 +1483,9 @@ scenarios['031_scatter_500k_density'] = () => {
   let filteredPointCount = 0
   let densityCellCount = 0
   let commandCount = 0
+  const diagnostics = process.env['PITANT_BENCH_DIAGNOSTICS'] === '1'
+  const planningTimes: number[] = []
+  const commandTimes: number[] = []
   for (let i = 0; i < 7; i++) {
     const start = performance.now()
     const plan = buildScatterPlotRenderPlan(data, {
@@ -1491,16 +1494,28 @@ scenarios['031_scatter_500k_density'] = () => {
       maxRenderedPoints: 20_000,
       density,
     })
+    const plannedAt = diagnostics ? performance.now() : 0
     const commands = new RenderCommandList()
     addScatterPlotToCommandList(commands, plan)
     const elapsed = performance.now() - start
     times.push(elapsed)
+    if (diagnostics) {
+      planningTimes.push(plannedAt - start)
+      commandTimes.push(start + elapsed - plannedAt)
+    }
     filteredPointCount = plan.filteredPointCount
     densityCellCount = plan.densityCellCount
     commandCount = commands.sorted().length
   }
 
-  const medianMs = median(times)
+  const medianMs = median([...times])
+  if (diagnostics) {
+    console.log('\nScatter density timing (ms):', {
+      total: times,
+      planning: planningTimes,
+      commands: commandTimes,
+    })
+  }
 
   return {
     scenario: '031_scatter_500k_density',

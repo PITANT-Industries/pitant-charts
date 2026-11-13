@@ -91,6 +91,57 @@ describe('scatter plot planning', () => {
     expect(plan.commandCount).toBe(plan.densityCellCount)
   })
 
+  it.each([
+    { maxRenderedPoints: 2, density: undefined, mode: 'density' },
+    { maxRenderedPoints: 5, density: undefined, mode: 'points' },
+    { maxRenderedPoints: 2, density: { enabled: true, minPointCount: 5 }, mode: 'density' },
+    { maxRenderedPoints: 5, density: { enabled: true, minPointCount: 6 }, mode: 'points' },
+    { maxRenderedPoints: 2, density: { enabled: false }, mode: 'points' },
+  ] as const)('keeps exact multi-series counts when selecting $mode mode: %j', (scenario) => {
+    const plan = buildScatterPlotRenderPlan(
+      {
+        series: [
+          {
+            key: 'first',
+            label: 'First',
+            x: new Float64Array([-1, 0, 1, 2, Number.NaN]),
+            y: new Float64Array([0, 0, 1, 2, 1]),
+          },
+          {
+            key: 'second',
+            label: 'Second',
+            x: new Float32Array([3, 4, 5, Number.POSITIVE_INFINITY]),
+            y: new Float32Array([3, 4, 5, 1]),
+          },
+        ],
+      },
+      {
+        xRange: [0, 4],
+        yRange: [0, 4],
+        maxRenderedPoints: scenario.maxRenderedPoints,
+        density: { ...scenario.density, columns: 2, rows: 2 },
+      },
+    )
+
+    expect(plan.mode).toBe(scenario.mode)
+    expect(plan.filteredPointCount).toBe(5)
+    expect(plan.series.map((series) => series.filteredPointCount)).toEqual([3, 2])
+    if (scenario.mode === 'density') {
+      expect(
+        plan.series.map((series) =>
+          series.densityCells.map(({ column, row, count }) => [column, row, count]),
+        ),
+      ).toEqual([
+        [
+          [0, 0, 2],
+          [1, 1, 1],
+        ],
+        [[1, 1, 2]],
+      ])
+      expect(plan.renderedPointCount).toBe(5)
+    }
+  })
+
   it('samples large payloads when density is explicitly disabled', () => {
     const plan = buildScatterPlotRenderPlan(createDenseScatterFixture(50_000), {
       xRange: [0, 100],
