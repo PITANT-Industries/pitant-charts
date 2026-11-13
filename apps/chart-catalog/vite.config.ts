@@ -12,6 +12,7 @@ const fontPackages = [
 ]
 const catalogDirectory = fileURLToPath(new URL('.', import.meta.url))
 const sourceFiles = [
+  '.gitignore',
   'src',
   'scripts',
   'index.html',
@@ -23,6 +24,7 @@ const sourceFiles = [
   'LICENSE',
   'SOURCE.md',
   'README.md',
+  'PARITY.md',
   'THIRD_PARTY_NOTICES.md',
   'licenses',
 ]
@@ -40,13 +42,21 @@ export default defineConfig({
           cpSync(resolve(catalogDirectory, file), resolve(dir, file))
         }
         cpSync(new URL('./licenses', import.meta.url), resolve(dir, 'licenses'), { recursive: true })
-        execFileSync('tar', [
-          '-czf',
-          resolve(dir, 'chart-catalog-source.tgz'),
-          '-C',
-          catalogDirectory,
-          ...sourceFiles,
-        ])
+        execFileSync(
+          'tar',
+          [
+            '-czf',
+            resolve(dir, 'chart-catalog-source.tgz'),
+            '--exclude=.DS_Store',
+            '--exclude=._*',
+            '--exclude=__pycache__',
+            '--exclude=*.local',
+            '-C',
+            catalogDirectory,
+            ...sourceFiles,
+          ],
+          { env: { ...process.env, COPYFILE_DISABLE: '1' } },
+        )
       },
     },
   ],
