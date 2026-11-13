@@ -1,5 +1,5 @@
 import { curveCatmullRom, curveLinear, curveNatural, line } from "d3-shape";
-import { useId, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { usePlotSize } from "../usePlotSize";
 import { Button } from "@ui-sdk/react/button";
 import { Choices } from "../../ui/Choices";
@@ -10,6 +10,9 @@ import { LineLegend, LineLoadToggle } from "./LineExtras";
 import { lineDateLabel, lineMoney } from "./line-format";
 import { designForLine, lineDynamicDomain, lineOverlays, toLocalTime, type LineVariant } from "./line-detail-data";
 import { referenceLineFixture } from "./line-reference-fixtures";
+import { readLineEvents } from "./line-events";
+import { LineEventReadout } from "./LineEventReadout";
+import { resolveChartTooltipPlacement } from "../tooltip/placement";
 import type { ChartTheme } from "./options";
 import "./line-detail.css";
 
@@ -57,6 +60,7 @@ function LinePlot({ variant, label, data, compact, theme, fixture, fill, trend, 
 }) {
   const id = useId();
   const { plot, width, height } = usePlotSize<HTMLDivElement>(728, 364);
+  const tooltip = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const design = designForLine(variant);
   const selection = useRef<{ pointer: number; point: number } | null>(null);
@@ -127,6 +131,7 @@ function LinePlot({ variant, label, data, compact, theme, fixture, fill, trend, 
   const ticks = fills ? [] : yTicks(domain, tick);
   const active = usable && !selection.current && selected !== null && selected <= last ? selected : null;
   const labelDate = active === null ? "" : source.categories[active];
+  const activeEvents = variant === "line-markers" && active !== null ? readLineEvents(source.rows?.[active]) : [];
   const pillWidth = cartesianPillWidth(labelDate);
   const activeX = active === null ? 0 : x(active);
   const pillX = Math.min(width - pillWidth / 2, Math.max(pillWidth / 2, Math.round(activeX)));
@@ -161,6 +166,22 @@ function LinePlot({ variant, label, data, compact, theme, fixture, fill, trend, 
   const fallbackPoint = focusPoints[0]?.y ?? bottom;
   const tipLeft = activeX > width / 2;
   const tipTop = Math.max(4, Math.min(height - (44 + entries.length * 21), Math.min(top + 7, fallbackPoint)));
+
+  useLayoutEffect(() => {
+    const element = tooltip.current;
+    if (variant !== "line-markers" || !element) return;
+    const place = () => {
+      const position = resolveChartTooltipPlacement({ x: activeX, y: top + element.offsetHeight / 2 },
+        { width: element.offsetWidth, height: element.offsetHeight },
+        { left: 0, top: 0, right: width, bottom: height }, ["right", "left"], 16);
+      element.style.left = `${position.left}px`;
+      element.style.top = `${position.top}px`;
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [variant, active, activeX, top, width, height, source.rows]);
 
   function pointAt(event: PointerEvent<SVGSVGElement>, clamp = false) {
     if (!usable) return null;
@@ -244,7 +265,7 @@ function LinePlot({ variant, label, data, compact, theme, fixture, fill, trend, 
       fill="none" stroke={`url(#${id}-projection)`} strokeWidth="2" strokeDasharray="1 4" strokeLinecap="round" />);
   }
 
-  return <div ref={plot} className="line-detail-plot" data-line-loading={loading} data-line-selection={isSegment} role={loading ? "status" : undefined} aria-busy={loading || undefined}
+  return <div ref={plot} className="line-detail-plot" data-line-markers={variant === "line-markers" || undefined} data-line-loading={loading} data-line-selection={isSegment} role={loading ? "status" : undefined} aria-busy={loading || undefined}
     aria-label={loading ? skeleton ? "Loading sessions" : "Loading revenue" : undefined}>
     <svg className="cartesian-focus-surface" viewBox={`0 0 ${width} ${height}`} role="img" aria-roledescription="chart"
       aria-label={loading ? "Loading chart" : label} aria-describedby={usable ? `${id}-help` : undefined} tabIndex={usable ? 0 : undefined}
@@ -328,7 +349,7 @@ function LinePlot({ variant, label, data, compact, theme, fixture, fill, trend, 
           fill="none" stroke={trend === "gradient" ? `url(#${id}-trend)` : theme.colors[0]} strokeWidth="2" strokeDasharray={trend === "dashed" ? "6 4" : undefined} />}
         {focusPoints.map(point => <CartesianFocusPoint key={point.index} x={point.x} y={point.y} color={profit ? sign(point.value) : point.color} surface={theme.surface} />)}
       </g>
-      {variant === "line-markers" && <LineEvents rows={source.rows ?? []} x={x} top={top} bottom={bottom} compact={compact} />}
+      {variant === "line-markers" && <LineEvents rows={source.rows ?? []} x={x} top={top} bottom={bottom} compact={compact} onInspectMarkers={() => setSelected(null)} />}
       <g data-line-axis="" aria-hidden="true" fill={theme.muted} fontSize={compact ? 9 : 12} opacity={loading ? .44 : 1}>
         {xTicks.map((tick, index) => <text key={index} x={tick.x} y={bottom + (compact ? 14 : 24)} textAnchor="middle" opacity={tick.label === labelDate ? 0 : 1}>{tick.label}</text>)}
         {design.axis && !compact && ticks.map(value => <text key={value} x={left - 4} y={y(value)} textAnchor="end" dominantBaseline="middle">
@@ -340,8 +361,10 @@ function LinePlot({ variant, label, data, compact, theme, fixture, fill, trend, 
     </svg>
     {isSegment && segment && <output className="line-detail-segment-selection" aria-live="polite">{source.categories[segment[0]]} – {source.categories[segment[1]]}</output>}
     {loading && <span className="line-detail-loading-label" aria-hidden="true">{skeleton ? "Loading sessions" : "Loading revenue"}</span>}
-    {active !== null && entries.length > 0 && <div className="line-detail-tooltip" style={{ left: tipLeft ? undefined : activeX + 13, right: tipLeft ? width - activeX + 13 : undefined, top: tipTop }}>
-      <CartesianReadout label={lineDateLabel(labelDate)} entries={entries} />
+    {active !== null && (entries.length > 0 || activeEvents.length > 0) && <div ref={tooltip} className="line-detail-tooltip" style={variant === "line-markers" ? { left: activeX + 16, top } : { left: tipLeft ? undefined : activeX + 13, right: tipLeft ? width - activeX + 13 : undefined, top: tipTop }}>
+      <CartesianReadout label={lineDateLabel(labelDate)} entries={entries}>
+        <LineEventReadout events={activeEvents} />
+      </CartesianReadout>
     </div>}
   </div>;
 }

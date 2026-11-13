@@ -5,6 +5,8 @@
 
 .catalog-area-plot { position: relative; min-inline-size: 0; }
 .catalog-area-plot > svg { display: block; inline-size: 100%; block-size: 100%; touch-action: pan-y; }
+.catalog-area-date-pill { position: absolute; inset: 0; pointer-events: none; }
+.catalog-area-date-pill .chart-axis-pill-stack { transition: none; }
 .catalog-area:not([data-catalog-area='area-small-multiples']):not([data-catalog-area='area-loading']),
 .catalog-area:not([data-catalog-area='area-small-multiples']):not([data-catalog-area='area-loading']) > .catalog-area-plot { block-size: 100%; }
 .catalog-area[data-catalog-area='area-loading'] > .catalog-area-plot { aspect-ratio: 2; }
@@ -40,7 +42,7 @@
       --area-hover-ease: linear(0, .084, .25, .422, .572, .692, .782, .849, .896, .929, .952, .968, .979, .986, .991, 1);
     }
   }
-  .catalog-area :is([data-catalog-area-fill], [data-catalog-area-stroke], [data-catalog-area-highlight]) {
+  .catalog-area :is([data-catalog-area-fill], [data-catalog-area-stroke], [data-catalog-area-highlight], [data-catalog-area-date-tick]) {
     transition: opacity 120ms var(--area-hover-ease);
   }
   .catalog-area .cartesian-area-detail-panel { transition: none; }

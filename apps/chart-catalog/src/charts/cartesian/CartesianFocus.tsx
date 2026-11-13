@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import "./cartesian-focus.css";
 
 const groupedNumber = new Intl.NumberFormat("en", { maximumFractionDigits: 3 });
@@ -36,7 +37,7 @@ export function CartesianFocusPoint({ x, y, color, surface, halo = true }: {
   </g>;
 }
 
-export function CartesianReadout({ label, entries, live = true }: { label: string; entries: { name: string; value: number | string; color: string }[]; live?: boolean }) {
+export function CartesianReadout({ label, entries, live = true, children }: { label: string; entries: { name: string; value: number | string; color: string }[]; live?: boolean; children?: ReactNode }) {
   return <div className="cartesian-focus-readout" role={live ? "status" : undefined}>
     <div className="cartesian-focus-readout-title">{label}</div>
     <dl className="cartesian-focus-readout-values recharts-tooltip-item-list">
@@ -45,5 +46,6 @@ export function CartesianReadout({ label, entries, live = true }: { label: strin
         <dd>{typeof value === "number" ? groupedNumber.format(value) : value}</dd>
       </div>)}
     </dl>
+    {children}
   </div>;
 }

@@ -1,7 +1,9 @@
 import { area, curveCatmullRom, curveMonotoneX, curveStepAfter, line, type CurveFactory } from "d3-shape";
-import { useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { Choices } from "../../ui/Choices";
 import { usePlotSize } from "../usePlotSize";
+import { datePillColumns, RolledAxisPill } from "../RolledAxisPill";
+import { createChartSpring, type ChartSpringState } from "../motion/chart-spring";
 import { CartesianDatePill, CartesianFocusPoint, CartesianReadout, cartesianPillWidth } from "./CartesianFocus";
 import { loadingOrders } from "./area-fixtures";
 import type { CartesianData } from "./data";
@@ -43,14 +45,18 @@ type Variant = keyof typeof variants;
 type LoadingState = "Pulse" | "Sweep" | "Loaded";
 type Range = [first: number, last: number];
 type Position = { x: number; y: number; value: number };
+type DatePillModel = { columns: readonly [readonly string[], readonly string[]]; monthOf: readonly number[] };
+type PillAxis = ChartSpringState & { start: number };
 type Props = { variant: Variant; label: string; data: CartesianData; compact: boolean; theme: ChartTheme; demo?: boolean };
 const modes = (["Pulse", "Sweep", "Loaded"] as const).map(value => ({ value, label: value }));
 const totals = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
+const callerNumber = new Intl.NumberFormat("en", { maximumSignificantDigits: 15 });
 const day = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
 const red = "var(--chart-negative, #db5875)";
 const rgb = (index: number, fallback: string) => `var(--chart-${index + 1}, ${fallback})`;
 const rounded = (value: number) => Number(value.toFixed(2));
 const stepIndexes = (count: number, step: number) => Array.from({ length: Math.ceil(count / step) }, (_, index) => index * step);
+const datePillSpring = createChartSpring({ stiffness: 3600, damping: 120, mass: 1, restSpeed: 2, restDelta: .5 });
 
 export function isCatalogArea(id: string): id is Variant {
   return Object.hasOwn(variants, id);
@@ -90,16 +96,24 @@ function recordExtents(values: readonly (number | null)[], fallback: number) {
     minimum = Math.min(minimum, value);
     maximum = Math.max(maximum, value);
   }
-  return { minimum, maximum: Math.max(1, fallback, maximum) };
+  const limit = Math.max(fallback, maximum);
+  return { minimum, maximum: limit > minimum ? limit : minimum + 1 };
+}
+
+function numericStep(minimum: number, maximum: number) {
+  const raw = (maximum - minimum) / 4;
+  const magnitude = 10 ** Math.floor(Math.log10(raw));
+  const unit = raw / magnitude;
+  return (unit <= 1 ? 1 : unit <= 2 ? 2 : unit <= 5 ? 5 : 10) * magnitude;
 }
 
 function compactAxis(value: number) {
-  return value >= 1000 ? `${value / 1000}k` : String(value);
+  return value >= 1000 ? `${value / 1000}k` : String(Number(value.toPrecision(12)));
 }
 
 function weekendRanges(data: CartesianData) {
   return data.categories.flatMap((_, index) => {
-    const date = new Date(localTime(data.rows?.[index]?.date));
+    const date = new Date(localTime(data.rows?.[index]?.date ?? data.categories[index]));
     return date.getDay() === 6 ? [[index, Math.min(index + 2, data.categories.length - 1)] as const] : [];
   });
 }
@@ -130,17 +144,95 @@ const stepCurve: CurveFactory = context => {
   };
 };
 
+function AreaDatePill({ model, index, x, y, theme }: {
+  model: DatePillModel; index: number; x: number; y: number; theme: ChartTheme;
+}) {
+  const host = useRef<HTMLDivElement>(null);
+  const axes = useRef<PillAxis[]>([]);
+  const previousModel = useRef<DatePillModel | null>(null);
+  const request = useRef(0);
+  const preference = useRef<MediaQueryList | null>(null);
+
+  function cancel() {
+    cancelAnimationFrame(request.current);
+    request.current = 0;
+  }
+
+  function write(values: readonly number[]) {
+    host.current?.querySelectorAll<HTMLDivElement>(".chart-axis-pill-stack").forEach((stack, column) => {
+      stack.style.transform = `translateY(${values[column] ?? 0}px)`;
+    });
+  }
+
+  function settle() {
+    cancel();
+    axes.current = axes.current.map(axis => ({ start: 0, from: axis.to, to: axis.to, velocity: 0 }));
+    write(axes.current.map(axis => axis.to));
+  }
+
+  function tick(now: number) {
+    request.current = 0;
+    if (!host.current) return;
+    const samples = axes.current.map(axis => datePillSpring.sample(now - axis.start, axis));
+    write(samples.map(sample => sample.value));
+    if (samples.some(sample => !sample.done)) request.current = requestAnimationFrame(tick);
+  }
+
+  useEffect(() => {
+    const query = matchMedia("(prefers-reduced-motion: reduce)");
+    preference.current = query;
+    const update = () => { if (query.matches) settle(); };
+    query.addEventListener("change", update);
+    update();
+    return () => { query.removeEventListener("change", update); preference.current = null; cancel(); };
+  }, []);
+
+  useLayoutEffect(() => {
+    const now = performance.now();
+    const entering = previousModel.current !== model;
+    previousModel.current = model;
+    cancel();
+    if (entering) {
+      axes.current = model.columns.map(() => ({ start: now, from: 0, to: 0, velocity: 0 }));
+      write([0, 0]);
+    }
+    const targets = [-24 * (model.monthOf[index] ?? 0), -24 * index];
+    axes.current = axes.current.map((axis, column) => {
+      const target = targets[column] ?? 0;
+      if (axis.to === target) return axis;
+      const current = datePillSpring.sample(now - axis.start, axis);
+      return { start: now, from: current.value, to: target, velocity: current.velocity };
+    });
+    if (preference.current?.matches ?? matchMedia("(prefers-reduced-motion: reduce)").matches) settle();
+    else request.current = requestAnimationFrame(tick);
+  }, [model, index]);
+
+  useLayoutEffect(() => {
+    const pill = host.current?.querySelector<HTMLElement>(".chart-axis-pill");
+    const ratio = window.devicePixelRatio || 1;
+    if (pill) pill.style.left = `${Math.round(x * ratio) / ratio}px`;
+  }, [x]);
+
+  return <div ref={host} className="catalog-area-date-pill" style={{
+    "--chart-axis-pill-background": `var(--chart-focus-pill, ${theme.text})`,
+    "--chart-axis-pill-foreground": `var(--chart-focus-pill-text, ${theme.surface})`,
+  } as CSSProperties}>
+    <RolledAxisPill columns={model.columns} index={0} x={Math.round(x)} y={y} collapseConstantColumns={false} />
+  </div>;
+}
+
 export function AreaCatalog(props: Props) {
   const { variant, data, compact, demo = true } = props;
   const [state, setState] = useState<LoadingState>(variant === "area-loading" && !compact ? "Pulse" : "Loaded");
   const [active, setActive] = useState<number | null>(null);
   const [activePanel, setActivePanel] = useState(0);
   const multiples = variant === "area-small-multiples";
+  const sharedExtent = multiples && !demo ? recordExtents(data.series.flatMap(item => item.values), 0) : undefined;
   const loading = state !== "Loaded";
   const panels = multiples ? data.series.map(item => ({
     name: item.name,
-    total: totals.format(item.values.reduce<number>((sum, value) => sum + (value ?? 0), 0)),
-    data: { ...data, series: [{ ...item, name: "Signups" }] },
+    total: (demo ? totals : callerNumber).format(item.values.reduce<number>((sum, value) => sum + (value ?? 0), 0)),
+    data: { ...data, series: [{ ...item, name: demo ? "Signups" : item.name }] },
   })) : [];
   return <div className="catalog-area" data-catalog-area={variant} data-area-compact={compact || undefined}>
     {variant === "area-loading" && !compact && <Choices label="Chart state" className="cartesian-choice-group catalog-area-controls"
@@ -149,20 +241,22 @@ export function AreaCatalog(props: Props) {
       {panels.slice(0, compact ? 4 : panels.length).map((panel, index) => <div className="catalog-area-region" key={index}>
         {!compact && <header><span>{panel.name}</span><span>{panel.total}</span></header>}
         <AreaPlot {...props} data={panel.data} label={`${panel.name} weekly signups`} active={active} announce={index === activePanel}
-          setActive={value => { setActivePanel(index); setActive(value); }} loading={state} demo={demo} />
+          setActive={value => { setActivePanel(index); setActive(value); }} loading={state} demo={demo} sharedExtent={sharedExtent} />
       </div>)}
     </div> : <AreaPlot {...props} demo={demo} active={active} announce setActive={setActive} loading={state} />}
     {loading && !compact && <span className="catalog-area-hidden" role="status">Loading orders</span>}
   </div>;
 }
 
-function AreaPlot({ variant, label, data, compact, theme, demo, active, setActive, announce, loading }: Props & {
+function AreaPlot({ variant, label, data, compact, theme, demo, active, setActive, announce, loading, sharedExtent }: Props & {
   active: number | null; setActive: (value: number | null) => void; announce: boolean; loading: LoadingState;
+  sharedExtent?: ReturnType<typeof recordExtents>;
 }) {
   const id = useId();
   const { plot, width, height } = usePlotSize<HTMLDivElement>(728, 364);
   const tip = useRef<HTMLDivElement>(null);
   const [measuredTipWidth, setMeasuredTipWidth] = useState(0);
+  const [tickFadeRadius, setTickFadeRadius] = useState(50);
   const drag = useRef<{ pointer: number; anchor: number } | null>(null);
   const [selection, setSelection] = useState<Range | null>(null);
   const [rangeAnchor, setRangeAnchor] = useState<number | null>(null);
@@ -181,18 +275,31 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   const bottom = Math.max(top + 1, height - Math.min(isMultiple ? 6 : compact ? 18 : 40, height / 3));
   const available = right - left;
   const count = data.categories.length;
-  const times = useMemo(() => data.categories.map((category, index) => localTime(demo ? data.rows?.[index]?.date : category)), [data, demo]);
+  const dateValues = useMemo(() => data.categories.map((category, index) => data.rows?.[index]?.date ?? category), [data]);
+  const times = useMemo(() => dateValues.map(localTime), [dateValues]);
+  const datePillModel = useMemo<DatePillModel | null>(() => {
+    if (isMultiple || variant === "area-custom-labels" || count < 1 || count > 60 || !times.every(Number.isFinite)) return null;
+    const dates = dateValues.map(value => new Date(String(value)));
+    if (dates.some(date => !Number.isFinite(date.valueOf()))) return null;
+    const columns = datePillColumns(dates);
+    const months: string[] = [];
+    const monthOf = (columns[0] ?? []).map(month => {
+      if (months.at(-1) !== month) months.push(month);
+      return months.length - 1;
+    });
+    return { columns: [months, columns[1] ?? []], monthOf };
+  }, [count, dateValues, isMultiple, times, variant]);
   const timeRange = times.every(Number.isFinite) ? (times.at(-1) ?? 0) - (times[0] ?? 0) : 0;
   const xAt = (index: number) => left + (timeRange > 0 ? (times[index] - times[0]) / timeRange : index / Math.max(1, count - 1)) * available;
-  const mainExtent = recordExtents(data.series.filter((_, index) => !dual || index === 0).flatMap(item => item.values), spec.maximum);
-  const conversionExtent = recordExtents(data.series[1]?.values ?? [], 5);
+  const mainExtent = sharedExtent ?? recordExtents(data.series.filter((_, index) => !dual || index === 0).flatMap(item => item.values), demo ? spec.maximum : 0);
+  const conversionExtent = recordExtents(data.series[1]?.values ?? [], demo ? 5 : 0);
   const mainMax = load && demo ? 350 : mainExtent.maximum;
   const yAt = (value: number, index = 0) => {
     const minimum = dual && index === 1 ? conversionExtent.minimum : mainExtent.minimum;
     const maximum = dual && index === 1 ? conversionExtent.maximum : mainMax;
     return bottom - (value - minimum) / (maximum - minimum) * (bottom - top);
   };
-  const grid = guideTicks(mainMax, mainExtent.minimum, load && demo ? 50 : spec.step);
+  const grid = guideTicks(mainMax, mainExtent.minimum, demo ? load ? 50 : spec.step : spec.step ? numericStep(mainExtent.minimum, mainMax) : 0);
   const indices = isMultiple ? [] : xTicks(variant, count, width, Boolean(demo));
   const colors = data.series.map((item, index) => demo && item.color === undefined
     ? rgb(index, theme.colors[index % theme.colors.length]) : colorFor(item, index, theme));
@@ -209,9 +316,32 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   const strokes = points.map(series => strokePath(series) ?? undefined);
   const visible = active !== null && active < count && !load;
   const selected = visible ? active! : 0;
-  const date = String(demo ? data.rows?.[selected]?.date ?? data.categories[selected] : data.categories[selected]);
+  const date = String(dateValues[selected] ?? data.categories[selected]);
   const pill = variant === "area-custom-labels" ? data.categories[selected] : day.format(Number.isFinite(times[selected]) ? times[selected] : 0);
   const labelText = Number.isFinite(times[selected]) || variant === "area-custom-labels" ? pill : data.categories[selected] ?? "";
+  const tickSignature = indices.join(",");
+  useLayoutEffect(() => {
+    const root = plot.current;
+    if (!root || !datePillModel) return;
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    let canceled = false;
+    const measure = () => {
+      if (canceled) return;
+      const family = getComputedStyle(root).fontFamily;
+      context.font = `500 14px ${family}`;
+      const widest = (labels: readonly string[]) => Math.max(0, ...labels.map(label => context.measureText(label).width));
+      const pillWidth = Math.round((32 + widest(datePillModel.columns[0]) + 4 + widest(datePillModel.columns[1])) * 10) / 10;
+      context.font = `400 12px ${family}`;
+      const tickWidth = widest(indices.map(index => data.categories[index] ?? ""));
+      setTickFadeRadius(Math.max(50, Math.ceil((pillWidth + tickWidth) / 2)));
+    };
+    measure();
+    void document.fonts.ready.then(measure);
+    document.fonts.addEventListener("loadingdone", measure);
+    return () => { canceled = true; document.fonts.removeEventListener("loadingdone", measure); };
+  }, [data.categories, datePillModel, tickSignature, theme.fontFamily, plot]);
   const pillWidth = cartesianPillWidth(labelText ?? "");
   const pillX = Math.max(pillWidth / 2, Math.min(width - pillWidth / 2, Math.round(xAt(selected))));
   const tipWidth = measuredTipWidth || Math.min(145, width - 8);
@@ -219,7 +349,7 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   const tipX = Math.max(4, Math.min(width - tipWidth - 4, focusX + tipWidth + 16 > width ? focusX - tipWidth - 16 : focusX + 16));
   const focusEntries = data.series.flatMap((item, index) => {
     const point = points[index][selected];
-    return point ? [{ name: item.name, value: point.value, color: colors[index] }] : [];
+    return point ? [{ name: item.name, value: demo ? point.value : callerNumber.format(point.value), color: colors[index] }] : [];
   });
   useLayoutEffect(() => {
     if (tip.current) setMeasuredTipWidth(tip.current.offsetWidth);
@@ -391,7 +521,7 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
             {spec.showStroke !== false && <path data-catalog-area-highlight="" d={strokes[index]} fill="none" stroke={colors[index]} strokeWidth={strokeWidth}
               opacity={visible ? 1 : 0} strokeLinecap="round" strokeLinejoin="round" clipPath={`url(#${id}-focus)`} />}
           </g>)}
-          {variant === "area-value-labels" && !compact && <AreaValueLabels points={points} colors={colors} left={left} right={right} top={top} bottom={bottom} />}
+          {variant === "area-value-labels" && !compact && <AreaValueLabels points={points} colors={colors} left={left} right={right} top={top} bottom={bottom} demo={Boolean(demo)} />}
         </g>
         {visibleRange && <g>
           <rect data-catalog-area-range="" x={rangeStart + .75} y={top + .75} width={Math.max(0, rangeEnd - rangeStart - 1.5)} height={bottom - top - 1.5}
@@ -400,20 +530,28 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
           {[rangeStart, rangeEnd].map((x, index) => <line key={index} x1={x} x2={x} y1={top} y2={bottom} stroke={theme.muted} strokeOpacity=".5" strokeDasharray="4 4" />)}
         </g>}
         <g fill={theme.muted} fontSize={compact ? 9 : 12}>
-          {indices.filter(index => index >= 0 && index < count).map(index =>
-            <text data-catalog-area-tick="" key={index} x={rounded(xAt(index))} y={bottom + (compact ? 13 : 24)} textAnchor="middle"
-              opacity={visible && Math.abs(xAt(index) - pillX) < pillWidth / 2 + 15 ? 0 : 1}>{data.categories[index]}</text>)}
-          {dual && !compact && guideTicks(conversionExtent.maximum, conversionExtent.minimum, 1).map(value =>
+          {indices.filter(index => index >= 0 && index < count).map(index => {
+            const x = rounded(xAt(index));
+            const distance = visible ? Math.abs(x - Number(focusX.toFixed(1))) : Infinity;
+            const opacity = datePillModel ? visible && data.categories[index] === labelText ? 0
+              : Math.min(1, Math.max(0, (distance - tickFadeRadius) / 20))
+              : visible && Math.abs(xAt(index) - pillX) < pillWidth / 2 + 15 ? 0 : 1;
+            return <text data-catalog-area-tick="" data-catalog-area-date-tick={datePillModel ? "" : undefined} key={index}
+              x={x} y={bottom + (compact ? 13 : 24)} textAnchor="middle" opacity={opacity}>{data.categories[index]}</text>;
+          })}
+          {dual && !compact && guideTicks(conversionExtent.maximum, conversionExtent.minimum, demo ? 1 : numericStep(conversionExtent.minimum, conversionExtent.maximum)).map(value =>
             <text data-catalog-area-axis="" key={value} x={right + 4} y={rounded(yAt(value, 1))} dominantBaseline="middle">{value}%</text>)}
           {(dual || steps) && !compact && grid.map(value =>
             <text data-catalog-area-axis="" key={value} x={left - 4} y={rounded(yAt(value))} textAnchor="end" dominantBaseline="middle">{compactAxis(value)}</text>)}
         </g>
         {visible && <>
           {points.map((series, index) => series[selected] && <CartesianFocusPoint key={index} x={focusX} y={focusY(series[selected], index)} color={colors[index]} />)}
-          {!isMultiple && <CartesianDatePill x={pillX} y={focusBottom + 4} label={labelText ?? ""} text={theme.text} surface={theme.surface} width={pillWidth} />}
+          {!isMultiple && !datePillModel && <CartesianDatePill x={pillX} y={focusBottom + 4} label={labelText ?? ""} text={theme.text} surface={theme.surface} width={pillWidth} />}
         </>}
       </g>
     </svg>
+    {!compact && visible && datePillModel && <AreaDatePill key={`${width}:${height}`} model={datePillModel} index={selected}
+      x={focusX} y={focusBottom + 4} theme={theme} />}
     {!compact && visible && focusEntries.length > 0 && <div className="cartesian-area-detail-panel" ref={tip} role={announce ? "status" : undefined}
       style={{ left: tipX, top }}><CartesianReadout label={lineDateLabel(date)} entries={focusEntries} live={false} /></div>}
     {load && <span className="catalog-area-loading" aria-hidden="true">Loading orders</span>}
@@ -423,8 +561,8 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   </div>;
 }
 
-function AreaValueLabels({ points, colors, left, right, top, bottom }: {
-  points: (Position | null)[][]; colors: string[]; left: number; right: number; top: number; bottom: number;
+function AreaValueLabels({ points, colors, left, right, top, bottom, demo }: {
+  points: (Position | null)[][]; colors: string[]; left: number; right: number; top: number; bottom: number; demo: boolean;
 }) {
   const boxWidth = right - left;
   const occupied: { x: number; y: number; half: number }[] = [];
@@ -436,7 +574,7 @@ function AreaValueLabels({ points, colors, left, right, top, bottom }: {
         .map(index => {
           const point = series[index];
           if (!point) return null;
-          const label = valueFormat.format(point.value);
+          const label = (demo ? valueFormat : callerNumber).format(point.value);
           const half = label.length * 2.7 + 2;
           const x = Math.max(left + half, Math.min(right - half, point.x));
           const choices = [point.y - 12, point.y + 12];
