@@ -1,0 +1,85 @@
+.ranking-detail { inline-size: 100%; min-inline-size: 0; container-type: inline-size; }
+.ranking-body { display: grid; gap: 1rem; min-inline-size: 0; }
+.ranking-plot { position: relative; min-inline-size: 0; }
+.ranking-plot > svg {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.ranking-detail[data-ranking-compact], .ranking-detail[data-ranking-compact] .ranking-body,
+.ranking-detail[data-ranking-compact] .ranking-plot { block-size: 100%; }
+.ranking-controls { display: flex; justify-content: end; }
+.ranking-controls button {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  min-block-size: 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: .5rem;
+  background: transparent;
+  color: var(--muted-foreground);
+  padding: .25rem .625rem;
+  font: inherit;
+  font-size: .8rem;
+}
+.ranking-controls button[aria-pressed="true"] { background: var(--muted); color: var(--foreground); }
+.ranking-controls button > span { inline-size: .5rem; block-size: .5rem; border-radius: 50%; background: currentColor; }
+.ranking-tip { position: absolute; z-index: 1; pointer-events: none; }
+.ranking-tip .cartesian-focus-readout { min-inline-size: 0; padding: 12px; }
+.ranking-tip .cartesian-focus-readout-row { min-block-size: 26px; gap: .5rem; }
+.ranking-footer {
+  display: grid;
+  gap: .5rem;
+  margin-block-start: 1rem;
+  padding: 1rem 0;
+  border-block-start: 1px solid var(--border);
+  background: color-mix(in oklab, var(--muted) 50%, transparent);
+  font-size: .875rem;
+  line-height: 1.1;
+  color: var(--muted-foreground);
+}
+.ranking-footer strong { font-weight: 500; color: var(--foreground); }
+.ranking-legend { display: grid; gap: .5rem; margin-block-start: .75rem; color: var(--foreground); font-size: .875rem; }
+.ranking-legend strong { font-weight: 500; margin-block-end: .5rem; }
+.ranking-legend button {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  border: 0;
+  border-radius: .375rem;
+  min-block-size: 2rem;
+  background: transparent;
+  color: inherit;
+  padding: .375rem .5rem;
+  font: inherit;
+  text-align: start;
+}
+.ranking-legend button:is([aria-pressed="true"], :hover) { background: var(--muted); }
+.ranking-legend i { inline-size: .625rem; block-size: .625rem; border-radius: 50%; flex: none; }
+.ranking-legend button span { margin-inline-start: auto; color: var(--muted-foreground); }
+.ranking-busy {
+  position: absolute;
+  inset: auto 0 5%;
+  font-size: .75rem;
+  color: var(--muted-foreground);
+  text-align: center;
+  pointer-events: none;
+}
+@container (inline-size >= 608px) {
+  .ranking-body[data-ranking-legend] { grid-template-columns: minmax(0, 1fr) 11rem; align-items: center; gap: 1.5rem; }
+  .ranking-legend { margin-block-start: 0; }
+}
+.comparison-measured .ranking-footer { margin-inline: -16px; padding-inline: 16px; }
+@media (prefers-reduced-motion: no-preference) {
+  .ranking-skeleton { animation: ranking-pulse 1.4s ease-in-out infinite alternate; }
+  .ranking-series { transition: opacity 150ms ease-out; }
+  .ranking-detail:not([data-ranking-compact]) .ranking-series [data-rank-line] {
+    stroke-dasharray: 1;
+    animation: ranking-draw .55s ease-out var(--ranking-delay) both;
+  }
+}
+@keyframes ranking-pulse { to { opacity: .5; } }
+@keyframes ranking-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }

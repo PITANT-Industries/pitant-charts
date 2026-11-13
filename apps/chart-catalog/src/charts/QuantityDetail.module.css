@@ -1,0 +1,40 @@
+.frame { --quantity-neutral: color-mix(in oklab, var(--muted-foreground) 35%, var(--background)); display: grid; gap: 16px; width: 100%; min-width: 0; container-type: inline-size; }
+:global([data-theme="dark"]) .frame { --quantity-neutral: color-mix(in oklab, var(--muted-foreground) 80%, var(--background)); }
+.frame[data-compact] { height: 100%; }
+.layout { display: flex; flex-direction: column; align-items: center; gap: 24px; min-width: 0; }
+.stage { position: relative; width: 100%; min-width: 0; }
+.stage[data-square] { max-width: 288px; margin-inline: auto; }
+.stage > svg { display: block; width: 100%; font-family: inherit; }
+.frame[data-compact] .stage, .frame[data-compact] .stage > svg { height: 100%; }
+.stage > svg:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 6px; }
+.controls { display: flex; justify-content: flex-end; }
+.toggle { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding-inline: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--foreground); font: inherit; font-size: .75rem; cursor: pointer; }
+.toggle[aria-pressed='true'] { background: var(--muted); }
+.footer { display: grid; gap: 8px; font-size: .875rem; line-height: 1.25; }
+.footer strong { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.footer span { color: var(--muted-foreground); }
+.legend { display: grid; width: 100%; flex-shrink: 0; gap: 4px; }
+.legend > strong { font-size: .875rem; font-weight: 500; margin-bottom: 2px; }
+.legend button { display: grid; grid-template-columns: 8px 1fr auto; align-items: center; gap: 8px; width: 100%; height: 36px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--foreground); text-align: start; font: inherit; font-size: .875rem; cursor: pointer; }
+.legend button[data-active='true'] { background: var(--muted); }
+.legend i { height: 8px; width: 8px; border-radius: 2px; }
+.legend b { font-weight: 500; }
+.tip { position: absolute; z-index: 1; max-width: min(310px, 90%); pointer-events: none; }
+.tip :global(.cartesian-focus-readout) { min-width: 0; }
+.bone { animation: pulse 2.2s ease-in-out infinite; }
+.reveal { transform-box: fill-box; transform-origin: center; animation: reveal .42s ease-out both; }
+.growColumn { transform-box: fill-box; transform-origin: center bottom; animation: grow-column .42s ease-out both; }
+.sweep { animation: sweep .52s ease-out both; }
+.centerOut { animation: center-out .48s ease-out both; }
+@keyframes grow-column { from { opacity: 0; transform: scaleY(.12); } }
+@keyframes sweep { from { clip-path: inset(0 100% 0 0); opacity: .5; } }
+@keyframes center-out { from { clip-path: inset(0 calc(100% - var(--diverging-zero)) 0 var(--diverging-zero)); opacity: .5; } }
+@keyframes pulse { 0%, 65%, 100% { opacity: .32; } 32% { opacity: 1; } }
+@keyframes reveal { from { opacity: 0; transform: scale(.82); } }
+@container (min-width: 608px) {
+  .layout { flex-direction: row; }
+  .layout .stage[data-square] { margin-inline: 0; flex-shrink: 0; }
+  .legend { width: 192px; }
+  .legend[data-legend='Sessions'] { width: 176px; }
+}
+@media (prefers-reduced-motion: reduce) { .bone, .reveal, .growColumn, .sweep, .centerOut { animation: none; } }

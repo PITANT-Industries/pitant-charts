@@ -1,3 +1,4 @@
+import { ReferenceDiverging, ReferenceStream } from "./ReferenceStreamDiverging";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import type { EChartsOption, EChartsType } from "echarts";
 import { Button } from "@ui-sdk/react/button";
@@ -23,6 +24,7 @@ import { isLineBrushVariant, LineBrushDetail } from "./LineBrushDetail";
 import { GanttDetail } from "./GanttDetail";
 import { schedules, type ScheduleVariant } from "./gantt-detail-data";
 import { ComparisonMarksDetail, isComparisonMarksVariant } from "./ComparisonMarksDetail";
+import { isRankingDetail, RankingDetail } from "./RankingDetail";
 import { DeadlineFills, downloadLineChart, LineLegend, LineLoadToggle, LineSkeleton } from "./LineExtras";
 import { buildGantt, buildStream } from "./comparisons";
 import { buildDiverging, buildDumbbell, buildLollipop, buildRanking, buildWaterfall, divergingColor } from "./comparison-options";
@@ -74,6 +76,9 @@ export default function Cartesian(props: ChartPreviewProps) {
     : resolveData(example, props.data), [streaming, example, props.data]);
   if (!props.data && Object.hasOwn(schedules, example.id)) return <GanttDetail key={example.id} variant={example.id as ScheduleVariant} label={example.title} compact={compact} />;
   if (!props.data && isComparisonMarksVariant(example.id)) return <ComparisonMarksDetail key={example.id} variant={example.id} label={example.title} compact={compact} theme={theme} />;
+  if (!props.data && (example.family === "bump" || example.family === "slope") && isRankingDetail(example.id)) return <RankingDetail key={example.id} example={example} source={source} compact={compact} theme={theme} />;
+  if (!props.data && example.family === "stream") return <ReferenceStream {...props} key={example.id} />;
+  if (!props.data && example.family === "diverging") return <ReferenceDiverging {...props} key={example.id} />;
   if (example.family === "candlestick") return <Candles key={example.id} example={example} data={source} compact={compact} theme={theme} />;
   if (example.family === "live-line") return <LiveLine key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data && !props.liveStream} stream={props.liveStream} />;
   if (example.family === "composed") return <ComposedDetail key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;

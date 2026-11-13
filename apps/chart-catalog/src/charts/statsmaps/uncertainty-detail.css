@@ -1,0 +1,50 @@
+.uncertainty-detail { inline-size: 100%; min-inline-size: 0; }
+.uncertainty-plot { position: relative; min-inline-size: 0; }
+.uncertainty-plot > svg {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.uncertainty-detail[data-uncertainty-compact], .uncertainty-detail[data-uncertainty-compact] .uncertainty-plot { block-size: 100%; }
+.uncertainty-controls { display: flex; justify-content: end; }
+.uncertainty-controls button {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  min-block-size: 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: .5rem;
+  background: transparent;
+  color: var(--muted-foreground);
+  padding: .25rem .625rem;
+  font: inherit;
+  font-size: .8rem;
+}
+.uncertainty-controls button[aria-pressed="true"] { background: var(--muted); color: var(--foreground); }
+.uncertainty-controls button > span { inline-size: .5rem; block-size: .5rem; border-radius: 50%; background: currentColor; }
+.uncertainty-footer {
+  display: grid;
+  gap: .5rem;
+  margin-block-start: 1rem;
+  padding: 1rem 0;
+  border-block-start: 1px solid var(--border);
+  background: color-mix(in oklab, var(--muted) 50%, transparent);
+  font-size: .875rem;
+  line-height: 1.1;
+  color: var(--muted-foreground);
+}
+.comparison-measured .uncertainty-footer { margin-inline: -16px; padding-inline: 16px; }
+.uncertainty-footer strong { font-weight: 500; color: var(--foreground); }
+.uncertainty-tip { position: absolute; z-index: 1; pointer-events: none; }
+.uncertainty-tip .cartesian-focus-readout { min-inline-size: 0; padding: 12px; }
+.uncertainty-tip .cartesian-focus-readout-row { min-block-size: 26px; gap: .5rem; }
+@media (prefers-reduced-motion: no-preference) {
+  .uncertainty-skeleton { animation: uncertainty-pulse 1.4s ease-in-out infinite alternate; }
+  [data-uncertainty-interval] { transition: opacity .15s ease; }
+  .uncertainty-reveal { animation: uncertainty-grow .45s ease-out var(--uncertainty-delay) both; }
+}
+@keyframes uncertainty-pulse { to { opacity: .5; } }
+@keyframes uncertainty-grow { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); } }
