@@ -11,6 +11,8 @@ const dashboard = JSON.parse(
 assert.equal(catalog.name, '@pitant/chart-catalog')
 assert.equal(catalog.private, true, 'The chart catalog workspace must be private')
 assert.equal(catalog.version, dashboard.version, 'Match the PITANT dashboard chart version')
+assert.equal(catalog.license, 'MPL-2.0')
+assert.equal(dashboard.license, catalog.license)
 
 if (process.argv.includes('--pack')) {
   const output = execFileSync('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], {
@@ -24,13 +26,13 @@ if (process.argv.includes('--pack')) {
     catalog.exports['.'].import,
     catalog.exports['./styles.css'],
   ]
-  for (const path of [...exports, 'THIRD_PARTY_NOTICES.md']) {
+  for (const path of [...exports, 'LICENSE', 'SOURCE.md', 'src/index.ts', 'THIRD_PARTY_NOTICES.md']) {
     assert(files.has(path.replace(/^\.\//, '')), `Missing from catalog package: ${path}`)
   }
   assert([...files].some((path) => path.startsWith('licenses/')), 'Missing catalog licenses')
   assert(
-    [...files].every((path) => !/^(dist|src|\.openai)\//.test(path)),
-    'Unexpected app source or site build in the catalog package',
+    [...files].every((path) => !/^(dist|\.openai)\//.test(path)),
+    'Unexpected site build in the catalog package',
   )
 }
 

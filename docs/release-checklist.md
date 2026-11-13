@@ -1,71 +1,43 @@
-# Release Checklist
+# Release checklist
 
-This checklist is the repeatable v1 release gate for `@pitant/charts`,
-`@pitant/charts-react`, and the shadcn registry blocks.
+The dashboard package and catalog workspace share a version. The industrial core and React bindings use a separate version and publish together. [Workflow and deployment details](ci-cd.md)
 
-## Preconditions
+## Dashboard and catalog
 
-- `CHANGELOG.md` has an entry for the release version.
-- `packages/charts/package.json` and `packages/charts-react/package.json` use
-  the intended SemVer version.
-- `bun.lock` is current and the worktree has no unrelated release changes.
-- `NPM_TOKEN` is configured in GitHub Actions for provenance publishing.
+1. Update `packages/charts-ui/package.json` and `apps/chart-catalog/package.json` together when releasing this pair. Refresh `bun.lock` with the repository’s Bun version.
+2. Build and check both archives from the workspace root.
 
-## Local Gate
+   ```sh
+   bun install --frozen-lockfile
+   bun run --filter pitant-charts check
+   bun run --filter pitant-charts palette:check
+   (cd packages/charts-ui && bun pm pack --quiet && bun scripts/check-package.ts pitant-charts-*.tgz)
+   bun run --filter @pitant/chart-catalog test
+   bun run catalog:build
+   node apps/chart-catalog/scripts/check-workspace.mjs --pack
+   npm pack --ignore-scripts ./apps/chart-catalog
+   ```
 
-Run from a clean checkout:
+3. Install the relevant archive in a React app and exercise the affected charts and styles. Confirm the archive includes its MPL license, corresponding source, and third-party notices where applicable.
+4. For a gallery update, use the verified build and exact `main` commit with the private Sites workflow. [Gallery delivery](ci-cd.md#deliver-the-chart-catalog)
 
-```bash
-bun install --frozen-lockfile
-bun run release:check
-bun run registry:smoke
-```
+## Industrial npm release
 
-The release is blocked if any test, benchmark, docs build, registry check,
-bundle-size gate, or package dry-run fails.
+1. Update the root and package changelogs and set the same SemVer version in `packages/charts/package.json` and `packages/charts-react/package.json`.
+2. Run the release checks from a clean checkout.
 
-Local `release:check` uses the strict benchmark profile and owns the
-performance claim. GitHub Actions may set `PITANT_BENCH_PROFILE=ci` for
-hosted-runner variance; that profile cannot update baselines and only relaxes
-bounded latency scenarios that are known to be scheduler-sensitive.
+   ```sh
+   bun install --frozen-lockfile
+   bun run release:check
+   bun run registry:smoke
+   ```
 
-`registry:smoke` is intentionally not part of the default PR `release:check`
-script because it downloads and runs the external shadcn CLI, initializes a
-fresh Vite consumer, and packs local tarballs. It is mandatory for maintainer
-release dry-runs and publish runs, and optional for ordinary feature PRs unless
-registry files or package metadata changed.
+3. Run **Publish industrial packages** in GitHub Actions with `dry_run=true`. Check the release gate, registry smoke, and both npm dry runs. GitHub uses its CI benchmark profile. Local `release:check` defaults to strict targets.
+4. Confirm the intended commit and create the matching `industrial-v<version>` tag, such as `industrial-v1.0.0`. A published GitHub Release with that tag triggers publication. For manual publication, run the workflow on the matching tag with `dry_run=false`. The publishing step uses the repository’s `NPM_TOKEN` secret.
+5. Check both exact versions on npm and confirm their provenance. Install both into a fresh React app and verify a `TimeSeries`, a `DigitalChannel`, one shadcn registry block, and PNG and SVG exports. The registry smoke task validates the local archive install path.
 
-## Publish Gate
+## Recover from a failed release
 
-1. Create or update the GitHub release notes from `CHANGELOG.md`.
-2. Commit and push the release candidate so `.github/workflows/publish.yml`
-   exists on the target branch.
-3. Trigger `.github/workflows/publish.yml` with `dry_run=true`.
-4. Confirm both packages pass `npm publish --dry-run`.
-5. Publish a GitHub release or rerun the workflow with `dry_run=false`.
-6. Confirm npm provenance is visible for both published packages.
-
-## Post-Publish Smoke
-
-Run the registry smoke test after packages are visible:
-
-```bash
-bun run registry:smoke
-```
-
-Then install the packages into a fresh Vite app and render:
-
-- one `TimeSeries` chart,
-- one `DigitalChannel` chart,
-- one shadcn registry block,
-- one PNG export,
-- one SVG export.
-
-## Rollback
-
-- If npm publish fails before either package is published, fix and rerun.
-- If only one package is published, publish the missing package at the same
-  version before making downstream registry claims.
-- If a broken version reaches npm, deprecate it with a clear message and ship a
-  patch version; do not unpublish unless the package contains secrets or
-  legally restricted content.
+- For a private gallery issue, redeploy a previously verified version of the same Site and confirm its source commit.
+- If npm fails before either package publishes, fix the error and repeat the release workflow. If one package is already available, inspect npm for both exact versions and publish the missing package from the same verified commit and tag using npm provenance. Confirm both before announcing the release.
+- If a broken package version reaches npm, deprecate it with a clear message and publish a patch.

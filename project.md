@@ -3,7 +3,7 @@
 **Status:** Draft  
 **Date:** 2026-04-05  
 **Author:** Ali  
-**Type:** New npm library (open-source, MIT)  
+**Type:** New npm library (open-source, MPL-2.0)<br>
 **Replaces:** Apache ECharts 6 + echarts-for-react + Plotly.js + SciChart  
 **Dependency on replaced libs:** None — this is a ground-up implementation with zero runtime dependency on ECharts, SciChart, Plotly, or any third-party charting library.  
 
@@ -437,14 +437,14 @@ Themes apply globally via `ChartProvider` (React) or `setDefaultTheme()` (vanill
 | Phase-space plot | Yes | No | No | No | No | No |
 | Arrow IPC input | Yes | No | No | No | No | No |
 | Bundle size (gzip) | ~120 KB | ~300 KB | ~400 KB | ~35 KB | ~1 MB | ~500 KB |
-| License | MIT | Apache 2.0 | Commercial | MIT | MIT | Commercial |
+| License | MPL-2.0 | Apache 2.0 | Commercial | MIT | MIT | Commercial |
 | React 19 bindings | Yes | Community | Community | Community | Official | Official |
 | Sync cursors | Native | Manual | Native | Plugin | No | No |
 | Streaming append | O(1) | O(N) rebuild | O(1) | O(1) | O(N) | O(1) |
 | TypeScript strict | Yes | Partial | Yes | Partial | Partial | Yes |
 | shadcn-native / CSS var theming | Yes | No | No | No | No | No |
 | Headless composable primitives | Yes | No | No | No | No | No |
-| Open source | Yes (MIT) | Yes | No | Yes | Yes | No |
+| Open source | Yes (MPL-2.0) | Yes | No | Yes | Yes | No |
 
 ---
 

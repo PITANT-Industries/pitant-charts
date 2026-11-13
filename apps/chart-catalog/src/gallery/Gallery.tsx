@@ -392,6 +392,10 @@ export function Gallery() {
             )}
             {pages > 1 && <nav className="pagination" aria-label="Catalog pages"><Button className="text-button" disabled={currentPage <= 1} onClick={() => setResultPage(currentPage - 1)}><ArrowLeft size={15} aria-hidden="true" /> Previous</Button><span>Page {currentPage} of {pages}</span><Button className="text-button" disabled={currentPage >= pages} onClick={() => setResultPage(currentPage + 1)}>Next <ArrowRight size={15} aria-hidden="true" /></Button></nav>}
           </section>
+          <footer className="catalog-footer">
+            <a href={import.meta.env.PROD ? './chart-catalog-source.tgz' : 'https://github.com/PITANT-Industries/pitant-charts/tree/main/apps/chart-catalog'}>Source code</a>
+            <a href={import.meta.env.PROD ? './LICENSE' : 'https://www.mozilla.org/en-US/MPL/2.0/'}>MPL-2.0 license</a>
+          </footer>
         </main>
       </div>
       {detail && <ExampleDetail example={detail} theme={theme} tab={link.tab} onTab={showTab} saved={savedIds.has(detail.id)} onSave={() => toggleSaved(detail.id)} onClose={() => showExample('')} onExample={showExample} />}

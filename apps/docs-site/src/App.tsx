@@ -163,7 +163,13 @@ export function App(): JSX.Element {
           <h3>First Run</h3>
           <ol>
             <li>
-              Install <code>@pitant/charts</code> and <code>@pitant/charts-react</code>.
+              Build the industrial packages from the repository and install the{' '}
+              <code>@pitant/charts</code> and <code>@pitant/charts-react</code> archives together.
+              See the{' '}
+              <a href="https://github.com/PITANT-Industries/pitant-charts/blob/main/docs/quick-start.md">
+                industrial quick start
+              </a>
+              .
             </li>
             <li>
               Import <code>@pitant/charts/styles/tokens.css</code> once in the app shell.

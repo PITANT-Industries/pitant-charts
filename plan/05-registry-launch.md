@@ -1,5 +1,7 @@
 # Phase 5 — Registry, Documentation & Launch
 
+This is the original release plan. See the [licensing guide](../docs/licensing.md) for current package terms.
+
 **Weeks:** 21–24  
 **Epics:** 5 (E5.1 – E5.5)  
 **Story Points:** 47  

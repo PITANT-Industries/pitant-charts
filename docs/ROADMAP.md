@@ -1,5 +1,9 @@
 # @pitant/charts Roadmap
 
+This roadmap covers the industrial core and its React bindings. See the
+[package guide](getting-started.md) for dashboard and catalog use, and
+[catalog parity](../apps/chart-catalog/PARITY.md) for the chart gallery.
+
 **Status:** Phase 5 release candidate closed; GitHub publish dry-run passed; Phase 6 planned
 **Last updated:** 2026-08-08
 **Imported source:** `/Users/ali/Pchart`

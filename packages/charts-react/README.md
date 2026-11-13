@@ -11,8 +11,10 @@ render harnesses that own the canvas lifecycle.
 ## Install
 
 ```sh
-bun add @pitant/charts @pitant/charts-react
+bun add /path/to/pitant-charts/pitant-charts-1.0.0.tgz /path/to/pitant-charts/pitant-charts-react-1.0.0.tgz
 ```
+
+Build and pack both archives from the same repository checkout. [Source installation](../../docs/getting-started.md#install-from-source)
 
 Import PITANT chart tokens once in the app shell:
 
@@ -202,3 +204,7 @@ installs every block, typechecks, and bundles the consumer.
   genealogy that belongs to alarm, batch, audit, or compliance repos.
 - The export must be a signed regulator record. Use future compliance/evidence
   handoff surfaces for that path.
+
+## License
+
+PITANT-owned code is available under MPL-2.0. [License](LICENSE) · [Source access](SOURCE.md)

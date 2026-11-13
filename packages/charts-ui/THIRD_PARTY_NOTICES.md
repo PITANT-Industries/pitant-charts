@@ -1,6 +1,6 @@
 # Third-party notices
 
-The root MIT license covers the original PITANT Charts code. The following works retain their upstream notices and terms.
+The [package MPL-2.0 license](LICENSE) applies to PITANT-owned dashboard chart code. The following works retain their upstream notices and terms.
 
 | Work | Use in this release | License |
 | --- | --- | --- |
@@ -9,4 +9,4 @@ The root MIT license covers the original PITANT Charts code. The following works
 | [Recharts](https://github.com/recharts/recharts) | External runtime dependency. Draws axes, lines, bars and radial sectors. | [MIT](licenses/Recharts-MIT.txt) |
 | [React and React DOM](https://github.com/facebook/react) | External peer dependencies supplied by the consuming app. | [MIT](licenses/React-MIT.txt) |
 
-The standalone tarball contains compiled library code, styles, TypeScript declarations and notices. React, React DOM and Recharts are resolved by the consumer's package manager and keep their own notices. The full chart gallery, its reference examples, and its fonts and chart engines live outside this release. The optional stylesheet uses shadcn-compatible CSS custom property names. It contains no shadcn registry source.
+The standalone tarball contains compiled library code, styles, TypeScript declarations, source, and notices. React, React DOM and Recharts are resolved by the consumer's package manager and keep their own notices. The full chart gallery, its reference examples, and its fonts and chart engines live outside this release. The optional stylesheet uses shadcn-compatible CSS custom property names. It contains no shadcn registry source.

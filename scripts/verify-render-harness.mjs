@@ -195,48 +195,70 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
     tab,
     `document.readyState === "complete" &&
       window.__PITANT_RENDER_HARNESS_STATE__?.renderer === ${JSON.stringify(renderer)} &&
-      window.__PITANT_RENDER_HARNESS_STATE__?.profile === ${JSON.stringify(profile)} &&
-      document.querySelectorAll(".chart-surface").length === ${JSON.stringify(expectedSurfaces)}`,
+      window.__PITANT_RENDER_HARNESS_STATE__?.profile === ${JSON.stringify(profile)}`,
     20_000,
   )
   await sleep(900)
 
-  const state = await evaluate(tab, 'window.__PITANT_RENDER_HARNESS_STATE__')
-  const stateErrors = validateProfileState(state, profile)
-  const rects = await evaluate(
+  const { state, rects } = await waitForExpression(
     tab,
-    `Array.from(document.querySelectorAll(".chart-surface")).map((element) => {
-      const rect = element.getBoundingClientRect()
-      return {
-        x: rect.x,
-        y: rect.y,
-        width: rect.width,
-        height: rect.height,
-        className: element.className
+    `(() => {
+      const state = window.__PITANT_RENDER_HARNESS_STATE__
+      const surfaces = [...document.querySelectorAll(".chart-surface")]
+      if (document.readyState !== "complete" ||
+          state?.renderer !== ${JSON.stringify(renderer)} ||
+          state?.profile !== ${JSON.stringify(profile)} ||
+          surfaces.length !== ${expectedSurfaces}) return null
+      if (window.scrollX || window.scrollY) {
+        window.scrollTo(0, 0)
+        return null
       }
-    })`,
+      const rects = surfaces.map((element) => {
+        const { x, y, width, height } = element.getBoundingClientRect()
+        return { x, y, width, height, className: element.className }
+      })
+      return { state, rects }
+    })()`,
+    20_000,
   )
-  const screenshot = await tab.send('Page.captureScreenshot', {
-    format: 'png',
-    fromSurface: true,
-    captureBeyondViewport: false,
-  })
-  const image = parsePng(Buffer.from(screenshot.data, 'base64'))
-  const charts = rects.map((rect, index) => {
-    const chartRect = insetChartRect(rect)
-    const visual = summarizeVisualRegion(image, chartRect)
-    return {
+  const stateErrors = validateProfileState(state, profile)
+  const image = await captureViewport(tab)
+  const charts = []
+  for (const [index, rect] of rects.entries()) {
+    let chartRect = insetChartRect(rect)
+    let chartImage = image
+    if (chartRect.y + chartRect.height > image.height) {
+      const visibleRect = await evaluate(
+        tab,
+        `new Promise((resolve) => {
+          const chart = document.querySelectorAll(".chart-surface")[${index}]
+          chart.scrollIntoView({ block: "center", behavior: "instant" })
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            const { x, y, width, height } = chart.getBoundingClientRect()
+            resolve({ x, y, width, height })
+          }))
+        })`,
+      )
+      chartRect = insetChartRect(visibleRect)
+      chartImage = await captureViewport(tab)
+    }
+    if (chartRect.y < 0 || chartRect.y + chartRect.height > chartImage.height) {
+      throw new Error(`Chart ${index + 1} in ${profile} is outside the screenshot.`)
+    }
+    const visual = summarizeVisualRegion(chartImage, chartRect)
+    charts.push({
       name: chartNameFromClassName(rect.className, index),
       rect: chartRect,
       significantPixels: visual.significantPixels,
       visual,
-    }
-  })
+    })
+  }
   const pixelChecks = charts.map((chart) => chart.significantPixels)
   const visualComparison =
     options.visual && options.baseline
       ? compareVisualResult({ renderer, profile, charts }, options.baseline)
       : null
+  if (options.fps) await evaluate(tab, 'window.scrollTo(0, 0)')
   const fpsBenchmark = options.fps ? await runFpsBenchmark(tab, renderer, profile) : null
   const failed =
     stateErrors.length > 0 ||
@@ -255,6 +277,15 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
     fpsBenchmark,
     failed,
   }
+}
+
+async function captureViewport(tab) {
+  const screenshot = await tab.send('Page.captureScreenshot', {
+    format: 'png',
+    fromSurface: true,
+    captureBeyondViewport: false,
+  })
+  return parsePng(Buffer.from(screenshot.data, 'base64'))
 }
 
 function validateProfileState(state, profile) {
@@ -831,7 +862,8 @@ async function evaluate(tab, expression) {
 async function waitForExpression(tab, expression, timeoutMs) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
-    if (await evaluate(tab, expression)) return
+    const result = await evaluate(tab, expression)
+    if (result) return result
     await sleep(100)
   }
   throw new Error(`Timed out waiting for browser expression: ${expression}`)

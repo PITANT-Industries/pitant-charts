@@ -5,17 +5,23 @@ on:
     branches: [main]
     paths:
       - 'apps/chart-catalog/**'
+      - 'LICENSE'
       - 'packages/charts-ui/package.json'
       - 'package.json'
+      - 'bunfig.toml'
       - 'bun.lock'
+      - '.openai/hosting.json'
       - '.github/workflows/chart-catalog.yml'
   pull_request:
     branches: [main]
     paths:
       - 'apps/chart-catalog/**'
+      - 'LICENSE'
       - 'packages/charts-ui/package.json'
       - 'package.json'
+      - 'bunfig.toml'
       - 'bun.lock'
+      - '.openai/hosting.json'
       - '.github/workflows/chart-catalog.yml'
 
 permissions:
@@ -30,8 +36,6 @@ jobs:
         with:
           node-version: '22'
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version: 1.4.4
       - run: bun install --frozen-lockfile
       - working-directory: apps/chart-catalog
         run: |
@@ -39,3 +43,17 @@ jobs:
           bun run test
           bun run build
           node scripts/check-workspace.mjs --pack
+      - name: Build gallery deployment files
+        run: |
+          bun run catalog:site
+          test -f dist/index.html
+          cmp LICENSE dist/LICENSE
+          test -f dist/THIRD_PARTY_NOTICES.md
+          test -f dist/licenses/dependencies/echarts-6.1.0-NOTICE
+          tar -xOzf dist/chart-catalog-source.tgz src/index.ts | cmp apps/chart-catalog/src/index.ts -
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          name: chart-catalog-site-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error

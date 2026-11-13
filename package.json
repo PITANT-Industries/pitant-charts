@@ -1,6 +1,8 @@
 {
   "name": "@pitant/charts-monorepo",
   "private": true,
+  "license": "MPL-2.0",
+  "packageManager": "bun@1.4.4",
   "workspaces": [
     "packages/*",
     "apps/*"

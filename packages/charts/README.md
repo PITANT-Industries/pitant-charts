@@ -11,8 +11,10 @@ owns canvas mounting, resize, accessibility, and interaction state.
 ## Install
 
 ```sh
-bun add @pitant/charts
+bun add /path/to/pitant-charts/pitant-charts-1.0.0.tgz
 ```
+
+Build and pack the archive from the repository checkout. [Source installation](../../docs/getting-started.md#install-from-source)
 
 Import tokens once when the app uses PITANT chart CSS variables:
 
@@ -151,3 +153,7 @@ const svg = commandFrameToSvg(frame, {
   Those are future PITANT compliance surfaces.
 - The data crosses tenant, site, or evidence boundaries without upstream scope
   checks.
+
+## License
+
+PITANT-owned code is available under MPL-2.0. [License](LICENSE) · [Source access](SOURCE.md)

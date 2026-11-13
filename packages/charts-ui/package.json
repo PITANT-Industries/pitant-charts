@@ -2,7 +2,7 @@
   "name": "pitant-charts",
   "version": "0.7.0",
   "description": "Typed line, bar, donut, and sunburst charts for React with a Warpdrive Day and Night theme",
-  "license": "MIT",
+  "license": "MPL-2.0",
   "packageManager": "bun@1.4.4",
   "repository": {
     "type": "git",
@@ -25,6 +25,13 @@
     "**/*.css"
   ],
   "files": [
+    "src",
+    "tsconfig.json",
+    "SOURCE.md",
+    "tsconfig.library.json",
+    "vite.library.config.ts",
+    "LICENSE-MIT",
+    "LICENSE",
     "dist-library",
     "licenses",
     "THIRD_PARTY_NOTICES.md",
