@@ -1,0 +1,15 @@
+.cartesian-advanced {
+  position: relative;
+  inline-size: 100%;
+  block-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 0;
+}
+.cartesian-advanced > svg { display: block; inline-size: 100%; block-size: 100%; touch-action: pan-y; }
+.cartesian-advanced-grid { mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
+.cartesian-advanced-readout { position: absolute; z-index: 1; inline-size: max-content; pointer-events: none; }
+.cartesian-advanced-readout > .cartesian-focus-readout {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+.cartesian-advanced-readout .cartesian-focus-readout-values { margin-block-start: 0; }

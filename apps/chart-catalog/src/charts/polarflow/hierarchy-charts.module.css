@@ -1,0 +1,43 @@
+.plot:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.plot text { pointer-events: none; font-family: inherit; }
+.plot [data-mark] { transition: opacity .16s ease; }
+.mark { cursor: pointer; }
+.tip { align-self: center; display: grid; grid-template-columns: auto minmax(0,auto); gap: .18rem .65rem; border: 1px solid var(--border); border-radius: .55rem; background: var(--popover); color: var(--popover-foreground); padding: .4rem .6rem; font-size: .72rem; pointer-events: none; }
+.tip strong { grid-column: 1 / -1; }
+.tip span { color: var(--muted-foreground); }
+.floating { position: absolute; z-index: 1; inset: .25rem .35rem auto auto; max-inline-size: 65%; }
+.wide { margin-inline: auto; width: min(100%,45rem); }
+.sideBySide { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; min-height: 0; flex: 1; }
+.sideLegend { display: flex; flex-direction: column; align-items: flex-start; padding-inline: .25rem; }
+.sideLegend > div { justify-content: flex-start; align-items: stretch; flex-direction: column; gap: .15rem; }
+.sideLegend p { margin: 0 .35rem .15rem; font-size: .7rem; color: var(--muted-foreground); }
+.wrap { container-type: inline-size; }
+@container (width < 325px) {
+  .sideBySide { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr) auto; }
+  .sideLegend > div { flex-direction: row; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bone { animation: skeletonPulse 1.4s ease-in-out infinite alternate; }
+  .reveal { animation: revealMark .35s both; transform-box: fill-box; transform-origin: center; }
+  .grow { animation: growMark .4s both; transform-box: fill-box; transform-origin: center bottom; }
+  @keyframes skeletonPulse { from { opacity: .45; } to { opacity: 1; } }
+  @keyframes revealMark { from { opacity: 0; transform: scale(.74); } to { opacity: 1; transform: scale(1); } }
+  @keyframes growMark { from { opacity: 0; transform: scaleY(.18); } to { opacity: 1; transform: scaleY(1); } }
+}
+@media (prefers-reduced-motion: reduce) { .plot [data-mark] { transition: none; } }
+.drag { cursor: grab; touch-action: none; }
+.drag:active { cursor: grabbing; }
+@media (prefers-reduced-motion: no-preference) {
+  .draw { animation: drawLink .45s both; stroke-dasharray: 1; }
+  @keyframes drawLink { from { stroke-dashoffset: 1; opacity: 0; } to { stroke-dashoffset: 0; opacity: .62; } }
+}
+.plot [data-mark='tree-node'] text { pointer-events: auto; }
+
+.measuredGraph {
+  flex-basis: var(--comparison-plot-height, 0);
+  block-size: var(--comparison-plot-height, auto);
+}
+:global(.comparison-measured) .measuredRadial {
+  inline-size: min(100%, 448px);
+  align-self: center;
+}

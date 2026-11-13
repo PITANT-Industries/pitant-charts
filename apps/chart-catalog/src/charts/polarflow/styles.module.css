@@ -1,0 +1,92 @@
+.frame {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  position: relative;
+  font-variant-numeric: tabular-nums;
+}
+.fixedGauges { display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 16px; min-height: 100%; }
+.fixedGauges svg { flex: none; }
+.gaugeSummary { display: flex; justify-content: center; gap: 1.5rem; text-align: center; margin: .3rem 0 .5rem; }
+.gaugeSummary dt { color: var(--muted-foreground); font-size: .72rem; }
+.gaugeSummary dd { margin: .15rem 0 0; font-size: .9rem; font-weight: 650; }
+.graph { min-height: 0; flex: 1 1 0; position: relative; }
+.native { display: block; height: 100%; width: 100%; min-height: 0; flex: 1 1 0; }
+.native text { font-family: inherit; }
+.native [tabindex="0"] { outline-offset: 2px; }
+.native [tabindex="0"]:focus-visible { outline: 2px solid var(--chart-1); }
+.native:focus-visible { outline: 2px solid var(--chart-1); outline-offset: -2px; border-radius: .35rem; }
+.screenReader { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.controls { display: flex; flex-wrap: wrap; gap: .35rem; justify-content: center; padding: .25rem; }
+.control {
+  border: 1px solid var(--border);
+  border-radius: .35rem;
+  background: var(--background);
+  padding: .25rem .5rem;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: .72rem;
+  cursor: pointer;
+  align-self: center;
+}
+.control:hover, .control[aria-pressed="true"] { color: var(--foreground); background: var(--muted, var(--border)); }
+.legend { display: flex; flex-wrap: wrap; gap: .25rem .5rem; align-items: center; justify-content: center; padding: .25rem 0; }
+.legendItem {
+  display: inline-flex;
+  gap: .35rem;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: .35rem;
+  background: transparent;
+  padding: .15rem .35rem;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: .72rem;
+  cursor: pointer;
+}
+.legendItem strong { color: var(--foreground); }
+.legendItem[data-active="true"] { border-color: var(--border); background: var(--muted, var(--border)); }
+.legendItem i { width: .45rem; height: .45rem; border-radius: 50%; }
+.legendItem meter { width: 2rem; height: .4rem; }
+.center {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  translate: -50% -50%;
+  text-align: center;
+  line-height: 1.13;
+  pointer-events: none;
+}
+.center strong { display: block; color: var(--foreground); font-size: clamp(.9rem, 2vw, 1.65rem); }
+.center span { display: block; color: var(--muted-foreground); font-size: clamp(.58rem, 1vw, .75rem); }
+.customCenter { display: grid; align-content: center; justify-items: center; width: 100%; height: 100%; color: var(--foreground); font-size: 11px; line-height: 1.2; text-align: center; }
+.clockCursor { transform-origin: 210px 120px; transform: rotate(var(--clock-rotation)); transition: transform 250ms cubic-bezier(.2,.92,.4,1.12); pointer-events: none; }
+.clockSweep { animation: clock-sweep 650ms ease-out both; }
+@keyframes clock-sweep { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.hint { text-align: center; color: var(--muted-foreground); font-size: .75rem; min-height: 1.45em; margin: .15rem 0; }
+.hint strong { color: var(--foreground); }
+.loading { animation: loading 1.6s ease-in-out infinite alternate; }
+@keyframes loading { to { opacity: .42; } }
+@media (prefers-reduced-motion: reduce) { .loading { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .clockCursor { transition: none; } .clockSweep { animation: none; } }
+.panel {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  min-width: 6rem;
+  max-width: calc(100% - 1.5rem);
+  border: 1px solid var(--border);
+  border-radius: .55rem;
+  background: var(--background);
+  box-shadow: 0 .4rem 1.2rem #0002;
+  color: var(--foreground);
+  padding: .4rem .55rem;
+  font-size: .72rem;
+}
+.panel[data-pinned="true"] { pointer-events: auto; }
+.panel p { margin: .15rem 0; }
+.panel p[data-row] { display: flex; justify-content: space-between; gap: .65rem; }
+.panel i { display: inline-block; width: .42rem; height: .42rem; border-radius: 50%; margin-inline-end: .25rem; }
+.panel button { float: right; padding: 0 .3rem; margin-left: .3rem; }

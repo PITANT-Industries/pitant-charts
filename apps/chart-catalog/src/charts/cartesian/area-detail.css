@@ -1,0 +1,54 @@
+.cartesian-area-detail {
+  --area-reference-color: color-mix(in oklab, var(--muted-foreground) 35%, var(--background));
+  position: relative;
+  inline-size: 100%;
+  block-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 0;
+}
+[data-theme='dark'] .cartesian-area-detail {
+  --area-reference-color: color-mix(in oklab, var(--muted-foreground) 80%, var(--background));
+}
+.cartesian-area-detail > svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  touch-action: pan-y;
+}
+.cartesian-area-detail-fade {
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+.cartesian-area-detail-panel {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  inline-size: max-content;
+  max-inline-size: calc(100% - 8px);
+}
+.cartesian-area-detail-panel > .cartesian-focus-readout {
+  min-inline-size: min(140px, 100%);
+  max-inline-size: 100%;
+}
+.cartesian-area-detail-panel .cartesian-focus-readout-title {
+  line-height: 16px;
+  margin-block-end: 8px;
+}
+.cartesian-area-detail-panel .cartesian-focus-readout-row:last-child { min-height: 20px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .cartesian-area-detail-reveal { animation: area-detail-reveal 1.1s cubic-bezier(.85, 0, .15, 1) both; }
+  .cartesian-area-detail-marker-reveal { animation: area-detail-marker-reveal .5s cubic-bezier(.85, 0, .15, 1) both; }
+  .cartesian-area-detail :is([data-area-fill], [data-area-actual], [data-area-projection], [data-area-forecast-marker]) {
+    transition: opacity 120ms ease-out;
+  }
+  .cartesian-area-detail-panel { transition: left 120ms ease-out; }
+}
+
+@keyframes area-detail-reveal {
+  from { clip-path: inset(0 calc(100% - var(--area-plot-inset)) 0 0) view-box; }
+  to { clip-path: inset(0 0 0 0) view-box; }
+}
+@keyframes area-detail-marker-reveal {
+  from { opacity: 0; filter: blur(2px); }
+  to { opacity: 1; filter: none; }
+}

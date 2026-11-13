@@ -16,6 +16,8 @@ the cross-repo binding surface.
 
 The [`pitant-charts` package](packages/charts-ui/README.md) provides typed React line, bar, donut, and sunburst components for application dashboards. It includes an optional Warpdrive Day and Night theme and shares the same CSS series tokens as the industrial engine.
 
+The [chart catalog](apps/chart-catalog/README.md) contains 331 browsable examples and tracks their parity with the shadcn.io React reference. Run `bun run catalog:dev` after installing the workspace dependencies.
+
 ## Industrial charts
 
 - **WebGPU primary renderer** with Canvas2D fallback
@@ -30,6 +32,7 @@ The [`pitant-charts` package](packages/charts-ui/README.md) provides typed React
 | `@pitant/charts` | Core library - renderers, data engine, view transform |
 | `@pitant/charts-react` | React 19 bindings for the industrial engine |
 | `pitant-charts` | React dashboard charts with Recharts and shared theme tokens |
+| `@pitant/chart-catalog` | Private React chart library, gallery, and parity tracker |
 | `apps/benchmark` | Performance benchmark harness |
 
 ## Quick Start
