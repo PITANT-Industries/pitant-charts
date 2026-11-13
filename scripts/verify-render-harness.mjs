@@ -216,22 +216,44 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
       }
     })`,
   )
-  const screenshot = await tab.send('Page.captureScreenshot', {
-    format: 'png',
-    fromSurface: true,
-    captureBeyondViewport: false,
-  })
-  const image = parsePng(Buffer.from(screenshot.data, 'base64'))
-  const charts = rects.map((rect, index) => {
-    const chartRect = insetChartRect(rect)
-    const visual = summarizeVisualRegion(image, chartRect)
-    return {
-      name: chartNameFromClassName(rect.className, index),
-      rect: chartRect,
-      significantPixels: visual.significantPixels,
-      visual,
+  const viewportImage = await captureViewport(tab)
+  const charts = []
+  let scrolled = false
+  for (const [index, rect] of rects.entries()) {
+    let chartRect = insetChartRect(rect)
+    let image = viewportImage
+    // Third panels can be below the fold. A viewport screenshot cannot verify them.
+    if (!fitsImage(chartRect, image)) {
+      scrolled = true
+      const visibleRect = await evaluate(
+        tab,
+        `(async () => {
+          const element = document.querySelectorAll(".chart-surface")[${index}];
+          element.scrollIntoView({ block: "center", inline: "center", behavior: "instant" });
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const { x, y, width, height } = element.getBoundingClientRect();
+          return { x, y, width, height };
+        })()`,
+      )
+      chartRect = insetChartRect(visibleRect)
+      image = await captureViewport(tab)
     }
-  })
+    const name = chartNameFromClassName(rect.className, index)
+    if (!fitsImage(chartRect, image)) {
+      throw new Error(`Cannot capture the full plot for ${renderer}/${profile}/${name}.`)
+    }
+    const visual = summarizeVisualRegion(image, chartRect)
+    charts.push({ name, rect: chartRect, significantPixels: visual.significantPixels, visual })
+  }
+  if (scrolled && options.fps) {
+    await evaluate(
+      tab,
+      `new Promise(resolve => {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)));
+      })`,
+    )
+  }
   const pixelChecks = charts.map((chart) => chart.significantPixels)
   const visualComparison =
     options.visual && options.baseline
@@ -439,6 +461,24 @@ async function runFpsBenchmark(tab, renderer, profile) {
 function fpsTargetFor(renderer, profile) {
   if (profile === 'large') return renderer === 'webgpu' ? 45 : 30
   return 55
+}
+
+async function captureViewport(tab) {
+  const screenshot = await tab.send('Page.captureScreenshot', {
+    format: 'png',
+    fromSurface: true,
+    captureBeyondViewport: false,
+  })
+  return parsePng(Buffer.from(screenshot.data, 'base64'))
+}
+
+function fitsImage(rect, image) {
+  return (
+    rect.x >= 0 &&
+    rect.y >= 0 &&
+    rect.x + rect.width <= image.width &&
+    rect.y + rect.height <= image.height
+  )
 }
 
 function insetChartRect(rect) {
