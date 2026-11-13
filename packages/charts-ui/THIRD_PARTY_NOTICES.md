@@ -1,6 +1,6 @@
 # Third-party notices
 
-The root MIT license covers the original PITANT Charts code. The following works retain their upstream notices and terms.
+The [package MIT license](LICENSE) covers the original dashboard chart code. The following works retain their upstream notices and terms.
 
 | Work | Use in this release | License |
 | --- | --- | --- |

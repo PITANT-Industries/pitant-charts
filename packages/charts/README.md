@@ -11,8 +11,10 @@ owns canvas mounting, resize, accessibility, and interaction state.
 ## Install
 
 ```sh
-bun add @pitant/charts
+bun add /path/to/pitant-charts/pitant-charts-1.0.0.tgz
 ```
+
+Build and pack the archive from the repository checkout. [Source installation](../../docs/getting-started.md#install-from-source)
 
 Import tokens once when the app uses PITANT chart CSS variables:
 

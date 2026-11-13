@@ -2,6 +2,12 @@
 
 ## Overview
 
+The industrial packages implement the renderer, typed-array data engine, and
+React bindings shown below. The dashboard package uses Recharts and exposes
+four React components. The catalog app and its React package render examples
+through family-specific engines. Each can inherit shared CSS series tokens.
+[Package guide](docs/getting-started.md#choose-a-package)
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                        User Code                             │
@@ -44,6 +50,10 @@ packages/
       renderer/      RenderContext interface + implementations
       data-engine/   Web Worker data pipeline
   charts-react/      @pitant/charts-react — React bindings
+  charts-ui/         pitant-charts — dashboard React components
 apps/
   benchmark/         Performance benchmark harness
+  chart-catalog/     @pitant/chart-catalog — examples, React previews, parity review
+  docs-site/         Live industrial documentation
+  render-harness/    Browser render verification
 ```

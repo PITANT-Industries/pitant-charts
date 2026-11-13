@@ -1,6 +1,7 @@
 {
   "name": "@pitant/charts-monorepo",
   "private": true,
+  "packageManager": "bun@1.4.4",
   "workspaces": [
     "packages/*",
     "apps/*"

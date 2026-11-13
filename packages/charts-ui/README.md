@@ -6,6 +6,8 @@ Four typed React charts for application data: line, bar, donut and sunburst. The
 
 Requires Bun 1.4.4 to develop the library and React and React DOM 19.2 or newer within React 19 in your app.
 
+Run the first command from the repository root. Use Node.js 22.12 or later for the build.
+
 ```sh
 bun install --frozen-lockfile
 cd packages/charts-ui
@@ -16,6 +18,8 @@ bun scripts/check-package.ts pitant-charts-0.7.0.tgz
 ```
 
 From your React app, run `bun add /path/to/pitant-charts-0.7.0.tgz`.
+
+[Repository setup and release checks](../../docs/release-checklist.md#dashboard-and-catalog)
 
 ```tsx
 import { LineChart } from 'pitant-charts'

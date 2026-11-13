@@ -1,7 +1,7 @@
 # Changelog
 
-All notable changes to `@pitant/charts` and `@pitant/charts-react` are tracked
-here. Versions follow SemVer once the packages are published.
+This changelog tracks `@pitant/charts` and `@pitant/charts-react`. The dashboard
+and catalog packages share a separate version. See their [release procedure](docs/release-checklist.md#dashboard-and-catalog).
 
 ## Unreleased
 

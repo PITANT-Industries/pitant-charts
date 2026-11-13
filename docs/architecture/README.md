@@ -8,6 +8,9 @@ The implemented packages in this repository are the current executable truth.
 Architecture documents describe target behavior unless a section links to code,
 tests, fixtures, benchmarks, or CI evidence.
 
+For current package entry points, local builds, and release procedures, see the
+[developer guide](../getting-started.md) and [CI and delivery](../ci-cd.md).
+
 ## Read in order
 
 | # | File | Purpose |

@@ -203,6 +203,7 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
 
   const state = await evaluate(tab, 'window.__PITANT_RENDER_HARNESS_STATE__')
   const stateErrors = validateProfileState(state, profile)
+  await evaluate(tab, 'window.scrollTo(0, 0)')
   const rects = await evaluate(
     tab,
     `Array.from(document.querySelectorAll(".chart-surface")).map((element) => {
@@ -216,12 +217,21 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
       }
     })`,
   )
+  const captureHeight = Math.ceil(
+    Math.max(VIEWPORT.height, ...rects.map(({ y, height }) => y + height)),
+  )
   const screenshot = await tab.send('Page.captureScreenshot', {
     format: 'png',
     fromSurface: true,
-    captureBeyondViewport: false,
+    captureBeyondViewport: captureHeight > VIEWPORT.height,
+    clip: { x: 0, y: 0, width: VIEWPORT.width, height: captureHeight, scale: 1 },
   })
   const image = parsePng(Buffer.from(screenshot.data, 'base64'))
+  if (image.width !== VIEWPORT.width || image.height !== captureHeight) {
+    throw new Error(
+      `Expected a ${VIEWPORT.width}×${captureHeight} screenshot, got ${image.width}×${image.height}.`,
+    )
+  }
   const charts = rects.map((rect, index) => {
     const chartRect = insetChartRect(rect)
     const visual = summarizeVisualRegion(image, chartRect)

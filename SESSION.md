@@ -1,5 +1,9 @@
 # Session State
 
+For the repository’s current package map and release process, see the
+[README](README.md) and [CI and delivery guide](docs/ci-cd.md). The notes below
+record the industrial chart implementation handoff.
+
 **Date:** 2026-05-19
 **Current phase:** Phase 6 - Post-v1 Industrial Chart Packs
 **Latest action:** Continued Phase 6 with the initial high-density

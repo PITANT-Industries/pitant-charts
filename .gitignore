@@ -77,3 +77,4 @@ override.tf.json
 # Local artifacts
 tmp/
 .tmp/
+*.tgz

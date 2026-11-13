@@ -1,75 +1,73 @@
 # PITANT Charts
 
-SciChart replacement for Pitant Systems: a WebGPU-first TypeScript charting
-library for scientific and industrial time-series visualization.
+PITANT Charts provides React components for dashboards, a browsable chart catalog, and a WebGPU chart engine for industrial and scientific data. The packages use CSS variables that can share a shadcn palette across applications.
 
-**Layer:** Layer 6 - UX  
-**Status:** active build  
-**Role:** Chart primitives for historian trends, industrial telemetry, anomaly
-overlays, SPC workflows, and future scientific chart packs.
+[Open the private gallery](https://chart-library-catalog.stony-boar-2041.chatgpt.site) · [Browse parity notes](https://chart-library-catalog.stony-boar-2041.chatgpt.site/#review=all) · [View GitHub Actions](https://github.com/PITANT-Industries/pitant-charts/actions)
 
-Part of the PITANT Plant-Physics OS polyrepo. See
-[pitant-contracts](https://github.com/PITANT-Industries/pitant-contracts) for
-the cross-repo binding surface.
+## Choose a package
 
-## Dashboard charts
+| Package | Use it for | Data |
+| --- | --- | --- |
+| [`pitant-charts`](packages/charts-ui/README.md) | React dashboard line, grouped bar, donut, and sunburst charts | Rows with accessors, slices, or a hierarchy |
+| [`@pitant/chart-catalog`](apps/chart-catalog/README.md) | Browsing and embedding specific React chart examples, including gauges, heatmaps, and maps | Categories and numeric series or records for the chart family |
+| [`@pitant/charts-react`](packages/charts-react/README.md) | Historian trends, digital states, synchronized views, and scientific plots in React | Typed arrays or inputs specific to the chart |
+| [`@pitant/charts`](packages/charts/README.md) | Industrial renderers, data engine, and chart APIs for apps that own the canvas | Typed arrays and renderer commands |
 
-The [`pitant-charts` package](packages/charts-ui/README.md) provides typed React line, bar, donut, and sunburst components for application dashboards. It includes an optional Warpdrive Day and Night theme and shares the same CSS series tokens as the industrial engine.
+`pitant-charts` and the private `@pitant/chart-catalog` workspace share the same version. The two industrial packages have their own version. Use local package archives for installation from source. [Installation and examples](docs/getting-started.md)
 
-The [chart catalog](apps/chart-catalog/README.md) contains 331 browsable examples and tracks their parity with the shadcn.io React reference. Run `bun run catalog:dev` after installing the workspace dependencies.
+## Run the chart catalog
 
-## Industrial charts
+Use Bun 1.4.4 and a current Node.js 22 release (at least 22.12).
 
-- **WebGPU primary renderer** with Canvas2D fallback
-- **Zero runtime dependencies** - tree-shakeable ESM
-- **Web Worker data engine** with min-max LOD pyramid for million-point datasets
-- **React 19 bindings** via `@pitant/charts-react`
-
-## Packages
-
-| Package | Description |
-|---|---|
-| `@pitant/charts` | Core library - renderers, data engine, view transform |
-| `@pitant/charts-react` | React 19 bindings for the industrial engine |
-| `pitant-charts` | React dashboard charts with Recharts and shared theme tokens |
-| `@pitant/chart-catalog` | Private React chart library, gallery, and parity tracker |
-| `apps/benchmark` | Performance benchmark harness |
-
-## Quick Start
-
-```bash
-bun install
-bun run build
-bun run test
+```sh
+git clone https://github.com/PITANT-Industries/pitant-charts.git
+cd pitant-charts
+bun install --frozen-lockfile
+bun run catalog:dev
 ```
 
-## Development
+The catalog has 320 chart examples in 44 families plus 11 tooltip examples. Open a chart’s **Code** tab for its React import and **Compare** to see the reference beside the local chart. **Parity review** shows checks and remaining differences for each example. [Catalog documentation](apps/chart-catalog/README.md) · [Parity status](apps/chart-catalog/PARITY.md)
 
-```bash
-bun run dev          # Watch mode
-bun run typecheck    # TypeScript check
-bun run lint         # Biome lint + format check
-bun run lint:fix     # Auto-fix lint issues
-bun run test:watch   # Vitest watch mode
-bun run test:coverage # Coverage report
+## Add a dashboard chart
+
+After installing the dashboard package, import its stylesheet and pass your rows to a component. [Dashboard setup](packages/charts-ui/README.md)
+
+```tsx
+import { LineChart } from 'pitant-charts'
+import 'pitant-charts/styles.css'
+
+const orders = [{ month: 'Jan', count: 28 }, { month: 'Feb', count: 41 }]
+
+export function OrdersChart() {
+  return (
+    <LineChart
+      label="Monthly orders"
+      data={orders}
+      category={(row) => row.month}
+      series={[{ name: 'Orders', value: (row) => row.count }]}
+    />
+  )
+}
 ```
 
-## Architecture
+## Develop and release
 
-```
-Data Engine (Worker) -> Layout Engine -> Render Backend -> <canvas>
-  LOD pyramid             axes/grid        WebGPU / Canvas2D
-```
+| Task | Command |
+| --- | --- |
+| Build the industrial packages | `bun run build` |
+| Run the industrial documentation app | `bun run build` then `bun run docs:dev` |
+| Build the gallery and its React package | `bun run catalog:build` |
+| Build the static gallery for Sites | `bun run catalog:site` |
+| Check formatting and industrial types | `bun run lint` and `bun run typecheck` |
 
-## Planning Docs
+GitHub Actions checks the industrial packages, dashboard package, and catalog. The catalog workflow packages the gallery build from `main`. The private Sites deployment and the industrial npm release each have a separate release procedure. [Contributing](CONTRIBUTING.md) · [CI and delivery](docs/ci-cd.md) · [Release checklist](docs/release-checklist.md)
 
-- [Project definition](project.md)
-- [Architecture](ARCHITECTURE.md)
-- [Architecture planning catalog](docs/architecture/README.md)
-- [Canonical roadmap](docs/ROADMAP.md)
-- [Detailed phase plans](plan/00-master-plan.md)
-- [Current session state](SESSION.md)
+## Reference docs
+
+- [Industrial quick start](docs/quick-start.md) and [composed examples](docs/examples/README.md)
+- [shadcn registry blocks](registry/README.md)
+- [Architecture](ARCHITECTURE.md), [industrial roadmap](docs/ROADMAP.md), and [planning index](docs/architecture/README.md)
 
 ## License
 
-MIT
+The core, industrial React, and dashboard packages include MIT licenses. The catalog and dashboard package carry notices for third-party code and assets. [Licensing scope](docs/licensing.md) · [Catalog notices](apps/chart-catalog/THIRD_PARTY_NOTICES.md) · [Dashboard notices](packages/charts-ui/THIRD_PARTY_NOTICES.md)

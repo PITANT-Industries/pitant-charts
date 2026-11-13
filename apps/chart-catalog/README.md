@@ -52,3 +52,5 @@ node apps/chart-catalog/scripts/check-workspace.mjs --pack
 See [Parity status](PARITY.md) for verification and known differences, and [Third-party notices](THIRD_PARTY_NOTICES.md) for upstream code and licenses.
 
 The private gallery uses `bun run catalog:site` to build the deployable `dist` directory from PITANT Charts `main`.
+
+[Private gallery](https://chart-library-catalog.stony-boar-2041.chatgpt.site) · [CI and delivery](../../docs/ci-cd.md#deliver-the-chart-catalog) · [Source installation](../../docs/getting-started.md#install-from-source)
