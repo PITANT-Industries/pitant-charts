@@ -77,6 +77,7 @@ export function AreaDetail({ variant, label, data, compact, theme }: {
   const trend = variant === "area-trend";
   const targetBand = variant === "area-reference-band";
   const launchWeek = variant === "area-reference-range";
+  const tickFadeRadius = targetBand || launchWeek ? 56 : 50;
   const xTicks = width < 340 && (targetBand || launchWeek) ? [0, 15, 30] : ticks;
   const color = `var(--chart-${trend ? 2 : 1}, ${theme.colors[trend ? 1 : 0]})`;
   const axisColor = `var(--muted-foreground, ${theme.muted})`;
@@ -192,7 +193,7 @@ export function AreaDetail({ variant, label, data, compact, theme }: {
             const point = points[index];
             const distance = active ? Math.abs(point.x - Math.round(active.x * 10) / 10) : Infinity;
             return <text key={index} data-area-tick="" x={point.x} y={bottom + (compact ? 14 : 24)} textAnchor="middle"
-              opacity={Math.min(1, Math.max(0, (distance - 50) / 20))}>{trend ? day.format(new Date(point.date)) : point.category}</text>;
+              opacity={Math.min(1, Math.max(0, (distance - tickFadeRadius) / 20))}>{trend ? day.format(new Date(point.date)) : point.category}</text>;
           })}
           {targetBand && !compact && ticksY.map(value => <text key={value} x={left - 4} y={yAt(value)} dominantBaseline="middle" textAnchor="end">{value}</text>)}
         </g>

@@ -23,7 +23,6 @@ import { comparisonPlot } from './comparison-plot'
 
 const pageSize = 12
 const referenceUrl = 'https://www.shadcn.io/charts'
-const indexUrl = 'https://chatgpt.com/space/page_158565692cf88191bb821bf62112a8d1'
 const layoutChoices = [
   { value: 'grid', label: <Grid2X2 size={17} aria-hidden="true" />, ariaLabel: 'Grid view' },
   { value: 'list', label: <List size={18} aria-hidden="true" />, ariaLabel: 'List view' },
@@ -359,7 +358,7 @@ export function Gallery() {
           </Drawer>
           <a href="#" className="brand" onClick={(event) => { event.preventDefault(); reset(); window.scrollTo(0, 0) }}><BrandMark /><span>Chart Library</span></a>
           <div className="header-actions">
-            <a className="header-link" href={indexUrl} target="_blank" rel="noreferrer">Component index <ArrowUpRight size={14} /></a>
+            <a className="header-link" href="#review=all" onClick={(event) => { event.preventDefault(); choose('all', 'all', false, 'all'); window.scrollTo(0, 0) }}>Component index <ArrowRight size={14} /></a>
             <span className="header-rule" />
             <Toggle className="icon-button" aria-label="Dark theme" pressed={theme === 'dark'} onPressedChange={(pressed) => setTheme(pressed ? 'dark' : 'light')}>{theme === 'dark' ? <Sun size={19} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}</Toggle>
           </div>

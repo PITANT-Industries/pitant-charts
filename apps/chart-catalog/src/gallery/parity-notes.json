@@ -20,16 +20,16 @@
     "remaining": "Compare the dots’ spacing, size and opacity at different display densities."
   },
   "area-forecast": {
-    "checked": "The monthly Revenue fill, circle markers, actual segment and dashed forecast tail match the measured geometry. All 12 sampled marker delays and blur agree. The 120 ms inspection spring moves the guide and rolls the date pill.",
-    "remaining": "Compare exact raster frames across browsers and remaining narrow tick fading."
+    "checked": "The monthly Revenue fill, circle markers, actual segment and dashed forecast tail match the measured geometry. All 12 sampled marker delays and blur agree. The 120 ms inspection spring moves the guide and rolls the date pill. Bidirectional tick fading matches at desktop and narrow widths: 50 px for forecast/trend and 56 px for band/range, with a 20 px buffer. Across the four overlays, 672 sampled date selections and 2,536 opacity readings passed with normal and reduced motion.",
+    "remaining": "Compare exact raster frames across browsers."
   },
   "area-reference-band": {
-    "checked": "The October Sign-ups chart matches the measured 180–240 band, its neutral fill, dashed limits, and triangular markers. The band fades in over 420 ms. Sampled inspection readouts and panel styling agree.",
-    "remaining": "Compare exact active-marker positioning and narrow tick fading during inspection."
+    "checked": "The October Sign-ups chart matches the measured 180–240 band, its neutral fill, dashed limits, and triangular markers. The band fades in over 420 ms. Sampled inspection readouts and panel styling agree. Bidirectional tick fading matches at desktop and narrow widths: 50 px for forecast/trend and 56 px for band/range, with a 20 px buffer. Across the four overlays, 672 sampled date selections and 2,536 opacity readings passed with normal and reduced motion.",
+    "remaining": "Compare exact active-marker positioning during inspection."
   },
   "area-reference-range": {
-    "checked": "October 12–18 uses the measured full-height highlight, fill, and 420 ms fade. The responsive date ticks and sampled inspection readouts match.",
-    "remaining": "Compare exact cross-browser raster frames and narrow tick fading."
+    "checked": "October 12–18 uses the measured full-height highlight, fill, and 420 ms fade. The responsive date ticks and sampled inspection readouts match. Bidirectional tick fading matches at desktop and narrow widths: 50 px for forecast/trend and 56 px for band/range, with a 20 px buffer. Across the four overlays, 672 sampled date selections and 2,536 opacity readings passed with normal and reduced motion.",
+    "remaining": "Compare exact cross-browser raster frames."
   },
   "area-background": {
     "checked": "The August Requests area and responsive date ticks agree in both sampled views. The diagonal background covers the plot and replaces the ordinary horizontal grid.",
@@ -44,8 +44,8 @@
     "remaining": "Compare weekend stripe opacity and deadline paint at intermediate widths."
   },
   "area-trend": {
-    "checked": "The ten-month Desktop area and gradient trend overlay match the measured date scale and grid. The trend uses a 420 ms entrance fade. Sampled readouts, panel styling and rolling date pill match.",
-    "remaining": "Compare exact cross-browser raster frames and narrow tick fading."
+    "checked": "The ten-month Desktop area and gradient trend overlay match the measured date scale and grid. The trend uses a 420 ms entrance fade. Sampled readouts, panel styling and rolling date pill match. Bidirectional tick fading matches at desktop and narrow widths: 50 px for forecast/trend and 56 px for band/range, with a 20 px buffer. Across the four overlays, 672 sampled date selections and 2,536 opacity readings passed with normal and reduced motion.",
+    "remaining": "Compare exact cross-browser raster frames."
   },
   "area-value-labels": {
     "checked": "The 24-month Desktop and Mobile curves agree in both Compare views. Endpoint and interior labels adapt to the plot width with collision avoidance.",
@@ -976,20 +976,20 @@
     "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "treemap-default": {
-    "checked": "Cloud-spend tiles and labels match at three widths. Selecting Compute drills into Platform. The stationary pointer reports the same tile as the reference after zoom and back. Rapid reversals preserve spring velocity, and enabling reduced motion clears active layout and loading animations.",
-    "remaining": "Compare frame-by-frame reversal paint and narrow tooltip placement when the reference clips."
+    "checked": "Cloud-spend tiles and labels match at three widths. Selecting Compute drills into Platform. The stationary pointer reports the same tile as the reference after zoom and back. Rapid reversals preserve spring velocity, and enabling reduced motion clears active layout and loading animations. Across the three interactive examples, controlled Chrome samples through 48 rapid drill/back actions match scene membership, rectangle bounds within 0.008 px, label positions within 0.033 px, and layout opacity within 0.0005 at both tested widths.",
+    "remaining": "Compare native focus-opacity paint and rasterization across browsers, including the intentional narrow-tooltip inset."
   },
   "treemap-drilldown": {
-    "checked": "Initial and nested layouts match at three widths. Selecting charts from node_modules opens @tanstack. The nested branch swap, shared-tile spring and stationary pointer readouts follow the reference. Rapid drill and back sequences return to the complete overview.",
-    "remaining": "Compare frame-by-frame reversal paint across browsers."
+    "checked": "Initial and nested layouts match at three widths. Selecting charts from node_modules opens @tanstack. The nested branch swap, shared-tile spring and stationary pointer readouts follow the reference. Rapid drill and back sequences return to the complete overview. Across the three interactive examples, controlled Chrome samples through 48 rapid drill/back actions match scene membership, rectangle bounds within 0.008 px, label positions within 0.033 px, and layout opacity within 0.0005 at both tested widths.",
+    "remaining": "Compare native focus-opacity paint and rasterization across browsers, including the intentional narrow-tooltip inset."
   },
   "treemap-portfolio": {
     "checked": "All 17 rectangles match at the measured widths, and inspection of S&P 500 ETF reports $126,000 and 16.8% of the portfolio. Portfolio hover highlights the selected holding and its group. Activating a holding retains the overview.",
     "remaining": "Compare exact entrance easing and cross-browser paint."
   },
   "treemap-loading": {
-    "checked": "The Loading toggle swaps ten skeleton rectangles for four groups and ten storage tiles. Both layouts match at the measured widths. The skeleton pulse lasts 2,200 ms and the tile reveal 880 ms. Uploads reports 1.8 TB.",
-    "remaining": "Compare exact motion curves and exit choreography."
+    "checked": "The Loading toggle swaps ten skeleton rectangles for four groups and ten storage tiles. Both layouts match at the measured widths. The skeleton pulse lasts 2,200 ms and the tile reveal 880 ms. Uploads reports 1.8 TB. Across the three interactive examples, controlled Chrome samples through 48 rapid drill/back actions match scene membership, rectangle bounds within 0.008 px, label positions within 0.033 px, and layout opacity within 0.0005 at both tested widths.",
+    "remaining": "Compare native focus-opacity paint and rasterization across browsers, including the intentional narrow-tooltip inset."
   },
   "tree-default": {
     "checked": "All 16 nodes, labels and 15 curves match the measured reference. Platform folds and reopens through pointer or keyboard, and inspection reports all branch totals and leaf headcounts.",
@@ -1088,16 +1088,16 @@
     "remaining": "Compare stripe paint, tooltip placement and fade timing."
   },
   "choropleth-click-to-zoom": {
-    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. All five office centers match within 0.001 px. Clicking London centers it at 4× zoom; Escape resets the map. All 158 desktop and 125 mobile keyboard readouts match.",
-    "remaining": "Compare the exact zoom motion and tooltip placement."
+    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. All five office centers match within 0.001 px. Clicking London centers it at 4× zoom; Escape resets the map. All 158 desktop and 125 mobile keyboard readouts match. The 700 ms camera flight uses geometric zoom and the measured ease. Across 852 paired forward/reset frames, translation agrees within 0.008 px, scale within 0.00003 and tilt/yaw within 0.0003 degrees. All five office markers support Tab, Enter, Space and Escape; focused hover stays on the selected target. Country framing matches 23 tested France, Brazil, Russia and Japan variant/width cases, including mainland bounds and automatic yaw.",
+    "remaining": "Compare tooltip placement and retention after toggling focus, plus cross-browser rasterization of intermediate camera frames."
   },
   "choropleth-dot-grid": {
-    "checked": "The ocean and five land path strings match at six widths in Chrome, Firefox, and WebKit, including 78,246 sampled dots. Selecting London centers it at 2× zoom, enlarges the land dots and fades the ocean. Escape resets the view.",
-    "remaining": "Compare exact camera easing and tooltip placement."
+    "checked": "The ocean and five land path strings match at six widths in Chrome, Firefox, and WebKit, including 78,246 sampled dots. Selecting London centers it at 2× zoom, enlarges the land dots and fades the ocean. Escape resets the view. The 700 ms camera flight uses geometric zoom and the measured ease. Across 852 paired forward/reset frames, translation agrees within 0.008 px, scale within 0.00003 and tilt/yaw within 0.0003 degrees. All five office markers support Tab, Enter, Space and Escape; focused hover stays on the selected target. Country framing matches 23 tested France, Brazil, Russia and Japan variant/width cases, including mainland bounds and automatic yaw.",
+    "remaining": "Compare tooltip placement and retention after toggling focus, plus cross-browser rasterization of intermediate camera frames. Narrow Japan activation remains unverified where the reference Tokyo marker overlaps the country."
   },
   "choropleth-pointer-camera": {
-    "checked": "All 177 country paths and the 16:9 plot match. The idle and London camera bounds match within 0.001 px. Pointer rotation moves in the reference direction and stays still with reduced motion.",
-    "remaining": "Compare the exact rotation easing, backdrop paint and tooltip behavior after selection."
+    "checked": "All 177 country paths and the 16:9 plot match. The idle and London camera bounds match within 0.001 px. Pointer rotation moves in the reference direction and stays still with reduced motion. The 700 ms camera flight uses geometric zoom and the measured ease. Across 852 paired forward/reset frames, translation agrees within 0.008 px, scale within 0.00003 and tilt/yaw within 0.0003 degrees. All five office markers support Tab, Enter, Space and Escape; focused hover stays on the selected target. All 1,010 regular-frame pointer samples agree within 0.000001 degrees; nine irregular-frame samples agree exactly, including frame-gap clamping. Country framing matches 23 tested France, Brazil, Russia and Japan variant/width cases, including mainland bounds and automatic yaw.",
+    "remaining": "Compare tooltip placement and retention after toggling focus, plus cross-browser rasterization of intermediate camera frames. Compare pointer retargeting during a focus-return flight."
   },
   "choropleth-markers": {
     "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. The five infrastructure positions match within 0.001 px, with a pin, circle, diamond, square and triangle.",
