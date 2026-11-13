@@ -1,7 +1,7 @@
 import type { CustomSeriesOption, DefaultLabelFormatterCallbackParams, EChartsOption, LineSeriesOption } from "echarts";
 import type { ChartExample, ChartSeries } from "../../types";
 import type { useChartTheme } from "../theme";
-import { initialLargeCount, type CartesianData } from "./data";
+import type { CartesianData } from "./data";
 import { lineDate, lineMoney, lineTooltip, type BandBounds } from "./line-format";
 import { escapeTooltipHtml } from "../evil-tooltip";
 import { splitProfitLossSegments, withAlpha } from "./upstream";
@@ -91,7 +91,6 @@ export interface Controls {
   selection: [number, number] | null;
   fill: string;
   trend: string;
-  count: number;
   activeLegend?: number;
   activeMarker?: number;
   deadlineFill?: "pattern" | "gradient" | "solid";
@@ -100,7 +99,7 @@ export interface Controls {
   chartWidth?: number;
 }
 
-export const initialControls: Controls = { range: 30, finish: 100, selection: null, fill: "Gradient", trend: "Dashed", count: initialLargeCount };
+export const initialControls: Controls = { range: 30, finish: 100, selection: null, fill: "Gradient", trend: "Dashed" };
 
 function lineFor(item: ChartSeries, index: number, theme: ChartTheme, extra: Partial<LineSeriesOption> = {}): LineSeriesOption {
   const color = colorFor(item, index, theme);
@@ -285,14 +284,12 @@ function buildBand(item: ChartSeries, index: number, theme: ChartTheme, id: stri
   ];
 }
 
-function formattedTooltip(unit: string, fullData?: CartesianData) {
+function formattedTooltip(unit: string) {
   return (params: DefaultLabelFormatterCallbackParams | DefaultLabelFormatterCallbackParams[]) => {
     const items = (Array.isArray(params) ? params : [params]).filter(item => typeof item.value === "number" && Number.isFinite(item.value));
     if (!items.length) return "";
     const date = items[0].name ?? "";
-    const point = fullData?.categories.indexOf(date) ?? -1;
-    const values = fullData && point >= 0 ? fullData.series.map(item => ({ name: item.name, value: item.values[point], marker: "" }))
-      : items.map(item => ({ name: item.seriesName ?? "", value: item.value as number, marker: typeof item.marker === "string" ? item.marker : "" }));
+    const values = items.map(item => ({ name: item.seriesName ?? "", value: item.value as number, marker: typeof item.marker === "string" ? item.marker : "" }));
     const rows = values.map(({ name, value, marker }) => `<div class="cl-tooltip-row"><span>${marker}${escapeTooltipHtml(name)}</span><strong>${typeof value === "number" ? valueFormat.format(value) + unit : "—"}</strong></div>`).join("");
     return `<div class="cl-tooltip"><div class="cl-tooltip-heading">${escapeTooltipHtml(date)}</div><div class="cl-tooltip-rows">${rows}</div></div>`;
   };
@@ -354,7 +351,7 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
   const dashed = id === "line-dashed";
 
   const glow = id === "line-glow";
-  const showY = ["line-dual-axis", "line-grid", "line-table", "line-fixed-scale", "line-export", "line-large-data"].includes(id);
+  const showY = ["line-dual-axis", "line-grid", "line-table", "line-fixed-scale", "line-export"].includes(id);
   const decimals = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
   const lineValueTick = (value: number) => id === "line-dual-axis" || id === "line-export" ? `$${decimals.format(value)}`
     : fixed ? `${value}%` : decimals.format(value);
@@ -412,19 +409,15 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
   const series: (LineSeriesOption | CustomSeriesOption)[] = [];
   const hasBand = id.startsWith("line-band") || id === "line-bollinger";
   const detailedTooltip = ["line-dual-axis", "line-grid", "line-points", "line-dashed", "line-markers", "line-legend", "line-time-range", "line-table", "line-projection", "line-projection-manual", "line-profit-loss", "line-profit-loss-legend", "line-weekends", "line-deadline", "line-deadline-fills", "line-glow", "line-trend", "line-crosshair-point", "line-fixed-scale", "line-straight", "line-export", "line-loading", "chart-data-table"].includes(id);
-  if (hasBand || detailedTooltip || id === "line-large-data" || id === "line-synced") {
+  if (hasBand || detailedTooltip || id === "line-synced") {
     const label = data.series[0]?.name ?? "";
-    const units = id === "line-band-range" ? " °C" : id === "line-large-data" || label === "p95 latency" ? " ms" : label === "Error rate" ? "%" : "";
+    const units = id === "line-band-range" ? " °C" : label === "p95 latency" ? " ms" : label === "Error rate" ? "%" : "";
     const bandPairs = hasBand && id !== "line-band-range" && id !== "line-band-bollinger" && id !== "line-bollinger"
       ? data.series.slice(0, id === "line-band-ranges" ? data.series.length : 1).map(item => bandBounds(data, item, id)) : [];
     const formatter = detailedTooltip || bandPairs.length || id === "line-bollinger" ? lineTooltip(id, data, bandPairs)
-      : formattedTooltip(units, id === "line-large-data" ? data : undefined);
+      : formattedTooltip(units);
     option.tooltip = { ...option.tooltip, backgroundColor: "transparent", borderWidth: 0, padding: 0, extraCssText: "box-shadow:none;", formatter };
 
-    if (id === "line-large-data") {
-      option.xAxis = { ...timeAxis, axisLabel: { ...timeAxis.axisLabel, interval: Math.max(0, Math.round(data.categories.length / 4) - 1), formatter: (value: string) => value.split(",")[0] } };
-      option.animation = false;
-    }
     if (id === "line-synced" && units) option.yAxis = { ...yAxis, axisLabel: { ...yAxis.axisLabel, formatter: `{value}${units}` } };
   }
   const addBand = (item: ChartSeries, index: number) => {
@@ -445,7 +438,7 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
 
     const regular = lineFor(item, index, theme, {
       data: [...item.values], lineStyle: loading ? { ...lineStyle, color: tint(theme.muted, 0.5) } : lineStyle, itemStyle: { color, borderColor: color, borderWidth: points ? 1.4 : 0 },
-      smooth: id === "line-straight" || loss || id === "line-large-data" ? false : 0.22,
+      smooth: id === "line-straight" || loss ? false : 0.22,
       showSymbol: points, showAllSymbol: points, symbol: points ? "emptyCircle" : "circle", symbolSize: points ? 8 : 6,
       emphasis: { focus: points ? "self" : "series", scale: points ? 1.5 : 1.4, lineStyle: glow ? { width: 4, shadowBlur: 26 } : undefined },
       blur: points ? { itemStyle: { opacity: 0.24 }, lineStyle: { opacity: 0.9 } } : undefined,
@@ -453,7 +446,6 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
       markArea: index === 0 && markAreas.length ? { silent: true, data: markAreas } : undefined,
       markLine: index === 0 && markLines.length ? { symbol: ["none", "none"], silent: true, label: { color: theme.muted, fontSize: 9 }, data: markLines } : undefined,
       markPoint: eventMarkers.length ? { symbol: "pin", symbolSize: 24, label: { show: false }, tooltip: { formatter: "{b}: {c}" }, data: eventMarkers } : undefined,
-      sampling: id === "line-large-data" ? "lttb" : undefined,
       z: 3 + index,
     });
     if (dashed) {

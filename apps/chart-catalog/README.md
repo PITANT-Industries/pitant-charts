@@ -43,6 +43,8 @@ Use a sized container and load the stylesheet before applying your shadcn theme.
 
 Sparkline charts accept nullable sample values and leave a gap at missing samples. The stat card can compare each value with a prior period supplied as `rows: [{ previous: 100 }, ...]`, aligned with the series.
 
+For a Live Line example, pass a stable `liveStream` object with `subscribe(receive)` and an optional `initialSamples` array. Call `receive` with batches of `{ timestamp, value, label? }` samples in nondecreasing Unix millisecond order, and return a function that unsubscribes. A `null` value leaves a gap. `capacity` controls retention and defaults to 4,096 readings. Updates are drawn once per browser frame. Pause freezes the displayed window while the stream keeps recording. An optional `data.series[0]` supplies the series name and color.
+
 ## Verify changes
 
 ```sh

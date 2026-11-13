@@ -48,23 +48,6 @@ export function curve(count: number, seed: number, base: number, amplitude: numb
   ));
 }
 
-export const initialLargeCount = 50_000;
-
-export function minuteLatency(count: number): CartesianData {
-  const start = Date.UTC(2026, 6, 1);
-  const format = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC" });
-  const p50: number[] = [], p95: number[] = [];
-  const categories = Array.from({ length: count }, (_, index) => {
-    const daily = Math.sin(index / 1440 * Math.PI * 2);
-    const noise = ((Math.imul(index + 523, 0x45d9f3b) >>> 14) % 101) / 100;
-    const spike = noise > 0.988 && index % 17 === 0 ? 110 + index % 77 : 0;
-    p50.push(Math.round(28 + daily * 8 + noise * 4));
-    p95.push(Math.round(97 + daily * 23 + noise * 26 + spike));
-    return format.format(start + index * 60_000);
-  });
-  return { categories, series: [{ name: "p50 latency", values: p50 }, { name: "p95 latency", values: p95 }] };
-}
-
 function points(count: number, names: string[], base = 58) {
   return names.map((name, index) => ({
     name,
@@ -93,7 +76,6 @@ export function resolveData(example: ChartExample, data?: ChartData): CartesianD
 function makeFixture(example: ChartExample): CartesianData {
   const { family, id } = example;
   if (family === "line") {
-    if (id === "line-large-data") return minuteLatency(initialLargeCount);
     if (["line-brush", "line-linked-brush", "line-date-highlights-brush"].includes(id)) {
       const categories = dates(90, Date.UTC(2026, 6, 1));
       const visitors = curve(90, 3, 2410, 490, 12).map((value, index) => (index + 3) % 7 >= 5 ? Math.round(value * 0.7) : value);

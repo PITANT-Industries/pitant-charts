@@ -6,6 +6,8 @@ import { ChartThemeContext, fallbackChartTheme, readChartTheme } from './theme'
 const Cartesian = lazy(() => import('./cartesian'))
 const PolarFlow = lazy(() => import('./polarflow'))
 const StatsMaps = lazy(() => import('./statsmaps'))
+const DenseLine = lazy(() => import('./cartesian/LineLargeDetail'))
+const DenseScatter = lazy(() => import('./statsmaps/dense-scatter/DenseScatter'))
 
 export const rendererFamilies = {
   cartesian: ['line', 'area', 'live-line', 'sparkline', 'candlestick', 'stream', 'bar', 'diverging', 'composed', 'lollipop', 'dumbbell', 'bump', 'slope', 'waterfall', 'gantt'],
@@ -32,7 +34,9 @@ class ChartBoundary extends Component<{ children: ReactNode }, { failed: boolean
 }
 
 export function ChartPreview(props: ChartPreviewProps) {
-  const Renderer = renderers.get(props.example.family)
+  const Renderer = props.example.id === 'line-large-data' ? DenseLine
+    : props.example.id === 'scatter-large-data' ? DenseScatter
+      : renderers.get(props.example.family)
   const host = useRef<HTMLDivElement>(null)
   const [theme, setTheme] = useState(fallbackChartTheme)
   useEffect(() => {
