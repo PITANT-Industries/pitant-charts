@@ -1,0 +1,83 @@
+.frame {
+  --pie-size: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: safe center;
+  block-size: 100%;
+  min-inline-size: 0;
+}
+
+:global(.chart-preview):has(.frame[data-legend='true']) { container-type: inline-size; }
+.frame[data-pie='pie-half-donut'] { --pie-size: 300px; }
+.frame[data-pie='pie-hover-legend'] { --pie-size: 240px; }
+.frame[data-legend='true'] { gap: 32px; }
+.frame > .plot {
+  flex: 0 1 auto;
+  inline-size: min(100%, var(--pie-size));
+  block-size: auto;
+  max-block-size: 100%;
+  aspect-ratio: 1;
+}
+
+.controls {
+  display: flex;
+  align-self: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-block-end: 12px;
+}
+
+.effect {
+  min-block-size: 24px;
+  padding-inline: 9px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--foreground);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.effect:hover,
+.effect[aria-pressed='true'] { background: var(--muted); }
+.effect:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+
+.legend { inline-size: min(100%, 224px); }
+.legend > p { margin: 0; padding: 0 8px 12px; color: var(--muted-foreground); font-size: 12px; }
+.legend > ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.legendItem {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  inline-size: 100%;
+  min-block-size: 32px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--foreground);
+  text-align: start;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.legendItem strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+.legendItem[data-active='true'] { background: var(--muted); }
+.legendItem[data-dimmed='true'] { color: var(--muted-foreground); }
+.legendItem:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+
+.custom { display: grid; justify-items: center; gap: 2px; }
+.custom span { color: var(--muted-foreground); font-size: 12px; line-height: 16px; }
+.custom strong { color: var(--foreground); font-size: 24px; font-weight: 600; line-height: 32px; font-variant-numeric: tabular-nums; }
+
+@container (min-width: 736px) {
+  .frame[data-legend='true'] { flex-direction: row; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mark { transition: opacity 120ms ease-out, transform 180ms ease-out, filter 180ms ease-out; }
+}

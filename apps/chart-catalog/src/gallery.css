@@ -159,7 +159,9 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 }
 .comparison-measured:is(
   [data-plot-layout='tooltip-controls'], [data-plot-layout='candlestick'], [data-plot-layout='radar'],
-  [data-plot-layout='heatmap'], [data-plot-layout='live-line'], [data-plot-layout='sankey']
+  [data-plot-layout='heatmap'], [data-plot-layout='live-line'], [data-plot-layout='sankey'],
+  [data-plot-layout='radial'], [data-plot-layout='gauge'], [data-plot-layout='funnel'],
+  [data-plot-layout='ring']
 ) > .chart-preview {
   block-size: auto;
 }
@@ -170,13 +172,19 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 .comparison-measured[data-plot-layout='landscape'] { --comparison-plot-height: 62.5cqw; }
 .comparison-measured[data-plot-layout='radial-tree'] { --comparison-plot-height: min(100cqw, 448px); }
 .comparison-measured:is([data-plot-layout='landscape'], [data-plot-layout='radial-tree']) > .chart-preview { block-size: auto; }
-.comparison-measured:is([data-plot-layout='pie'], [data-plot-layout='ring']) > .chart-preview {
+.comparison-measured:is([data-plot-layout='pie'], [data-plot-layout='ring-default']) > .chart-preview {
   margin-inline: auto;
   inline-size: min(100%, var(--comparison-circle-size));
   block-size: min(100cqw, var(--comparison-circle-size));
 }
 .comparison-measured[data-plot-layout='pie'] { --comparison-circle-size: 280px; }
-.comparison-measured[data-plot-layout='ring'] { --comparison-circle-size: 300px; }
+.comparison-measured[data-plot-layout='ring-default'] { --comparison-circle-size: 300px; }
+.comparison-measured[data-plot-id='pie-half-donut'] { --comparison-circle-size: 300px; }
+.comparison-measured[data-plot-id='pie-hover-legend'] { --comparison-circle-size: 240px; }
+.comparison-measured:is([data-plot-id='pie-hover-legend'], [data-plot-id='pie-hover-effects']) > .chart-preview {
+  inline-size: 100%;
+  block-size: auto;
+}
 .comparison-reference-colors .chart-preview { font-family: 'Hanken Grotesk Variable', system-ui, sans-serif; }
 /* Reference chart palette sampled from the React preview, applied only to the local Compare plot. */
 .comparison-reference-colors {

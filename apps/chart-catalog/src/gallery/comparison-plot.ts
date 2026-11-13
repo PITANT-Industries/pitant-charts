@@ -14,9 +14,12 @@ export function comparisonPlot(example: ChartExample) {
   if (example.family === 'sankey') return 'sankey'
   if (example.family === 'heatmap') return 'heatmap'
   if (example.family === 'live-line') return 'live-line'
+  if (example.family === 'radial') return 'radial'
+  if (example.family === 'gauge') return 'gauge'
+  if (example.family === 'funnel') return 'funnel'
   if (example.id === 'treemap-default' || example.id === 'network-default') return 'landscape'
   if (example.id === 'tree-radial') return 'radial-tree'
-  if (['pie-default', 'pie-center', 'pie-center-share', 'pie-donut-grow'].includes(example.id)) return 'pie'
-  if (example.id === 'ring-default') return 'ring'
+  if (example.family === 'pie') return 'pie'
+  if (example.family === 'ring') return example.id === 'ring-default' ? 'ring-default' : 'ring'
   return undefined
 }

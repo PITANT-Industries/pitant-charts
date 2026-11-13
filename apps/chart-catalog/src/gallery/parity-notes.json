@@ -584,84 +584,84 @@
     "remaining": "Compare service colors and grid spacing."
   },
   "pie-default": {
-    "checked": "All five October sales wedges match measured idle and active bounds at 280 px. Selecting a slice lifts it 10 px and dims the others to 40%. All five values and shares were verified in desktop and mobile Chrome in both themes.",
+    "checked": "All five October sales wedges match the reference path data at 280 px. Selecting a slice lifts it 10 px and dims the others to 40%. Keyboard inspection follows the reference order and Escape clears the active slice.",
     "remaining": "Compare entrance timing frame by frame and browser-specific SVG rasterization."
   },
   "pie-center": {
-    "checked": "Four arcs match the reference 130 px outer and 80 px inner radii. The center rolls from $120,000 to the selected plan, with all four values and shares checked. Reduced motion uses immediate values.",
+    "checked": "Four arcs match the reference 130 px outer and 80 px inner radii. The center rolls from $120,000 to the selected plan. Reduced motion uses immediate values.",
     "remaining": "Compare exact center text metrics and digit easing."
   },
   "pie-center-custom": {
-    "checked": "Caller-supplied center content receives the focused segment, value, total, and share.",
-    "remaining": "Compare the built-in typography and digit animation."
+    "checked": "All five wedge paths match with the corrected 7,000-unit fixture. The center shows the active product line above its value and units-sold label, and exposes the value and aggregate share to renderCenter.",
+    "remaining": "Compare exact center paint and the visual transition between labels."
   },
   "pie-hover-legend": {
-    "checked": "Five channel rows list the reference order counts. Chart and legend inspection share the active slice, and the Retail row can pin its slice from the keyboard.",
-    "remaining": "Compare row and slice highlight timing and pointer tooltip styling."
+    "checked": "The 240 px donut and its five paths match. The 224 px legend presents all five sales channels and counts. Selecting a row from the keyboard pins its slice and Escape clears the selection.",
+    "remaining": "Compare legend paint, row dimming and focus transition timing."
   },
   "pie-half-donut": {
-    "checked": "Three rounded wedges fill the upper semicircle. Keyboard inspection reads Direct 4,120 and 40.6% and reaches Social.",
-    "remaining": "Compare padding angles, lift geometry, and tooltip treatment."
+    "checked": "The 300 px square uses the reference upper semicircle, 70 px hole, 4 px corners and all three wedge paths. Active growth leaves the hole fixed. The plot scales to 286 px in a narrow Compare pane.",
+    "remaining": "Compare selected arc geometry frame by frame and verify pointer hit boundaries on narrow touchscreens."
   },
   "pie-pattern": {
-    "checked": "Three budget wedges total $100,000. Only the $21,500 Committed slice is striped.",
-    "remaining": "Compare hatch density, tooltip placement, and entrance motion."
+    "checked": "The three budget wedges match, with an 8 px repeating diagonal hatch applied to the $21,500 Committed slice.",
+    "remaining": "Compare the stripe paint at each device pixel ratio and the entrance timing."
   },
   "pie-pattern-presets": {
-    "checked": "Compute, Storage, Network, and Support use diagonal hatching, lines, dots, and checkerboard respectively. Compute is 35%.",
-    "remaining": "Compare tile scale, edge rendering, and highlight motion."
+    "checked": "The four cloud cost wedges match, with diagonal hatching, edge-aligned lines, dots, and an 8 px checkerboard.",
+    "remaining": "Compare pattern rasterization across browsers and opacity during the highlight transition."
   },
   "pie-pattern-tile": {
-    "checked": "The ticket donut uses a custom plus tile for Open, diagonals for Pending, and speckles for Solved. The values are 128, 214, and 642.",
-    "remaining": "Compare corner geometry, color assignment, and tooltip styling."
+    "checked": "The 70 px hole, 4 px corners, and three wedge paths match. The donut uses a 12 px plus tile for Open, diagonal lines for Pending, and speckles for Solved, with the reference color order.",
+    "remaining": "Compare tinted pattern rasterization and the timing of the center update."
   },
   "pie-center-share": {
-    "checked": "Five wedges match measured bounds with the 85 px hole. The center shows 12,100 at rest and the selected value in its series color. All five percentage readouts match, including 35.1% for Electronics.",
+    "checked": "Five wedges match with the 85 px hole. The center shows 12,100 at rest and the selected value in its series color, including 35.1% of total for Electronics.",
     "remaining": "Compare center text metrics and entrance timing frame by frame."
   },
   "pie-hover-effects": {
-    "checked": "Translate, Grow, and None are available. None leaves slices stationary and undimmed.",
-    "remaining": "Compare the translate and grow motion curves."
+    "checked": "The five sales wedges match the reference. Keyboard-operable Translate, Grow, and None controls switch between a 10 px lift, scaling around the center, and no movement. The other slices dim to 40% in all three modes.",
+    "remaining": "Compare control paint, position, and intermediate motion frames."
   },
   "pie-donut-grow": {
-    "checked": "All five browser shares match the reference. Selection grows the outer radius from 130 to 140 px while the inner radius stays at 75 px. The center rolls from 92,500 sessions to the selected browser count.",
+    "checked": "All five browser wedges match. Selection grows the outer radius from 130 to 140 px while keeping the inner radius at 75 px. The center rolls from 92,500 sessions to the selected browser count.",
     "remaining": "Compare exact digit easing, text metrics, and intermediate entrance frames."
   },
   "pie-glow": {
-    "checked": "The four cloud service values total $38,740. Selection applies a color-matched glow to the active rounded wedge and reads its value and share.",
-    "remaining": "Compare glow radius, focus opacity, and tooltip transitions."
+    "checked": "Four wedge paths match with the 80 px hole and 6 px corners. The active slice lifts 10 px, adds a 12 px color-matched glow, and updates the compact currency readout.",
+    "remaining": "Compare glow rasterization and exact filter and digit transition timing."
   },
   "pie-gradients": {
-    "checked": "Annual, Monthly, and Lifetime use separate radial-gradient wedges. Annual reports $48,200 and 48.2%.",
-    "remaining": "Compare gradient stops, geometric rounding, and hover transitions."
+    "checked": "All three subscription wedges match. Each uses a centered object-relative radial gradient with the two chart theme colors seen in the reference.",
+    "remaining": "Compare gradient rasterization and highlight timing across browsers."
   },
   "pie-patterns": {
-    "checked": "Four rounded donut wedges use hatch, dot, wave, and cross textures. Email reports 1,840 tickets and 41.8% of the 4,400 total.",
-    "remaining": "Compare texture scale, arc spacing, and hover timing."
+    "checked": "Four rounded donut wedges match with the 70 px hole. Their 6 and 8 px SVG tiles reproduce the reference hatch, dot, wave, and cross geometry.",
+    "remaining": "Compare paint at tile boundaries and digit and wedge transition timing."
   },
   "ring-default": {
-    "checked": "Five tracks and rounded progress arcs match measured 300 px plot bounds. Selection scales its ring by 3%, dims others to 35%, and rolls from 12,100 to the channel value. All five goal readouts match. The entrance uses 1.1 second scaling and 80 ms stagger.",
-    "remaining": "Compare exact center text metrics and frame timing. The plot scales to fit narrow containers."
+    "checked": "Five goal tracks match their measured path geometry at both tested widths. Keyboard and touch inspection preserve the active label, per-channel goal, and Number Flow center.",
+    "remaining": "Compare the frame-by-frame entrance and pointer hit boundaries. The 300 px example scales to fit the 286 px mobile comparison pane."
   },
   "ring-center-custom": {
-    "checked": "Caller-supplied center content receives the active ring's target and attainment fraction. The idle state reports the aggregate.",
-    "remaining": "Compare built-in center styling and transitions."
+    "checked": "Three fixed-size tracks match their measured paths at 260 px. The center shows $77K overall and 76%, 63%, or 88% for the selected booking category. The public center callback receives the selected target and share.",
+    "remaining": "Compare the custom percentage typography and track entrance timing."
   },
   "ring-arc": {
-    "checked": "Three storage rings cover three quarters of a circle. The readout shows 151 GB overall and Photos 86 of 200 GB during inspection.",
-    "remaining": "Compare radii, start-angle padding, and focus animation."
+    "checked": "The 270-degree tracks match their measured radii, 16 px width and flat ends. The center shows 151 GB overall and 86 GB for Photos.",
+    "remaining": "Compare the exact colored fill animation. The 300 px example scales to fit the 286 px mobile comparison pane."
   },
   "ring-legend": {
-    "checked": "Four sign-up rings use their own goals and display progress beside the legend values. Keyboard selection of Referral reports 74% against 2,000.",
-    "remaining": "Compare legend meter styling and transitions."
+    "checked": "All four 240 px track paths match. The linked legend shows the measured values and per-channel goals, and each row supports keyboard selection.",
+    "remaining": "Compare progress indicator typography, meter paint, and hover transition timing."
   },
   "ring-grid": {
-    "checked": "Three 10,000-step goal rings sit on five 0–100% guides. Inspecting Ana reports 8,200 steps and 82%.",
-    "remaining": "Compare placement of labels and guides and the active-ring animation."
+    "checked": "Three rounded track paths match, including the 270-degree sweep. Five progress guides, colored labels, and the 23,700-step center were checked at both widths.",
+    "remaining": "Compare progress fill and legend-label paint during inspection. The 300 px example scales to fit the 286 px mobile comparison pane."
   },
   "ring-semicircle": {
-    "checked": "Revenue, Activation, and Retention use three semicircular tracks with 0%, 50%, and 100% guides. Revenue reads 78%.",
-    "remaining": "Compare track and label geometry and exact hover emphasis."
+    "checked": "All three upper-half tracks, three percent guides, and three rotated labels match the measured geometry. Keyboard and touch inspection read the selected progress.",
+    "remaining": "Compare painted fill transitions and the hover emphasis. The 300 px example scales to fit the 286 px mobile comparison pane."
   },
   "radar-default": {
     "checked": "All 20 engagement scores match the live reference. Series vertices, five rings, spokes, labels and dots match within 0.0051 px at desktop and narrow plot sizes. Selection scales the whole series by 5%, dims the other three to 30%, and applies a 12 px glow. Mouse, keyboard and touch selection passed.",
@@ -700,176 +700,176 @@
     "remaining": "Compare exact grid paint, entrance timing and hover easing across browsers."
   },
   "radial-default": {
-    "checked": "The chart has 96 quarter-hour positions, three statuses, and interactive legend isolation. Keyboard and pointer input inspect the current and previous day.",
-    "remaining": "Compare exact data, dot pattern, and transitions."
+    "checked": "All 932 measured dots and the clock labels match within 0.005 px at both tested sizes. The 96 time bins include the measured fixture and 22,077 merged pull requests before 14:30.",
+    "remaining": "Compare annotation paint, scrubber motion, and per-dot entrance timing."
   },
   "radial-patterned-dots": {
-    "checked": "The energy clock has 24 hourly bins. The metered split shows 11.3 kWh Solar and 7.9 kWh Grid. The later-hour hatch shows a separate forecast, including 0.8 kWh at 23:00.",
-    "remaining": "Compare dot quantization, palette, and the live reference time cutoff."
+    "checked": "All 70 hourly dots match measured centers and radii within 0.005 px. The readout separates 11.3 kWh of Solar and 7.9 kWh of Grid, and later bins show a hatched forecast.",
+    "remaining": "Compare diagonal tile alignment and the exact scrubber entrance and fade."
   },
   "radial-line": {
-    "checked": "A dashed previous-day line and a current-day line share 96 quarter-hour positions. The current-day line stops at 14:30.",
-    "remaining": "Compare the exact time-series fixture and curve."
+    "checked": "Both line paths match across both tested plot sizes. The reference-smoothed current and prior-day series, dashed prior line, and current endpoint marker are present. The current total is 22,027.",
+    "remaining": "Compare the gradient scrubber transition and terminal marker motion during inspection."
   },
   "radial-temperature": {
-    "checked": "The 365-day SFO plot draws NOAA normal and record bands, a simulated 2026 mean through October 29, all month labels, and 40–100°F guides. Inspection reports the daily mean and both ranges.",
-    "remaining": "Compare axis placement, path interpolation, and the live reference date cutoff."
+    "checked": "Both NOAA bands and the 2026 temperature line match the measured paths at both widths. The example uses the reference fixture through Oct 29, with month spokes and daily range inspection.",
+    "remaining": "Compare gradient scrubber paint and animated center text at the observed/normal boundary."
   },
   "radial-population": {
-    "checked": "The chart stacks five ACS age bands for all 50 states and DC. Inspection reports the state and its age breakdown, including 10,605,000 Californians aged 25–44.",
-    "remaining": "Compare exact label orientation, arc spacing, and pointer highlight timing."
+    "checked": "All 255 stacked age-band paths match at both tested sizes. The 51 postal labels use the reference rotation and spacing, and keyboard inspection reads each age band.",
+    "remaining": "Compare exact hover dimming and center readout typography."
   },
   "radial-semicircle": {
-    "checked": "Phone, Laptop, and Cloud share a 0–100% scale with device-specific capacities. Inspection shows 690 of 1,024 GB for Laptop, and the legend isolates a content type.",
-    "remaining": "Compare stacked arc rounding, label placement, and touch interaction."
+    "checked": "All 13 track and segment paths match at both tested sizes. Five percent guides and three rotated device labels match within 0.005 px. The legend isolates a content type.",
+    "remaining": "Compare the exact ring entrance timing, center typography, and pointer fade."
   },
   "radial-bar-clock": {
-    "checked": "Rounded stacked bars and a rotating cursor identify the selected quarter hour. Keyboard focus wraps across midnight.",
-    "remaining": "Compare the exact scrubber spring and bar styling."
+    "checked": "All 126 bar-segment paths match at both tested sizes, including rounded prior-day bars. The observed status totals use the same 96-bin fixture as the dot and area clocks.",
+    "remaining": "Compare entrance easing, the selected column's fade, and scrubber treatment."
   },
   "radial-area-clock": {
-    "checked": "Three areas sweep in and show their edge markers at the selected quarter hour. Keyboard focus wraps across midnight.",
-    "remaining": "Compare the exact sweep and area geometry."
+    "checked": "The four stacked and prior-day bands use the measured 96-bin fixture. The dashed prior-day edge, zero-height stroke gaps, and active area edge markers were implemented.",
+    "remaining": "Compare exact gradient paint and the angular entrance timing."
   },
   "radial-activity-card": {
-    "checked": "The 24-hour cup chart shows 642 cups at rest, including 244 dine-in and 398 takeaway. Inspection finds the 106-cup peak at 08:00 and marks later hours as unobserved.",
-    "remaining": "Compare dot geometry, responsive layout, and the live reference time cutoff."
+    "checked": "All 34 dots match measured centers and radii within 0.005 px in the 220 px plot. The card reports 642 cups and 106 at the 08:00 peak, with later bins marked as pending.",
+    "remaining": "Compare the exact diagonal texture and chart-to-metrics layout at the responsive breakpoint."
   },
   "radial-storage-card": {
-    "checked": "A single semicircle stacks Photos, Backups, Documents, and Mail. It shows 1.4 TB used and 638 GB free, with the four reference amounts in the key.",
-    "remaining": "Compare arc geometry and key layout."
+    "checked": "All five rounded semicircle paths match at both tested sizes. The static center shows 1.4 TB used and 638 GB free, with four measured category totals. The chart has one selectable Cloud ring.",
+    "remaining": "Compare ring entrance and the key's paint and spacing."
   },
   "radial-seasonal-card": {
-    "checked": "The NOAA leap-year normals show a 58.6°F annual average and separate normal and record bands. Date inspection updates the average and both ranges.",
-    "remaining": "Compare smoothing, labels, and pointer highlight transitions."
+    "checked": "Both seasonal bands and the mean line match the measured paths in the 240 px plot. The annual mean reads 58.6°F, and date inspection updates the normal and record ranges.",
+    "remaining": "Compare cursor gradient and responsive plot-to-metrics spacing."
   },
   "gauge-default": {
-    "checked": "Forty track notches report 66% attainment and display a separate $428,000 ARR readout.",
-    "remaining": "Compare arc spacing, font scale, and the entrance easing."
+    "checked": "The 40-notch 270° track fills 26 marks for 66%. The center rolls to $428,000, with the ARR label and target summary below. Desktop matches the 384 px reference; the local narrow chart fits a 286 px pane.",
+    "remaining": "Compare the first-render sweep and exact theme paint. The narrow reference retains a 300 px plot."
   },
   "gauge-semicircle": {
-    "checked": "Forty rounded notches span the upper half of the dial, with a two-color theme gradient and a 64% CPU reading.",
-    "remaining": "Compare notch shape, gradient treatment, and spacing around the center readout."
+    "checked": "All 40 rounded notches sit on the upper 180° arc. The chart applies the gradient to 26 notches and displays 64% CPU load.",
+    "remaining": "Compare gradient paint and reveal timing. The local 286 px narrow plot fits the pane while the reference retains 300 px."
   },
   "gauge-linear": {
-    "checked": "The 24-pixel horizontal track uses 30 rectangular notches, 42% progress, and a separate 4.2K downloads readout.",
-    "remaining": "Compare label alignment and notch reveal timing."
+    "checked": "The 24 px fluid strip displays 30 notches, 13 active marks and a 4.2K Downloads readout. Its mark coordinates match at the measured desktop and mobile sizes.",
+    "remaining": "Compare the number roll and notch activation timing with standard motion."
   },
   "gauge-linear-gradient": {
-    "checked": "The 24-pixel track contains 72 short rounded notches. Active notches share a theme gradient through the 72% storage reading.",
-    "remaining": "Compare individual notch rounding and gradient stops at narrow widths."
+    "checked": "The 24 px strip displays 72 rounded notches with a measured 9.12 px mark height. At 72% it illuminates 52 notches and shows the storage summary.",
+    "remaining": "Compare exact gradient paint and animated reveal timing."
   },
   "gauge-fixed": {
-    "checked": "Three gauges retain 160 × 160 pixel dimensions on desktop and mobile.",
-    "remaining": "Compare label placement and exact arc treatment."
+    "checked": "Three fixed 160 × 160 px gauges wrap with 16 px gaps. All three readings match the reference: 38% CPU, 71% Memory and 54% Disk.",
+    "remaining": "Compare intermediate wrapping widths, card alignment and rolling-number timing."
   },
   "gauge-interactive": {
-    "checked": "The chart opens on Q3. Selecting Q2 sweeps the gauge and animates the revenue to $1.41 million.",
-    "remaining": "Compare the sweep and number animation timing."
+    "checked": "Keyboard activation and touch selection change the quarter, gauge and quota summary. Q1 through Q4 match the reference values $1.23M, $1.41M, $1.01M and $615K.",
+    "remaining": "Compare the selected button paint and quarter transition timing. The 286 px local mobile plot fits the pane while the reference retains 300 px."
   },
   "gauge-dial": {
-    "checked": "Next reading cycles through all six readings and returns to the first.",
-    "remaining": "Compare the dial, ruler ticks, and needle appearance."
+    "checked": "Next reading traverses 38%, 72%, 91%, 54%, 18% and 66% and wraps to 38%. The time label, 72 notches, inside ruler and line needle update together. Keyboard activation and reduced motion passed.",
+    "remaining": "Compare full-motion sweeps frame by frame and check physical touch behavior."
   },
   "gauge-arc-styles": {
-    "checked": "Three dials show the same 64% reading through notches, a solid track, and a progress ring with a muted remainder.",
-    "remaining": "Compare track thickness and caption placement."
+    "checked": "Three 64% gauges show 40 notches, a rounded solid stroke and a track-free progress ring. Their layouts and mark geometry were checked at desktop and narrow widths.",
+    "remaining": "Compare the transition and exact reference paint for all three track styles."
   },
   "gauge-ruler": {
-    "checked": "The three ruler variants have 51 inside ticks, 21 outside ticks labeled at the ends, and 17 RPM ticks labeled 0k through 8k. The RPM dial displays 4.2.",
-    "remaining": "Compare tick lengths, contrast, and label alignment."
+    "checked": "The inside, end-labeled and RPM rulers use measured tick radii and angles. The first two show 53% and the RPM gauge shows 4.2 with 0k–8k labels.",
+    "remaining": "Compare tick highlight timing, font rasterization and label fit at intermediate widths."
   },
   "gauge-needles": {
-    "checked": "Four 62% dials use line, gradient, triangle, and four-point needles with a shared 51-tick inner ruler.",
-    "remaining": "Compare needle outlines, angle offsets, and glow."
+    "checked": "The line, gradient, triangle and polygon needles share the same 62% position on four gauges. The notch and ruler geometry, cap and needle dimensions were measured.",
+    "remaining": "Compare exact entrance easing and gradient and polygon paint."
   },
   "gauge-needle-tips": {
-    "checked": "Three triangular tips point to the same 62% position at progressively longer lengths, from inside the track through its edge and outer scale.",
-    "remaining": "Compare the precise offsets at each tip and scale."
+    "checked": "Three triangles stop at the inner track, outer edge and ruler edge at 62%. Each gauge preserves the measured tip coordinates and 21 ruler ticks.",
+    "remaining": "Compare the needle paint and motion while caller-supplied values change."
   },
   "gauge-zones": {
-    "checked": "Store 1 shows three outer bands at 78%. Store 2 colors its 92% reading by track segment. Store 3 combines both zone treatments at 92%.",
-    "remaining": "Compare the joins between adjacent colored arcs and the colors in both themes."
+    "checked": "Band, Fill and Both reproduce the 78%, 92% and 92% fixtures and the 60% and 85% boundaries. The Fill gauge has 60 notches. Later overlapping ranges take priority.",
+    "remaining": "Compare zone transitions and exact paint as the value crosses a boundary."
   },
   "gauge-sectors": {
-    "checked": "Three 68% sector dials use conic, radial, and diagonal pattern fills. Conic and pattern use a progress ring, and radial uses a solid track.",
-    "remaining": "Compare wedge opacity, stripe spacing, and radial gradients."
+    "checked": "Conic, radial and hatched sectors use the measured 68% angle, radial bounds and track layout. The patterned sector uses a 6 px diagonal tile.",
+    "remaining": "Compare the animated conic gradient sweep and pattern antialiasing across browsers."
   },
   "gauge-progress-ring": {
-    "checked": "Both 71% dials include an active ring and a muted remainder. One has forty inner notches and the other uses only the thicker ring.",
-    "remaining": "Compare the difference in ring weights and gap treatment."
+    "checked": "The first 71% gauge combines 40 notches with a fine outer ring. The second uses a heavier chart-color-three ring with no notch track. Both ring geometries were measured.",
+    "remaining": "Compare exact ring entrance timing and arc paint across both themes."
   },
   "gauge-dots": {
-    "checked": "The 83 health score lights five rings of 237 dots behind a solid arc and seven rings of 329 dots behind a progress ring.",
-    "remaining": "Compare dot coordinates, radius, and the boundary between lit and muted dots."
+    "checked": "The five-ring and seven-ring designs use 237 and 329 dots respectively, with matched radii and coordinates. Both display Health 83.",
+    "remaining": "Compare frame-by-frame opacity changes and paint at the active boundary."
   },
   "gauge-glow": {
-    "checked": "The 74% output dials apply an SVG bloom to active notches or the solid fill.",
-    "remaining": "Compare bloom spread and intensity, especially in dark mode."
+    "checked": "The 74% examples use 60 rounded notches and a continuous solid stroke with separate 6 px and 10 px glow filters.",
+    "remaining": "Compare bloom intensity and compositing across themes and browsers."
   },
   "gauge-center-disc": {
-    "checked": "Both 68% hiring dials have a centered ringed disc. One masks the conic sector at the disc edge and one layers the disc over the needle.",
-    "remaining": "Compare disc size, stroke opacity, and label alignment."
+    "checked": "Two 68% examples layer the disc above the sector or line needle. The disc radii match the measured 19% and 22% proportions, with their distinct borders.",
+    "remaining": "Compare the conic fill animation and subtle center typography and paint."
   },
   "gauge-fan-duty": {
-    "checked": "The 72% duty gauge shows a short needle, a 0 to 100 ruler, an 80% red limit band, and readouts for speed, inlet temperature, and limit.",
-    "remaining": "Compare the exact starting angle and spacing of the metric row."
+    "checked": "The 72% dial uses a foreground-colored solid track, an inner line needle, end labels and an 80% warning band. Speed, inlet and limit metrics match.",
+    "remaining": "Compare the animated sweep and exact threshold-band paint."
   },
   "gauge-speedometer": {
-    "checked": "The dial reports 228 km/h with 90 notches, a red line above 200 km/h, 27 ruler ticks, 209 background dots, and average, top, and gear readouts.",
-    "remaining": "Compare the reference radius, glow, and red-line treatment at the threshold."
+    "checked": "The 228 km/h dial includes 90 rounded notches, 209 dots and a 200 km/h red line. The average, top speed and gear summaries match.",
+    "remaining": "Compare glow paint and moving threshold states. The reference has a fixed scale, with values supplied by the example fixture."
   },
   "gauge-throughput": {
-    "checked": "A 0 to 800 ruler surrounds a 518 t/day readout with a triangle needle, ring, sector, and disc. The target, yesterday, and change readouts are present.",
-    "remaining": "Compare the sector edge treatment and relative positioning of the dial layers."
+    "checked": "The 518 t/day dial includes nine 0–800 scale labels, a conic sector, a triangular needle, a progress ring and a center disc. Target, yesterday and change metrics match.",
+    "remaining": "Compare the conic sweep and exact center typography and paint."
   },
   "gauge-live-load": {
-    "checked": "The gauge updates every 1.8 seconds. The Now, Average, and Peak readouts update with the readings.",
-    "remaining": "Compare the later reading sequence and zone transitions."
+    "checked": "The gauge uses the eight observed CPU readings at 1.8-second intervals, with live current, average and peak summaries. The added keyboard-operable pause control freezes samples until resumed.",
+    "remaining": "The demo repeats the observed prefix. Compare the rest of the reference sequence and motion timing."
   },
   "funnel-default": {
-    "checked": "Five stages show percentage pills and three halo bands.",
-    "remaining": "Compare continuous curve geometry and halo opacity."
+    "checked": "Five sales stages match the reference values, percentages and two footer lines. Three translucent layers follow the same Bézier tapers.",
+    "remaining": "Check percentage-pill text width and the exact hover transitions across browsers."
   },
   "funnel-vertical": {
-    "checked": "Five straight stages sit on a grid with one-decimal percentages.",
-    "remaining": "Compare spacing and grid opacity."
+    "checked": "The five signup stages use the measured source values, one-decimal shares, straight tapers and three alternating bands.",
+    "remaining": "Check label clipping on very narrow panes and exact motion frames."
   },
   "funnel-colors": {
-    "checked": "Four stages use distinct colors and the first uses a gradient.",
-    "remaining": "Compare the exact color stops."
+    "checked": "Four deal stages use two layers, four theme colors, a gradient on the first stage and grouped labels in the measured positions.",
+    "remaining": "Check percentage-pill text width and exact gradient color interpolation across browsers."
   },
   "funnel-pattern": {
-    "checked": "Four stage cores use hatching and the outer halo bands stay solid.",
-    "remaining": "Compare stripe angles and spacing."
+    "checked": "Four app stages match the reference counts and rounded shares. The inner layers use a stage-aligned 6px diagonal pattern with two solid outer layers.",
+    "remaining": "Check paint and diagonal pattern sampling at device pixel ratios above 1."
   },
   "funnel-interactive": {
-    "checked": "Keyboard inspection updates stage value, conversion, and previous-stage drop-off. The final stage shows 17%.",
-    "remaining": "Compare focus and state transitions."
+    "checked": "Five checkout stages match the reference values and update the summary as you inspect them, including the 60% cart drop and 17% payment drop.",
+    "remaining": "Check exact footer styling and pointer hit boundaries on physical touch devices."
   },
   "funnel-legend": {
-    "checked": "Progress and highlighting stay in sync between chart stages and legend rows.",
-    "remaining": "Compare row proportions and motion."
+    "checked": "Five Vercel UI SDK legend rows align their markers, values and progress with the reference. Pointer and keyboard selection synchronize the row and chart.",
+    "remaining": "Check exact legend paint, progress animation timing and keyboard focus styling across browsers."
   },
   "funnel-straight": {
-    "checked": "Four linear-edged stages render with a flat last section.",
-    "remaining": "Compare exact slope and stage spacing."
+    "checked": "All four trial stages use straight-edged layers and match the reference labels, values and rounding.",
+    "remaining": "Check percentage-pill text width and exact motion frames across browsers."
   },
   "funnel-gradient": {
-    "checked": "Five stage cores use gradients.",
-    "remaining": "Compare stops and band opacity."
+    "checked": "All five campaign stages use adjacent-theme-color gradients on the inner layers. The terminal stage keeps the same color at both ends.",
+    "remaining": "Check exact gradient interpolation and percentage-pill text width across browsers."
   },
   "funnel-grouped": {
-    "checked": "Stage value, ratio, and name align together near the center.",
-    "remaining": "Compare text alignment and typography."
+    "checked": "The five hiring stages group the count, share and label at measured centerline offsets.",
+    "remaining": "Check label overlaps and exact percentage-pill widths at narrow sizes."
   },
   "funnel-grid": {
-    "checked": "Five alternating columns have four grid dividers.",
-    "remaining": "Compare exact divider location and contrast."
+    "checked": "Alternating onboarding stage bands and four separator rules align with the reference. Stage values, percentages and names match.",
+    "remaining": "Check alternate band and separator paint across themes and browsers."
   },
   "funnel-vertical-curved": {
-    "checked": "Five curved rows align values on the left, ratios in the center, and names on the right.",
-    "remaining": "Compare curve shape and label spacing."
+    "checked": "Five email stages match the measured curve geometry, fixture values and compact count labels. The plot caps at 320 px.",
+    "remaining": "Check percentage-pill text width and label clipping at narrow sizes."
   },
   "heatmap-default": {
     "checked": "All 364 reference intensity levels and 52 weekly columns match. Cell bounds and month and weekday positions align within 0.005 CSS px at three plot widths. Pointer and keyboard inspection show the date, weekday, and contribution count.",
