@@ -432,52 +432,52 @@
     "remaining": "Compare skeleton timing and colors."
   },
   "waterfall-default": {
-    "checked": "Eight fiscal revenue steps connect through a running total. The New logos step starts at $4.2M, adds $1.35M, and reports $5.55M.",
-    "remaining": "Compare exact stroke geometry, endpoint marker treatment, and drill timing."
+    "checked": "All eight revenue bars and seven connectors match the reference plot at desktop and mobile sizes. The readout gives the exact signed change and running total for each fiscal step.",
+    "remaining": "Compare hover fades and tooltip paint."
   },
   "waterfall-subtotals": {
-    "checked": "Ten income statement steps include four totals anchored at zero. The labels show $980M revenue, $570M gross profit, and $150M net income.",
-    "remaining": "Compare exact label culling, bar corner radius, and connector opacity."
+    "checked": "The ten bars, six visible wide category labels including both ends, connector positions and four subtotal anchors match the reference. Keyboard inspection reports every exact amount.",
+    "remaining": "Compare intermediate-width label culling and tooltip paint."
   },
   "waterfall-cash-flow": {
-    "checked": "The six January–June steps keep their running cash balances and H1 ends at 37,800. February shows a 6,200 outflow and running total of 12,200.",
-    "remaining": "Compare hover fading, colors, and marker treatment."
+    "checked": "The 2.5:1 plot, seven rounded bars, date ticks and 37,800 H1 total match the reference. Each month’s signed change and running balance are available through inspection.",
+    "remaining": "Compare hover fading and tooltip paint."
   },
   "waterfall-loading": {
-    "checked": "Seven cash-position skeleton bars keep their category grid. The SDK toggle retains the chart instance and reveals a $3.21M Q2 total.",
-    "remaining": "Compare shimmer geometry and exact bar reveal timing."
+    "checked": "Seven measured skeleton bars retain the category and value axes. Loading toggles in place and restores all seven exact cash-flow readings.",
+    "remaining": "Compare shimmer, label transitions and reveal timing."
   },
   "lollipop-default": {
-    "checked": "Seven weekday stems end in dots. Wednesday’s highest dot reports 9,660 active users and the axis abbreviates thousands.",
-    "remaining": "Compare stem and dot styling and pointer emphasis."
+    "checked": "The measured weekday positions, stems, dots, axis ticks and all seven active-user readings match.",
+    "remaining": "Compare hover fades and tooltip paint."
   },
   "lollipop-horizontal": {
-    "checked": "Seven feature adoption values run horizontally with percent ticks and endpoint labels. Dashboards is 92% and SSO is 18%.",
-    "remaining": "Compare endpoint padding and reveal easing."
+    "checked": "All seven horizontal stems, endpoint labels and mobile percent ticks match. Inspection reports the exact feature adoption percentages.",
+    "remaining": "Compare tooltip placement and hover fades."
   },
   "lollipop-change": {
-    "checked": "Seven channel stems extend on both sides of zero on a percentage-point scale. Referral’s keyboard readout shows +2.4 pts.",
-    "remaining": "Compare positive and negative mark palettes and hover fading."
+    "checked": "Both sides of the zero baseline use the reference’s single color. All seven signed percentage-point values and responsive labels match.",
+    "remaining": "Compare hover fades and intermediate-width label culling."
   },
   "lollipop-loading": {
-    "checked": "Nine ghost stems keep the hourly positions. The loading toggle retains the chart instance and reveals 6,180 sessions at noon.",
-    "remaining": "Compare skeleton lengths and stagger timing."
+    "checked": "Nine measured skeleton stems and dots keep the axis positions. The Loading toggle restores the nine exact session readings in place.",
+    "remaining": "Compare staggered reveal and tooltip paint."
   },
   "dumbbell-default": {
-    "checked": "Six horizontal region comparisons use seconds and report Before, After, and signed percentage change. North America changes from 1.48s to 0.84s.",
-    "remaining": "Compare circle halos, connecting strokes, and pointer timing."
+    "checked": "All six regional pairs, connecting spans, dot radii and responsive seconds ticks match. Inspection reports both endpoint values and the signed percentage change.",
+    "remaining": "Compare hover fades and tooltip placement."
   },
   "dumbbell-legend": {
-    "checked": "Six engagement rows show Spring and Winter values above both endpoints. The average-score legend reads 63 and 70 and focusing Spring dims Winter.",
-    "remaining": "Compare endpoint label offsets, legend layout, and pointer fading."
+    "checked": "The legend stacks or sits beside the plot at the measured breakpoint. Both endpoints retain their side labels, and focus on Spring or Winter emphasizes its series.",
+    "remaining": "Compare label headroom at intermediate widths and the precise legend-hover fading."
   },
   "dumbbell-vertical": {
-    "checked": "Four vertical plan comparisons use dollar values. Scale reports $1,428 monthly, $1,152 annually, and a 19.3% decrease.",
-    "remaining": "Compare exact axis range, circle halos, and hover styling."
+    "checked": "Four vertical plan pairs, endpoint dots and currency ticks match, including the negative axis headroom. Keyboard inspection reports every yearly price and change.",
+    "remaining": "Compare hover timing and tooltip paint."
   },
   "dumbbell-loading": {
-    "checked": "Six paired survey marks keep their team rows during loading. The same chart instance reveals Support’s +25 point change.",
-    "remaining": "Compare loading mark spans and endpoint reveal timing."
+    "checked": "The measured skeleton keeps the six survey rows and retains the same SVG when loading ends. The ready chart reports both scores and their change.",
+    "remaining": "Compare reveal easing and tooltip placement."
   },
   "uncertainty-default": {
     "checked": "Five conversion marks include 95% confidence intervals in the tooltip.",
@@ -1108,124 +1108,124 @@
     "remaining": "Compare background texture and pointer pan and zoom motion."
   },
   "histogram-default": {
-    "checked": "The histogram uses 20-millisecond bins and labels the intervals in the tooltip.",
-    "remaining": "Compare the exact sample distribution and bar styling."
+    "checked": "All 29 twenty-millisecond intervals and their counts agree, including empty bins. The chart draws 23 nonempty bins from 240 requests. Plot dimensions, ticks, grid and sampled keyboard readouts agree on desktop and mobile.",
+    "remaining": "Compare pointer hit boundaries, rounded-edge paint and hover timing."
   },
   "histogram-overlay": {
-    "checked": "Both distributions share 50-millisecond bins. Hovering or focusing a median legend item fades the other distribution.",
-    "remaining": "Compare exact fixture medians and opacity transitions."
+    "checked": "Before and After use the reference 50 ms counts and medians of 323 ms and 208 ms. The same bin drives both readouts, and focusing a median item dims the other series. The median panel stacks below the chart under the reference breakpoint.",
+    "remaining": "Compare legend transition timing and overlay paint."
   },
   "histogram-stacked": {
-    "checked": "The stacked bins advance in two-minute intervals, ending at the 40-minute domain limit.",
-    "remaining": "Compare bin heights and exact fixture distribution."
+    "checked": "The two-minute Mobile and Desktop bins reproduce 394 included observations through 40 minutes. Rounded caps apply only to each stack’s outer edge. The 4–6 minute bin shows 45 Mobile and 12 Desktop.",
+    "remaining": "Compare pointer hit boundaries, entrance timing and hover paint."
   },
   "histogram-loading": {
-    "checked": "A keyboard-operable Loading toggle switches 29 skeleton bins to 23 nonempty bins totaling 240 requests. The view reports a median of 208 ms and a p90 of 354 ms.",
-    "remaining": "Compare the exact per-bin animation curve and loading label treatment."
+    "checked": "The Loading toggle switches 29 measured skeleton bins to 23 nonempty result bars. The chart preserves its axes and reveals the 240-request histogram, median 208 ms, and p90 354 ms.",
+    "remaining": "Compare shimmer timing, stagger and loading-label paint."
   },
   "ridgeline-default": {
-    "checked": "Six densities use one color and show a middle-half interval during inspection.",
-    "remaining": "Compare curve geometry and sample values."
+    "checked": "Six monthly ridges use the measured baselines and curve shapes with one color. Each of the six readouts agrees, including June’s 24-minute median and 10–28.5 minute middle half.",
+    "remaining": "Compare exact pointer hit boundaries and ridge highlight paint."
   },
   "ridgeline-colors": {
-    "checked": "Four distributions use distinct colors with 90 samples each.",
-    "remaining": "Compare exact curves and color choices."
+    "checked": "Four colored regional ridges reproduce the measured distribution profiles and all four readouts. South America’s median is 1,715 ms, with a 1,256–2,370 ms middle half.",
+    "remaining": "Compare pointer hit boundaries in overlapping ridges and animation timing."
   },
   "ridgeline-loading": {
-    "checked": "Distribution labels hold their position through the loading skeleton and reveal.",
-    "remaining": "Compare stagger timing and placeholder geometry."
+    "checked": "The Loading toggle holds the measured six baseline and label positions while switching between the skeleton profiles and monthly curves. The ready-state readouts agree with the standard ridgeline.",
+    "remaining": "Compare the exact loading and reveal transitions."
   },
   "ecdf-default": {
-    "checked": "The chart labels the p50 and p90 guides.",
-    "remaining": "Compare exact quantile values and guide styles."
+    "checked": "The 240-sample staircase, shaded area, axes, and full-width p50 and p90 rules match the measured example. Keyboard inspection includes 0.4% at 73 ms and 100% at 632 ms.",
+    "remaining": "Compare exact pointer thresholds and focus-marker paint."
   },
   "ecdf-compare": {
-    "checked": "Both curves share the pointer or keyboard threshold and show aligned dots and decimal percentages.",
-    "remaining": "Compare focus styling and movement across plateaus."
+    "checked": "Both empirical curves share a threshold and percentage scale. The p90 rule and both grid directions are reproduced. The last shown threshold, 885 ms, reads 99.6% Before and 100% After.",
+    "remaining": "Compare exact pointer thresholds and focus transitions across plateaus."
   },
   "ecdf-loading": {
-    "checked": "Toggling from the loading staircase reveals the distribution from left to right.",
-    "remaining": "Compare the reveal duration and placeholder styling."
+    "checked": "The Loading toggle shows the reference 18-step skeleton and restores the 240-request curve, percentile rules, and keyboard readout. Plot dimensions stay fixed.",
+    "remaining": "Compare exact pointer thresholds, shimmer timing and the left-to-right reveal."
   },
   "beeswarm-default": {
-    "checked": "The plot shows 128 collision-free sample marks with the expected units.",
-    "remaining": "Compare exact dot positions and opacity."
+    "checked": "All 128 deploy observations use the reference values, units, team lanes and responsive packing. The mobile and desktop mark coordinates matched within 0.005 px.",
+    "remaining": "The narrow-screen tooltip stays within the plot."
   },
   "beeswarm-series": {
-    "checked": "Two series share a swarm with 180 collision-free marks.",
-    "remaining": "Compare group spacing and local fixtures."
+    "checked": "Both sets of 90 checkout timings share one swarm. Colors, dot coordinates, and the 101 ms first keyboard readout matched the reference.",
+    "remaining": "The narrow-screen tooltip stays within the plot."
   },
   "beeswarm-vertical": {
-    "checked": "The vertical layout shows 360 collision-free marks with labeled values.",
-    "remaining": "Compare dot placement and axes."
+    "checked": "All 360 regional observations, responsive spacing, millisecond ticks and mobile category culling matched the reference.",
+    "remaining": "The narrow-screen tooltip stays within the plot."
   },
   "beeswarm-loading": {
-    "checked": "The loading view holds 192 placeholder points and reveals samples in sequence.",
-    "remaining": "Compare timing and the placeholder layout."
+    "checked": "The loading control retains 192 neutral skeleton dots before revealing the 128 deploy observations. Placeholder coordinates matched within 0.024 px.",
+    "remaining": "The placeholder pulse and dot reveal use local timing."
   },
   "violin-default": {
-    "checked": "The plot shows the density, middle-half bar, and median marker.",
-    "remaining": "Compare exact density curves and fixture values."
+    "checked": "Four measured density curves, full-range lines, middle-half bars, and median dots use the observed regional data. Keyboard, pointer, and touch readouts passed.",
+    "remaining": "The narrow-screen tooltip stays within the plot."
   },
   "violin-horizontal": {
-    "checked": "Horizontal violins keep the median and middle-half treatment.",
-    "remaining": "Compare widths and tooltip positions."
+    "checked": "Four horizontal team densities use the measured axis, middle half, full range, and deploy counts. The first median reads 11 min with 32 observations.",
+    "remaining": "The narrow-screen tooltip stays within the plot."
   },
   "violin-grouped": {
-    "checked": "Grouped violins report both device medians in one region tooltip.",
-    "remaining": "Compare shape offsets and local fixtures."
+    "checked": "Eight device densities use the reference widths, offsets, ranges and colors. Each region readout compares its desktop and mobile median.",
+    "remaining": "The narrow-screen tooltip stays within the plot."
   },
   "violin-loading": {
-    "checked": "Placeholder violins unfold to show the sample distributions.",
-    "remaining": "Compare timing and silhouette styling."
+    "checked": "Four neutral placeholder curves and their middle-half bars retain the regional axes. The loading toggle reveals the data and restores inspection.",
+    "remaining": "The skeleton pulse and unfolding transition use local timing."
   },
   "box-plot-default": {
-    "checked": "Boxes include quartile, median, whisker, and outlier marks.",
-    "remaining": "Compare exact fixture values and colors."
+    "checked": "The measured quartiles, medians, whiskers, and outliers match the regional samples. The first readout shows median 851 ms, Q1 714.75 ms, and three outliers.",
+    "remaining": "The narrow-screen tooltip stays within the plot."
   },
   "box-plot-horizontal": {
-    "checked": "The chart uses horizontal boxes and shows median and middle-half values during keyboard inspection.",
-    "remaining": "Compare layout and tooltip formatting."
+    "checked": "Four horizontal deploy boxes, short whisker caps, and minute-formatted readouts matched the mobile and desktop reference.",
+    "remaining": "The narrow-screen tooltip stays within the plot."
   },
   "box-plot-grouped": {
-    "checked": "Each region reports both device medians in one tooltip.",
-    "remaining": "Compare spacing and reference fixtures."
+    "checked": "Eight boxes use the measured grouped positions, quartiles, and outliers. Keyboard inspection reports both device medians for each region.",
+    "remaining": "The narrow-screen tooltip stays within the plot."
   },
   "box-plot-loading": {
-    "checked": "Loading skeleton boxes unfold into their measured ranges.",
-    "remaining": "Compare silhouette and motion duration."
+    "checked": "The loading control switches between four measured skeleton boxes and the regional quartiles and outliers. Mobile and desktop bounds matched within 0.051 px.",
+    "remaining": "The skeleton pulse and unfolding transition use local timing."
   },
   "hexbin-default": {
-    "checked": "The visible bins conserve all 900 samples and use discrete counts in the legend.",
-    "remaining": "Compare bin and color geometry."
+    "checked": "All 900 sessions are conserved in the measured bins. Bin outlines, color buckets and axes match the live preview at desktop and mobile sizes.",
+    "remaining": "Compare exact hover lift and entrance timing."
   },
   "hexbin-average": {
-    "checked": "The chart bins 1,200 samples and colors each bin by its mean fare.",
-    "remaining": "Compare fare buckets and exact fixtures."
+    "checked": "The 1,200 rides use the reference distance, duration and fare fixture. Bin colors are based on the mean fare, with the bin count available in the readout.",
+    "remaining": "Compare tooltip paint and hover transitions."
   },
   "hexbin-custom-tooltip": {
-    "checked": "The tooltip reports the active bin’s share of the 700-ticket quarter.",
-    "remaining": "Compare tooltip styling and ticket distribution."
+    "checked": "The 700 tickets use the reference bin centers and color buckets. The tooltip reports the ticket count, share and the center’s response time and score.",
+    "remaining": "Compare tooltip position and lift easing."
   },
   "hexbin-loading": {
-    "checked": "Hexagonal placeholders reveal the data bins with a stagger.",
-    "remaining": "Compare reveal timing and colors."
+    "checked": "Measured skeleton cells match the live layout. The Loading toggle reveals the same 900-session bins and restores inspection.",
+    "remaining": "Compare shimmer and reveal timing frame by frame."
   },
   "density-default": {
-    "checked": "Contour bands overlay the 500 sampled points.",
-    "remaining": "Compare contour smoothing and fixture placement."
+    "checked": "All 500 booking points and the generated contour paths match the measured desktop and mobile previews. The reference median fare is $364.",
+    "remaining": "Compare selected-point paint and reveal transitions."
   },
   "density-groups": {
-    "checked": "Three 80-sample groups show separate contours. The legend toggles groups.",
-    "remaining": "Compare contour overlap and exact data."
+    "checked": "All 240 laptops use the measured weight and battery values. The three contour groups match at both widths and can be isolated by keyboard or pointer.",
+    "remaining": "Compare the exact hover fades and legend treatment."
   },
   "density-contours": {
-    "checked": "The preview uses 12 filled contours without point marks.",
-    "remaining": "Compare the contour boundaries and opacity."
+    "checked": "The 1,500 checkout taps produce the same contour paths in desktop and mobile previews, with neither point marks nor axes.",
+    "remaining": "Compare exact entrance motion across browsers."
   },
   "density-loading": {
-    "checked": "The preview holds 72 placeholder points and reveals contour bands in sequence.",
-    "remaining": "Compare transition timing and skeleton styles."
+    "checked": "The loading state uses eight contour placeholders and 72 dots. The Loading toggle reveals the 360 reference bookings without moving the axes.",
+    "remaining": "Compare shimmer and sequential contour reveal timing."
   },
   "bubble-map-default": {
     "checked": "Thirty city markers use area proportional to active users. The scale and keyboard tooltip report those counts.",

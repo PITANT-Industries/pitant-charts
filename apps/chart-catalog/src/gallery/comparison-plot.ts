@@ -15,6 +15,7 @@ const lineWithControls = new Set([
 export function comparisonPlot(example: ChartExample) {
   if (widePlots.has(example.id)) return 'wide'
   if (example.family === 'composed') return 'cartesian-controls'
+  if (['hexbin', 'density', 'waterfall', 'lollipop', 'dumbbell', 'histogram', 'ecdf', 'ridgeline', 'beeswarm', 'violin', 'box-plot'].includes(example.family)) return 'cartesian-controls'
   if (example.family === 'line' && (Object.hasOwn(detailedLines, example.id) || lineWithControls.has(example.id))) return 'cartesian-controls'
   if (example.family === 'bar') return 'cartesian-controls'
   if (example.family === 'area') return ['area-small-multiples', 'area-loading'].includes(example.id) ? 'cartesian-controls' : 'wide'
