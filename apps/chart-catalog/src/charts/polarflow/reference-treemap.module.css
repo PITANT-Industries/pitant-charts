@@ -9,15 +9,51 @@
 .frame[data-compact] .stage > svg { height: 100%; }
 .stage > svg:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 8px; }
 .branch { cursor: pointer; }
-.bone { animation: breathe 1.4s ease-in-out infinite alternate; }
-@keyframes breathe { to { opacity: 1; } }
-.tooltip { position: absolute; z-index: 1; max-width: min(210px, 65%); pointer-events: none; }
-.tooltip :global(.cartesian-focus-readout) { min-width: 0; }
-.portfolioTip { display: grid; gap: 4px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; color: var(--foreground); background: var(--card); box-shadow: 0 2px 8px #0002; font-size: .75rem; }
-.portfolioTip b { font-size: .875rem; }
-.portfolioTip span { color: var(--muted-foreground); }
+.stage [data-dimmed] { opacity: .4; }
+.stage .loadingExit { position: absolute; inset: 0; pointer-events: none; }
+.stage [data-path] > rect { transform-box: fill-box; transform-origin: top left; }
+@keyframes arrive { from { opacity: 0; transform: scale(.82); } to { transform: none; } }
+@keyframes showSkeleton { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulse {
+  0% { opacity: .32; animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+  32% { opacity: 1; animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+  64%, 100% { opacity: .32; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .stage :is([data-path], [data-mark='treemap-back']) { transition: opacity 120ms ease-out; }
+  .stage [data-entering] {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: arrive 880ms linear(0, .022, .077, .155, .246, .342, .438, .531, .616, .693, .762, .82, .87, .911, .944, .97, .99, 1.005, 1.015, 1.022, 1.026, 1.028, 1.028, 1.027, 1.025, 1.023, 1.02, 1.018, 1.015, 1.012, 1.01, 1.008, 1.006, 1.004, 1.003, 1.002, 1.001, 1.001, 1, 1, 1) var(--treemap-entrance-delay) backwards;
+  }
+  .skeleton { animation: showSkeleton 360ms cubic-bezier(.22, 1, .36, 1) backwards; }
+  .bone { animation: pulse 2200ms linear infinite backwards; }
+}
+.tooltip {
+  position: absolute;
+  z-index: 1;
+  min-width: 140px;
+  width: max-content;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
+  pointer-events: none;
+  font-size: 14px;
+  line-height: 20px;
+}
+.tooltip dl { margin: 0; }
+.tipTitle { margin-bottom: 8px; font-size: 12px; line-height: 16px; font-weight: 500; }
+.tipRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: center; }
+.tipRow dt { display: flex; align-items: center; gap: 8px; padding-left: 18px; color: var(--muted-foreground); }
+.tipRow[data-swatch] dt { padding-left: 0; }
+.tipRow i { width: 10px; height: 10px; border-radius: 50%; }
+.tipRow dd { margin: 0; text-align: right; white-space: nowrap; font-weight: 500; font-variant-numeric: tabular-nums; }
+.tooltip[data-portfolio] { display: grid; gap: 4px; }
+.tooltip[data-portfolio] strong { font-size: 20px; line-height: 25px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tooltip[data-portfolio] span { color: var(--muted-foreground); font-size: 12px; line-height: 16px; }
 .footer { display: grid; gap: 8px; margin-block-start: 16px; font-size: .875rem; line-height: 1.25; }
 .footer strong { font-weight: 500; }
 .footer > span { color: var(--muted-foreground); }
-@media (prefers-reduced-motion: reduce) { .bone { animation: none; } }
 .footer strong { display: flex; align-items: center; gap: 8px; }

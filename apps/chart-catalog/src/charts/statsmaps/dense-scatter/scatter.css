@@ -12,5 +12,22 @@
   min-block-size: 0;
   block-size: auto;
   aspect-ratio: 2;
+  margin-block-end: 16px;
 }
 .scatter-summary { margin: 0; color: var(--muted-foreground); text-align: center; font-size: 12px; }
+.scatter-header { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 4px; margin-block: 8px 16px; }
+.scatter-header-title { font-size: 16px; font-weight: 500; line-height: 22px; }
+.scatter-header p { margin: 0; color: var(--muted-foreground); font-size: 14px; line-height: 20px; }
+.scatter-counts { display: flex; gap: 4px; grid-column: 2; grid-row: 1 / span 2; align-self: start; }
+.scatter-counts .stat-control { border: 0; min-height: 28px; padding: 0 8px; }
+.scatter-extension { display: flex; margin-block: -8px 8px; }
+.scatter-extension .stat-control:disabled { opacity: .5; cursor: default; }
+.scatter-grid { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--chart-label, var(--muted-foreground)); font-size: 12px; pointer-events: none; }
+.scatter-plot:has([data-reference-scatter]) { overflow: visible; touch-action: pan-y; }
+.scatter-reference-readout { position: absolute; z-index: 2; pointer-events: none; }
+.scatter-reference-readout .cartesian-focus-readout { width: 140px; min-width: 0; max-width: none; }
+.scatter-reference-readout .cartesian-focus-readout-title { margin-bottom: 8px; line-height: 16px; }
+.scatter-reference-readout .cartesian-focus-readout-row:last-child { min-height: 20px; }
+.scatter-footer { display: grid; gap: 8px; margin: 0 -16px; padding: 16px; border-top: 1px solid var(--border); background: color-mix(in oklab, var(--muted) 50%, transparent); }
+.scatter-footer .stat-map-summary { display: flex; align-items: center; gap: 8px; color: var(--foreground); font-size: 14px; font-weight: 500; line-height: 1; }
+.scatter-footer .scatter-summary { text-align: start; font-size: 14px; line-height: 1; }

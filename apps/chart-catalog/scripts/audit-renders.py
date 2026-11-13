@@ -1,4 +1,4 @@
-"""Render every local example or reference preview in Chromium at four profiles."""
+"""Render every local example or reference preview at four profiles."""
 
 import argparse
 import asyncio
@@ -34,7 +34,9 @@ async def run(browser, queue, results, local_url):
                 localStorage.setItem('chart-library:layout', '"list"');
                 localStorage.setItem('chart-library:theme', '"{theme}"');
             }})()''')
-            await page.goto(local_url, wait_until='domcontentloaded')
+            response = await page.goto(local_url, wait_until='domcontentloaded')
+            if response is None or not response.ok:
+                raise RuntimeError(f'Local gallery returned HTTP {response.status if response else "unavailable"} at {local_url}')
         for example in examples:
             slug = example['id']
             errors.clear()
@@ -63,6 +65,8 @@ async def run(browser, queue, results, local_url):
             except Exception as error:
                 errors.append(str(error).splitlines()[0])
             results[name][slug] = list(errors)
+            if errors:
+                print(f'{name} {slug}: {errors[0]}', flush=True)
         await page.close()
 
 
@@ -75,7 +79,14 @@ async def audit(args):
         for start in range(0, len(examples), 56):
             queue.put_nowait((profile, examples[start:start + 56]))
     async with async_playwright() as playwright:
-        browser = await playwright.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH'))
+        if args.browser == 'edge':
+            browser = await playwright.chromium.launch(channel='msedge')
+        elif args.browser == 'chromium':
+            browser = await playwright.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH'))
+        elif args.browser == 'firefox':
+            browser = await playwright.firefox.launch()
+        else:
+            browser = await playwright.webkit.launch()
         await asyncio.gather(*(run(browser, queue, results, args.local) for _ in range(args.workers)))
         await browser.close()
     for profile, observations in results.items():
@@ -95,6 +106,7 @@ if __name__ == '__main__':
     target = parser.add_mutually_exclusive_group(required=True)
     target.add_argument('--local', help='URL of the running gallery')
     target.add_argument('--reference', action='store_true', help='Use the live shadcn.io React preview')
+    parser.add_argument('--browser', choices=['chromium', 'firefox', 'webkit', 'edge'], default='chromium')
     parser.add_argument('--workers', type=int, default=4, choices=range(1, 9))
     parser.add_argument('--report', type=Path, help='Optional JSON output with all results')
     raise SystemExit(asyncio.run(audit(parser.parse_args())))

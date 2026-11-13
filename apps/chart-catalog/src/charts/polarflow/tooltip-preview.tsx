@@ -1,6 +1,7 @@
 import { area as areaPath, curveMonotoneX, line as linePath } from "d3-shape";
 import { Button } from "@ui-sdk/react/button";
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { TrendingDown, TrendingUp, X } from "lucide-react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useChartTheme } from "../theme";
 import { Controls, dollars, number, seriesData, tone, type Props } from "./shared";
 import { tooltipFixtures } from "./tooltip-fixtures";
@@ -54,19 +55,24 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
   const pinEnabled = id === "tooltip-pinned";
   const fixture = tooltipFixtures[id] ?? tooltipFixtures['tooltip-standard'];
   const { categories, series } = seriesData(data, fixture.categories, fixture.series);
-  const pad = compact ? 15 : width < 430 ? 27 : 40;
-  const plot = { left: pad + (horizontal ? 16 : pinEnabled ? 8 : 0), right: Math.max(pad + 45, width - pad), top: compact ? 12 : height < 290 ? 24 : 40, bottom: Math.max(48, height - (compact ? 23 : 40)) };
+  const pad = compact ? 15 : Math.min(40, width / 4);
+  const verticalPad = compact ? 12 : Math.min(40, height / 3);
+  const plot = {
+    left: pad + (horizontal ? 16 : pinEnabled ? 8 : 0),
+    right: width - pad,
+    top: verticalPad,
+    bottom: height - (compact ? 23 : verticalPad),
+  };
   const limit = Math.max(1, categories.length);
   const step = (plot.right - plot.left) / Math.max(1, limit - 1);
-  const barStep = (plot.right - plot.left) / limit;
-  const customStep = (plot.right - plot.left) / (limit + .2);
+  const barStep = (plot.right - plot.left) / (limit + .2);
   const bars = ring || custom;
   const area = ['tooltip-standard', 'tooltip-content', 'tooltip-pinned', 'tooltip-header'].includes(id);
-  const tradingDates = !data && (header || horizontal) ? fixture.dates : undefined;
-  const tradingSpan = tradingDates ? +tradingDates[tradingDates.length - 1] - +tradingDates[0] : 0;
-  const x = (index: number) => plot.left + (custom ? customStep * (index + .6)
-    : ring ? barStep * (index + .5)
-    : tradingDates ? (+tradingDates[index] - +tradingDates[0]) / tradingSpan * (plot.right - plot.left)
+  const tradingDates = !data && (header || horizontal);
+  const timestamps = !data && fixture.dates?.map(date => new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()).getTime());
+  const timeSpan = timestamps ? timestamps[timestamps.length - 1] - timestamps[0] : 0;
+  const x = (index: number) => plot.left + (bars ? barStep * (index + .6)
+    : timestamps && timeSpan ? (timestamps[index] - timestamps[0]) / timeSpan * (plot.right - plot.left)
     : limit === 1 ? (plot.right - plot.left) / 2 : step * index);
   const totals = pinEnabled ? categories.map((_, index) => series.reduce((sum, row) => sum + (finiteValue(row.values[index]) ?? 0), 0)) : undefined;
   const values = totals ?? series.flatMap(row => row.values.filter((value): value is number => value !== null && Number.isFinite(value)));
@@ -87,6 +93,7 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
   const date = index === null || data ? undefined : fixture?.dates?.[index];
   const panelLabel = date ? (content || pinEnabled ? contentDate : header ? headerDate : tooltipDate).format(date) : categories[index ?? 0];
   const pinnedTotal = index === null ? 0 : totals?.[index] ?? 0;
+  const isPinned = pinned !== null;
   const datePill = !dashed;
   useEffect(() => {
     const host = chartHost.current;
@@ -102,7 +109,7 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
     observer.observe(host);
     return () => observer.disconnect();
   }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const svg = graph.current;
     const tip = panel.current;
     const host = svg?.parentElement;
@@ -112,10 +119,10 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
       if (!matrix) return;
       const point = new DOMPoint(pointX, plot.top).matrixTransform(matrix);
       const bounds = host.getBoundingClientRect();
-      const tipWidth = tip.offsetWidth;
+      const tipWidth = tip.getBoundingClientRect().width;
       const right = point.x - bounds.left + 16;
-      const left = right + tipWidth + 4 > bounds.width ? point.x - bounds.left - tipWidth - 16 : right;
-      const next = { x: Math.max(4, Math.min(left, bounds.width - tipWidth - 4)), y: Math.max(4, Math.min(point.y - bounds.top, bounds.height - tip.offsetHeight - 4)) };
+      const left = right + tipWidth > bounds.width ? point.x - bounds.left - tipWidth - 16 : right;
+      const next = { x: Math.max(4, Math.min(left, bounds.width - tipWidth - 4)), y: Math.max(4, point.y - bounds.top) };
       setPanelPosition(previous => previous.x === next.x && previous.y === next.y ? previous : next);
     };
     place();
@@ -148,9 +155,9 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
     const point = screen.matrixTransform(inverse);
     if (point.x < plot.left - 4 || point.x > plot.right + 4 || point.y < plot.top - 4 || point.y > plot.bottom + 4) return null;
     const offset = point.x - plot.left;
-    const position = tradingDates ? tradingDates.reduce((closest, _, index) => Math.abs(x(index) - point.x) < Math.abs(x(closest) - point.x) ? index : closest, 0)
-      : custom ? Math.round(offset / customStep - .6)
-      : ring ? Math.floor(offset / barStep) : Math.round(offset / step);
+    const position = timestamps ? timestamps.reduce((closest, _, index) => Math.abs(x(index) - point.x) < Math.abs(x(closest) - point.x) ? index : closest, 0)
+      : custom ? Math.floor(offset / ((plot.right - plot.left) / limit))
+      : bars ? Math.round(offset / barStep - .6) : Math.round(offset / step);
     return { position: Math.max(0, Math.min(limit - 1, position)), y: Math.max(plot.top, Math.min(plot.bottom, point.y)) };
   }
   function move(event: PointerEvent<SVGSVGElement>) {
@@ -194,18 +201,21 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
   const ratio = users && pageviews != null ? (pageviews / users).toFixed(1) : '—';
   const currencyAxis = pinEnabled || content;
   const ticks = fixtureAxis ? rangeTicks(min, max, fixtureAxis.step) : [0, .25, .5, .75, 1].map(amount => min + range * amount);
-  const tickCount = bars ? limit : compact || width < 430 ? 4 : dashed ? 4 : header || horizontal ? 6 : 5;
-  const tickIndices = [...new Set(Array.from({ length: tickCount }, (_, i) => Math.round(i * (limit - 1) / Math.max(1, tickCount - 1))))];
+  const tickCount = bars ? limit : tradingDates ? Math.min(6, Math.max(2, Math.floor((plot.right - plot.left) / 95))) : width < 430 || compact ? 3 : dashed ? 4 : 5;
+  const tickIndices = bars && width < 430
+    ? categories.flatMap((_, index) => index % 2 === 0 ? [index] : [])
+    : [...new Set(Array.from({ length: tickCount }, (_, i) => Math.round(i * (limit - 1) / Math.max(1, tickCount - 1))))];
   const pillWidth = compact ? 43 : (bars ? 63 : 75);
   const pillHeight = compact ? 17 : 32;
   const pillX = Math.max(pillWidth / 2 + 2, Math.min(width - pillWidth / 2 - 2, pointX));
   const markerRadius = compact ? 3 : styled ? 6 : 5;
-  const strokeWidth = dashed || horizontal ? 2.5 : 2;
+  const strokeWidth = area ? 2 : 2.5;
   const points = totals ? [{ name: 'Revenue', values: totals, color: series[0]?.color }] : series;
   const guide = `${uid}-guide`;
   const emphasis = `${uid}-focus`;
-  const groupWidth = custom ? customStep * .8 : barStep * .727;
-  const hoverWidth = groupWidth / Math.max(1, series.length);
+  const groupWidth = barStep * .8;
+  const barGap = Math.min(4, groupWidth / Math.max(1, series.length * 2));
+  const hoverWidth = (groupWidth - barGap * Math.max(0, series.length - 1)) / Math.max(1, series.length);
   return <div className={styles.frame}>
     {!compact && styled && <Controls label="Tooltip indicator style" items={["Line", "Thin", "Medium", "Thick"]} value={mode} onChange={setMode} />}
     {!compact && panelMotion && <Controls label="Tooltip movement" items={["Eased", "Matched", "Instant"]} value={mode} onChange={setMode} />}
@@ -226,7 +236,7 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
         </defs>
         {ticks.map(value => <g key={value}>
           <line data-tooltip-grid="" x1={plot.left} x2={plot.right} y1={y(value)} y2={y(value)} stroke={theme.grid} strokeDasharray="4 4" />
-          {(currencyAxis || horizontal) && <text x={plot.left - (horizontal ? 4 : 8)} y={y(value) - 1} fill={theme.muted} opacity={horizontal && index !== null && Math.abs(crossY - y(value)) < 20 ? .12 : 1} fontSize={compact ? 8 : 11} textAnchor="end">{currencyAxis && value !== 0 ? `$${Math.round(value / 1000)}k` : currencyAxis ? '$0' : Math.round(value)}</text>}
+          {(currencyAxis || horizontal) && <text x={plot.left - 4} y={y(value)} fill={theme.muted} opacity={horizontal && index !== null && Math.abs(crossY - y(value)) < 20 ? .12 : 1} fontSize={compact ? 8 : 11} textAnchor="end" dominantBaseline="central">{currencyAxis && value !== 0 ? `$${Math.round(value / 1000)}k` : currencyAxis ? '$0' : Math.round(value)}</text>}
         </g>)}
         {tickIndices.map(position => categories[position] !== undefined && <text data-tooltip-tick="" key={position} x={x(position)} y={plot.bottom + (compact ? 14 : 24)} fill={theme.muted} opacity={index !== null && datePill && Math.abs(x(position) - pillX) < pillWidth / 2 + 10 ? 0 : 1} fontSize={compact ? 8 : 12} textAnchor="middle">{categories[position]}</text>)}
         {index !== null && !bars && !horizontal && <g data-tooltip-guide="" transform={`translate(${pointX} 0)`} style={panelMotion && mode === 1 ? { transform: `translateX(${pointX}px)` } : undefined} className={panelMotion && mode === 1 ? tooltipStyles.matchedGuide : undefined}>
@@ -239,10 +249,10 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
           const samples = categories.map((_, i) => finiteValue(row.values[i]));
           if (bars) return <g key={seriesIndex}>{samples.map((value, pos) => {
             if (value === null) return null;
-            const center = x(pos) + (seriesIndex - (series.length - 1) / 2) * (hoverWidth + 4);
+            const center = x(pos) + (seriesIndex - (series.length - 1) / 2) * (hoverWidth + barGap);
             return <g key={pos}>
-              <rect data-tooltip-bar="" x={center - hoverWidth / 2} y={Math.min(y(value), y(0))} width={hoverWidth} height={Math.abs(y(0) - y(value))} rx={Math.min(4, hoverWidth * .18)} fill={color} opacity={pos === index || index === null ? 1 : .3} />
-              {ring && pos === index && <rect data-bar-ring="" x={center - hoverWidth / 2} y={y(value) - hoverWidth / 2} width={hoverWidth} height={hoverWidth} rx={hoverWidth / 4} fill="none" stroke={color} strokeWidth="2" />}
+              <rect data-tooltip-bar="" x={center - hoverWidth / 2} y={Math.min(y(value), y(0))} width={hoverWidth} height={Math.abs(y(0) - y(value))} rx={Math.min(8, hoverWidth / 2)} fill={color} opacity={pos === index || index === null ? 1 : .3} />
+              {ring && pos === index && <rect data-bar-ring="" x={center - hoverWidth / 2} y={y(value) - hoverWidth / 2} width={hoverWidth} height={hoverWidth} rx={Math.min(8, hoverWidth / 2)} fill="none" stroke={color} strokeWidth="2" />}
             </g>;
           })}</g>;
           const isDefined = (value: number | null) => value !== null && Number.isFinite(value);
@@ -269,26 +279,45 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
           <text x={pillX} y={plot.bottom + 4 + pillHeight / 2 + (compact ? 3 : 4)} textAnchor="middle" fontSize={compact ? 8 : 12} className={tooltipStyles.axisText}>{categories[index]}</text>
         </g>}
       </svg>
-      {index !== null && (!compact || index > 0) && <div ref={panel} className={`${styles.panel} ${tooltipStyles.panel}`} data-pinned={pinned !== null} data-tooltip-motion={motion} data-tooltip-style={header ? 'header' : content ? 'content' : pinEnabled ? 'pin' : 'rows'}
-        role={pinned !== null ? "region" : "status"} aria-label="Chart tooltip"
+      {index !== null && (!compact || index > 0) && <div ref={panel} className={`${styles.panel} ${tooltipStyles.panel}`} data-pinned={isPinned} data-tooltip-motion={motion} data-tooltip-style={renderTooltip ? 'custom' : header ? 'header' : content ? 'content' : pinEnabled ? 'pin' : 'rows'} data-tooltip-variant={id}
+        role={isPinned ? "region" : "status"} aria-label="Chart tooltip"
         style={{ left: 0, top: panelPosition.y, transform: `translateX(${panelPosition.x}px)` }}>
-        {pinned !== null && <Button className={styles.control} aria-label="Unpin tooltip" onClick={() => { graph.current?.focus(); setPinned(null); setActive(null); }}>×</Button>}
-        {renderTooltip ? renderTooltip({ category: categories[index], index, pinned: pinned !== null, series: displayedSeries }) : <>
+        {isPinned && <Button className={styles.control} aria-label="Unpin tooltip" onClick={() => { graph.current?.focus(); setPinned(null); setActive(null); }}><X size={16} aria-hidden="true" /></Button>}
+        {renderTooltip ? renderTooltip({ category: categories[index], index, pinned: isPinned, series: displayedSeries }) : pinEnabled ? <>
+          <div className={tooltipStyles.pinSummary}>
+            <p className={tooltipStyles.date}>{panelLabel}</p>
+            <p className={tooltipStyles.revenue}><strong>{dollars.format(pinnedTotal)}</strong></p>
+            {!isPinned && <p className={styles.screenReader}>Click to pin</p>}
+          </div>
+          <div className={tooltipStyles.pinDisclosure} inert={!isPinned}>
+            <div className={tooltipStyles.pinClip}>
+              <div className={tooltipStyles.pinBreakdown}>
+                {displayedSeries.map((row, seriesIndex) => <div className={tooltipStyles.pinSeries} key={seriesIndex}>
+                  <p data-row><span>{row.name}</span><strong>{row.value === null ? '—' : dollars.format(row.value)}</strong></p>
+                  <div className={tooltipStyles.pinTrack} aria-hidden="true">
+                    <div style={{ backgroundColor: row.color, width: `${pinnedTotal > 0 ? Math.max(0, Math.min(100, (row.value ?? 0) / pinnedTotal * 100)) : 0}%` }} />
+                  </div>
+                </div>)}
+              </div>
+            </div>
+          </div>
+        </> : <>
           <p className={header ? tooltipStyles.header : tooltipStyles.date}><strong>{panelLabel}</strong></p>
-          {pinEnabled && <p className={tooltipStyles.revenue}><strong>{dollars.format(pinnedTotal)}</strong></p>}
           {content ? <>
             <p className={tooltipStyles.revenue}><strong>{displayedSeries[0]?.value == null ? '—' : dollars.format(close)}</strong></p>
-            {index > 0 && previous !== 0 && displayedSeries[0]?.value != null && displayedSeries[0]?.previousValue != null && <p className={tooltipStyles.change}>{changePercent.format(change / Math.abs(previous))} vs. the day before</p>}
+            {index > 0 && previous !== 0 && displayedSeries[0]?.value != null && displayedSeries[0]?.previousValue != null && <p className={tooltipStyles.change}>
+              {change < 0 ? <TrendingDown size={16} data-direction="down" aria-hidden="true" /> : <TrendingUp size={16} data-direction="up" aria-hidden="true" />}
+              {changePercent.format(change / Math.abs(previous))} vs. the day before
+            </p>}
             {index === 0 && !data && <p className={tooltipStyles.change}>First day of April</p>}
           </> : header ? <>
             <p data-row><span>Close</span><strong>{displayedSeries[0]?.value == null ? '—' : dollars.format(close)}</strong></p>
             <p data-row><span>Change</span><strong>{index > 0 && displayedSeries[0]?.previousValue != null && displayedSeries[0]?.value != null ? `${change > 0 ? '+' : ''}${number.format(change)}` : !data && index === 0 ? '0' : '—'}</strong></p>
-          </> : (!pinEnabled || pinned !== null) && displayedSeries.map((row, seriesIndex) => <p data-row key={seriesIndex}>
+          </> : displayedSeries.map((row, seriesIndex) => <p data-row key={seriesIndex}>
             <span><i style={{ backgroundColor: row.color }} />{row.name}</span>
-            <strong>{row.value === null ? '—' : (pinEnabled ? dollars : number).format(row.value)}</strong>
+            <strong>{row.value === null ? '—' : number.format(row.value)}</strong>
           </p>)}
           {id === "tooltip-rows" && <p data-row><span>Pages per user</span><strong>{ratio}</strong></p>}
-          {pinEnabled && pinned === null && <p>Click to pin</p>}
         </>}
       </div>}
     </div>
