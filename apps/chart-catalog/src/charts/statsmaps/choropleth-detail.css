@@ -36,7 +36,8 @@
     transition: transform .55s cubic-bezier(.22,.61,.36,1);
   }
   .choropleth-stage[data-flying='true']:not([data-selected]) .choropleth-svg { transition-duration: .26s; }
-  .choropleth-svg :is([data-map-location], [data-map-graticule], [data-map-ocean], [data-map-land]) { transition: opacity .24s ease-out; }
+  .choropleth-svg :is([data-map-location], [data-map-graticule], [data-map-ocean], [data-map-dot-regions]) { transition: opacity .24s ease-out; }
+  .choropleth-svg [data-map-dot-land] { transition: stroke-width .55s cubic-bezier(.22,.61,.36,1); }
   .choropleth-marker-pulse { animation: choropleth-pulse 1.9s ease-out var(--pulse-delay, 0ms) infinite; }
 }
 @keyframes choropleth-pulse { from { transform: scale(1); opacity: .65; } to { transform: scale(2.5); opacity: 0; } }

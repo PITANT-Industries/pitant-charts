@@ -213,6 +213,7 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
   const points = totals ? [{ name: 'Revenue', values: totals, color: series[0]?.color }] : series;
   const guide = `${uid}-guide`;
   const emphasis = `${uid}-focus`;
+  const guideColor = styled ? tone(theme, 0) : `color-mix(in oklab, ${theme.muted} 80%, transparent)`;
   const groupWidth = barStep * .8;
   const barGap = Math.min(4, groupWidth / Math.max(1, series.length * 2));
   const hoverWidth = (groupWidth - barGap * Math.max(0, series.length - 1)) / Math.max(1, series.length);
@@ -226,20 +227,29 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
         onFocus={() => { if (active === null) setActive(0); }} onKeyDown={key}
         onBlur={() => { if (pinned === null) setActive(null); }}>
         <defs>
-          {points.map((row, i) => <linearGradient key={i} id={`${uid}-area-${i}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={tone(theme, i, row.color)} stopOpacity=".3" /><stop offset="100%" stopColor={tone(theme, i, row.color)} stopOpacity="0" />
-          </linearGradient>)}
+          {!bars && points.map((row, i) => {
+            const color = tone(theme, header ? 1 : i, row.color);
+            return area ? <linearGradient key={i} id={`${uid}-trace-${i}`} x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor={color} stopOpacity={id === 'tooltip-standard' ? .3 : .4} />
+              <stop offset="100%" stopColor={color} stopOpacity="0" />
+            </linearGradient> : <linearGradient key={i} id={`${uid}-trace-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor={color} stopOpacity="0" />
+              <stop offset="15%" stopColor={color} />
+              <stop offset="85%" stopColor={color} />
+              <stop offset="100%" stopColor={color} stopOpacity="0" />
+            </linearGradient>;
+          })}
           <linearGradient id={guide} x1="0%" x2="0%" y1="0%" y2="100%">
-            {[0, .1, .9, 1].map((offset, i) => <stop key={offset} offset={offset} stopColor={styled ? tone(theme, 0) : theme.muted} stopOpacity={i === 0 || i === 3 ? 0 : 1} />)}
+            {[0, .1, .5, .9, 1].map(offset => <stop key={offset} offset={offset} stopColor={guideColor} stopOpacity={offset === 0 || offset === 1 ? 0 : 1} />)}
           </linearGradient>
           {index !== null && <clipPath id={emphasis}><rect x={Math.max(plot.left, pointX - 30)} y={plot.top - 2} width={Math.min(plot.right, pointX + 30) - Math.max(plot.left, pointX - 30)} height={plot.bottom - plot.top + 4} /></clipPath>}
         </defs>
         {ticks.map(value => <g key={value}>
           <line data-tooltip-grid="" x1={plot.left} x2={plot.right} y1={y(value)} y2={y(value)} stroke={theme.grid} strokeDasharray="4 4" />
-          {(currencyAxis || horizontal) && <text x={plot.left - 4} y={y(value)} fill={theme.muted} opacity={horizontal && index !== null && Math.abs(crossY - y(value)) < 20 ? .12 : 1} fontSize={compact ? 8 : 11} textAnchor="end" dominantBaseline="central">{currencyAxis && value !== 0 ? `$${Math.round(value / 1000)}k` : currencyAxis ? '$0' : Math.round(value)}</text>}
+          {(currencyAxis || horizontal) && <text x={plot.left - 4} y={y(value)} fill={theme.muted} opacity={horizontal && index !== null ? Math.max(0, Math.min(1, (Math.abs(crossY - y(value)) - 9) / 14)) : 1} fontSize={compact ? 8 : 11} textAnchor="end" dominantBaseline="central">{currencyAxis && value !== 0 ? `$${Math.round(value / 1000)}k` : currencyAxis ? '$0' : Math.round(value)}</text>}
         </g>)}
         {tickIndices.map(position => categories[position] !== undefined && <text data-tooltip-tick="" key={position} x={x(position)} y={plot.bottom + (compact ? 14 : 24)} fill={theme.muted} opacity={index !== null && datePill && Math.abs(x(position) - pillX) < pillWidth / 2 + 10 ? 0 : 1} fontSize={compact ? 8 : 12} textAnchor="middle">{categories[position]}</text>)}
-        {index !== null && !bars && !horizontal && <g data-tooltip-guide="" transform={`translate(${pointX} 0)`} style={panelMotion && mode === 1 ? { transform: `translateX(${pointX}px)` } : undefined} className={panelMotion && mode === 1 ? tooltipStyles.matchedGuide : undefined}>
+        {index !== null && !bars && !horizontal && <g data-tooltip-guide="" transform={`translate(${pointX} 0)`}>
           {dashed ? <line x1="0" x2="0" y1={plot.top} y2={plot.bottom} stroke={tone(theme, 1)} strokeDasharray="6 4" strokeWidth="1" />
             : <rect x={-(styled ? indicatorWidths[mode] : 1) / 2} y={plot.top} width={styled ? indicatorWidths[mode] : 1} height={plot.bottom - plot.top} fill={`url(#${guide})`} />}
         </g>}
@@ -252,7 +262,7 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
             const center = x(pos) + (seriesIndex - (series.length - 1) / 2) * (hoverWidth + barGap);
             return <g key={pos}>
               <rect data-tooltip-bar="" x={center - hoverWidth / 2} y={Math.min(y(value), y(0))} width={hoverWidth} height={Math.abs(y(0) - y(value))} rx={Math.min(8, hoverWidth / 2)} fill={color} opacity={pos === index || index === null ? 1 : .3} />
-              {ring && pos === index && <rect data-bar-ring="" x={center - hoverWidth / 2} y={y(value) - hoverWidth / 2} width={hoverWidth} height={hoverWidth} rx={Math.min(8, hoverWidth / 2)} fill="none" stroke={color} strokeWidth="2" />}
+              {ring && pos === index && <rect data-bar-ring="" x={center - hoverWidth / 2} y={y(value) - hoverWidth / 2} width={hoverWidth} height={hoverWidth} rx={hoverWidth / 4} fill="none" stroke={color} strokeWidth="2" />}
             </g>;
           })}</g>;
           const isDefined = (value: number | null) => value !== null && Number.isFinite(value);
@@ -260,23 +270,24 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
           const trace = linePath<number | null>().defined(isDefined).x((_, i) => x(i)).y(valueY).curve(curveMonotoneX)(samples) ?? undefined;
           const fill = area && areaPath<number | null>().defined(isDefined).x((_, i) => x(i)).y0(y(0)).y1(valueY).curve(curveMonotoneX)(samples);
           return <g key={seriesIndex}>
-            {fill && <path d={fill} fill={`url(#${uid}-area-${seriesIndex})`} />}
-            <path data-tooltip-trace="" d={trace} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" opacity={index === null ? 1 : .52} />
+            {fill && <path d={fill} fill={`url(#${uid}-trace-${seriesIndex})`} />}
+            <path data-tooltip-trace="" d={trace} fill="none" stroke={area ? color : `url(#${uid}-trace-${seriesIndex})`} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
             {index !== null && <path d={trace} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" clipPath={`url(#${emphasis})`} />}
-            {index !== null && !dashed && samples[index] !== null && <g data-tooltip-marker="" className={panelMotion && mode === 1 ? tooltipStyles.matchedGuide : undefined} style={{ transform: `translate(${pointX}px,${valueY(samples[index])}px)` }}>
+            {index !== null && !dashed && samples[index] !== null && <g data-tooltip-marker="" transform={`translate(${pointX} ${valueY(samples[index])})`}>
               <circle r={markerRadius * 2.6} fill={color} opacity=".3" /><circle r={markerRadius} fill={color} stroke={styled ? theme.surface : undefined} strokeWidth={styled ? 3 : undefined} />
             </g>}
           </g>;
         })}
-        {index !== null && custom && <rect data-custom-guide="" x={pointX - groupWidth / 2} y={plot.bottom - 3} width={groupWidth} height="3" rx="1.5" fill={tone(theme, 0)} />}
+        {index !== null && custom && <rect data-custom-guide="" x={pointX - groupWidth / 2} y={plot.bottom - 3} width={groupWidth} height="3" rx="1.5" className={tooltipStyles.axisPill} />}
         {index !== null && horizontal && <g data-horizontal-guide="">
           <line x1={plot.left} x2={plot.right} y1={crossY} y2={crossY} stroke={theme.muted} strokeDasharray="4 3" />
+          <line x1={pointX} x2={pointX} y1={plot.top} y2={plot.bottom} stroke={theme.muted} strokeDasharray="4 3" />
           <rect x={Math.max(1, plot.left - 54)} y={crossY - 13} width="47" height="26" rx="13" className={tooltipStyles.axisPill} />
           <text x={Math.max(24.5, plot.left - 30.5)} y={crossY + 4} textAnchor="middle" fontSize="12" className={tooltipStyles.axisText}>{Math.round(crossValue)}</text>
         </g>}
         {index !== null && datePill && <g data-tooltip-date-pill="">
           <rect x={pillX - pillWidth / 2} y={plot.bottom + 4} width={pillWidth} height={pillHeight} rx={pillHeight / 2} className={tooltipStyles.axisPill} />
-          <text x={pillX} y={plot.bottom + 4 + pillHeight / 2 + (compact ? 3 : 4)} textAnchor="middle" fontSize={compact ? 8 : 12} className={tooltipStyles.axisText}>{categories[index]}</text>
+          <text x={pillX} y={plot.bottom + 4 + pillHeight / 2 + (compact ? 3 : 5)} textAnchor="middle" fontSize={compact ? 8 : 14} fontWeight="500" className={tooltipStyles.axisText}>{categories[index]}</text>
         </g>}
       </svg>
       {index !== null && (!compact || index > 0) && <div ref={panel} className={`${styles.panel} ${tooltipStyles.panel}`} data-pinned={isPinned} data-tooltip-motion={motion} data-tooltip-style={renderTooltip ? 'custom' : header ? 'header' : content ? 'content' : pinEnabled ? 'pin' : 'rows'} data-tooltip-variant={id}

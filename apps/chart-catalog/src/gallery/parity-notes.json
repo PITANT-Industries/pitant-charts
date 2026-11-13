@@ -20,16 +20,16 @@
     "remaining": "Compare the dots’ spacing, size and opacity at different display densities."
   },
   "area-forecast": {
-    "checked": "The monthly Revenue fill, circle markers, solid actual segment and dashed forecast tail agree in desktop and mobile geometry. January reads 48,200 and December reads 81,200.",
-    "remaining": "Compare marker timing, fade and pointer transitions frame by frame."
+    "checked": "The monthly Revenue fill, circle markers, actual segment and dashed forecast tail match the measured geometry. All 12 sampled marker delays and blur agree. The 120 ms inspection spring moves the guide and rolls the date pill.",
+    "remaining": "Compare exact raster frames across browsers and remaining narrow tick fading."
   },
   "area-reference-band": {
-    "checked": "The October Sign-ups chart has an exact 180–240 target band, two dashed limits, triangular markers and a numeric axis. Desktop and mobile date ticks and sampled keyboard values agree.",
-    "remaining": "Compare band and marker paint at the plot edges and during inspection."
+    "checked": "The October Sign-ups chart matches the measured 180–240 band, its neutral fill, dashed limits, and triangular markers. The band fades in over 420 ms. Sampled inspection readouts and panel styling agree.",
+    "remaining": "Compare exact active-marker positioning and narrow tick fading during inspection."
   },
   "area-reference-range": {
-    "checked": "October 12–18 is marked across the reference Installs curve with a full-height highlight. The area path and adaptive date ticks agree in desktop and mobile Compare views.",
-    "remaining": "Compare highlight opacity and tooltip transitions."
+    "checked": "October 12–18 uses the measured full-height highlight, fill, and 420 ms fade. The responsive date ticks and sampled inspection readouts match.",
+    "remaining": "Compare exact cross-browser raster frames and narrow tick fading."
   },
   "area-background": {
     "checked": "The August Requests area and responsive date ticks agree in both sampled views. The diagonal background covers the plot and replaces the ordinary horizontal grid.",
@@ -44,8 +44,8 @@
     "remaining": "Compare weekend stripe opacity and deadline paint at intermediate widths."
   },
   "area-trend": {
-    "checked": "The ten-month Desktop area and the gradient regression overlay agree with the measured date scale and grid. The sampled keyboard readout agrees, from 186 in January to 377 in October.",
-    "remaining": "Compare the trend fade and inspection transitions."
+    "checked": "The ten-month Desktop area and gradient trend overlay match the measured date scale and grid. The trend uses a 420 ms entrance fade. Sampled readouts, panel styling and rolling date pill match.",
+    "remaining": "Compare exact cross-browser raster frames and narrow tick fading."
   },
   "area-value-labels": {
     "checked": "The 24-month Desktop and Mobile curves agree in both Compare views. Endpoint and interior labels adapt to the plot width with collision avoidance.",
@@ -976,12 +976,12 @@
     "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "treemap-default": {
-    "checked": "Cloud-spend tiles and labels match at three widths. Selecting Compute drills into Platform, and the entire breadcrumb row returns to the parent. Keyboard readouts and group highlights match.",
-    "remaining": "Compare exact zoom easing and pointer reinspection immediately after drilling in."
+    "checked": "Cloud-spend tiles and labels match at three widths. Selecting Compute drills into Platform. The stationary pointer immediately reports the same tile as the reference after zoom and back. The measured spring and breadcrumb behavior agree.",
+    "remaining": "Compare exact exit paint and narrow tooltip placement when the reference clips."
   },
   "treemap-drilldown": {
-    "checked": "Initial and nested layouts match at three widths. Selecting the charts leaf from node_modules opens @tanstack. Breadcrumb and tile readouts match, including the 64 kB charts tile.",
-    "remaining": "Compare exact zoom and exit easing and pointer reinspection after drill-down."
+    "checked": "Initial and nested layouts match at three widths. Selecting charts from node_modules opens @tanstack. The nested branch swap, shared-tile spring and stationary pointer readouts follow the reference.",
+    "remaining": "Compare exact exit paint and interrupted gestures."
   },
   "treemap-portfolio": {
     "checked": "All 17 rectangles match at the measured widths, and inspection of S&P 500 ETF reports $126,000 and 16.8% of the portfolio. Portfolio hover highlights the selected holding and its group. Activating a holding retains the overview.",
@@ -1092,12 +1092,12 @@
     "remaining": "Compare the exact zoom motion and tooltip placement."
   },
   "choropleth-dot-grid": {
-    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. The 7 px hexagonal lattice keeps its spacing across land and ocean. The office positions match, and London centers at 2× zoom.",
-    "remaining": "Compare coastline classification, dot paint and camera easing."
+    "checked": "The ocean and five land path strings match at six widths in Chrome, Firefox, and WebKit, including 78,246 sampled dots. Selecting London centers it at 2× zoom, enlarges the land dots and fades the ocean. Escape resets the view.",
+    "remaining": "Compare exact camera easing and tooltip placement."
   },
   "choropleth-pointer-camera": {
-    "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. The idle and selected perspective angles and all five office positions match. London centers on activation and Escape restores the view.",
-    "remaining": "Compare pointer-driven rotation, easing and the dot backdrop paint."
+    "checked": "All 177 country paths and the 16:9 plot match. The idle and London camera bounds match within 0.001 px. Pointer rotation moves in the reference direction and stays still with reduced motion.",
+    "remaining": "Compare the exact rotation easing, backdrop paint and tooltip behavior after selection."
   },
   "choropleth-markers": {
     "checked": "All 177 country paths and the 16:9 plot match in desktop and mobile Chrome. The five infrastructure positions match within 0.001 px, with a pin, circle, diamond, square and triangle.",
@@ -1280,8 +1280,8 @@
     "remaining": "Placeholder arrow directions and reveal timing differ slightly."
   },
   "tooltip-standard": {
-    "checked": "All 30 September readouts match the live reference for Organic, Direct, and Referral. Sampled pointer readouts, panel size and desktop placement agree. The plot uses the measured mobile grid and ticks.",
-    "remaining": "Compare area gradient and cursor easing. The panel stays inside the plot on narrow layouts."
+    "checked": "All 30 September readouts match the live reference for Organic, Direct, and Referral. Sampled pointer readouts, panel size and desktop placement agree. The plot matches the area gradient stops and the measured mobile grid and ticks.",
+    "remaining": "Compare cursor easing and the rolling axis label. The panel stays inside the plot on narrow layouts."
   },
   "tooltip-crosshair": {
     "checked": "All 31 October Sign-ups readouts match. Desktop and mobile placement use the October time scale. The 6 px dash and 4 px gap guide appears without focus dots or a date pill.",
@@ -1292,32 +1292,32 @@
     "remaining": "Compare the guide fade and motion across themes."
   },
   "tooltip-motion": {
-    "checked": "All 21 August Web and App readouts match. Eased and Matched use the sampled 200 ms panel travel, with Matched moving the guide and active marks together. Instant and reduced motion suppress the panel transition.",
-    "remaining": "Compare motion during rapid pointer movement and exact active-mark easing."
+    "checked": "All 21 August Web and App readouts match. Eased and Matched follow the sampled 200 ms panel travel and update the guide and active marks immediately, as measured in the reference. Instant and reduced motion suppress the panel transition.",
+    "remaining": "Compare motion during rapid pointer movement and the rolling axis label."
   },
   "tooltip-rows": {
     "checked": "All 30 June readouts match, including Pages per user rounded to one decimal. The Users and Pageviews traces stay unfilled, and the panel uses the measured row spacing.",
     "remaining": "Compare cursor easing. The panel stays inside the plot on narrow layouts."
   },
   "tooltip-content": {
-    "checked": "All 30 April revenue and day-over-day readouts match, including the first-day message. The area has a dollar axis and reports signed percentage change with a direction icon. Sampled panel sizes match.",
-    "remaining": "Compare gradient and hover timing. The panel stays inside the plot on narrow layouts."
+    "checked": "All 30 April revenue and day-over-day readouts match. The area uses the measured gradient and reports signed percentage change with a direction icon. Sampled panel sizes match.",
+    "remaining": "Compare hover timing. The panel stays inside the plot on narrow layouts."
   },
   "tooltip-pinned": {
-    "checked": "All 30 November pinned readouts match the total and three-channel breakdown. The collapsed and expanded panels match the measured heights and show proportional channel bars. Enter and Space pin the selected day, and Escape or the close control releases it.",
-    "remaining": "Compare the exact expansion easing and touch interactions across browsers. The panel stays inside the plot on narrow layouts."
+    "checked": "All 30 November pinned readouts match the total and three-channel breakdown. The panel uses the measured 260 ms expansion and 180 ms opacity transition. Enter and Space pin the selected day, and Escape or the close control releases it.",
+    "remaining": "Compare touch interactions across browsers. The panel stays inside the plot on narrow layouts."
   },
   "tooltip-ring": {
     "checked": "All nine monthly readouts match. Eighteen bars show Online and Retail revenue with the measured spacing. Rounded outlines track both active bar tops.",
     "remaining": "Compare ring paint and entrance and hover timing."
   },
   "tooltip-horizontal-crosshair": {
-    "checked": "All 30 trading-day readouts match. The horizontal guide updates its price label as the pointer moves vertically, independently of the date.",
+    "checked": "All 30 trading-day readouts match. The date guide and the horizontal price guide move independently. The price axis fades ticks near the floating label.",
     "remaining": "Compare tick-label fading at both edges and guide timing."
   },
   "tooltip-header": {
-    "checked": "All 30 trading-day readouts match, including the USD close and signed daily change under the date divider. Sampled panel size and desktop placement match.",
-    "remaining": "Compare hover timing and gradient. The panel stays inside the plot on narrow layouts."
+    "checked": "All 30 trading-day readouts match, including the USD close and signed daily change under the date divider. The fill uses the measured blue series and gradient stops. Sampled panel size and desktop placement match.",
+    "remaining": "Compare hover timing. The panel stays inside the plot on narrow layouts."
   },
   "tooltip-custom-indicator": {
     "checked": "All eight monthly Revenue readouts match. The 3 px strip spans the active bar and replaces the vertical guide. The narrow plot shows every other month, as in the reference.",

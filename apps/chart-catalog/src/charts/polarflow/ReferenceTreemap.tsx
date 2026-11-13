@@ -1,23 +1,23 @@
 import { Toggle } from "@ui-sdk/react/toggle";
 import { LoaderCircle, TrendingUp } from "lucide-react";
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
 import { useChartTheme } from "../theme";
 import { usePlotSize } from "../usePlotSize";
 import { skeletonTiles, treemapTiles, type TreemapTile } from "./reference-treemap-layout";
+import { captureTreemapLayout, glideTreemapLayout } from "./reference-treemap-motion";
 import { dollars, nextChartFocus, number, percent, type Props } from "./shared";
 import { referenceTreemapFixtures } from "./reference-treemap-fixtures";
 import type { SunburstNode } from "./upstream/sunburst-data";
 import { sumValues } from "./upstream/sunburst-layout";
 import styles from "./reference-treemap.module.css";
 
-type Focus = { index: number; point?: { x: number; y: number } };
+type Point = { x: number; y: number };
+type Focus = { index: number; point?: never } | { index?: never; point: Point };
 type Readout = { title: string; entries: { name: string; value: string; color?: string }[] };
 
 const breadcrumbHeight = 24;
 const tooltipOffset = 16;
 const loadingFade = 450;
-const layoutDuration = 380;
-const layoutEasing = "cubic-bezier(.16, 1, .3, 1)";
 
 const palette = (index: number) => `var(--chart-${index + 1})`;
 const mix = (color: string, amount: number) => `color-mix(in oklab, ${color} ${amount}%, var(--card))`;
@@ -44,40 +44,21 @@ function displayShare(value: number, total: number) {
   return `${share > 0 && share < 10 ? share.toFixed(1) : Math.round(share)}%`;
 }
 
-function rectLayouts(svg: SVGSVGElement) {
-  const layouts = new Map<string, SVGRectElement>();
-  for (const group of svg.querySelectorAll<SVGGElement>("g[data-path]")) {
-    const rect = group.querySelector("rect");
-    if (group.dataset.path && rect) layouts.set(group.dataset.path, rect);
+function inspect(marks: TreemapTile[], hasBreadcrumb: boolean, point: Point, width: number) {
+  if (point.x < 0 || point.x > width || point.y < 0) return null;
+  if (hasBreadcrumb && point.y <= breadcrumbHeight) return { index: 0 };
+  for (let index = marks.length - 1; index >= 0; index--) {
+    const { x, y, width, height } = marks[index].bounds;
+    if (width > 0 && height > 0 && point.x >= x && point.x <= x + width && point.y >= y && point.y <= y + height) {
+      return { index: index + Number(hasBreadcrumb) };
+    }
   }
-  return layouts;
-}
-
-function animateLayout(svg: SVGSVGElement, previous: Map<string, DOMRect>) {
-  for (const [key, element] of rectLayouts(svg)) {
-    const before = previous.get(key);
-    element.getAnimations().forEach(animation => animation.cancel());
-    const after = element.getBoundingClientRect();
-    if (!before || !after.width || !after.height) continue;
-    const x = before.x - after.x;
-    const y = before.y - after.y;
-    const sx = before.width / after.width;
-    const sy = before.height / after.height;
-    if (!x && !y && sx === 1 && sy === 1) continue;
-    const group = element.parentElement;
-    const timing = { duration: layoutDuration, easing: layoutEasing };
-    element.animate([{ transform: `translate(${x}px, ${y}px) scale(${sx}, ${sy})` }, { transform: "none" }], timing);
-    group?.querySelectorAll<SVGTextElement>("text").forEach(text => {
-      text.getAnimations().forEach(animation => animation.cancel());
-      const fromX = text.getAttribute("text-anchor") === "end" ? x + before.width - after.width : x;
-      text.animate([{ transform: `translate(${fromX}px, ${y}px)` }, { transform: "none" }], timing);
-    });
-  }
+  return null;
 }
 
 function TreemapReadout({ readout, point, width, height, portfolio }: {
   readout: Readout;
-  point: { x: number; y: number };
+  point: Point;
   width: number;
   height: number;
   portfolio: boolean;
@@ -99,7 +80,8 @@ function TreemapReadout({ readout, point, width, height, portfolio }: {
     return () => observer.disconnect();
   }, [readout]);
   const alignLeft = point.x + size.width + tooltipOffset > width;
-  const left = alignLeft ? point.x - size.width - tooltipOffset : point.x + tooltipOffset;
+  const desiredLeft = alignLeft ? point.x - size.width - tooltipOffset : point.x + tooltipOffset;
+  const left = Math.max(0, Math.min(desiredLeft, width - size.width));
   const top = Math.max(tooltipOffset, Math.min(point.y - size.height / 2, height - size.height - tooltipOffset));
 
   return <div ref={element} className={styles.tooltip} data-treemap-tooltip="" data-portfolio={portfolio || undefined}
@@ -139,7 +121,8 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
   const [entering, setEntering] = useState(true);
   const [loadingDelay, setLoadingDelay] = useState(0);
   const exit = useRef<SVGSVGElement | null>(null);
-  const previousRects = useRef<Map<string, DOMRect> | null>(null);
+  const pendingLayout = useRef<ReturnType<typeof captureTreemapLayout> | null>(null);
+  const finishLayout = useRef<(() => void) | null>(null);
   const current = hierarchyAt(root, path);
   const { plot, width, height } = usePlotSize<SVGSVGElement>(576, isPortfolio ? 288 : 360);
   const entranceScale = 420 / (width + height);
@@ -147,8 +130,9 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
     [current, height, isPortfolio, loading, path, root, width]);
   const backIndex = path.length ? 0 : -1;
   const offset = backIndex + 1;
-  const backActive = focus?.index === backIndex;
-  const active = focus && focus.index >= offset ? marks[focus.index - offset] : undefined;
+  const currentFocus = focus?.point ? inspect(marks, path.length > 0, focus.point, width) : focus;
+  const backActive = currentFocus?.index === backIndex;
+  const active = currentFocus && currentFocus.index >= offset ? marks[currentFocus.index - offset] : undefined;
   const crumb = fitLabel(`‹  ${[root.name, ...path].join(" / ")}`, width - 16, 12, measure) || "‹";
   const crumbWidth = Math.min(width, 16 + measure(crumb, 12, 500));
   const value = active ? sumValues(active.node) : 0;
@@ -172,25 +156,30 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
   }, [active, backActive, current, hasDrilldown, hasLoading, id, isPortfolio, path, root, total, value]);
 
   useLayoutEffect(() => {
-    if (!plot.current || !previousRects.current) return;
-    animateLayout(plot.current, previousRects.current);
-    previousRects.current = null;
-  }, [path, plot]);
+    finishLayout.current?.();
+    const svg = plot.current;
+    const layout = pendingLayout.current;
+    finishLayout.current = svg && layout ? glideTreemapLayout(svg, layout) : null;
+    pendingLayout.current = null;
+  }, [marks, path, plot]);
 
-  useLayoutEffect(() => () => exit.current?.remove(), []);
+  useLayoutEffect(() => () => {
+    finishLayout.current?.();
+    exit.current?.remove();
+  }, []);
 
   function canAnimate() {
     return !compact && !window.matchMedia("(prefers-reduced-motion: reduce)").matches && !!plot.current?.animate;
   }
 
-  function go(next: string[], glide = true) {
+  function go(next: string[], glide = true, point?: Point) {
     const svg = plot.current;
-    if (svg && glide && canAnimate()) {
-      previousRects.current = new Map(Array.from(rectLayouts(svg), ([key, rect]) => [key, rect.getBoundingClientRect()]));
-    }
+    pendingLayout.current = svg && glide && canAnimate() ? captureTreemapLayout(svg) : null;
+    finishLayout.current?.();
+    finishLayout.current = null;
     setEntering(!glide);
     setPath(next);
-    setFocus(null);
+    setFocus(point ? { point } : null);
   }
 
   function toggleLoading(next: boolean) {
@@ -200,14 +189,20 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
     const delay = next && svg && canAnimate() ? loadingFade : 0;
     if (svg && delay) {
       const overlay = svg.cloneNode(true) as SVGSVGElement;
-      for (const attribute of ["aria-busy", "aria-description", "aria-label", "aria-roledescription", "role", "tabindex"]) {
+      for (const attribute of ["aria-busy", "aria-description", "aria-label", "aria-roledescription", "role", "tabindex", "id"]) {
         overlay.removeAttribute(attribute);
       }
       overlay.setAttribute("aria-hidden", "true");
       overlay.setAttribute("class", styles.loadingExit);
-      overlay.querySelectorAll("[data-mark]").forEach(element => {
+      overlay.querySelectorAll("[data-mark], [data-treemap-exit-key]").forEach(element => {
         element.removeAttribute("data-mark");
         element.removeAttribute("data-path");
+        element.removeAttribute("data-entering");
+        element.removeAttribute("data-active");
+        element.removeAttribute("data-dimmed");
+        element.removeAttribute("data-treemap-exit-key");
+        element.removeAttribute("role");
+        element.removeAttribute("aria-label");
       });
       svg.after(overlay);
       exit.current = overlay;
@@ -243,13 +238,13 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
   function handleKeys(event: KeyboardEvent<SVGSVGElement>) {
     if (loading || compact) return;
     const key = event.key;
-    if (key === "Escape" && (focus || path.length)) {
+    if (key === "Escape" && (currentFocus || path.length)) {
       event.preventDefault();
       event.stopPropagation();
       if (path.length) goBack();
       else setFocus(null);
     } else if (key === "Enter" || key === " ") {
-      if (path.length && focus?.index === backIndex) {
+      if (path.length && currentFocus?.index === backIndex) {
         event.preventDefault();
         goBack();
       } else if (active) {
@@ -259,7 +254,7 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
         go(target);
       }
     } else {
-      const index = nextChartFocus(key, focus?.index ?? null, marks.length + offset);
+      const index = nextChartFocus(key, currentFocus?.index ?? null, marks.length + offset);
       if (index !== undefined) {
         event.preventDefault();
         setFocus({ index });
@@ -267,21 +262,26 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
     }
   }
 
-  function pointerPoint(event: PointerEvent<SVGElement>) {
+  function pointerPoint(event: MouseEvent<SVGSVGElement>) {
     const rect = plot.current?.getBoundingClientRect();
     return rect ? { x: Math.trunc(event.clientX) - rect.left, y: Math.trunc(event.clientY) - rect.top } : undefined;
   }
 
-  function showPointer(event: PointerEvent<SVGGElement>, index: number) {
-    if (compact) return;
-    setFocus({ index, point: pointerPoint(event) });
-  }
-
-  function handlePlotPointer(event: PointerEvent<SVGSVGElement>) {
+  function handlePlotPointer(event: MouseEvent<SVGSVGElement>) {
     if (compact || loading) return;
     const point = pointerPoint(event);
-    if (path.length && point && point.y <= breadcrumbHeight) setFocus({ index: backIndex, point });
-    else if (!(event.target as Element).closest("[data-path]") && focus?.point) setFocus(null);
+    const next = point && inspect(marks, path.length > 0, point, width);
+    if (next || focus?.point) setFocus(next && point ? { point } : null);
+  }
+
+  function handlePlotClick(event: MouseEvent<SVGSVGElement>) {
+    if (compact || loading) return;
+    const point = pointerPoint(event);
+    const clicked = point && inspect(marks, path.length > 0, point, width);
+    if (!clicked) return;
+    const tile = marks[clicked.index - offset];
+    const target = clicked.index === backIndex ? path.slice(0, -1) : tile && drillTarget(tile);
+    if (target) go(target, true, point);
   }
 
   const footer = isPortfolio ? ["71% in equities, 19% in bonds", "$750,000 across 12 holdings"] : hasDrilldown
@@ -298,11 +298,12 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
         <LoaderCircle size={14} aria-hidden="true" />Loading
       </Toggle>
     </div>}
-    <div className={styles.stage}>
+    <div className={styles.stage} data-inspecting={!!currentFocus || undefined}>
       <svg ref={plot} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={example.title} aria-roledescription="chart" aria-busy={loading}
         aria-description={loading ? "Loading" : `Viewing ${current.name}. Use arrow keys to inspect rectangles${isPortfolio ? "." : ", Enter or Space to zoom, and Escape to go back."}`}
         tabIndex={compact || loading ? undefined : 0} onKeyDown={handleKeys}
-        onPointerMove={handlePlotPointer}
+        onPointerMove={handlePlotPointer} onClick={handlePlotClick}
+        onPointerDown={event => { if (event.pointerType === "touch") handlePlotPointer(event); }}
         onBlur={() => setFocus(null)} onPointerLeave={() => { if (document.activeElement !== plot.current || focus?.point) setFocus(null); }}>
         {loading && <g className={styles.skeleton} style={{ animationDelay: `${loadingDelay}ms` }}>
           {skeletonTiles(width, height).map(([key, bounds]) => {
@@ -314,14 +315,14 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
           })}
         </g>}
         {!!path.length && <g data-mark="treemap-back" className={styles.branch} role="button" aria-label="Back one level"
-          data-active={backActive || undefined} data-dimmed={!!active || undefined} onClick={goBack}>
+          data-active={backActive || undefined} data-dimmed={!!active || undefined}>
           <path d={`M0 0H${width}V${breadcrumbHeight}H0Z`} fill="transparent" />
           <rect x="0" y="0" width={crumbWidth} height={breadcrumbHeight} rx="6" fill="color-mix(in oklab, var(--muted-foreground) 8%, transparent)" />
           <text x="8" y="13" dominantBaseline="middle" fill="var(--muted-foreground)" fontSize="12" fontWeight="500" xmlSpace="preserve">
             {crumb}
           </text>
         </g>}
-        {marks.map((mark, index) => {
+        {marks.map(mark => {
           const { node, bounds, tint, frame, color, path, header } = mark;
           const { x, y, width, height } = bounds;
           if (!width || !height) return null;
@@ -339,10 +340,7 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
           return <g key={markKey} data-mark={frame ? "treemap-frame" : "treemap-tile"} data-path={markKey}
             className={target && !compact ? styles.branch : undefined} data-active={active === mark || undefined} data-dimmed={!isRelated(mark) || undefined}
             data-entering={entering && !compact || undefined} style={{ "--treemap-entrance-delay": `${(x + y) * entranceScale}ms` } as CSSProperties}
-            role={target && !compact ? "button" : undefined} aria-label={`${path.join(" / ")}: ${value}`}
-            onPointerMove={event => showPointer(event, index + offset)}
-            onPointerDown={event => { if (event.pointerType === "touch") showPointer(event, index + offset); }}
-            onClick={target && !compact ? () => go(target) : undefined}>
+            role={target && !compact ? "button" : undefined} aria-label={`${path.join(" / ")}: ${value}`}>
             <rect {...bounds} rx={radius}
               fill={fill} stroke={mix(markColor, frame ? 38 : 78)} strokeWidth={1} />
             {name && <text x={x + 8} y={y + (frame ? 13 : 15)} fill={textFill}

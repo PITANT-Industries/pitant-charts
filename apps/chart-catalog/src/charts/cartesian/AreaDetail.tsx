@@ -1,7 +1,7 @@
 import { area, curveMonotoneX, line } from "d3-shape";
-import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { usePlotSize } from "../usePlotSize";
-import { CartesianDatePill, CartesianFocusPoint, CartesianReadout } from "./CartesianFocus";
+import { CartesianFocusPoint, CartesianReadout } from "./CartesianFocus";
 import type { CartesianData } from "./data";
 import { lineDateLabel } from "./line-format";
 import type { ChartTheme } from "./options";
@@ -17,6 +17,7 @@ export const detailedAreas = {
 type Variant = keyof typeof detailedAreas;
 type Point = { x: number; y: number; value: number; date: string; category: string };
 const day = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone: "UTC" });
+const month = new Intl.DateTimeFormat("en", { month: "short", timeZone: "UTC" });
 
 function demoDate(date: string) {
   // These demo dates are local calendar days, including any daylight-saving changes.
@@ -35,6 +36,23 @@ function trendPath(points: Point[], yAt: (value: number) => number) {
   return `M${start},${y(start)}L${end},${y(end)}`;
 }
 
+function AreaDatePill({ dates, index, x, y }: { dates: string[]; index: number; x: number; y: number }) {
+  const columns = [
+    dates.map(date => month.format(new Date(date))),
+    dates.map(date => String(new Date(date).getUTCDate())),
+  ];
+  return <div className="cartesian-area-detail-pill" aria-hidden="true" style={{ left: x, top: y }}>
+    {columns.map((labels, column) => {
+      const constant = labels.every(label => label === labels[0]);
+      return <div key={column} className="cartesian-area-detail-pill-window">
+        <div className="cartesian-area-detail-pill-stack" style={{ transform: `translateY(${constant ? 0 : -24 * index}px)` }}>
+          {(constant ? labels.slice(0, 1) : labels).map((label, row) => <div key={row}>{label}</div>)}
+        </div>
+      </div>;
+    })}
+  </div>;
+}
+
 export function AreaDetail({ variant, label, data, compact, theme }: {
   variant: Variant; label: string; data: CartesianData; compact: boolean; theme: ChartTheme;
 }) {
@@ -43,10 +61,14 @@ export function AreaDetail({ variant, label, data, compact, theme }: {
   const tip = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [tipWidth, setTipWidth] = useState(0);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const panel = tip.current;
     if (!panel) return;
     setTipWidth(panel.offsetWidth);
+  }, [selected]);
+  useLayoutEffect(() => {
+    const panel = tip.current;
+    if (!panel) return;
     if (typeof ResizeObserver !== "function") return;
     const observer = new ResizeObserver(() => setTipWidth(panel.offsetWidth));
     observer.observe(panel);
@@ -73,16 +95,18 @@ export function AreaDetail({ variant, label, data, compact, theme }: {
   const targetBand = variant === "area-reference-band";
   const launchWeek = variant === "area-reference-range";
   const xTicks = width < 340 && (targetBand || launchWeek) ? [0, 15, 30] : ticks;
-  const color = theme.colors[trend ? 1 : 0];
+  const color = `var(--chart-${trend ? 2 : 1}, ${theme.colors[trend ? 1 : 0]})`;
+  const axisColor = `var(--muted-foreground, ${theme.muted})`;
+  const gridColor = `var(--border, ${theme.grid})`;
   const ticksY = Array.from({ length: Math.floor(maximum / step) + 1 }, (_, index) => index * step);
   const strokePath = line<Point>().x(point => point.x).y(point => point.y).curve(curveMonotoneX);
   const fillPath = area<Point>().x(point => point.x).y0(bottom).y1(point => point.y).curve(curveMonotoneX)(points) ?? undefined;
   const actual = strokePath(forecast ? points.slice(0, 9) : points) ?? undefined;
   const projected = forecast ? strokePath(points.slice(8)) ?? undefined : undefined;
   const active = selected === null ? undefined : points[selected];
-  const activeLabel = active ? day.format(new Date(active.date)) : "";
-  const pillWidth = forecast || trend ? 70.5 : 74.4;
-  const pillX = active ? Math.min(width - pillWidth / 2, Math.max(pillWidth / 2, Math.round(active.x))) : 0;
+  const focusBottom = Math.round(bottom);
+  const focusY = active ? focusBottom - active.value / maximum * (focusBottom - top) : 0;
+  const pillX = active ? Math.round(active.x) : 0;
   const activeIndex = selected ?? 0;
   const highlightLeft = points[Math.max(0, activeIndex - 1)].x;
   const highlightRight = points[Math.min(points.length - 1, activeIndex + 1)].x;
@@ -91,13 +115,13 @@ export function AreaDetail({ variant, label, data, compact, theme }: {
   const refRight = launchWeek ? points[17].x : right;
   const refTop = targetBand ? yAt(240) : top;
   const refBottom = targetBand ? yAt(180) : bottom;
-  const panelX = active ? Math.max(4, Math.min(width - tipWidth - 4, active.x + tipWidth + 16 > width ? active.x - tipWidth - 16 : active.x + 16)) : undefined;
+  const panelX = active ? Math.max(4, active.x + tipWidth + 16 > width ? active.x - tipWidth - 16 : active.x + 16) : undefined;
 
   function inspect(event: PointerEvent<SVGSVGElement>) {
     if (compact) return;
     const bounds = event.currentTarget.getBoundingClientRect();
-    const x = event.clientX - bounds.left;
-    const y = event.clientY - bounds.top;
+    const x = (event.clientX - bounds.left) / bounds.width * width;
+    const y = (event.clientY - bounds.top) / bounds.height * height;
     if (x < left - 3 || x > right + 3 || y < top || y > bottom) {
       setSelected(null);
       return;
@@ -123,75 +147,83 @@ export function AreaDetail({ variant, label, data, compact, theme }: {
     }
   }
 
-  return <div className="cartesian-area-detail" data-area-detail={variant} ref={plot} style={{ "--area-plot-inset": `${left}px` } as CSSProperties}>
+  return <div className="cartesian-area-detail" data-area-detail={variant} ref={plot} style={{
+    "--area-plot-inset": `${left}px`,
+    "--area-pill-fill": `var(--chart-focus-pill, ${theme.text})`,
+    "--area-pill-text": `var(--chart-focus-pill-text, ${theme.surface})`,
+  } as CSSProperties}>
     {width > 0 && height > 0 && <svg className="cartesian-focus-surface" viewBox={`0 0 ${width} ${height}`} role="img"
       aria-roledescription="chart" aria-label={label} aria-describedby={compact ? undefined : `${id}-instructions`} tabIndex={compact ? undefined : 0}
       onPointerMove={inspect} onPointerDown={inspect} onPointerLeave={event => { if (event.pointerType !== "touch") setSelected(null); }}
       onPointerCancel={() => setSelected(null)} onBlur={() => setSelected(null)} onKeyDown={onKeyDown}>
       {!compact && <desc id={`${id}-instructions`}>Use the arrow keys to inspect dates. Home and End jump to the first and last dates. Escape clears the selection.</desc>}
       <defs>
-        <linearGradient id={`${id}-fill`} x1="0" x2="0" y1="0" y2="1">
+        <linearGradient id={`${id}-fill`} x1="0%" x2="0%" y1="0%" y2="100%">
           <stop offset="0" stopColor={color} stopOpacity={trend ? .3 : .4} /><stop offset="1" stopColor={color} stopOpacity="0" />
         </linearGradient>
-        <linearGradient id={`${id}-guide`} x1="0" x2="0" y1="0" y2="1">
-          {[0, .1, .9, 1].map(offset => <stop key={offset} offset={offset} stopColor={theme.muted} stopOpacity={offset === 0 || offset === 1 ? 0 : .8} />)}
+        <linearGradient id={`${id}-guide`} x1="0%" x2="0%" y1="0%" y2="100%">
+          {[0, .1, .5, .9, 1].map(offset => <stop key={offset} offset={offset} stopColor={axisColor} stopOpacity={offset === 0 || offset === 1 ? 0 : .8} />)}
         </linearGradient>
-        {trend && <linearGradient id={`${id}-trend`} x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" stopColor={theme.colors[2]} stopOpacity="0" />
-          <stop offset=".15" stopColor={`color-mix(in srgb, ${theme.colors[0]} 15%, ${theme.colors[2]})`} />
-          <stop offset=".85" stopColor={`color-mix(in srgb, ${theme.colors[0]} 85%, ${theme.colors[2]})`} />
-          <stop offset="1" stopColor={theme.colors[0]} stopOpacity="0" />
+        {trend && <linearGradient id={`${id}-trend`} x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0" stopColor={`var(--chart-3, ${theme.colors[2]})`} stopOpacity="0" />
+          {[15, 85].map(weight => <stop key={weight} offset={`${weight}%`}
+            stopColor={`color-mix(in srgb, var(--chart-1, ${theme.colors[0]}) ${weight}%, var(--chart-3, ${theme.colors[2]}))`} />)}
+          <stop offset="1" stopColor={`var(--chart-1, ${theme.colors[0]})`} stopOpacity="0" />
         </linearGradient>}
-        {active && <clipPath id={`${id}-highlight`}><rect data-area-highlight="" x={highlightLeft} y={top} width={highlightRight - highlightLeft} height={bottom - top} /></clipPath>}
+        <clipPath id={`${id}-highlight`}><rect data-area-highlight="" x={highlightLeft} y={top - 2} width={highlightRight - highlightLeft} height={bottom - top + 4} /></clipPath>
       </defs>
       <g aria-hidden="true" className="cartesian-area-detail-fade" data-area-grid="">
-        {ticksY.map(value => <line key={value} x1={left} x2={right} y1={yAt(value)} y2={yAt(value)} stroke={theme.grid} strokeDasharray="4 4" />)}
+        {ticksY.map(value => <line key={value} x1={left} x2={right} y1={yAt(value)} y2={yAt(value)} stroke={gridColor} strokeDasharray="4 4" />)}
       </g>
-      {(targetBand || launchWeek) && <g aria-hidden="true">
+      {(targetBand || launchWeek) && <g aria-hidden="true" className={compact ? undefined : "cartesian-area-detail-overlay-reveal"}>
         <g className={targetBand ? "cartesian-area-detail-fade" : undefined}>
-          <rect data-area-reference="" x={refLeft} y={refTop} width={refRight - refLeft} height={refBottom - refTop} fill="var(--area-reference-color)" fillOpacity=".12" />
-          {[refTop, refBottom].map(y => <line key={y} data-area-rule="" x1={refLeft} x2={refRight} y1={y} y2={y} stroke="var(--area-reference-color)" strokeDasharray={targetBand ? "4 4" : undefined} />)}
+          <rect data-area-reference="" x={refLeft} y={refTop} width={refRight - refLeft} height={refBottom - refTop} fill="color-mix(in oklch, var(--area-reference-color) 12%, transparent)" />
         </g>
+        {[refTop, refBottom].map(y => <line key={y} data-area-rule="" className={targetBand ? "cartesian-area-detail-fade" : undefined}
+          x1={refLeft} x2={refRight} y1={y} y2={y} fill="none" stroke="var(--area-reference-color)" strokeDasharray={targetBand ? "4 4" : undefined} />)}
         {targetBand && <>
           <path data-area-reference-marker="" d={`M${middle - 3},${refTop}h6l-3,6Z`} fill={color} />
           <path data-area-reference-marker="" d={`M${middle - 3},${refBottom}h6l-3,-6Z`} fill={color} />
         </>}
       </g>}
       <g aria-hidden="true">
-        {active && <rect data-area-guide="" x={active.x - .5} y={top} width={1} height={bottom - top} fill={`url(#${id}-guide)`} />}
         <g className={compact ? undefined : "cartesian-area-detail-reveal"}>
           <path data-area-fill="" d={fillPath} fill={`url(#${id}-fill)`} opacity={active ? .6 : 1} />
           <g fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path data-area-actual="" d={actual} opacity={active ? .6 : 1} />
             {projected && <path data-area-projection="" d={projected} strokeDasharray="6 4" opacity={active ? .6 : 1} />}
-            {active && <path d={actual} clipPath={`url(#${id}-highlight)`} />}
+            <path data-area-highlight-line="" d={actual} clipPath={`url(#${id}-highlight)`} opacity={active ? 1 : 0} />
           </g>
-          {trend && <path data-area-trend="" d={trendPath(points, yAt)} fill="none" stroke={`url(#${id}-trend)`} strokeWidth="2.5" strokeLinecap="round" />}
+          {trend && <path data-area-trend="" className={compact ? undefined : "cartesian-area-detail-overlay-reveal"}
+            d={trendPath(points, yAt)} fill="none" stroke={`url(#${id}-trend)`} strokeWidth="2.5" strokeLinecap="round" />}
         </g>
-        {forecast && points.map((point, index) => <g key={point.date} data-area-forecast-marker="" opacity={active ? .5 : 1}>
-          <g className={compact ? undefined : "cartesian-area-detail-marker-reveal"} style={{ animationDelay: `${1100 * index / points.length}ms` }}>
+        {forecast && points.map((point, index) => <g key={point.date} data-area-forecast-marker="" data-dimmed={active ? "" : undefined} opacity={active ? .5 : 1}>
+          <g className={compact ? undefined : "cartesian-area-detail-marker-reveal"}
+            style={{ "--area-marker-delay": `${1100 * Number((index / points.length).toFixed(4))}ms` } as CSSProperties}>
             <circle cx={point.x} cy={point.y} r="8" fill="none" stroke={color} strokeWidth="2" />
             <circle cx={point.x} cy={point.y} r="5" fill={color} />
           </g>
         </g>)}
-        <g fill={theme.muted} fontSize={compact ? 9 : 12}>
+        <g fill={axisColor} fontSize={compact ? 9 : 12}>
           {xTicks.map(index => {
             const point = points[index];
+            const distance = active ? Math.abs(point.x - Math.round(active.x * 10) / 10) : Infinity;
             return <text key={index} data-area-tick="" x={point.x} y={bottom + (compact ? 14 : 24)} textAnchor="middle"
-              opacity={active && Math.abs(point.x - pillX) < pillWidth / 2 + 18 ? 0 : 1}>{trend ? day.format(new Date(point.date)) : point.category}</text>;
+              opacity={Math.min(1, Math.max(0, (distance - 50) / 20))}>{trend ? day.format(new Date(point.date)) : point.category}</text>;
           })}
           {targetBand && !compact && ticksY.map(value => <text key={value} x={left - 4} y={yAt(value)} dominantBaseline="middle" textAnchor="end">{value}</text>)}
         </g>
         {active && <>
-          <CartesianFocusPoint x={active.x} y={active.y} color={color} />
+          <rect data-area-guide="" x={active.x - .5} y={top} width={1} height={Math.round(bottom - top)} fill={`url(#${id}-guide)`} pointerEvents="none" />
           {forecast && <g data-area-forecast-focus="">
-            <circle cx={active.x} cy={active.y} r="10.8" fill="none" stroke={color} strokeWidth="2.7" />
-            <circle cx={active.x} cy={active.y} r="6.75" fill={color} />
+            <circle cx={active.x} cy={focusY} r="6.75" fill={color} />
+            <circle cx={active.x} cy={focusY} r="10.8" fill="none" stroke={color} strokeWidth="2.7" />
           </g>}
-          <CartesianDatePill x={pillX} y={bottom + 4} label={activeLabel} text={theme.text} surface={theme.surface} width={pillWidth} />
+          <CartesianFocusPoint x={active.x} y={focusY} color={color} />
         </>}
       </g>
     </svg>}
+    {selected !== null && <AreaDatePill dates={dates} index={selected} x={pillX} y={focusBottom + 4} />}
     {!compact && <div className="cartesian-area-detail-panel" ref={tip} role="status" style={{ left: panelX, top }}>
       {active && <CartesianReadout label={lineDateLabel(active.date)} entries={[{ name: series.name, value: active.value, color }]} live={false} />}
     </div>}

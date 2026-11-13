@@ -80,27 +80,64 @@ export const mapScale = (level: number) => level ? `var(--choropleth-scale-${lev
 export const detailProjection = (width: number, height: number) =>
   geoMercator().center([0, 20]).scale(width / 6.3).translate([width / 2, height / 2 + 50]);
 
-const countryBounds = detailCountries.map(country => ({ country, bounds: geoBounds(country) }));
+type DotRegion = { name: string; d: string; level: number };
 
-export function dotLattice(width: number, height: number, projection: GeoProjection) {
+function dotRegionRaster(width: number, height: number, regions: readonly DotRegion[]) {
+  if (typeof document === "undefined" || typeof Path2D === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.ceil(width);
+  canvas.height = Math.ceil(height);
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return null;
+  // Encode country IDs to preserve coastline coverage after rasterization.
+  regions.forEach(({ d }, index) => {
+    context.fillStyle = `rgb(${index + 1}, 0, 0)`;
+    context.fill(new Path2D(d));
+  });
+  return context.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+export function dotLattice(width: number, height: number, projection: GeoProjection, regions: readonly DotRegion[]) {
   const step = 7;
   const advance = 6.062;
-  const land = new Map<string, string[]>();
+  const raster = dotRegionRaster(width, height, regions);
+  const countryBounds = raster ? [] : detailCountries.map((country, index) => ({ country, index, bounds: geoBounds(country) }));
+  const byCountry = new Map<DotRegion, string[]>();
   const ocean: string[] = [];
-  const pretty = (value: number) => Math.round(value * 100) / 100;
   for (let row = 0, y = step / 2; y < height; row++, y += advance) {
     for (let x = row % 2 === 0 ? step / 2 : step; x < width; x += step) {
-      const point = projection.invert?.([x, y]);
-      const region = point && countryBounds.find(({ country, bounds: [[west, south], [east, north]] }) =>
-        point[1] >= south && point[1] <= north && (west <= east ? point[0] >= west && point[0] <= east : point[0] >= west || point[0] <= east)
-        && geoContains(country, point));
-      const segment = `M${x} ${pretty(y)}h0`;
+      let region: DotRegion | undefined;
+      if (raster) {
+        const offset = (Math.floor(y) * raster.width + Math.floor(x)) * 4;
+        region = regions[raster.data[offset] - 1];
+      } else {
+        const point = projection.invert?.([x, y]);
+        const match = point && countryBounds.find(({ country, bounds: [[west, south], [east, north]] }) =>
+          point[1] >= south && point[1] <= north
+          && (west <= east ? point[0] >= west && point[0] <= east : point[0] >= west || point[0] <= east)
+          && geoContains(country, point));
+        if (match) region = regions[match.index];
+      }
+      const segment = `M${x} ${Math.round(y * 100) / 100}h0`;
       if (region) {
-        const name = region.country.properties.name;
-        if (!land.has(name)) land.set(name, []);
-        land.get(name)!.push(segment);
+        let segments = byCountry.get(region);
+        if (!segments) byCountry.set(region, segments = []);
+        segments.push(segment);
       } else ocean.push(segment);
     }
   }
-  return { ocean: ocean.join(""), land: [...land].map(([name, segments]) => ({ name, path: segments.join("") })) };
+  const land = new Map<number, string[]>();
+  const focus = new Map<string, string>();
+  for (const [{ name, level }, segments] of byCountry) {
+    const path = segments.join("");
+    const bucket = land.get(level) ?? [];
+    if (!land.has(level)) land.set(level, bucket);
+    bucket.push(path);
+    focus.set(name, path);
+  }
+  return {
+    ocean: ocean.join(""),
+    land: [...land].map(([level, segments]) => ({ level, path: segments.join("") })),
+    byCountry: focus,
+  };
 }
