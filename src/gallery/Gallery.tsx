@@ -43,7 +43,8 @@ function usePreference<T>(key: string, fallback: T) {
   return [value, setValue] as const
 }
 
-type GalleryLink = { group: string; family: string; example: string; review: ParityFilter | null }
+type ExampleTab = 'preview' | 'compare' | 'code'
+type GalleryLink = { group: string; family: string; example: string; review: ParityFilter | null; tab: ExampleTab }
 
 function getLinkState(): GalleryLink {
   const params = new URLSearchParams(window.location.hash.slice(1))
@@ -52,14 +53,20 @@ function getLinkState(): GalleryLink {
   const family = getFamily(params.get('family') ?? '')?.id ?? 'all'
   const example = getExample(params.get('example') ?? '')?.id ?? ''
   const review = params.get('review')
-  return { group: family === 'all' ? group : getGroupForFamily(family)?.id ?? 'all', family, example, review: review === 'all' || review === 'documented' || review === 'pending' ? review : null }
+  const tab = params.get('view')
+  return { group: family === 'all' ? group : getGroupForFamily(family)?.id ?? 'all', family, example,
+    review: review === 'all' || review === 'documented' || review === 'pending' ? review : null,
+    tab: example && (tab === 'compare' || tab === 'code') ? tab : 'preview' }
 }
 
-function writeLink({ group, family, example, review }: GalleryLink, push = false) {
+function writeLink({ group, family, example, review, tab }: GalleryLink, push = false) {
   const params = new URLSearchParams()
   if (group !== 'all') params.set('category', group)
   if (family !== 'all') params.set('family', family)
-  if (example) params.set('example', example)
+  if (example) {
+    params.set('example', example)
+    if (tab !== 'preview') params.set('view', tab)
+  }
   if (review) params.set('review', review)
   const target = `${window.location.pathname}${window.location.search}${params.size ? `#${params}` : ''}`
   if (push) history.pushState(null, '', target)
@@ -84,7 +91,7 @@ function VisibleChart({ example }: { example: ChartExample }) {
   return <div className="card-plot" ref={host}>{visible && <ChartPreview example={example} compact />}</div>
 }
 
-function ExampleCard({ example, saved, onOpen, onSave }: { example: ChartExample; saved: boolean; onOpen: () => void; onSave: () => void }) {
+function ExampleCard({ example, saved, review, onOpen, onSave }: { example: ChartExample; saved: boolean; review: boolean; onOpen: () => void; onSave: () => void }) {
   const family = getFamily(example.family)
   return (
     <Card className="example-card" data-example-id={example.id}>
@@ -98,6 +105,7 @@ function ExampleCard({ example, saved, onOpen, onSave }: { example: ChartExample
       <CardContent><VisibleChart example={example} /></CardContent>
       <div className="example-footer">
         <span>{example.label}</span>
+        {review && <small className="example-review-state">{parityNotes[example.id] ? 'Notes available' : 'Awaiting notes'}</small>}
       </div>
     </Card>
   )
@@ -153,8 +161,7 @@ function ReferenceComparison({ example, theme }: { example: ChartExample; theme:
   )
 }
 
-function ExampleDetail({ example, theme, saved, onSave, onClose, onExample }: { example: ChartExample; theme: 'light' | 'dark'; saved: boolean; onSave: () => void; onClose: () => void; onExample: (id: string) => void }) {
-  const [tab, setTab] = useState<'preview' | 'compare' | 'code'>('preview')
+function ExampleDetail({ example, theme, tab, onTab, saved, onSave, onClose, onExample }: { example: ChartExample; theme: 'light' | 'dark'; tab: ExampleTab; onTab: (tab: ExampleTab) => void; saved: boolean; onSave: () => void; onClose: () => void; onExample: (id: string) => void }) {
   const [copied, setCopied] = useState(false)
   const family = getFamily(example.family)
   const list = family?.examples ?? []
@@ -173,7 +180,7 @@ function ExampleDetail({ example, theme, saved, onSave, onClose, onExample }: { 
         <div><p>{family?.name} <span>·</span> {example.position} of {list.length}</p><h2 id="example-detail-title">{example.title}</h2></div>
         <Button className="icon-button close-button" aria-label="Close preview" onClick={onClose}><X size={20} aria-hidden="true" /></Button>
       </div>
-      <Tabs value={tab} activation="manual" onValueChange={(next) => { if (next) setTab(next) }}>
+      <Tabs value={tab} activation="manual" onValueChange={(next) => { if (next) onTab(next) }}>
         <div className="detail-toolbar">
           <TabsList className="segmented" aria-label="Example view">
             <TabsTab value="preview"><Grid2X2 size={15} aria-hidden="true" /> Preview</TabsTab>
@@ -251,7 +258,8 @@ export function Gallery() {
     if (showSaved && !savedIds.has(example.id)) return false
     if (link.review === 'documented' && !parityNotes[example.id]) return false
     if (link.review === 'pending' && parityNotes[example.id]) return false
-    const searchable = `${example.title} ${example.label} ${example.id} ${getFamily(example.family)?.name}`.toLowerCase()
+    const note = link.review ? parityNotes[example.id] : undefined
+    const searchable = `${example.title} ${example.label} ${example.id} ${getFamily(example.family)?.name} ${note?.checked ?? ''} ${note?.remaining ?? ''}`.toLowerCase()
     return query.split(/\s+/).every((word) => searchable.includes(word))
   })
   const pages = Math.ceil(filtered.length / pageSize)
@@ -259,7 +267,7 @@ export function Gallery() {
   const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   function choose(group: string, family = 'all', onlySaved = false, review: ParityFilter | null = null) {
-    const next = { group, family, example: '', review }
+    const next: GalleryLink = { group, family, example: '', review, tab: 'preview' }
     setLink(next)
     setPage(1)
     setShowSaved(onlySaved)
@@ -268,9 +276,15 @@ export function Gallery() {
   }
 
   function showExample(id: string) {
-    const next = { ...link, example: id }
+    const next: GalleryLink = { ...link, example: id, tab: link.example && id ? link.tab : 'preview' }
     setLink(next)
     writeLink(next, !link.example && Boolean(id))
+  }
+
+  function showTab(tab: ExampleTab) {
+    const next = { ...link, tab }
+    setLink(next)
+    writeLink(next)
   }
 
   function toggleSaved(id: string) {
@@ -351,13 +365,13 @@ export function Gallery() {
             <div className="catalog-heading">
               <div><h2 id="catalog-title">{showSaved ? 'Saved charts' : selectedFamily?.name ?? selectedGroup?.name ?? (link.review === 'documented' ? 'Variants with notes' : link.review === 'pending' ? 'Variants awaiting notes' : 'All charts')}</h2><p aria-live="polite">{filtered.length} {filtered.length === 1 ? 'example' : 'examples'}</p></div>
               <form className="filter-tools" onSubmit={submitSearch}>
-                <div className="search-field"><Search size={17} aria-hidden="true" /><Input controller={searchController} ref={searchField} type="search" aria-label="Search charts" placeholder="Search charts…" value={search} onValueChange={(value) => { setSearch(value); setPage(1) }} />{search ? <Button aria-label="Clear search" onClick={() => { searchController.setValue(''); searchField.current?.focus() }}><X size={15} aria-hidden="true" /></Button> : <kbd aria-hidden="true">/</kbd>}</div>
+                <div className="search-field"><Search size={17} aria-hidden="true" /><Input controller={searchController} ref={searchField} type="search" aria-label="Search charts" placeholder={link.review ? 'Search charts and notes…' : 'Search charts…'} value={search} onValueChange={(value) => { setSearch(value); setPage(1) }} />{search ? <Button aria-label="Clear search" onClick={() => { searchController.setValue(''); searchField.current?.focus() }}><X size={15} aria-hidden="true" /></Button> : <kbd aria-hidden="true">/</kbd>}</div>
                 <FamilySelect value={link.family} groups={selectedGroup && !link.review ? [selectedGroup] : groups} onChange={(id) => choose(id === 'all' ? link.review ? 'all' : link.group : getGroupForFamily(id)?.id ?? 'all', id, showSaved, link.review)} />
                 <Choices className="segmented layout-toggle" label="Gallery layout" options={layoutChoices} value={layout} onChange={setLayout} />
               </form>
             </div>
             {visible.length ? layout === 'grid' ? (
-              <div className="example-grid">{visible.map((example) => <ExampleCard key={example.id} example={example} saved={savedIds.has(example.id)} onOpen={() => showExample(example.id)} onSave={() => toggleSaved(example.id)} />)}</div>
+              <div className="example-grid">{visible.map((example) => <ExampleCard key={example.id} example={example} saved={savedIds.has(example.id)} review={Boolean(link.review)} onOpen={() => showExample(example.id)} onSave={() => toggleSaved(example.id)} />)}</div>
             ) : (
               <div className="example-list">{visible.map((example) => <div className="example-list-row" key={example.id} data-example-id={example.id}><Button className="list-main" aria-label={`Open ${example.title}`} onClick={() => showExample(example.id)}><span>{example.title}</span><small>{getFamily(example.family)?.name}</small><ArrowUpRight size={17} aria-hidden="true" /></Button><Toggle className="icon-button bookmark-button" aria-label={`Save ${example.title}`} pressed={savedIds.has(example.id)} onPressedChange={() => toggleSaved(example.id)}><Bookmark size={17} aria-hidden="true" /></Toggle></div>)}</div>
             ) : (
@@ -367,7 +381,7 @@ export function Gallery() {
           </section>
         </main>
       </div>
-      {detail && <ExampleDetail example={detail} theme={theme} saved={savedIds.has(detail.id)} onSave={() => toggleSaved(detail.id)} onClose={() => showExample('')} onExample={showExample} />}
+      {detail && <ExampleDetail example={detail} theme={theme} tab={link.tab} onTab={showTab} saved={savedIds.has(detail.id)} onSave={() => toggleSaved(detail.id)} onClose={() => showExample('')} onExample={showExample} />}
     </div>
   )
 }

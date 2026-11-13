@@ -114,12 +114,13 @@
 @keyframes stat-pulse-marker { 0% { opacity: .8; transform: scale(.8); } 75%, 100% { opacity: 0; transform: scale(2.3); } }
 .stat-map-viewport { transition: transform .52s cubic-bezier(.22, .61, .36, 1); transform-origin: 0 0; }
 .stat-ocean-dot, .stat-land-dot { transition: opacity .28s, r .4s; }
-.stat-heat-scroll { overflow-x: auto; scrollbar-color: var(--border) transparent; }
+.stat-heat-scroll { overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-color: var(--border) transparent; }
 .stat-heat-scale { transition: opacity .15s, transform .15s; transform-box: fill-box; transform-origin: center; }
 .stat-heat-reveal { animation: stat-appear .32s ease-out both; }
 .stat-ecdf-reveal { transform-box: fill-box; transform-origin: left; animation: stat-ecdf-reveal .7s ease-out both; }
 @keyframes stat-ecdf-reveal { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .stat-heat-gradient { border-radius: 4px; width: 110px; height: 8px; }
+.stat-heat-summary, .stat-map-summary { margin: 0; color: var(--muted-foreground); font-size: .72rem; font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) {
   .stat-loading .stat-load, .stat-map-pulse { animation: none; opacity: .23; }
   .stat-heat-reveal, .stat-ecdf-reveal, .stat-interval-reveal, .stat-ridge-reveal, .stat-quantile-reveal, .stat-swarm-reveal, .stat-hex-reveal, .stat-density-reveal { animation: none; }
@@ -137,13 +138,13 @@
   width: 38px;
   z-index: 1;
   display: grid;
-  padding-top: 25px;
+  padding-top: var(--heat-top, 28px);
   pointer-events: none;
 }
 .stat-heat-sticky span {
   display: grid;
-  height: 24px;
-  padding-right: 10px;
+  height: var(--heat-cell, 20px);
+  padding-inline-end: 5px;
   place-items: center end;
   background: var(--card, var(--background));
   font-size: 11px;

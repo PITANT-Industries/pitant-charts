@@ -22,3 +22,5 @@
   .legend button { gap: 5px; padding: 5px; font-size: .68rem; }
 }
 @media (prefers-reduced-motion: reduce) { .slice { transition: none; } }
+.legend button.ringLegend { grid-template-columns: 8px minmax(0, 1fr) auto auto; }
+.ringLegend meter { inline-size: 100%; block-size: 4px; grid-column: 2 / -1; }

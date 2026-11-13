@@ -79,9 +79,49 @@
     "checked": "Pulse is selected initially. Pulse and Sweep show muted marks on the same July chart, and Loaded restores Orders tooltips without moving the axes.",
     "remaining": "Compare the exact pulse and sweep animation and fixture counts."
   },
+  "bar-default": {
+    "checked": "Six January–June revenue bars use the shadcn Recharts renderer. Keyboard inspection exposes the reference’s monthly figures, including $12,000 in January.",
+    "remaining": "Compare hover fades, mark spacing, and exact entrance timing."
+  },
+  "bar-grouped": {
+    "checked": "Six pairs show Revenue and Profit on the same abbreviated numeric axis. June inspection reports 21,200 and 8,800.",
+    "remaining": "Compare corner treatment, hover dimming, and group spacing."
+  },
+  "bar-stacked": {
+    "checked": "Organic, Paid, and Referral form eighteen rounded stack segments across six months. The first stack has a measured two-pixel divider and the June readout reports 1,520, 840, and 420.",
+    "remaining": "Compare scale, divider proportions, and hover timing."
+  },
+  "bar-values": {
+    "checked": "Twelve orders bars show formatted values above the marks. November’s label and keyboard readout both show 1,120.",
+    "remaining": "Compare exact text positioning and narrower-container label density."
+  },
+  "bar-profit-loss": {
+    "checked": "Eight monthly profit bars share a zero baseline and use the same theme color above and below zero. Keyboard inspection shows April’s −3,400.",
+    "remaining": "Compare zero-line contrast, corner geometry, and hover fading."
+  },
+  "bar-sources": {
+    "checked": "Six horizontal bars descend from Organic to Email, with no numeric-axis ticks. Keyboard inspection reports 4,250 visits for Organic.",
+    "remaining": "Compare widths, category text spacing, and pointer focus effects."
+  },
+  "bar-squares": {
+    "checked": "Twelve revenue columns use rounded square segments, partially filled end segments, muted tracks, and a blended fill. The final month reports 25,100.",
+    "remaining": "Compare segment spacing, exact color stops, and entrance timing."
+  },
+  "bar-squares-legend": {
+    "checked": "Grouped Revenue and Profit square columns show exact totals of $95,000 and $34,800 in a side legend. Focusing Revenue dims the Profit marks and legend row.",
+    "remaining": "Compare active series fading, square count by width, and exact legend alignment."
+  },
   "bar-depth": {
     "checked": "Pause pulse and Resume pulse control the bar highlight animation.",
     "remaining": "Compare depth, material styling, and pulse timing."
+  },
+  "bar-synced": {
+    "checked": "Revenue and Orders use two linked twelve-month panels with one visible month axis. Keyboard inspection on Revenue synchronizes both June tooltips, reporting 64,400 and 488.",
+    "remaining": "Compare pointer highlighting, tooltip positioning, and inter-panel spacing."
+  },
+  "bar-loading": {
+    "checked": "The eight-month grid and neutral bars remain in place while fetching orders. Space switches the loading control without remounting the plot, and August then reports 1,830.",
+    "remaining": "Compare shimmer treatment and exact per-bar reveal timing."
   },
   "line-default": {
     "checked": "The shadcn-derived chart draws two series. Keyboard inspection shows the active date pill and the Users and Pageviews values.",
@@ -267,6 +307,10 @@
     "checked": "The preview shows 522 points in 12 month columns and reports the nearest point to the pointer.",
     "remaining": "Compare the exact jitter distribution and hit regions."
   },
+  "scatter-large-data": {
+    "checked": "The SDK count picker switches the canvas between 10,000 and 50,000 checkout requests over an October week. The count readout updates after keyboard and pointer selection.",
+    "remaining": "Compare individual request fixtures, point appearance, and hover inspection under sustained pointer movement."
+  },
   "candlestick-default": {
     "checked": "Thirty-one daily candles expose currency OHLC values and dim unrelated candles during inspection.",
     "remaining": "Compare exact prices and candle animation."
@@ -387,6 +431,54 @@
     "checked": "The loading skeleton keeps the schedule’s date grid. Reveal restores rows and tooltips.",
     "remaining": "Compare skeleton timing and colors."
   },
+  "waterfall-default": {
+    "checked": "Eight fiscal revenue steps connect through a running total. The New logos step starts at $4.2M, adds $1.35M, and reports $5.55M.",
+    "remaining": "Compare exact stroke geometry, endpoint marker treatment, and drill timing."
+  },
+  "waterfall-subtotals": {
+    "checked": "Ten income statement steps include four totals anchored at zero. The labels show $980M revenue, $570M gross profit, and $150M net income.",
+    "remaining": "Compare exact label culling, bar corner radius, and connector opacity."
+  },
+  "waterfall-cash-flow": {
+    "checked": "The six January–June steps keep their running cash balances and H1 ends at 37,800. February shows a 6,200 outflow and running total of 12,200.",
+    "remaining": "Compare hover fading, colors, and marker treatment."
+  },
+  "waterfall-loading": {
+    "checked": "Seven cash-position skeleton bars keep their category grid. The SDK toggle retains the chart instance and reveals a $3.21M Q2 total.",
+    "remaining": "Compare shimmer geometry and exact bar reveal timing."
+  },
+  "lollipop-default": {
+    "checked": "Seven weekday stems end in dots. Wednesday’s highest dot reports 9,660 active users and the axis abbreviates thousands.",
+    "remaining": "Compare stem and dot styling and pointer emphasis."
+  },
+  "lollipop-horizontal": {
+    "checked": "Seven feature adoption values run horizontally with percent ticks and endpoint labels. Dashboards is 92% and SSO is 18%.",
+    "remaining": "Compare endpoint padding and reveal easing."
+  },
+  "lollipop-change": {
+    "checked": "Seven channel stems extend on both sides of zero on a percentage-point scale. Referral’s keyboard readout shows +2.4 pts.",
+    "remaining": "Compare positive and negative mark palettes and hover fading."
+  },
+  "lollipop-loading": {
+    "checked": "Nine ghost stems keep the hourly positions. The loading toggle retains the chart instance and reveals 6,180 sessions at noon.",
+    "remaining": "Compare skeleton lengths and stagger timing."
+  },
+  "dumbbell-default": {
+    "checked": "Six horizontal region comparisons use seconds and report Before, After, and signed percentage change. North America changes from 1.48s to 0.84s.",
+    "remaining": "Compare circle halos, connecting strokes, and pointer timing."
+  },
+  "dumbbell-legend": {
+    "checked": "Six engagement rows show Spring and Winter values above both endpoints. The average-score legend reads 63 and 70 and focusing Spring dims Winter.",
+    "remaining": "Compare endpoint label offsets, legend layout, and pointer fading."
+  },
+  "dumbbell-vertical": {
+    "checked": "Four vertical plan comparisons use dollar values. Scale reports $1,428 monthly, $1,152 annually, and a 19.3% decrease.",
+    "remaining": "Compare exact axis range, circle halos, and hover styling."
+  },
+  "dumbbell-loading": {
+    "checked": "Six paired survey marks keep their team rows during loading. The same chart instance reveals Support’s +25 point change.",
+    "remaining": "Compare loading mark spans and endpoint reveal timing."
+  },
   "uncertainty-default": {
     "checked": "Five conversion marks include 95% confidence intervals in the tooltip.",
     "remaining": "Compare fixture values and the interval styling."
@@ -406,6 +498,30 @@
   "uncertainty-loading": {
     "checked": "The chart reports its busy state and reveals marks from the interval bottoms.",
     "remaining": "Compare animation and timing."
+  },
+  "bump-default": {
+    "checked": "Five language series cross over six ranked years. The keyboard tooltip lists Python’s #1 at 17.9% in 2021 and #2 at 22.1% in 2026.",
+    "remaining": "Compare exact endpoint label placement, stroke curves, and hover transitions."
+  },
+  "bump-ascending": {
+    "checked": "Four payment providers rank faster checkout times first. The June legend shows QuickPay at 2.4, and inspecting PayLane reports its six monthly rankings and times.",
+    "remaining": "Compare series highlight animation, legend arrangement, and endpoint sizing."
+  },
+  "bump-loading": {
+    "checked": "Four muted rankings retain six week labels. Switching loading off reveals Atlas’s six rankings, including #2 at 561 deals in Week 6.",
+    "remaining": "Compare placeholder line routes and staggered mark reveal."
+  },
+  "slope-default": {
+    "checked": "Seven country lines show values at both endpoints. Canada reads 78 and 84, with +6 points and +7.7% in the tooltip.",
+    "remaining": "Compare crossing geometry, endpoint label overlap handling, and hover fades."
+  },
+  "slope-response-time": {
+    "checked": "Five September–November plan slopes emphasize shorter response times. Enterprise reports 2.6h, 1.2h, and a 53.8% decrease.",
+    "remaining": "Compare neutral stroke treatment and precise endpoint positions."
+  },
+  "slope-loading": {
+    "checked": "Six ghost slopes retain the First half and Second half labels. The loading toggle reveals six product score changes in the same chart.",
+    "remaining": "Compare ghost shapes and line draw timing."
   },
   "sparkline-default": {
     "checked": "Three storefront cards show Revenue as an area, Visitors as a line, and Orders as bars. Hover updates the selected card’s date and metric independently.",
@@ -467,17 +583,85 @@
     "checked": "The detailed preview contains 48 services with 20 samples per chart, repeating area, line, and bar. The final row remains reachable at mobile width.",
     "remaining": "Compare service colors and grid spacing."
   },
+  "pie-default": {
+    "checked": "Five solid wedges use the reference sales categories and total $12,100. Keyboard inspection starts with Electronics at $4,250 and 35.1% and reaches Other.",
+    "remaining": "Compare wedge geometry, the reference pointer tooltip, and entrance motion."
+  },
+  "pie-center": {
+    "checked": "Four subscription plans add to $120,000. The center changes from the total to the inspected plan value, starting at Starter $18,400.",
+    "remaining": "Compare digit animation, hover tooltip, and exact arc geometry."
+  },
   "pie-center-custom": {
     "checked": "Caller-supplied center content receives the focused segment, value, total, and share.",
     "remaining": "Compare the built-in typography and digit animation."
+  },
+  "pie-hover-legend": {
+    "checked": "Five channel rows list the reference order counts. Chart and legend inspection share the active slice, and the Retail row can pin its slice from the keyboard.",
+    "remaining": "Compare row and slice highlight timing and pointer tooltip styling."
+  },
+  "pie-half-donut": {
+    "checked": "Three rounded wedges fill the upper semicircle. Keyboard inspection reads Direct 4,120 and 40.6% and reaches Social.",
+    "remaining": "Compare padding angles, lift geometry, and tooltip treatment."
+  },
+  "pie-pattern": {
+    "checked": "Three budget wedges total $100,000. Only the $21,500 Committed slice is striped.",
+    "remaining": "Compare hatch density, tooltip placement, and entrance motion."
+  },
+  "pie-pattern-presets": {
+    "checked": "Compute, Storage, Network, and Support use diagonal hatching, lines, dots, and checkerboard respectively. Compute is 35%.",
+    "remaining": "Compare tile scale, edge rendering, and highlight motion."
+  },
+  "pie-pattern-tile": {
+    "checked": "The ticket donut uses a custom plus tile for Open, diagonals for Pending, and speckles for Solved. The values are 128, 214, and 642.",
+    "remaining": "Compare corner geometry, color assignment, and tooltip styling."
+  },
+  "pie-center-share": {
+    "checked": "Keyboard inspection replaces the center total with the selected category and its share. Electronics shows 4,250 and 35.1% of 12,100 sales.",
+    "remaining": "Compare center layout, rolling digits, and pointer transitions."
   },
   "pie-hover-effects": {
     "checked": "Translate, Grow, and None are available. None leaves slices stationary and undimmed.",
     "remaining": "Compare the translate and grow motion curves."
   },
+  "pie-donut-grow": {
+    "checked": "The five browser groups total 92,500 sessions. Active selection expands the selected wedge outward and updates the center to its value.",
+    "remaining": "Compare exact growth distance, animation timing, and hover tooltip."
+  },
+  "pie-glow": {
+    "checked": "The four cloud service values total $38,740. Selection applies a color-matched glow to the active rounded wedge and reads its value and share.",
+    "remaining": "Compare glow radius, focus opacity, and tooltip transitions."
+  },
+  "pie-gradients": {
+    "checked": "Annual, Monthly, and Lifetime use separate radial-gradient wedges. Annual reports $48,200 and 48.2%.",
+    "remaining": "Compare gradient stops, geometric rounding, and hover transitions."
+  },
+  "pie-patterns": {
+    "checked": "Four rounded donut wedges use hatch, dot, wave, and cross textures. Email reports 1,840 tickets and 41.8% of the 4,400 total.",
+    "remaining": "Compare texture scale, arc spacing, and hover timing."
+  },
+  "ring-default": {
+    "checked": "Five full-circle tracks use a 5,000-session goal. Organic reads 4,250 and 85%, and the center returns to 12,100 sessions at rest.",
+    "remaining": "Compare cap geometry, stroke widths, and entrance motion."
+  },
   "ring-center-custom": {
     "checked": "Caller-supplied center content receives the active ring's target and attainment fraction. The idle state reports the aggregate.",
     "remaining": "Compare built-in center styling and transitions."
+  },
+  "ring-arc": {
+    "checked": "Three storage rings cover three quarters of a circle. The readout shows 151 GB overall and Photos 86 of 200 GB during inspection.",
+    "remaining": "Compare radii, start-angle padding, and focus animation."
+  },
+  "ring-legend": {
+    "checked": "Four sign-up rings use their own goals and display progress beside the legend values. Keyboard selection of Referral reports 74% against 2,000.",
+    "remaining": "Compare legend meter styling and transitions."
+  },
+  "ring-grid": {
+    "checked": "Three 10,000-step goal rings sit on five 0–100% guides. Inspecting Ana reports 8,200 steps and 82%.",
+    "remaining": "Compare placement of labels and guides and the active-ring animation."
+  },
+  "ring-semicircle": {
+    "checked": "Revenue, Activation, and Retention use three semicircular tracks with 0%, 50%, and 100% guides. Revenue reads 78%.",
+    "remaining": "Compare track and label geometry and exact hover emphasis."
   },
   "radar-default": {
     "checked": "Four shapes share five rings and spokes. The active shape grows and glows while the other three fade.",
@@ -519,9 +703,25 @@
     "checked": "The chart has 96 quarter-hour positions, three statuses, and interactive legend isolation. Keyboard and pointer input inspect the current and previous day.",
     "remaining": "Compare exact data, dot pattern, and transitions."
   },
+  "radial-patterned-dots": {
+    "checked": "The energy clock has 24 hourly bins. The metered split shows 11.3 kWh Solar and 7.9 kWh Grid. The later-hour hatch shows a separate forecast, including 0.8 kWh at 23:00.",
+    "remaining": "Compare dot quantization, palette, and the live reference time cutoff."
+  },
   "radial-line": {
     "checked": "A dashed previous-day line and a current-day line share 96 quarter-hour positions. The current-day line stops at 14:30.",
     "remaining": "Compare the exact time-series fixture and curve."
+  },
+  "radial-temperature": {
+    "checked": "The 365-day SFO plot draws NOAA normal and record bands, a simulated 2026 mean through October 29, all month labels, and 40–100°F guides. Inspection reports the daily mean and both ranges.",
+    "remaining": "Compare axis placement, path interpolation, and the live reference date cutoff."
+  },
+  "radial-population": {
+    "checked": "The chart stacks five ACS age bands for all 50 states and DC. Inspection reports the state and its age breakdown, including 10,605,000 Californians aged 25–44.",
+    "remaining": "Compare exact label orientation, arc spacing, and pointer highlight timing."
+  },
+  "radial-semicircle": {
+    "checked": "Phone, Laptop, and Cloud share a 0–100% scale with device-specific capacities. Inspection shows 690 of 1,024 GB for Laptop, and the legend isolates a content type.",
+    "remaining": "Compare stacked arc rounding, label placement, and touch interaction."
   },
   "radial-bar-clock": {
     "checked": "Rounded stacked bars and a rotating cursor identify the selected quarter hour. Keyboard focus wraps across midnight.",
@@ -530,6 +730,18 @@
   "radial-area-clock": {
     "checked": "Three areas sweep in and show their edge markers at the selected quarter hour. Keyboard focus wraps across midnight.",
     "remaining": "Compare the exact sweep and area geometry."
+  },
+  "radial-activity-card": {
+    "checked": "The 24-hour cup chart shows 642 cups at rest, including 244 dine-in and 398 takeaway. Inspection finds the 106-cup peak at 08:00 and marks later hours as unobserved.",
+    "remaining": "Compare dot geometry, responsive layout, and the live reference time cutoff."
+  },
+  "radial-storage-card": {
+    "checked": "A single semicircle stacks Photos, Backups, Documents, and Mail. It shows 1.4 TB used and 638 GB free, with the four reference amounts in the key.",
+    "remaining": "Compare arc geometry and key layout."
+  },
+  "radial-seasonal-card": {
+    "checked": "The NOAA leap-year normals show a 58.6°F annual average and separate normal and record bands. Date inspection updates the average and both ranges.",
+    "remaining": "Compare smoothing, labels, and pointer highlight transitions."
   },
   "gauge-default": {
     "checked": "Forty track notches report 66% attainment and display a separate $428,000 ARR readout.",
@@ -659,13 +871,45 @@
     "checked": "Five curved rows align values on the left, ratios in the center, and names on the right.",
     "remaining": "Compare curve shape and label spacing."
   },
+  "heatmap-default": {
+    "checked": "All 364 dates use the live contribution values, from November 2, 2025 through October 31, 2026. Sunday-first columns total 583 contributions. Arrow keys inspect days and weeks.",
+    "remaining": "Compare exact grid geometry and tooltip placement."
+  },
+  "heatmap-patterns": {
+    "checked": "The 182-day grid totals 305 contributions. Only the second intensity level is striped. Hover or keyboard selection isolates that level.",
+    "remaining": "Compare stripe density, swatch spacing, and transition timing."
+  },
+  "heatmap-weekdays": {
+    "checked": "The calendar begins on Monday, fades Saturday and Sunday cells and labels, and reports 92% of contributions on weekdays.",
+    "remaining": "Compare the trailing partial-week treatment and fade intensity."
+  },
+  "heatmap-quarters": {
+    "checked": "Four labeled quarters and ten month labels appear over 308 date cells. Three dividers mark the quarter boundaries.",
+    "remaining": "Compare exact divider fade, gaps, and label positioning."
+  },
+  "heatmap-gradient-legend": {
+    "checked": "One continuous legend replaces the five swatches. The fixture has activity on 110 of 182 days.",
+    "remaining": "Compare the exact gradient stops and legend dimensions."
+  },
   "heatmap-dots": {
     "checked": "Inactive dots shrink and fade during inspection.",
     "remaining": "Compare dot spacing and tooltip treatment."
   },
+  "heatmap-separators-solid": {
+    "checked": "The May–October grid has three quarter labels and two solid dividers, plus separate month labels and Monday, Wednesday, and Friday initials.",
+    "remaining": "Compare divider thickness and label spacing."
+  },
+  "heatmap-separators-dashed": {
+    "checked": "The May–October grid has two gradient-ended dashed dividers, three quarter labels, and six month labels. Weekday labels are omitted.",
+    "remaining": "Compare the exact stroke fade and spacing."
+  },
   "heatmap-active-scale": {
     "checked": "The active cell and corresponding legend swatch grow to 110%, while other swatches fade.",
     "remaining": "Compare transition timing and intensity colors."
+  },
+  "heatmap-scroll": {
+    "checked": "The full 364-day calendar scrolls horizontally while weekday labels stay pinned. Keyboard inspection scrolls to the first or last day.",
+    "remaining": "Compare precise column widths and touch scroll behavior on physical devices."
   },
   "heatmap-loading": {
     "checked": "Showing the data triggers a delayed, per-cell reveal wave.",
@@ -731,9 +975,117 @@
     "checked": "Fifteen links into the three outcomes are hatched, while 18 upstream links use gradients.",
     "remaining": "Compare hatch angles and spacing."
   },
+  "treemap-default": {
+    "checked": "Five cloud-spend groups and sixteen service tiles use proportional area. Keyboard inspection shows Platform / Compute at $48k and 22% of all teams, and Enter drills into Platform before Escape returns.",
+    "remaining": "Compare the precise squarified coordinates, small-tile label truncation, and zoom easing."
+  },
+  "treemap-drilldown": {
+    "checked": "The production bundle begins with node_modules, src, and assets. Two levels of keyboard drilldown reach @tanstack / charts at 64 kB, and the dist breadcrumb returns to the 13-tile overview.",
+    "remaining": "Compare the smallest nested bundle values, breadcrumb styling, and animation timing."
+  },
+  "treemap-portfolio": {
+    "checked": "Seventeen tiles group twelve holdings into five asset classes. S&P 500 ETF inspection reports $126,000 and about 17% of the portfolio. The portfolio remains at its overview when a holding is activated.",
+    "remaining": "Compare the exact share rounding, asset colors, and the visible tile boundaries."
+  },
+  "treemap-loading": {
+    "checked": "Ten rounded skeleton tiles reveal four storage groups and ten labeled buckets. The Loading control works with Space and inspection reports Uploads at 1.8 TB.",
+    "remaining": "Compare the initial bone layout and the exact pop-in timing."
+  },
+  "tree-default": {
+    "checked": "The left-to-right engineering chart uses 16 nodes and 15 curved links. Keyboard inspection reads 85 people at the root and Platform / API at nine people.",
+    "remaining": "Compare the exact node spacing, link curvature, and hover emphasis."
+  },
+  "tree-radial": {
+    "checked": "A square radial tree places the UI kit at the center and distributes 24 components across five colored groups. The Forms branch tooltip reports 582k installs per week.",
+    "remaining": "Compare the exact angles, curve geometry, and radial label spacing."
+  },
+  "tree-vertical": {
+    "checked": "The top-down site map begins with Docs +6 folded. Keyboard inspection reads 244k views, Enter reveals all six descendants including Webhooks, and a second Enter folds the branch again.",
+    "remaining": "Compare branch placement, node label alignment, and expansion timing."
+  },
+  "tree-loading": {
+    "checked": "Twelve skeleton dots and label placeholders reveal a three-section documentation tree with 129 pages. Keyboard inspection and the Loading toggle work after the reveal.",
+    "remaining": "Compare the skeleton pulse and root-to-leaf reveal easing."
+  },
+  "network-default": {
+    "checked": "Twenty named dependencies use the reference's 25 links. Keyboard inspection reports the Web app at 4,200 req/s with two links, and dragging updates the node and its connected edges.",
+    "remaining": "Compare exact graph coordinates at different widths and hover and drag motion."
+  },
+  "network-legend": {
+    "checked": "Twenty people and 36 review ties render in four color groups. The Design legend highlights its five people, and keyboard inspection reads Ava in Design with four links.",
+    "remaining": "Compare the exact legend emphasis, line opacity, and label spacing."
+  },
+  "network-loading": {
+    "checked": "An 18-node skeleton reveals 11 named workstreams and 16 shared changes. The Loading toggle and inspection of Design's 18 commits work from the keyboard.",
+    "remaining": "Compare exact loading skeleton topology and reveal easing."
+  },
+  "waffle-default": {
+    "checked": "One hundred cells show browser shares, including 52 Chrome cells. Keyboard and legend inspection report Chrome's 18,420 visitors and Safari's 9,870 visitors.",
+    "remaining": "Compare legend placement and marker emphasis at different widths."
+  },
+  "waffle-progress": {
+    "checked": "The chart uses 150 dots for the 6,000-seat capacity and reports 4,260 seats sold at 71%. Keyboard inspection reads General's 2,650 seats and 44% of capacity.",
+    "remaining": "Compare rounding at segment boundaries, dot spacing, and the treatment of unsold dots."
+  },
+  "waffle-columns": {
+    "checked": "Two hundred cells fill down each eight-cell column before moving right. Wind uses 63 cells and its keyboard readout reports 31.4 TWh.",
+    "remaining": "Compare exact cell corner radii and the category hover transitions."
+  },
+  "waffle-loading": {
+    "checked": "The 100-cell skeleton reveals 11,200 payments. Keyboard inspection reports 6,120 card payments and 55% share, and the Loading toggle works with Space.",
+    "remaining": "Compare loading shimmer and per-cell reveal timing."
+  },
+  "marimekko-default": {
+    "checked": "The five region widths reflect shares of $2.22B total revenue. Each has three proportional segments, and North America's keyboard tooltip reports 37% of total and all three revenue amounts and shares.",
+    "remaining": "Compare the exact small-column text clipping and hover colors."
+  },
+  "marimekko-legend": {
+    "checked": "Five country columns and three device series display values and shares without the percentage grid. Focusing Mobile emphasizes its 11,300 sessions, and India inspection reports 3,100 mobile sessions and 79%.",
+    "remaining": "Compare legend spacing, label truncation, and hover timing."
+  },
+  "marimekko-loading": {
+    "checked": "Twenty-five skeleton cells reveal 12 priority segments across four ticket channels. Keyboard inspection reads Email's 2,310 Normal and 420 Urgent tickets, and Space toggles loading.",
+    "remaining": "Compare the exact growth curve and skeleton pulse."
+  },
+  "stream-default": {
+    "checked": "Five labeled genre layers span 24 months on a centered baseline. January 2025 reports 420k Pop hours and 114k Jazz hours.",
+    "remaining": "Compare the exact stream baseline algorithm, pre-rounding fixtures, and in-layer label positions."
+  },
+  "stream-expand": {
+    "checked": "Five weekly traffic layers normalize to a fixed 0–100% axis. The tooltip retains raw counts, including 5,200 Organic and 3,300 Paid in the first week.",
+    "remaining": "Compare exact area curvature and tooltip pointer motion."
+  },
+  "stream-loading": {
+    "checked": "Three neutral traffic layers retain the chart instance during loading. Turning loading off reveals June’s 410M Web and 580M API requests.",
+    "remaining": "Compare skeleton geometry and the exact sweep and reveal timing."
+  },
+  "diverging-default": {
+    "checked": "Five survey rows normalize answer counts to percentages and split Neutral around zero. The first row reports 36 neutral answers and a +67 point net score.",
+    "remaining": "Compare visual divider and label geometry, including when small values are suppressed."
+  },
+  "diverging-legend": {
+    "checked": "Four plans use four satisfaction colors. The customer legend shows 625 Satisfied and 482 Very satisfied, and Free reports a +68 point net score.",
+    "remaining": "Compare legend and bar highlight transitions and narrow layout alignment."
+  },
+  "diverging-loading": {
+    "checked": "The loading state keeps center-out bars in place. The same chart reveals pricing answers, including 55 neutral responses and a +14 point net score.",
+    "remaining": "Compare placeholder count and the exact center-out animation."
+  },
   "choropleth-default": {
     "checked": "Wheel and pinch zoom, pointer drag, keyboard country selection, and reset work.",
     "remaining": "Compare projection, camera inertia, and geographic labels."
+  },
+  "choropleth-values": {
+    "checked": "Four intensity steps encode exactly 719,910 visitors across 42 countries. Countries without visitors remain neutral, and inspection reports the country’s actual visitor count where available.",
+    "remaining": "Compare country edges, color steps, and tooltip transitions."
+  },
+  "choropleth-graticule": {
+    "checked": "A 10° grid appears behind a Mercator map centered at 20° N. Inspecting a country fades the other countries and reveals the grid.",
+    "remaining": "Compare projection crop, grid weight, and overlay styling."
+  },
+  "choropleth-patterns": {
+    "checked": "Eighteen live countries have a solid fill and ten beta countries use diagonal stripes. Country inspection reports live, beta, or not yet.",
+    "remaining": "Compare the stripe pattern, country edges, and hover fade."
   },
   "choropleth-click-to-zoom": {
     "checked": "An office click or keyboard activation flies to the target. Clicking the target again or clicking the sea resets the view, as does Escape.",
@@ -747,6 +1099,14 @@
     "checked": "The map tilts with the pointer while its dot backdrop remains stationary. Keyboard activation can fly to and return from a country.",
     "remaining": "The local camera uses an affine transform. Compare perspective with the reference."
   },
+  "choropleth-markers": {
+    "checked": "Five named infrastructure sites use pin, circle, diamond, square, and triangle markers. The primary region pulses and inspection reads its coordinates.",
+    "remaining": "Compare marker sizing, glow, and coordinate tooltip placement."
+  },
+  "choropleth-background": {
+    "checked": "Thirteen countries use the live sign-up counts. The patterned backdrop stays fixed while the map zooms, and inspection reports the selected country’s count.",
+    "remaining": "Compare background texture and pointer pan and zoom motion."
+  },
   "histogram-default": {
     "checked": "The histogram uses 20-millisecond bins and labels the intervals in the tooltip.",
     "remaining": "Compare the exact sample distribution and bar styling."
@@ -758,6 +1118,10 @@
   "histogram-stacked": {
     "checked": "The stacked bins advance in two-minute intervals, ending at the 40-minute domain limit.",
     "remaining": "Compare bin heights and exact fixture distribution."
+  },
+  "histogram-loading": {
+    "checked": "A keyboard-operable Loading toggle switches 29 skeleton bins to 23 nonempty bins totaling 240 requests. The view reports a median of 208 ms and a p90 of 354 ms.",
+    "remaining": "Compare the exact per-bin animation curve and loading label treatment."
   },
   "ridgeline-default": {
     "checked": "Six densities use one color and show a middle-half interval during inspection.",

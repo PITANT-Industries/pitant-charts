@@ -38,20 +38,24 @@ export function LineSkeleton() {
   </div>;
 }
 
-export function LineLegend({ series, currency, active, onActive }: {
+export function LineLegend({ series, currency, exactCurrency, title, metric, active, onActive }: {
   series: (ChartSeries & { color: string })[];
   currency: boolean;
+  exactCurrency?: boolean;
+  title?: string;
+  metric?: (series: ChartSeries) => number;
   active: number | undefined;
   onActive: (index: number | undefined) => void;
 }) {
-  return <div className="line-series-legend" aria-label="Series legend">
+  return <div className="line-series-legend" aria-label={title ?? "Series legend"}>
+    {title && <span className="cartesian-muted">{title}</span>}
     {series.map((item, index) => {
-      const total = item.values.reduce<number>((sum, value) => sum + (value ?? 0), 0);
+      const total = metric?.(item) ?? item.values.reduce<number>((sum, value) => sum + (value ?? 0), 0);
       return <Button key={index} className="line-legend-entry" data-active={active === index} data-dimmed={active !== undefined && active !== index}
         onPointerEnter={() => onActive(index)} onPointerLeave={() => onActive(undefined)}
         onFocus={() => onActive(index)} onBlur={() => onActive(undefined)}>
         <i className="cartesian-swatch" aria-hidden="true" style={{ backgroundColor: item.color }} />
-        <span>{item.name}</span><strong>{currency ? `$${formatTotal.format(total).toLowerCase()}` : total.toLocaleString("en")}</strong>
+        <span>{item.name}</span><strong>{currency ? `$${exactCurrency ? total.toLocaleString("en") : formatTotal.format(total).toLowerCase()}` : total.toLocaleString("en")}</strong>
       </Button>;
     })}
   </div>;

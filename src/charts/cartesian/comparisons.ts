@@ -1,9 +1,9 @@
 import type { BarSeriesOption, CandlestickSeriesOption, CustomSeriesOption, DefaultLabelFormatterCallbackParams, EChartsOption, LineSeriesOption } from "echarts";
 import type { ChartExample, ChartSeries } from "../../types";
 import { dates, candleRows, type CartesianData } from "./data";
-import { baseOption, categoryAxis, colorFor, down, gradient, numericAxis, seriesLegend, signedStroke, strokeFade, tint, transparent, trendValues, up, valueFormat, type ChartTheme, type Controls } from "./options";
+import { baseOption, categoryAxis, colorFor, down, gradient, numericAxis, signedStroke, strokeFade, tint, transparent, trendValues, up, valueFormat, type ChartTheme } from "./options";
 import { escapeTooltipHtml } from "../evil-tooltip";
-import { accumulateWaterfall } from "./upstream";
+import { squareBars, stackedBars } from "./BarMarks";
 
 function makeBar(item: ChartSeries, index: number, theme: ChartTheme, extra: Partial<BarSeriesOption> = {}): BarSeriesOption {
   const color = colorFor(item, index, theme);
@@ -25,33 +25,30 @@ function labelFor(theme: ChartTheme) {
   return { fontSize: 10, color: theme.muted, show: true };
 }
 
-export function buildBar(example: ChartExample, data: CartesianData, theme: ChartTheme, compact: boolean): EChartsOption {
+export function buildBar(example: ChartExample, data: CartesianData, theme: ChartTheme, compact: boolean, active?: number, loading = false): EChartsOption {
   const option = baseOption(data, theme, compact, true);
   const { id } = example;
   const horizontal = id === "bar-sources";
-  const stacked = id === "bar-stacked";
   const signed = id === "bar-profit-loss";
   const squares = id === "bar-squares" || id === "bar-squares-legend";
+  const axis = numericAxis(theme, !horizontal);
+  const valuesVisible = id === "bar-grouped" || signed;
+  option.grid = { top: id === "bar-values" ? 23 : 9, right: 14, bottom: 27, left: valuesVisible ? (compact ? 28 : 43) : 14 };
+  option.yAxis = { ...axis, axisLabel: { ...axis.axisLabel, show: valuesVisible, formatter: (value: number) => abbreviated.format(value).toLowerCase() } };
   if (horizontal) {
-    option.grid = { top: 6, right: 18, bottom: 25, left: compact ? 85 : 116 };
-    option.xAxis = numericAxis(theme);
-    option.yAxis = { ...categoryAxis(data.categories, theme), inverse: true };
+    option.grid = { top: 7, right: 19, bottom: 7, left: compact ? 54 : 72 };
+    option.xAxis = { ...axis, axisLabel: { show: false } };
+    option.yAxis = { ...categoryAxis(data.categories, theme, true), inverse: true };
   }
-  if (id === "bar-squares-legend" && !compact) {
-    option.legend = seriesLegend(data.series, theme);
-    option.grid = { top: 8, right: 16, bottom: 51, left: 48 };
+  option.tooltip = { ...option.tooltip, show: !loading };
+  if (squares || id === "bar-stacked") {
+    const rows = data.series.map((item, index) => ({
+      name: item.name, color: colorFor(item, index, theme), value: (category: number) => typeof item.values[category] === "number" ? valueFormat.format(item.values[category]!) : "—",
+    }));
+    option.tooltip = { ...option.tooltip, backgroundColor: "transparent", padding: 0, borderWidth: 0, extraCssText: "box-shadow:none", formatter: composedTooltip(data, rows) };
   }
-  if (squares) {
-    const high = Math.max(0, ...data.series.flatMap(item => item.values.map(value => value ?? 0)));
-    option.series = data.series.map((item, index) => {
-      const color = colorFor(item, index, theme);
-      return {
-        type: "pictorialBar" as const, name: item.name, data: [...item.values],
-        symbol: "roundRect", symbolRepeat: "fixed", symbolClip: true, symbolBoundingData: Math.ceil(high / 10) * 10,
-        symbolMargin: 2, symbolSize: compact ? [10, 9] : [16, 11],
-        barGap: "18%", itemStyle: { color: gradient(color, tint(color, 0.38)) }, emphasis: { focus: "series" as const },
-      };
-    });
+  if (squares || id === "bar-stacked") {
+    option.series = squares ? squareBars(data, theme, active) : [stackedBars(data, theme)];
     return option;
   }
   if (id === "bar-depth") {
@@ -75,42 +72,23 @@ export function buildBar(example: ChartExample, data: CartesianData, theme: Char
     }));
     return option;
   }
-  option.series = data.series.map((item, index) => makeBar(item, index, theme, {
-    stack: stacked ? "sum" : undefined,
-    itemStyle: { color: colorFor(item, index, theme),
-      borderRadius: stacked && index !== data.series.length - 1 ? 0 : horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0] },
-    data: signed ? item.values.map(value => ({ value: value ?? 0,
-      itemStyle: { color: value !== null && value >= 0 ? up : down, borderRadius: value !== null && value >= 0 ? [4, 4, 0, 0] : [0, 0, 4, 4] } })) : [...item.values],
-    label: id === "bar-values" ? { ...labelFor(theme), color: theme.surface, position: "inside", rotate: compact ? 90 : 0 } : undefined,
-    labelLayout: id === "bar-values" ? { hideOverlap: true } : undefined,
-    markLine: signed ? { symbol: ["none", "none"], label: { show: false }, data: [{ yAxis: 0 }], lineStyle: { color: theme.muted, type: "solid" } } : undefined,
-  }));
-  return option;
-}
-
-export function buildDiverging(example: ChartExample, data: CartesianData, theme: ChartTheme, compact: boolean): EChartsOption {
-  const option = baseOption(data, theme, compact, true);
-  const neutralIndex = data.series.findIndex(item => item.name.toLowerCase() === "neutral");
-  const half = neutralIndex >= 0 ? neutralIndex : Math.floor(data.series.length / 2);
-  const style = [down, "#eaa19c", "#a4a6ba", "#6bbda8", up];
-  const legend = example.id === "diverging-legend" && !compact;
-  option.grid = { left: compact ? 82 : 153, right: 16, top: 12, bottom: legend ? 53 : 30 };
-  option.xAxis = { ...numericAxis(theme), min: -100, max: 100, axisLabel: { ...numericAxis(theme).axisLabel, formatter: (value: string | number) => `${Math.abs(Number(value))}%` } };
-  option.yAxis = { ...categoryAxis(data.categories, theme, true), inverse: true, axisLabel: { ...categoryAxis([], theme).axisLabel, width: compact ? 71 : 130, overflow: "truncate" } };
-  if (legend) option.legend = seriesLegend(data.series, theme);
-  const segments = data.series.flatMap((item, index) => {
-    const color = item.color ?? style[index % style.length];
-    const piece = (multiplier: number) => makeBar({ ...item, values: item.values.map(value => value === null ? null : value * multiplier) }, index, theme, {
-      stack: "responses", barMaxWidth: 28,
-      itemStyle: { color, borderRadius: 0, borderWidth: 1, borderColor: theme.surface },
-      label: compact ? undefined : { ...labelFor(theme), color: theme.surface, position: "inside", formatter: ({ value }) => `${valueFormat.format(Math.abs(Number(value)))}%` },
-      labelLayout: { hideOverlap: true },
+  option.series = data.series.map((item, index) => {
+    const paint = signed ? item.color ?? theme.colors[1] : colorFor(item, index, theme);
+    const ghost = tint(theme.muted, .23);
+    const real = item.values.map(value => signed && value !== null ? { value,
+      itemStyle: { color: paint, borderRadius: value >= 0 ? [4, 4, 0, 0] : [0, 0, 4, 4] } } : value);
+    const highest = Math.max(1, ...item.values.map(value => value ?? 0));
+    const samples = loading ? data.categories.map((_, i) => Math.round(highest * (.37 + (i * 7 % 6) * .087))) : real;
+    return makeBar(item, index, theme, {
+      id: `bar-${index}`, barMaxWidth: 110, barWidth: data.series.length === 1 ? "76%" : undefined, barGap: "12%", barCategoryGap: "22%",
+      itemStyle: { color: loading ? ghost : paint, borderRadius: horizontal ? [0, 7, 7, 0] : [7, 7, 0, 0] },
+      data: samples, emphasis: { focus: "self", disabled: loading },
+      label: id === "bar-values" ? { ...labelFor(theme), color: theme.text, position: "top",
+        formatter: ({ value }) => typeof value === "number" ? valueFormat.format(value) : "", fontSize: compact ? 7 : 10 } : undefined,
+      labelLayout: id === "bar-values" ? { hideOverlap: true } : undefined,
+      markLine: signed ? { symbol: ["none", "none"], label: { show: false }, data: [{ yAxis: 0 }], lineStyle: { color: theme.muted, type: "solid" } } : undefined,
     });
-    if (index === neutralIndex) return [piece(-0.5), piece(0.5)];
-    return [piece(index < half ? -1 : 1)];
   });
-  // The negative stack starts with the neutral segment, then moves outward.
-  option.series = [...segments.slice(half), ...segments.slice(0, half).reverse()];
   return option;
 }
 
@@ -130,6 +108,7 @@ function mean(values: readonly (number | null)[], span: number) {
   });
 }
 
+const abbreviated = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 });
 
 type ChartReadout = { name: string; value: (index: number) => string; color: string };
@@ -275,127 +254,6 @@ export function buildComposed(example: ChartExample, data: CartesianData, theme:
   return option;
 }
 
-export function buildLollipop(example: ChartExample, data: CartesianData, theme: ChartTheme, compact: boolean): EChartsOption {
-  const horizontal = example.id === "lollipop-horizontal";
-  const signed = example.id === "lollipop-change";
-  const option = baseOption(data, theme, compact, true);
-  if (horizontal) {
-    option.xAxis = { ...numericAxis(theme), max: 100 };
-    option.yAxis = { ...categoryAxis(data.categories, theme, true), inverse: true };
-    option.grid = { left: compact ? 65 : 91, right: 24, top: 8, bottom: 26 };
-  }
-  const item = data.series[0];
-  if (!item) return option;
-  const color = colorFor(item, 0, theme);
-  option.series = [{
-    type: "custom", name: item.name,
-    data: item.values.flatMap((value, index) => value === null ? [] : [horizontal ? [value, index] : [index, value]]),
-    encode: { x: 0, y: 1, tooltip: horizontal ? 0 : 1 },
-    renderItem: (_params, api) => {
-      const cat = Number(api.value(horizontal ? 1 : 0)), value = Number(api.value(horizontal ? 0 : 1));
-      const [x, y] = api.coord(horizontal ? [value, cat] : [cat, value]);
-      const [x0, y0] = api.coord(horizontal ? [0, cat] : [cat, 0]);
-      const paint = signed && value < 0 ? down : color;
-      return { type: "group", children: [
-        { type: "line", shape: { x1: x0, y1: y0, x2: x, y2: y }, style: { stroke: tint(paint, 0.58), lineWidth: 2.4 } },
-        { type: "circle", shape: { cx: x, cy: y, r: 5.5 }, style: { fill: paint, stroke: theme.surface, lineWidth: 1.5 } },
-        ...(horizontal ? [{ type: "text" as const, style: { x: x + 10, y, text: `${value}%`, fill: theme.text, fontSize: 10, verticalAlign: "middle" as const } }] : []),
-      ] };
-    },
-  }];
-  return option;
-}
-
-export function buildDumbbell(example: ChartExample, data: CartesianData, theme: ChartTheme, compact: boolean, controls: Controls): EChartsOption {
-  const vertical = example.id === "dumbbell-vertical";
-  const option = baseOption(data, theme, compact, true);
-  if (!vertical) {
-    option.xAxis = numericAxis(theme);
-    option.yAxis = { ...categoryAxis(data.categories, theme, true), inverse: true };
-    option.grid = { left: compact ? 53 : 78, right: 24, top: 9, bottom: 26 };
-  }
-  const [first, second] = data.series;
-  if (!first || !second) return option;
-  const annotate = example.id === "dumbbell-legend" && !compact;
-  const values = data.categories.flatMap((_, index) => first.values[index] == null || second.values[index] == null
-    ? [] : [[index, first.values[index]!, second.values[index]!]]);
-  option.series = [{
-    type: "custom", name: "Comparison", data: values,
-    dimensions: ["Category", first.name, second.name],
-    encode: { x: vertical ? 0 : [1, 2], y: vertical ? [1, 2] : 0, tooltip: [1, 2] },
-    renderItem: (_params, api) => {
-      const [category, from, to] = [0, 1, 2].map(dimension => Number(api.value(dimension)));
-      const coord = (value: number) => api.coord(vertical ? [category, value] : [value, category]);
-      const a = coord(from), b = coord(to);
-      const dots = [a, b].map(([x, y], index) => {
-        const color = colorFor(data.series[index], index, theme);
-        return { type: "circle" as const, shape: { cx: x, cy: y, r: 6 }, style: { fill: controls.activeLegend !== undefined && controls.activeLegend !== index ? tint(color, 0.2) : color, stroke: theme.surface, lineWidth: 1.5 } };
-      });
-      const labels = annotate ? [a, b].map(([x, y], index) => ({
-        type: "text" as const, style: { x, y: y - 13, text: String(index === 0 ? from : to), fill: theme.text, fontSize: 10, align: "center" as const },
-      })) : [];
-      return { type: "group", children: [
-        { type: "line", shape: { x1: a[0], y1: a[1], x2: b[0], y2: b[1] }, style: { stroke: tint(theme.muted, 0.4), lineWidth: 4 } },
-        ...dots, ...labels,
-      ] };
-    },
-  }];
-  return option;
-}
-
-export function buildRanking(example: ChartExample, data: CartesianData, theme: ChartTheme, compact: boolean): EChartsOption {
-  const bump = example.family === "bump";
-  const ascending = example.id === "bump-ascending";
-  const improveLower = example.id === "slope-response-time";
-  const legend = ascending && !compact;
-  const option = baseOption(data, theme, compact);
-  const sorted = data.categories.map((_, column) => data.series.map((item, index) => ({ index, value: item.values[column] ?? (ascending ? Infinity : -Infinity) }))
-    .sort((a, b) => ascending ? a.value - b.value : b.value - a.value).map(({ index }) => index));
-  option.yAxis = { ...numericAxis(theme), inverse: bump, min: bump ? 1 : "dataMin", max: bump ? Math.max(2, data.series.length) : undefined,
-    minInterval: bump ? 1 : undefined, axisLabel: { ...numericAxis(theme).axisLabel, show: bump || !compact } };
-  option.grid = { top: 12, right: compact ? 20 : legend ? 19 : 80, bottom: legend ? 52 : 24, left: compact ? 26 : 46 };
-  if (legend) option.legend = seriesLegend(data.series, theme);
-  option.series = data.series.map((item, index) => {
-    const improved = (item.values.at(-1) ?? 0) > (item.values[0] ?? 0);
-    const color = bump ? colorFor(item, index, theme) : item.color ?? (improveLower ? improved ? tint(theme.muted, 0.45) : up : improved ? up : down);
-    const values = bump ? sorted.map((column, i) => item.values[i] == null ? null : column.indexOf(index) + 1) : item.values;
-    return makeLine({ ...item, color, values }, index, theme, {
-      showSymbol: true, symbolSize: compact ? 5 : 8, smooth: bump ? 0.35 : false,
-      endLabel: compact || legend ? undefined : { show: true, formatter: "{a}", color: theme.muted, fontSize: 10 },
-      labelLayout: { moveOverlap: "shiftY" }, lineStyle: { color, width: 2.5 },
-    });
-  });
-  return option;
-}
-
-export function buildWaterfall(example: ChartExample, data: CartesianData, theme: ChartTheme, compact: boolean): EChartsOption {
-  const cash = example.id === "waterfall-cash-flow";
-  const option = baseOption(data, theme, compact, true);
-  const item = data.series[0];
-  if (!item) return option;
-  const bars = accumulateWaterfall(item.values, index => data.rows?.[index]?.total === true || data.rows?.[index]?.subtotal === true);
-  option.series = [{
-    type: "custom", name: item.name, data: bars, dimensions: ["Period", "From", "To", "Change", "Total"], encode: { x: 0, y: [1, 2], tooltip: [3] },
-    renderItem: (params, api) => {
-      const [index, from, to, amount, total] = [0, 1, 2, 3, 4].map(dimension => Number(api.value(dimension)));
-      const [center, y0] = api.coord([index, from]), [, y1] = api.coord([index, to]);
-      const step = ((params.coordSys as { width?: number } | undefined)?.width ?? 400) / Math.max(1, data.categories.length);
-      const width = Math.min(step * 0.62, compact ? 32 : 65);
-      const y = Math.min(y0, y1);
-      const children = [
-        { type: "rect" as const, shape: { x: center - width / 2, y, width, height: Math.max(2, Math.abs(y0 - y1)), r: 3 },
-          style: { fill: total ? theme.colors[0] : amount >= 0 ? up : down } },
-        ...(!cash && index < bars.length - 1 ? [{ type: "line" as const,
-          shape: { x1: center + width / 2, y1, x2: center + step - width / 2, y2: y1 }, style: { stroke: theme.grid, lineDash: [3, 3] } }] : []),
-        ...(!cash && !compact ? [{ type: "text" as const, style: { x: center, y: y - 7, text: `${amount >= 0 && !total ? "+" : ""}${amount}`, align: "center" as const,
-          verticalAlign: "bottom" as const, fill: theme.text, fontSize: 10 } }] : []),
-      ];
-      return { type: "group", children };
-    },
-  }];
-  return option;
-}
-
 export function buildGantt(example: ChartExample, data: CartesianData, theme: ChartTheme, compact: boolean, loading: boolean): EChartsOption {
   const milestones = example.id === "gantt-milestones";
   const roadmap = example.id === "gantt-roadmap";
@@ -467,39 +325,60 @@ export function buildGantt(example: ChartExample, data: CartesianData, theme: Ch
   return option;
 }
 
-export function buildStream(example: ChartExample, data: CartesianData, theme: ChartTheme, compact: boolean): EChartsOption {
+export function buildStream(example: ChartExample, data: CartesianData, theme: ChartTheme, compact: boolean, loading = false): EChartsOption {
   const normalized = example.id === "stream-expand";
   const option = baseOption(data, theme, compact);
-  if (normalized) {
-    const totals = data.categories.map((_, index) => data.series.reduce((sum, item) => sum + Math.max(0, item.values[index] ?? 0), 0));
-    option.yAxis = { ...numericAxis(theme), min: 0, max: 100, axisLabel: { ...numericAxis(theme).axisLabel, formatter: "{value}%" } };
-    option.series = data.series.map((item, index) => makeLine({ ...item, values: item.values.map((value, i) => totals[i] > 0 && value !== null ? value / totals[i] * 100 : 0) }, index, theme, {
-      stack: "share", areaStyle: { opacity: 0.68 }, lineStyle: { opacity: 0 },
-    }));
-  } else {
-    const sums = data.categories.map((_, index) => data.series.reduce((sum, item) => sum + Math.max(0, item.values[index] ?? 0), 0));
-    const highest = Math.max(0, ...sums);
-    const baseline = sums.map(value => (highest - value) / 2);
-    let lower = baseline;
+  const values = data.series.map(item => data.categories.map((_, i) => Math.max(0, item.values[i] ?? 0)));
+  const sums = data.categories.map((_, i) => values.reduce((sum, item) => sum + item[i], 0));
+  const peak = Math.max(0, ...sums);
+  const baseline = sums.map(value => (peak - value) / 2);
+  const streamOrder = ["Pop", "Hip-hop", "Rock", "Electronic", "Jazz"];
+  const order = example.id === "stream-default"
+    ? data.series.map((item, index) => ({ item, index })).sort((a, b) => streamOrder.indexOf(a.item.name) - streamOrder.indexOf(b.item.name))
+    : data.series.map((item, index) => ({ item, index }));
+  const rows = order.map(({ item, index }) => ({
+    name: item.name, color: colorFor(item, index, theme),
+    value: (category: number) => {
+      const value = item.values[category];
+      if (typeof value !== "number") return "—";
+      if (normalized) return valueFormat.format(value);
+      return `${abbreviated.format(value).replace("K", "k")} ${example.id === "stream-loading" ? "requests" : "hours"}`;
+    },
+  }));
+  option.tooltip = { ...option.tooltip, show: !loading, backgroundColor: "transparent", borderWidth: 0, padding: 0, extraCssText: "box-shadow:none", formatter: composedTooltip(data, rows) };
+  const axis = categoryAxis(data.categories, theme);
+  option.xAxis = { ...axis, axisLabel: { ...axis.axisLabel, show: !loading,
+    interval: normalized ? 1 : data.categories.length > 12 ? 3 : undefined,
+    formatter: normalized ? undefined : (value: string) => /^Jan /.test(value) ? value : value.replace(/ \d{4}$/, "") } };
+  const layers: LineSeriesOption[] = [];
+  if (!normalized) {
     option.grid = { top: 10, bottom: 26, left: 13, right: 14 };
     option.yAxis = { ...numericAxis(theme, false), show: false };
-    option.series = [
-      makeLine({ name: "Offset", values: baseline }, 0, theme, { stack: "stream", stackStrategy: "all", lineStyle: { opacity: 0 }, tooltip: { show: false }, silent: true }),
-      ...data.series.map((item, index) => {
-        const values = data.categories.map((_, position) => Math.max(0, item.values[position] ?? 0));
-        const peak = values.indexOf(Math.max(0, ...values));
-        const center = (lower[peak] ?? 0) + (values[peak] ?? 0) / 2;
-        lower = lower.map((value, position) => value + values[position]);
-        return makeLine({ ...item, values }, index, theme, {
-          stack: "stream", stackStrategy: "all", areaStyle: { opacity: 0.73 }, lineStyle: { opacity: 0 },
-          markPoint: compact || peak < 0 ? undefined : {
-            symbol: "circle", symbolSize: 1, silent: true, itemStyle: { color: transparent },
-            label: { show: true, formatter: "{b}", color: theme.text, fontSize: 10 },
-            data: [{ name: item.name, coord: [peak, center] }],
-          },
-        });
-      }),
-    ];
+    layers.push(makeLine({ name: "Offset", values: baseline }, 0, theme, { id: "stream-offset", stack: "stream", stackStrategy: "all",
+      lineStyle: { opacity: 0 }, tooltip: { show: false }, silent: true }));
+  } else {
+    const axis = numericAxis(theme);
+    option.yAxis = { ...axis, min: 0, max: 100, interval: 25, axisLabel: { ...axis.axisLabel, formatter: "{value}%" } };
   }
+  let lower = normalized ? sums.map(() => 0) : baseline;
+  data.series.forEach((item, index) => {
+    const raw = values[index];
+    const layer = normalized ? raw.map((value, i) => sums[i] ? value / sums[i] * 100 : 0)
+      : loading ? raw.map((value, i) => value * (.44 + .16 * Math.cos(i / 2 + index))) : raw;
+    const top = layer.indexOf(Math.max(0, ...layer));
+    const middle = (lower[top] ?? 0) + (layer[top] ?? 0) / 2;
+    lower = lower.map((value, i) => value + layer[i]);
+    const color = loading ? tint(theme.muted, .16 + .045 * index) : colorFor(item, index, theme);
+    layers.push(makeLine({ ...item, color, values: layer }, index, theme, {
+      id: `stream-${index}`, stack: "stream", stackStrategy: "all", areaStyle: { color, opacity: loading ? 1 : .76 }, lineStyle: { opacity: 0 },
+      emphasis: { disabled: loading, focus: "series" },
+      markPoint: example.id !== "stream-default" || compact || top < 0 ? undefined : {
+        symbol: "circle", symbolSize: 1, silent: true, itemStyle: { color: transparent },
+        label: { show: true, formatter: "{b}", color: theme.text, fontSize: 10 },
+        data: [{ name: item.name, coord: [top, middle] }],
+      },
+    }));
+  });
+  option.series = layers;
   return option;
 }

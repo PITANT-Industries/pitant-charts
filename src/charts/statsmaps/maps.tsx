@@ -9,6 +9,7 @@ import type { GeometryCollection, Topology, Polygon as TopoPolygon, MultiPolygon
 import type { Feature, FeatureCollection, LineString, MultiPolygon, Polygon } from "geojson";
 import countries from "world-atlas/countries-110m.json";
 import { mapFixtures, routeFixtures, type Coordinate, type Marker, type Route } from "./geo-fixtures";
+import { countryKeyboardOrder, infrastructureMarkers, infrastructureShapes, paymentBeta, paymentLive, signupBuckets, signupCounts, visitorBuckets, visitorCounts } from "./choropleth-fixtures";
 import {
   Grid, HEIGHT, Legend, PLOT, WIDTH, createRandom, format, linear, number, rows, string, useVariantLoading,
   type DemoProps, type HoverInfo,
@@ -26,6 +27,7 @@ const center: Coordinate = [WIDTH / 2, mapHeight / 2];
 const graticuleLines = geoGraticule().step([10, 10])();
 const worldProjection = () => geoNaturalEarth1().fitExtent([[18, 10], [WIDTH - 18, mapHeight - 8]], { type: "Sphere" }).clipExtent([[0, 0], [WIDTH, mapHeight]]);
 const compactMetric = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
+const coordinates = new Intl.NumberFormat("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function screenToMap(svg: SVGSVGElement, clientX: number, clientY: number): Coordinate {
   const matrix = svg.getScreenCTM();
@@ -62,6 +64,7 @@ function getMarkers(data: DemoProps["data"], id: string, forChoropleth: boolean)
     return [{ at, label: string(row.label) ?? `Location ${i + 1}`, value: Math.max(0, number(row.value) ?? 1), category: string(row.category) ?? "Locations" }];
   });
   if (!forChoropleth) return mapFixtures(id);
+  if (id === "choropleth-markers") return infrastructureMarkers;
   const mapSites = ["Berlin", "Tokyo", "Sydney", "New York", "São Paulo"];
   const filtered = cities.filter(([name]) => mapSites.includes(name));
   return filtered.map(([label, lon, lat, region], index) => ({ at: [lon, lat], label, value: 20 + (31 * index) % 109, category: continents[region] }));
@@ -173,9 +176,12 @@ export function GeoMap({ example, compact, data }: DemoProps) {
   const clickZoom = example.id === "choropleth-click-to-zoom";
   const camera = clickZoom || pointerCamera || dotGrid;
   const backgrounds = example.id === "choropleth-background";
+  const visitors = example.id === "choropleth-values";
   const patterns = example.id === "choropleth-patterns";
   const graticule = example.id === "choropleth-graticule";
-  const markersMode = example.id === "choropleth-markers" || camera;
+  const infrastructure = example.id === "choropleth-markers";
+  const markersMode = infrastructure || camera;
+  const thematic = visitors || patterns || graticule || infrastructure || backgrounds;
   const categoryMode = example.id === "bubble-map-categories" || example.id === "route-map-region";
   const sized = example.id === "globe-sized" || isBubble;
   const region = example.id.endsWith("-region");
@@ -196,7 +202,7 @@ export function GeoMap({ example, compact, data }: DemoProps) {
   const markers = useMemo(() => isBubble || isGlobe || markersMode ? getMarkers(data, example.id, markersMode) : [], [isBubble, isGlobe, markersMode, data, example.id]);
   const routes = useMemo(() => isRoute ? getRoutes(data, example.id) : [], [isRoute, data, example.id]);
   const countriesValues = useMemo(() => {
-    if (chart !== "choropleth" || !data?.rows) return new Map(Object.entries(countryNames));
+    if (chart !== "choropleth" || !data?.rows) return visitors ? visitorCounts : backgrounds ? signupCounts : new Map(Object.entries(countryNames));
     const matched = new Map<string, number>();
     for (const row of rows(data)) {
       const country = string(row.country) ?? string(row.label);
@@ -204,16 +210,16 @@ export function GeoMap({ example, compact, data }: DemoProps) {
       if (country && value !== undefined) matched.set(country, value);
     }
     return matched;
-  }, [chart, data]);
+  }, [chart, data, visitors, backgrounds]);
   const projection = useMemo(() => {
     if (isGlobe) return geoOrthographic().translate(center).scale(144).rotate(rotation).clipAngle(90);
     const project = region
       ? geoMercator().translate(center).scale(111)
-      : worldProjection();
+      : graticule ? geoMercator().center([0, 20]).translate(center).scale((WIDTH - 8) / (2 * Math.PI)) : worldProjection();
     if (region) fitToSites(project, [...markers.map(({ at }) => at), ...routes.flatMap(({ from, to }) => [from, to])]);
     project.clipExtent([[0, 0], [WIDTH, mapHeight]]);
     return project;
-  }, [isGlobe, rotation, region, markers, routes]);
+  }, [isGlobe, rotation, region, markers, routes, graticule]);
   const path = geoPath(projection);
   const geography = useMemo(() => {
     const projectPath = geoPath(projection);
@@ -241,7 +247,9 @@ export function GeoMap({ example, compact, data }: DemoProps) {
     if (!position || !showMarker(marker) || hidden.includes(marker.category)) return [];
     const [x, y] = position;
     const radius = sized ? Math.sqrt(marker.value / markerMaximum) * (isBubble ? 19 : 14) : 4.8;
-    return [{ ...marker, index, x, y, radius, key: `marker:${index}`, hint: { x, y, lines: [marker.label, sized ? `${data ? "Value" : markerMetric}: ${format.format(marker.value)}` : ""].filter(Boolean) } }];
+    const markerDetails = infrastructure ? `Location: ${coordinates.format(marker.at[1])}°, ${coordinates.format(marker.at[0])}°`
+      : sized ? `${data ? "Value" : markerMetric}: ${format.format(marker.value)}` : "";
+    return [{ ...marker, index, x, y, radius, key: `marker:${index}`, hint: { x, y, lines: [marker.label, markerDetails].filter(Boolean) } }];
   });
   const visibleRoutes = routes.filter(({ category }) => !hidden.includes(category)).flatMap((route) => {
     const d = routePath(route);
@@ -262,17 +270,23 @@ export function GeoMap({ example, compact, data }: DemoProps) {
     return point ? [{ key, at: point, hint: { x: point[0], y: point[1], lines: [label, `Routes: ${routes}`] } }] : [];
   });
   const valueExtent = Math.max(1, ...countriesValues.values());
-  const countryValueMode = example.id === "choropleth-values" || backgrounds || clickZoom || dotGrid;
+  const countryValueMode = visitors || backgrounds || clickZoom || dotGrid;
+  const marketStatus = (name: string) => paymentLive.has(name) ? "live" : paymentBeta.has(name) ? "beta" : "not yet";
   const countryHint = (shape: Country, x: number, y: number): HoverInfo => {
     const name = shape.properties.name ?? String(shape.id ?? "Country");
-    const value = countriesValues.get(name) ?? 0;
-    return { x, y, lines: [name, countryValueMode ? `Value: ${format.format(value)}` : ""].filter(Boolean) };
+    const value = countriesValues.get(name);
+    const metric = visitors ? "Visitors" : backgrounds ? "Sign-ups" : "Value";
+    if (patterns && !data) return { x, y, lines: [name, marketStatus(name)] };
+    return { x, y, lines: [name, countryValueMode && (value !== undefined || !thematic) ? `${metric}: ${format.format(value ?? 0)}` : ""].filter(Boolean) };
   };
+  const countryTargets = countryInteractive ? geography.filter(({ point }) => point.every(Number.isFinite)).map(({ shape, point, key }) => ({ key, at: point, hint: countryHint(shape, ...point) })) : [];
+  if (thematic && !infrastructure) countryTargets.sort((left, right) =>
+    (countryKeyboardOrder.get(left.hint.lines[0]) ?? Infinity) - (countryKeyboardOrder.get(right.hint.lines[0]) ?? Infinity));
   const targets = [
     ...screenMarkers.map(({ key, hint, x, y }) => ({ key, hint, at: [x, y] as Coordinate })),
     ...screenAirports,
     ...visibleRoutes.map(({ key, hint }) => ({ key, hint, at: [hint.x, hint.y] as Coordinate })),
-    ...(countryInteractive ? geography.filter(({ point }) => point.every(Number.isFinite)).map(({ shape, point, key }) => ({ key, at: point, hint: countryHint(shape, ...point) })) : []),
+    ...countryTargets,
   ];
   const keyboardTarget = targets.find(({ key }) => key === focus);
   const active = loading ? null : hover ?? keyboardTarget?.hint ?? null;
@@ -408,21 +422,21 @@ export function GeoMap({ example, compact, data }: DemoProps) {
   </>;
   const displayHint = active && transformHint(active);
   const categoryColor = (name: string) => `var(--chart-${groups.indexOf(name) % 8 + 1})`;
-  const countryFill = (shape: Country) => {
+  const stepColor = (value: number) => value ? `color-mix(in srgb, var(--chart-1) ${value * 23}%, var(--muted))` : "var(--muted)";
+  const countryLevel = (label: string) => {
+    if (!data && (visitors || backgrounds)) return (visitors ? visitorBuckets : signupBuckets).get(label) ?? 0;
+    const value = countriesValues.get(label) ?? 0;
+    return value > 0 ? Math.min(4, Math.ceil(value / valueExtent * 4)) : 0;
+  };
+  const countryFill = (shape: Country, index: number) => {
     const label = shape.properties.name ?? "";
     if (selected === `country:${label}`) return "var(--chart-2)";
     if (patterns) {
-      const value = countriesValues.get(label) ?? 0;
-      return value > 67 ? "var(--chart-1)" : value > 23 ? `url(#${id}-market)` : "var(--muted)";
+      if (data) return stepColor(countryLevel(label));
+      return paymentLive.has(label) ? stepColor(3) : paymentBeta.has(label) ? `url(#${id}-market)` : stepColor(0);
     }
-    if (countryValueMode) {
-      const value = countriesValues.get(label) ?? 0;
-      return value ? `color-mix(in srgb, var(--chart-1) ${Math.max(1, Math.ceil(4 * value / valueExtent)) * 21}%, var(--muted))` : "var(--muted)";
-    }
-    if (graticule) {
-      const value = [...label].reduce((sum, n) => sum + n.charCodeAt(0), 0) % 4;
-      return `color-mix(in srgb, var(--chart-1) ${17 + value * 9}%, var(--muted))`;
-    }
+    if (countryValueMode) return stepColor(countryLevel(label));
+    if (graticule) return stepColor(index % 5);
     if (isBubble || isRoute) return "var(--muted)";
     return "color-mix(in srgb, var(--chart-1) 17%, var(--muted))";
   };
@@ -455,17 +469,19 @@ export function GeoMap({ example, compact, data }: DemoProps) {
             <pattern id={`${id}-dots`} width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r=".62" fill="var(--chart-1)" opacity=".22" /></pattern>
             <radialGradient id={`${id}-ocean`} cx="36%" cy="31%" r="70%"><stop stopColor="var(--chart-1)" stopOpacity=".09" /><stop offset="90%" stopColor="var(--chart-1)" stopOpacity=".015" /><stop offset="100%" stopColor="var(--chart-1)" stopOpacity=".13" /></radialGradient>
           </defs>
-          {backgrounds && <rect width={WIDTH} height={mapHeight} fill={`url(#${id}-backdrop)`} />}
+          {backgrounds && <rect data-map-backdrop="" width={WIDTH} height={mapHeight} fill={`url(#${id}-backdrop)`} />}
           {pointerCamera && <rect className="stat-map-backdrop" width={WIDTH} height={mapHeight} fill={`url(#${id}-dots)`} />}
           {isGlobe && <circle className={loading ? "stat-load" : loadingExample ? "stat-globe-reveal" : undefined} data-globe-disc="" cx={center[0]} cy={center[1]} r={projection.scale()} fill={`url(#${id}-ocean)`} stroke="var(--border)" />}
           <g clipPath={`url(#${id}-bounds)`}>
             <g className={!isGlobe ? "stat-map-viewport" : undefined} style={viewport ? { transform: viewport, transitionDuration: camera && !drag.current?.active && !pinch.current ? selected || !pointerCamera ? undefined : ".16s" : "0s" } : undefined}>
-              {mapGrid && <path d={path(graticuleLines) ?? undefined} fill="none" stroke="var(--border)" strokeWidth=".7" opacity={clickZoom && selected ? .25 : .9} pointerEvents="none" />}
+              {mapGrid && <path data-map-graticule="" d={path(graticuleLines) ?? undefined} fill="none" stroke="var(--muted-foreground)" strokeWidth=".55" opacity={graticule ? .42 : clickZoom && selected ? .25 : .6} pointerEvents="none" />}
               {!dotGrid && geography.map(({ shape, d, point, key }, index) => {
                 const hint = countryHint(shape, ...point);
                 const current = hover?.lines[0] === hint.lines[0] || !hover && focus === key;
-                const fill = current ? "var(--chart-2)" : countryFill(shape);
-                return <path key={shape.id ?? index} data-map-location={countryInteractive ? key : undefined} className={isGlobe && loading ? "stat-load" : isGlobe && loadingExample ? "stat-globe-reveal" : undefined} d={d} fill={fill} fillOpacity={pointerCamera && !current ? .68 : 1} stroke="var(--background)" strokeWidth={isGlobe ? .47 : .57}
+                const name = shape.properties.name ?? "";
+                const fill = current && !thematic ? "var(--chart-2)" : countryFill(shape, index);
+                const fillOpacity = thematic && active && !current ? .4 : pointerCamera && !current ? .68 : 1;
+                return <path key={shape.id ?? index} data-map-location={countryInteractive ? key : undefined} data-country-level={countryValueMode ? countryLevel(name) : undefined} data-market-status={patterns && !data ? marketStatus(name) : undefined} className={isGlobe && loading ? "stat-load" : isGlobe && loadingExample ? "stat-globe-reveal" : undefined} d={d} fill={fill} fillOpacity={fillOpacity} stroke={thematic && current ? "var(--foreground)" : "var(--background)"} strokeWidth={thematic && current ? 1.4 : isGlobe ? .47 : .57}
                   onPointerEnter={countryInteractive ? () => !drag.current?.active && point.every(Number.isFinite) && setHover(hint) : undefined}
                   onPointerLeave={countryInteractive ? () => setHover(null) : undefined}
                   onClick={countryInteractive && camera && point.every(Number.isFinite) ? (event) => clickTarget(event, key, point) : undefined}
@@ -495,17 +511,18 @@ export function GeoMap({ example, compact, data }: DemoProps) {
               </g>)}
               {screenMarkers.map((marker) => {
                 const { x, y, radius, hint, key, index, category, label } = marker;
-                const color = categoryMode ? categoryColor(category) : `var(--chart-${sized && isGlobe || region || markersMode ? 2 : 1})`;
+                const color = categoryMode ? categoryColor(category) : `var(--chart-${infrastructure ? index % 5 + 1 : sized && isGlobe || region || markersMode ? 2 : 1})`;
                 const current = active?.lines[0] === label || selected === key;
-                return <g key={key} data-map-location={key} data-marker-value={marker.value} transform={`translate(${x} ${y})`}
+                const infrastructureShape = infrastructureShapes[index % infrastructureShapes.length];
+                return <g key={key} data-map-location={key} data-marker-value={marker.value} data-map-location-name={infrastructure ? label : undefined} data-map-marker-shape={infrastructure ? infrastructureShape : undefined} transform={`translate(${x} ${y})`}
                   opacity={active && !current && chart !== "choropleth" ? .48 : 1}
                   onPointerEnter={!compact && !loading ? () => !drag.current?.active && setHover(hint) : undefined} onPointerLeave={!compact ? () => setHover(null) : undefined}
                   onClick={!compact && camera ? (event) => clickTarget(event, key, [x, y]) : undefined}
                 >
-                  {markersMode && (pointerCamera || dotGrid || !index) && !compact && <circle className="stat-map-pulse" r={radius + 3} fill="none" stroke={color} strokeWidth="1.5" />}
-                  {markersMode ? pointerCamera
+                  {markersMode && (pointerCamera || dotGrid || !index || infrastructure && current) && !compact && <circle className="stat-map-pulse" r={radius + 3} fill="none" stroke={color} strokeWidth="1.5" />}
+                  {markersMode ? pointerCamera || infrastructure && infrastructureShape === "pin"
                     ? <><path d="M0 6C-2 3-5 0-5-3a5 5 0 0 1 10 0C5 0 2 3 0 6Z" fill={color} stroke="var(--background)" strokeWidth=".85" /><circle cy="-3" r="1.6" fill="var(--background)" /></>
-                    : <g fill={color} stroke="var(--chart-2)">{drawMarker(camera ? 0 : index, radius)}</g>
+                    : <g fill={color} stroke={color}>{drawMarker(camera ? 0 : infrastructure ? [0, 0, 3, 1, 2][index % 5] : index, radius)}</g>
                     : <circle className={loading ? "stat-load" : loadingExample ? "stat-bubble-reveal" : undefined} style={{ "--stat-delay": `${index * 31}ms` } as CSSProperties} r={current && !sized ? radius + 2 : radius} fill={color} fillOpacity={sized ? .52 : .82} stroke="var(--background)" strokeWidth={current ? 2 : 1.1} />}
                   {markersMode && !pointerCamera && !dotGrid && <text className="stat-axis" y={-radius - 6} textAnchor="middle" paintOrder="stroke" stroke="var(--background)" strokeWidth="2">{label}</text>}
                 </g>;
@@ -523,7 +540,8 @@ export function GeoMap({ example, compact, data }: DemoProps) {
         <strong>{data ? "Value" : markerMetric}</strong>
         {sizeKeys.map((value) => <span key={value}><i style={{ width: Math.sqrt(value / markerMaximum) * 14, height: Math.sqrt(value / markerMaximum) * 14, borderRadius: "50%", background: "var(--chart-1)", opacity: .6 }} />{value >= 1000 ? compactMetric.format(value).toLowerCase() : format.format(value)}</span>)}
       </div>}
-      {countryValueMode && !camera && <Legend entries={[{ name: "No data", color: "var(--muted)" }, { name: "Low", color: "color-mix(in srgb, var(--chart-1) 24%, var(--muted))" }, { name: "High", color: "var(--chart-1)" }]} />}
+      {visitors && !compact && <p className="stat-map-summary">{format.format([...countriesValues.values()].reduce((sum, value) => sum + value, 0))} visitors from {countriesValues.size} countries</p>}
+      {patterns && !compact && !data && <p className="stat-map-summary">Live in {paymentLive.size} countries, in beta in {paymentBeta.size} more</p>}
     </div>
   );
 }

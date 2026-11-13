@@ -198,12 +198,14 @@ export function Legend({ entries, active, onToggle }: {
   );
 }
 
-export function useVariantLoading(id: string) {
+export function useVariantLoading(id: string, toggleLabel?: string) {
   const available = id.endsWith("-loading");
   const [loading, setLoading] = useState(available);
   return {
     loading,
-    button: available ? <Button className="stat-control" onClick={() => setLoading((previous) => !previous)}>{loading ? "Show data" : "Show loading"}</Button> : undefined,
+    button: available ? toggleLabel
+      ? <Toggle className="stat-control" pressed={loading} onPressedChange={setLoading}>{toggleLabel}</Toggle>
+      : <Button className="stat-control" onClick={() => setLoading((previous) => !previous)}>{loading ? "Show data" : "Show loading"}</Button> : undefined,
   };
 }
 

@@ -13,6 +13,7 @@ const deployTeams = ["Platform", "Mobile", "Search", "Payments"];
 const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
 const cumulativePercent = new Intl.NumberFormat("en", { style: "percent", maximumFractionDigits: 1 });
 const precise = new Intl.NumberFormat("en", { maximumFractionDigits: 2 });
+const checkoutBins = [1, 6, 10, 24, 23, 27, 22, 23, 21, 20, 15, 8, 11, 5, 2, 4, 4, 0, 7, 0, 3, 1, 0, 0, 1, 0, 0, 1, 1];
 
 function positiveSamples(center: number, spread: number, count: number, seed: number, floor: number, ceiling: number) {
   const random = createRandom(seed);
@@ -66,7 +67,9 @@ function requestFixtures(names: readonly string[], sessions = false) {
 }
 
 export function Histogram({ example, compact, data }: DemoProps) {
-  const { loading, button } = useVariantLoading(example.id);
+  const loadingVariant = example.id === "histogram-loading";
+  const fixtureBins = loadingVariant && !data ? checkoutBins : undefined;
+  const { loading, button } = useVariantLoading(example.id, loadingVariant ? "Loading" : undefined);
   const overlay = example.id === "histogram-overlay";
   const stacked = example.id === "histogram-stacked";
   const names = overlay ? ["Before", "After"] : stacked ? ["Mobile", "Desktop"] : ["Requests"];
@@ -76,8 +79,8 @@ export function Histogram({ example, compact, data }: DemoProps) {
   if (!sets.length) return <NoData example={example} compact={compact} />;
   const [dataMin, dataMax] = minMax(sets.flatMap(({ values }) => values));
   const step = stacked ? 2 : overlay ? 50 : 20;
-  const min = data ? dataMin : stacked ? 0 : Math.floor(dataMin / step) * step;
-  const max = data ? dataMax : stacked ? 40 : Math.ceil(dataMax / step) * step;
+  const min = data ? dataMin : fixtureBins ? 60 : stacked ? 0 : Math.floor(dataMin / step) * step;
+  const max = data ? dataMax : fixtureBins ? 640 : stacked ? 40 : Math.ceil(dataMax / step) * step;
   const count = data ? 16 : Math.max(1, Math.round((max - min) / step));
   const width = (max - min) / count;
   const x = linear([min, max], [PLOT.left, PLOT.right]);
@@ -85,7 +88,7 @@ export function Histogram({ example, compact, data }: DemoProps) {
   const xTicks = data ? ticks([min, max], 6) : Array.from({ length: Math.floor(max / tickStep) + 1 }, (_, index) => index * tickStep).filter((value) => value >= min);
   const unit = data ? "" : stacked ? " min" : " ms";
   const axisLabel = (value: number) => `${format.format(value)}${unit}`;
-  const bins = sets.map(({ values }) => {
+  const bins = fixtureBins ? [fixtureBins] : sets.map(({ values }) => {
     const histogram = new Array<number>(count).fill(0);
     values.forEach((value) => {
       if (value < min || value > max) return;
@@ -98,8 +101,8 @@ export function Histogram({ example, compact, data }: DemoProps) {
     const counts = bins.map((set, setIndex) => visible[setIndex] ? set[index] : 0);
     return stacked ? counts.reduce((sum, value) => sum + value, 0) : Math.max(...counts);
   }));
-  const y = linear([0, maximum * 1.1], [PLOT.bottom, PLOT.top]);
-  const yTicks = ticks([0, maximum], 5);
+  const y = linear([0, fixtureBins ? 30 : maximum * 1.1], [PLOT.bottom, PLOT.top]);
+  const yTicks = fixtureBins ? [0, 5, 10, 15, 20, 25, 30] : ticks([0, maximum], 5);
   const barWidth = (PLOT.right - PLOT.left) / count;
   const positions = new Array<number>(count).fill(0);
   const bars = sets.flatMap(({ name, color }, seriesIndex) => {
@@ -112,13 +115,17 @@ export function Histogram({ example, compact, data }: DemoProps) {
       const displayHeight = loading ? 24 + 122 * Math.sin(Math.PI * (binIndex + 1) / (count + 2)) ** 2 : y(base) - by;
       return { x: bx, y: loading ? PLOT.bottom - displayHeight : by, height: displayHeight, name,
         color: color ?? themeColor(seriesIndex), value,
-        hint: { x: bx + barWidth / 2, y: by, lines: [`${format.format(min + binIndex * width)}–${axisLabel(min + (binIndex + 1) * width)}`, `${name}: ${value}`] },
+        hint: { x: bx + barWidth / 2, y: by, lines: [fixtureBins
+          ? `${axisLabel(min + binIndex * width)} – ${axisLabel(min + (binIndex + 1) * width)}`
+          : `${format.format(min + binIndex * width)}–${axisLabel(min + (binIndex + 1) * width)}`, `${name}: ${value}`] },
+        binIndex,
         key: `${seriesIndex}-${binIndex}`,
       };
     });
   });
   const toggle = (name: string) => setHidden((prev) => prev.includes(name) ? prev.filter((entry) => entry !== name) : [...prev, name]);
-  const legend = overlay && sets.length > 1 ? <div className="stat-legend" aria-label="Median response">
+  const legend = fixtureBins && !loading && !compact ? <p className="stat-map-summary">Median response 208 ms, p90 354 ms</p>
+    : overlay && sets.length > 1 ? <div className="stat-legend" aria-label="Median response">
     <span>Median response</span>
     {sets.map(({ name, color, values }, i) => <Toggle key={name} aria-label={name} pressed={visible[i]} disabled={compact} onPointerEnter={() => setHoveredSeries(name)} onPointerLeave={() => setHoveredSeries(null)} onFocus={() => setHoveredSeries(name)} onBlur={() => setHoveredSeries(null)} onPressedChange={() => toggle(name)}>
       <i style={{ background: color ?? themeColor(i) }} aria-hidden="true" /> {name} <strong>{axisLabel(quantile(values, .5))}</strong>
@@ -131,15 +138,17 @@ export function Histogram({ example, compact, data }: DemoProps) {
     />
   );
   return (
-    <SvgPlot example={example} compact={compact} hints={bars.map(({ hint }) => hint)} loading={loading} controls={button} legend={legend}>
+    <SvgPlot example={example} compact={compact} hints={bars.filter(({ value }) => value > 0 || !fixtureBins).map(({ hint }) => hint)} loading={loading} loadingLabel={loadingVariant ? "Loading requests" : undefined} controls={button} legend={legend}>
       {(show, active) => (
         <>
           <Grid x={xTicks.map(x)} xLabels={xTicks.map(axisLabel)} y={yTicks.map(y)} yLabels={yTicks.map((value) => format.format(value))} xTitle={data ? "Sample value" : undefined} yTitle={data ? "Frequency" : undefined} hideVertical />
-          {bars.map((bar) => (
+          {bars.filter(({ value }) => loading || value > 0 || !fixtureBins).map((bar) => (
             <rect
-              key={bar.key}
+              key={`${bar.key}-${loading}`}
               data-series={bar.name}
-              className={loading ? "stat-load" : undefined}
+              data-histogram-count={bar.value}
+              className={loading ? "stat-load" : loadingVariant ? "stat-interval-reveal" : undefined}
+              style={loadingVariant && !loading ? { "--interval-origin": `0px ${PLOT.bottom}px`, "--stat-delay": `${bar.binIndex * 19}ms` } as CSSProperties : undefined}
               x={bar.x}
               y={bar.y}
               width={barWidth - 2}

@@ -1,3 +1,5 @@
+import { comparisonFixture } from "./comparison-fixtures";
+import { barFixture } from "./bar-fixtures";
 import { lineFixture } from "./line-fixtures";
 import type { ChartData, ChartExample, ChartSeries } from "../../types";
 import { sparklineFixture } from "./sparkline-fixtures";
@@ -53,7 +55,6 @@ export function liveValue(index: number, preset: LivePreset) {
 
 export const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const channels = ["Desktop", "Mobile", "Tablet", "Referral", "Organic", "Direct"];
-const regions = ["North", "West", "Central", "East", "South", "International"];
 
 export function dates(count: number, start = Date.UTC(2026, 0, 5)) {
   return Array.from({ length: count }, (_, index) => {
@@ -162,13 +163,7 @@ function makeFixture(example: ChartExample): CartesianData {
     return { categories: Array.from({ length: count }, (_, index) => String(index + 1)), series: [{ name: preset.name, values: Array.from({ length: count }, (_, index) => liveValue(index, preset)) }] };
   }
   if (family === "sparkline") return sparklineFixture(id);
-  if (family === "bar") {
-    const categories = id === "bar-sources" ? ["Organic search", "Social media", "Direct", "Paid search", "Referral", "Email"] : months;
-    const count = ["bar-stacked"].includes(id) ? 3 : ["bar-grouped", "bar-squares-legend", "bar-synced"].includes(id) ? 2 : 1;
-    const series = points(categories.length, channels.slice(0, count));
-    if (id === "bar-profit-loss") series[0] = { name: "Net profit", values: [25, 43, -13, 37, -24, 21, 62, -34, 48, 58, -16, 67] };
-    return { categories, series };
-  }
+  if (family === "bar") return barFixture(id);
   if (family === "candlestick") {
     const weekly = id === "candlestick-colors";
     const count = id === "candlestick-range" ? 92 : id === "candlestick-minimal" ? 20 : weekly ? 16 : id === "candlestick-pattern" ? 24 : 31;
@@ -182,62 +177,7 @@ function makeFixture(example: ChartExample): CartesianData {
     });
     return { categories, series: [], rows };
   }
-  if (family === "stream") {
-    const categories = [...months.slice(0, 6).map(month => `${month} 2025`), ...months.slice(0, 6).map(month => `${month} 2026`)];
-    return { categories, series: points(categories.length, ["Ambient", "Jazz", "Rock", "Electronic", "Classical"], 47) };
-  }
-  if (family === "diverging") {
-    return {
-      categories: ["Navigation is clear", "Search is helpful", "Editing is intuitive", "Reporting meets my needs"],
-      series: [
-        { name: "Strongly disagree", values: [12, 8, 12, 9] },
-        { name: "Disagree", values: [14, 16, 12, 22] },
-        ...(id === "diverging-legend" ? [] : [{ name: "Neutral", values: [18, 12, 28, 10] }]),
-        { name: "Agree", values: [37, 40, 35, 37] },
-        { name: "Strongly agree", values: [19, 24, 13, 22] },
-      ],
-    };
-  }
-  if (family === "lollipop") {
-    const categories = id === "lollipop-horizontal" ? ["Search", "Segments", "Saved filters", "Exports", "Automation"]
-      : id === "lollipop-change" ? ["Organic", "Paid", "Social", "Direct", "Referral"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return { categories, series: [{ name: "Value", values: id === "lollipop-change" ? [14, -8, 24, -15, 7]
-      : id === "lollipop-horizontal" ? [85, 72, 61, 48, 28] : [24, 35, 42, 31, 55, 46, 37] }] };
-  }
-  if (family === "dumbbell") {
-    return { categories: id === "dumbbell-vertical" ? ["Starter", "Growth", "Team", "Enterprise"] : regions.slice(0, 5),
-      series: id === "dumbbell-vertical"
-        ? [{ name: "Monthly", values: [28, 47, 73, 110] }, { name: "Annual", values: [19, 38, 58, 90] }]
-        : [{ name: "Before", values: [54, 71, 47, 84, 61] }, { name: "After", values: [31, 35, 38, 51, 32] }] };
-  }
-  if (family === "bump") {
-    return { categories: ["2021", "2022", "2023", "2024", "2025", "2026"], series: [
-      { name: "TypeScript", values: [28, 33, 38, 48, 63, 67] },
-      { name: "Python", values: [41, 43, 46, 50, 54, 58] },
-      { name: "Go", values: [17, 27, 35, 49, 55, 62] },
-      { name: "JavaScript", values: [53, 47, 40, 38, 37, 32] },
-      { name: "Rust", values: [13, 21, 29, 33, 39, 52] },
-    ] };
-  }
-  if (family === "slope") {
-    return { categories: id === "slope-response-time" ? ["Before", "After"] : ["2025", "2026"], series: [
-      { name: "Germany", values: [78, 88] }, { name: "France", values: [67, 61] },
-      { name: "UK", values: [83, 80] }, { name: "Canada", values: [63, 76] }, { name: "Sweden", values: [57, 70] },
-    ] };
-  }
-  if (family === "waterfall") {
-    if (id === "waterfall-subtotals") return {
-      categories: ["Revenue", "Cost of sales", "Gross profit", "Operating costs", "Operating income", "Taxes", "Net income"],
-      series: [{ name: "Change", values: [110, -39, 71, -28, 43, -11, 32] }],
-      rows: [{ total: true }, {}, { total: true }, {}, { total: true }, {}, { total: true }],
-    };
-    if (id === "waterfall-cash-flow") return {
-      categories: [...months.slice(0, 6), "Total"], series: [{ name: "Net cash flow", values: [38, 24, -18, 49, -16, 27, 104] }],
-      rows: [{}, {}, {}, {}, {}, {}, { total: true }],
-    };
-    return { categories: ["FY 2025", "New", "Expansion", "Churn", "Contraction", "FY 2026"],
-      series: [{ name: "ARR", values: [72, 28, 19, -13, -8, 98] }], rows: [{ total: true }, {}, {}, {}, {}, { total: true }] };
-  }
+  if (["diverging", "lollipop", "dumbbell", "bump", "slope", "waterfall", "stream"].includes(family)) return comparisonFixture(id);
   if (family === "gantt") {
     const task = (name: string, start: number, end: number, progress: number, extra: Record<string, unknown> = {}) => ({ name, start, end, progress, ...extra });
     const rows = id === "gantt-roadmap" ? [

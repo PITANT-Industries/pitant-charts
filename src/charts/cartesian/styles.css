@@ -92,3 +92,16 @@
 @media (prefers-reduced-motion: reduce) {
   .cartesian-live-halo, .cartesian-live-skeleton, .cartesian-gantt-plot--loading, .cartesian-skeleton::after, .cartesian-skeleton--pulse svg, .cartesian-bar-pulse { animation: none; }
 }
+
+
+.cartesian-comparison-loading { overflow: hidden; }
+@media (prefers-reduced-motion: no-preference) {
+  .cartesian-comparison-loading::after {
+    position: absolute;
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(116deg, transparent 30%, color-mix(in srgb, var(--card) 52%, transparent) 50%, transparent 70%);
+    animation: cartesian-sweep 1.9s ease-in-out infinite;
+  }
+}

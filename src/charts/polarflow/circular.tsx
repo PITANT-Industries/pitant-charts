@@ -1,13 +1,14 @@
 import { useId, useState } from "react";
-import type { ReactNode } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
+import { Toggle } from "@ui-sdk/react/toggle";
 import { useChartTheme } from "../theme";
-import { arc, Controls, Legend, metrics, number, Pattern, percent, point, sector, sum, tone, type Props } from "./shared";
+import { arc, Controls, dollars, metrics, nextChartFocus, number, numeric, percent, point, sector, sum, tone, type Props } from "./shared";
 import { Donut, usesDonut } from "./Donut";
 import { useAnimatedNumber } from "./useAnimatedNumber";
+import { pieFixtures, ringFixtures } from "./circular-fixtures";
+import { PiePattern, piePatterns } from "./PiePattern";
+import donutStyles from "./donut.module.css";
 import styles from "./styles.module.css";
-
-const pieNames = ["Platform", "Services", "Marketplace", "Support", "Other"];
-const pieValues = [470, 285, 192, 140, 108];
 
 function CustomCenter({ x, y, children }: { x: number; y: number; children: ReactNode }) {
   return <foreignObject x={x - 50} y={y - 34} width="100" height="68" pointerEvents="none">
@@ -23,105 +24,179 @@ function PieSlices({ example, compact, data }: Props) {
   const id = example.id;
   const theme = useChartTheme();
   const instance = useId();
-  const [active, setActive] = useState<number | null>(null);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const [focused, setFocused] = useState<number | null>(null);
+  const [pinned, setPinned] = useState<number | null>(null);
   const [effect, setEffect] = useState(0);
-  const patterned = id.includes("pattern");
+  const active = hovered ?? focused ?? pinned;
+  const patternTypes = piePatterns[id];
   const gradient = id === "pie-gradients";
-  const rows = metrics(data, pieNames, pieValues);
+  const fixture = pieFixtures[id as keyof typeof pieFixtures] ?? { names: ["Platform", "Services", "Marketplace", "Support", "Other"], values: [470, 285, 192, 140, 108] };
+  const rows = metrics(data, fixture.names, fixture.values).filter(row => row.value > 0);
   const total = sum(rows);
   const item = active === null ? undefined : rows[active];
   const selectedEffect = id === "pie-hover-effects" ? effect : 0;
-  let start = -90;
+  const format = !data && id !== "pie-pattern-presets" && id !== "pie-hover-effects" ? dollars : number;
+  let start = 180;
+  function inspect(event: KeyboardEvent<SVGSVGElement>) {
+    if (event.key === "Escape" && active !== null) {
+      event.preventDefault();
+      event.stopPropagation();
+      setHovered(null);
+      setFocused(null);
+      setPinned(null);
+      return;
+    }
+    if (event.target !== event.currentTarget) return;
+    const next = nextChartFocus(event.key, active, rows.length);
+    if (next === undefined) return;
+    event.preventDefault();
+    setHovered(null);
+    setFocused(next);
+  }
   return <div className={styles.frame}>
     {!compact && id === "pie-hover-effects" && <Controls label="Pie hover effect" items={["Translate", "Grow", "None"]} value={effect} onChange={setEffect} />}
-    <svg className={styles.native} viewBox="0 0 420 240" role="img" aria-label={example.title}>
+    <svg className={styles.native} viewBox="0 0 420 240" role="img" aria-label={example.title}
+      tabIndex={compact ? undefined : 0} aria-describedby={compact ? undefined : `${instance}-value`} onKeyDown={inspect} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(null); }}>
       <defs>
         {rows.map((row, index) => {
           const color = tone(theme, index, row.color);
-          return <g key={index}>
-            <Pattern id={`${instance}-pattern-${index}`} color={color} variant={id === "pie-pattern-tile" && !index ? 4 : index} />
-            <radialGradient id={`${instance}-gradient-${index}`}>
-              <stop offset="0" stopColor={tone(theme, index + 1)} />
-              <stop offset="1" stopColor={color} />
-            </radialGradient>
-          </g>;
+          const type = patternTypes?.[index];
+          if (type) return <PiePattern key={index} id={`${instance}-pattern-${index}`} color={color} type={type} />;
+          return gradient && <radialGradient key={index} id={`${instance}-gradient-${index}`} gradientUnits="userSpaceOnUse" cx="210" cy="120" r="105">
+            <stop offset="0%" stopColor={color} stopOpacity=".23" />
+            <stop offset="100%" stopColor={color} />
+          </radialGradient>;
         })}
       </defs>
       {rows.map((row, index) => {
-        const sweep = total > 0 ? 360 * Math.max(0, row.value) / total : 0;
+        const sweep = total > 0 ? 360 * row.value / total : 0;
         const from = start;
         start += sweep;
         const isActive = active === index;
-        const [tx, ty] = point(0, 0, isActive && selectedEffect === 0 ? 7 : 0, from + sweep / 2);
-        const usePattern = patterned && (id !== "pie-pattern" || index === 1);
-        const color = usePattern ? `url(#${instance}-pattern-${index})`
+        const [tx, ty] = point(0, 0, isActive && selectedEffect === 0 ? 6 : 0, from + sweep / 2);
+        const color = patternTypes?.[index] ? `url(#${instance}-pattern-${index})`
           : gradient ? `url(#${instance}-gradient-${index})` : tone(theme, index, row.color);
-        return sweep > 0 && <path key={index} d={sector(210, 120, 101 + (isActive && selectedEffect === 1 ? 6 : 0), 0, from + Math.min(.65, sweep / 5), start - Math.min(.65, sweep / 5))}
-          transform={`translate(${tx} ${ty})`} fill={color} opacity={active === null || isActive || selectedEffect === 2 && id === "pie-hover-effects" ? 1 : .48}
-          stroke={theme.surface} strokeWidth={1.5} strokeLinejoin="round"
-          style={{ transition: "opacity 150ms, transform 200ms, d 220ms" }}
-          tabIndex={compact ? undefined : 0} aria-label={`${row.name}: ${number.format(row.value)}`}
-          onMouseEnter={() => setActive(index)} onMouseLeave={() => setActive(null)}
-          onFocus={() => setActive(index)} onBlur={() => setActive(null)}>
-          <title>{`${row.name} · ${number.format(row.value)} · ${percent(row.value, total).toFixed(1)}%`}</title>
+        return <path key={index} className={donutStyles.slice} data-slice={row.name} data-active={isActive}
+          d={sector(210, 120, 103 + (isActive && selectedEffect === 1 ? 6 : 0), 0, from, start)}
+          transform={`translate(${tx} ${ty})`} fill={color} opacity={active === null || isActive || selectedEffect === 2 ? 1 : .48}
+          stroke={theme.surface} strokeWidth=".6" strokeLinejoin="round"
+          tabIndex={compact || id !== "pie-hover-effects" ? undefined : 0} aria-label={`${row.name}: ${format.format(row.value)}`}
+          onPointerEnter={event => { if (event.pointerType !== "touch") setHovered(index); }} onPointerLeave={() => setHovered(null)}
+          onClick={() => { if (!compact) setPinned(pinned === index ? null : index); }}
+          onFocus={() => setFocused(index)} onBlur={() => setFocused(null)}>
+          <title>{`${row.name} · ${format.format(row.value)} · ${percent(row.value, total).toFixed(1)}%`}</title>
         </path>;
       })}
-      {item && <g pointerEvents="none" textAnchor="middle">
-        <text x="210" y="123" fill={tone(theme, active ?? 0, item.color)} fontSize="25" fontWeight="650">{number.format(item.value)}</text>
-        <text x="210" y="142" fill={theme.muted} fontSize="11">{item.name}</text>
-      </g>}
+      {!rows.length && <circle cx="210" cy="120" r="103" fill={theme.grid} />}
     </svg>
+    {!compact && <span className={styles.screenReader} id={`${instance}-value`} role="status">{item
+      ? `${item.name}: ${format.format(item.value)}, ${number.format(percent(item.value, total))}% of total` : `Total ${format.format(total)}`}</span>}
   </div>;
 }
 
 export function Ring({ example, compact, data, renderCenter }: Props) {
   const id = example.id;
   const theme = useChartTheme();
-  const [active, setActive] = useState<number | null>(null);
-  const rows = metrics(data, ["Direct", "Organic", "Email", "Partners", "Social"], [156, 135, 108, 82, 57]);
-  const sweep = id === "ring-semicircle" ? 180 : id === "ring-arc" ? 270 : 315;
-  const start = sweep === 180 ? 180 : -90;
-  const cy = sweep === 180 ? 170 : 120;
-  const showGrid = id === "ring-grid" || id === "ring-semicircle";
-  const goals = rows.map((_, index) => id === "ring-center-custom" ? 160 + index * 12 : Math.max(200, ...(data ? rows.map(row => row.value) : [])));
+  const instance = useId();
+  const [hovered, setHovered] = useState<number | null>(null);
+  const [focused, setFocused] = useState<number | null>(null);
+  const [pinned, setPinned] = useState<number | null>(null);
+  const active = hovered ?? focused ?? pinned;
+  const fixture = ringFixtures[id];
+  const rows = metrics(data, fixture?.names ?? ["Direct", "Organic", "Email", "Partners", "Social"], fixture?.values ?? [156, 135, 108, 82, 57]);
+  const sweep = fixture?.sweep ?? 315;
+  const start = fixture?.start ?? -90;
+  const half = sweep === 180;
+  const cy = half ? 157 : 120;
+  const grid = id === "ring-grid" ? [0, 25, 50, 75, 100] : half ? [0, 50, 100] : [];
+  const customMaximum = data ? Math.max(200, ...rows.map(row => row.value)) : 200;
+  const goals = rows.map((_, index) => {
+    const goal = data?.rows?.[index]?.target ?? data?.rows?.[index]?.maximum;
+    if (goal != null && numeric(goal) > 0) return numeric(goal);
+    if (id === "ring-center-custom") return 160 + index * 12;
+    if (data) return customMaximum;
+    return typeof fixture?.maximum === "number" ? fixture.maximum : fixture?.maximum[index] ?? 200;
+  });
   const current = active === null ? undefined : rows[active];
   const target = current ? goals[active ?? 0] : undefined;
   const total = sum(rows);
   const ratio = Boolean(current && id === "ring-center-custom");
-  const display = useAnimatedNumber(ratio && current ? percent(current.value, target ?? 1) : current?.value ?? total, !compact && !ratio);
-  const width = Math.min(13, 68 / Math.max(1, rows.length));
-  return <div className={styles.frame}>
-    <svg className={styles.native} viewBox="0 0 420 240" role="img" aria-label={example.title}>
-      {showGrid && Array.from({ length: sweep === 180 ? 3 : 5 }, (_, index) => {
-        const angle = start + index * sweep / (sweep === 180 ? 2 : 4);
-        const [x1, y1] = point(210, cy, 26, angle);
-        const [x2, y2] = point(210, cy, 112, angle);
-        return <line key={index} x1={x1} y1={y1} x2={x2} y2={y2} stroke={theme.grid} strokeDasharray="3 4" />;
+  const value = current?.value ?? total;
+  const display = useAnimatedNumber(ratio && current ? percent(current.value, target ?? 1) : value, !compact && !ratio);
+  const width = Math.min(id === "ring-arc" ? 14 : 10, 62 / Math.max(1, rows.length));
+  const radiusAt = (index: number) => Math.max(22, 100 - (rows.length - index - 1) * width * 1.53);
+  const unit = !data ? fixture?.unit ?? "" : "";
+  const readout = ratio ? `${Math.round(display)}%` : `${number.format(Math.round(display))}${unit === "%" && !current ? "" : unit}`;
+  const status = current && target !== undefined
+    ? `${current.name}: ${number.format(current.value)}${unit} of ${number.format(target)}${unit}, ${Math.round(percent(current.value, target))}% progress`
+    : `${number.format(total)}${unit === "%" ? "" : unit} ${fixture?.label ?? "total"}`;
+  const showLegend = !compact && id === "ring-legend";
+  function inspect(event: KeyboardEvent<SVGSVGElement>) {
+    if (event.key === "Escape" && active !== null) {
+      event.preventDefault();
+      event.stopPropagation();
+      setHovered(null);
+      setFocused(null);
+      setPinned(null);
+      return;
+    }
+    const next = nextChartFocus(event.key, active, rows.length);
+    if (next === undefined) return;
+    event.preventDefault();
+    setHovered(null);
+    setFocused(next);
+  }
+  return <div className={showLegend ? `${donutStyles.donut} ${donutStyles.withLegend}` : styles.frame}>
+    <svg className={styles.native} viewBox={half ? "0 38 420 160" : "0 0 420 240"} role="img" aria-label={example.title}
+      tabIndex={compact ? undefined : 0} aria-describedby={compact ? undefined : `${instance}-value`} onKeyDown={inspect}
+      onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(null); }}>
+      {grid.map(value => {
+        const angle = start + value * sweep / 100;
+        const [x1, y1] = point(210, cy, 28, angle);
+        const [x2, y2] = point(210, cy, 110, angle);
+        const [x, y] = point(210, cy, 121, angle);
+        return <g key={value}><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={theme.grid} strokeDasharray="3 4" />
+          <text x={x} y={y + 3} textAnchor="middle" fontSize="8.5" fill={theme.muted}>{value}%</text></g>;
       })}
       {rows.map((row, index) => {
-        const radius = 101 - index * (width + 3);
-        if (radius <= 15) return null;
-        const end = start + sweep * Math.min(1, Math.max(0, row.value / (goals[index] || 1)));
+        const radius = radiusAt(index);
+        const end = start + sweep * Math.min(1, Math.max(0, row.value / goals[index]));
         const color = tone(theme, index, row.color);
-        const [tx, ty] = point(210, cy, radius, start - 8);
-        return <g key={index} tabIndex={compact ? undefined : 0} aria-label={`${row.name}: ${row.value} of ${goals[index]}`}
-          opacity={active === null || active === index ? 1 : .4} style={{ transition: "opacity 160ms" }}
-          onMouseEnter={() => setActive(index)} onMouseLeave={() => setActive(null)}
-          onFocus={() => setActive(index)} onBlur={() => setActive(null)}>
-          <title>{`${row.name} · ${row.value} of ${goals[index]}`}</title>
-          <path d={arc(210, cy, radius, start, start + sweep)} fill="none" stroke={theme.grid} strokeWidth={width} strokeLinecap={id === "ring-arc" ? "butt" : "round"} />
-          <path d={arc(210, cy, radius, start, end)} fill="none" stroke={color} strokeWidth={width} strokeLinecap={id === "ring-arc" ? "butt" : "round"} />
-          {showGrid && <text x={sweep === 180 ? 200 - radius : tx - 7} y={sweep === 180 ? cy + 15 : ty + 3} textAnchor="end" fontSize="8" fill={color}>{row.name}</text>}
+        const [labelX, labelY] = point(210, cy, radius, start - (half ? 0 : 12));
+        return <g key={index} tabIndex={compact || id !== "ring-center-custom" ? undefined : 0}
+          data-ring={row.name} data-active={active === index} data-goal={goals[index]}
+          aria-label={`${row.name}: ${row.value} of ${goals[index]}`}
+          className={donutStyles.slice} opacity={active === null || active === index ? 1 : .4}
+          onPointerEnter={event => { if (event.pointerType !== "touch") setHovered(index); }} onPointerLeave={() => setHovered(null)}
+          onFocus={() => setFocused(index)} onBlur={() => setFocused(null)} onClick={() => { if (!compact) setPinned(pinned === index ? null : index); }}>
+          <title>{`${row.name} · ${number.format(row.value)} of ${number.format(goals[index])}`}</title>
+          <path data-ring-track="" d={arc(210, cy, radius, start, start + sweep)} fill="none" stroke={theme.grid} strokeWidth={width} strokeLinecap={sweep === 360 || id === "ring-arc" ? "butt" : "round"} />
+          {row.value > 0 && <path data-ring-value="" d={arc(210, cy, radius, start, end)} fill="none" stroke={color} strokeWidth={width} strokeLinecap={id === "ring-arc" ? "butt" : "round"} />}
+          {grid.length > 0 && <text x={labelX} y={labelY + (half ? 7 : 3)} transform={half ? `rotate(80 ${labelX} ${labelY + 7})` : undefined} textAnchor={half ? "start" : "end"} fontSize="8" fill={color}>{row.name}</text>}
         </g>;
       })}
-      {renderCenter ? <CustomCenter x={210} y={sweep === 180 ? cy - 12 : cy}>
-        {renderCenter({ name: current?.name ?? null, value: current?.value ?? total, total, target, share: percent(current?.value ?? total, target ?? total) / 100 })}
-      </CustomCenter> : <g textAnchor="middle" pointerEvents="none">
-        <text x="210" y={cy + 3} fill={theme.text} fontSize="22" fontWeight="650">{ratio ? `${Math.round(display)}%` : number.format(Math.round(display))}</text>
-        <text x="210" y={cy + 20} fill={theme.muted} fontSize="10">{current?.name ?? "Total"}</text>
+      {renderCenter ? <CustomCenter x={210} y={half ? cy - 12 : cy}>
+        {renderCenter({ name: current?.name ?? null, value, total, target, share: percent(value, target ?? total) / 100 })}
+      </CustomCenter> : (!half || current) && <g textAnchor="middle" pointerEvents="none" aria-hidden="true">
+        <text x="210" y={cy - 3} fill={theme.text} fontSize="22" fontWeight="650">{readout}</text>
+        <text x="210" y={cy + 15} fill={theme.muted} fontSize="10">{current?.name ?? (data ? "Total" : fixture?.label ?? "Total")}</text>
       </g>}
     </svg>
-    {!compact && id === "ring-legend" && <Legend items={rows} active={active} onActive={setActive} progress={Math.max(...goals)} theme={theme} />}
+    {!compact && <span className={styles.screenReader} id={`${instance}-value`} role="status">{status}</span>}
+    {showLegend && <ul className={donutStyles.legend} aria-label="Signups by channel">
+      {rows.map((row, index) => {
+        const share = Math.round(percent(row.value, goals[index]));
+        return <li key={index}><Toggle pressed={pinned === index} className={donutStyles.ringLegend} data-active={active === index}
+          onPointerEnter={() => setHovered(index)} onPointerLeave={() => setHovered(null)}
+          onFocus={() => setFocused(index)} onBlur={() => setFocused(null)}
+          onPressedChange={pressed => setPinned(pressed ? index : null)}>
+          <span className={donutStyles.swatch} style={{ background: tone(theme, index, row.color) }} />
+          <span>{row.name}</span><strong>{number.format(row.value)}</strong><span>{share}%</span>
+          <meter min={0} max={100} value={Math.min(100, Math.max(0, share))} aria-label={`${row.name} progress`} />
+        </Toggle></li>;
+      })}
+    </ul>}
   </div>;
 }
 

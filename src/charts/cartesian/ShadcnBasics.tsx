@@ -17,13 +17,12 @@ export function ShadcnBasics({ family, data, theme, label }: {
 }) {
   const [reduceMotion, setReduceMotion] = useState(false);
   useEffect(() => {
-    if (family !== "area") return;
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setReduceMotion(media.matches);
     update();
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
-  }, [family]);
+  }, []);
   const id = useId().replace(/[^a-zA-Z0-9]/g, "");
   const rows = data.categories.map((category, index) => Object.fromEntries([
     ["category", category],
@@ -42,11 +41,11 @@ export function ShadcnBasics({ family, data, theme, label }: {
     <div className="cartesian-shadcn" aria-label={label}>
       <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
         {family === "bar" ? (
-          <BarChart {...chartProps}>
+          <BarChart {...chartProps} barCategoryGap="20%">
             {grid}
             {axis}
             {tooltip}
-            {data.series.map((item, index) => <Bar key={index} dataKey={`series${index}`} name={item.name} fill={colors[index]} radius={[5, 5, 0, 0]} maxBarSize={38} animationDuration={520} />)}
+            {data.series.map((item, index) => <Bar key={index} dataKey={`series${index}`} name={item.name} fill={colors[index]} radius={[8, 8, 8, 8]} maxBarSize={110} animationDuration={520} isAnimationActive={!reduceMotion} />)}
           </BarChart>
         ) : family === "area" ? (
           <AreaChart {...chartProps} baseValue={0}>

@@ -11,7 +11,8 @@ import { SparklineExamples } from "./Sparkline";
 import { Candles } from "./Candles";
 import { LiveLine } from "./LiveLine";
 import { DeadlineFills, downloadLineChart, LineLegend, LineLoadToggle, LineSkeleton } from "./LineExtras";
-import { buildBar, buildComposed, buildDiverging, buildDumbbell, buildGantt, buildLollipop, buildRanking, buildStream, buildWaterfall } from "./comparisons";
+import { buildBar, buildComposed, buildGantt, buildStream } from "./comparisons";
+import { buildDiverging, buildDumbbell, buildLollipop, buildRanking, buildWaterfall, divergingColor } from "./comparison-options";
 import { initialLargeCount, minuteLatency, resolveData, type CartesianData } from "./data";
 import { buildLine, categoryAxis, colorFor, initialControls, up, down, valueFormat, type ChartTheme, type Controls } from "./options";
 import { buildArea } from "./area-options";
@@ -41,16 +42,16 @@ function sliceRange(data: CartesianData, [start, end]: BrushRange): CartesianDat
 function getOption(example: ChartPreviewProps["example"], data: CartesianData, theme: ChartTheme, compact: boolean, controls: Controls, loading = false): EChartsOption {
   switch (example.family) {
     case "area": return buildArea(example, data, theme, compact, controls, loading);
-    case "bar": return buildBar(example, data, theme, compact);
+    case "bar": return buildBar(example, data, theme, compact, controls.activeLegend, loading);
     case "composed": return buildComposed(example, data, theme, compact);
-    case "diverging": return buildDiverging(example, data, theme, compact);
-    case "dumbbell": return buildDumbbell(example, data, theme, compact, controls);
+    case "diverging": return buildDiverging(example, data, theme, compact, controls.activeLegend, loading);
+    case "dumbbell": return buildDumbbell(example, data, theme, compact, controls.activeLegend, loading);
     case "gantt": return buildGantt(example, data, theme, compact, loading);
-    case "lollipop": return buildLollipop(example, data, theme, compact);
+    case "lollipop": return buildLollipop(example, data, theme, compact, loading);
     case "slope":
-    case "bump": return buildRanking(example, data, theme, compact);
-    case "stream": return buildStream(example, data, theme, compact);
-    case "waterfall": return buildWaterfall(example, data, theme, compact);
+    case "bump": return buildRanking(example, data, theme, compact, controls.activeLegend, loading);
+    case "stream": return buildStream(example, data, theme, compact, loading);
+    case "waterfall": return buildWaterfall(example, data, theme, compact, loading);
     default: return buildLine(example, data, theme, compact, controls, loading);
   }
 }
@@ -97,6 +98,14 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
   const barPulse = id === "bar-depth";
   const renderer = powerUser ? "canvas" : "svg";
   const lineLegend = id === "line-legend" || id === "line-export";
+  const barLegend = id === "bar-squares-legend";
+  const comparisonLegend = id === "dumbbell-legend" || id === "bump-ascending" || id === "diverging-legend";
+  const sideLegend = id === "line-legend" || barLegend || comparisonLegend;
+  const chartLegend = lineLegend || barLegend || comparisonLegend;
+  const comparisonFamily = ["waterfall", "lollipop", "dumbbell", "bump", "slope", "diverging", "stream"].includes(family);
+  const comparisonLoading = isLoading && comparisonFamily;
+  const loadingMessage = family === "waterfall" ? "Fetching cash flows…" : family === "lollipop" ? "Fetching sessions…" : family === "bump" ? "Fetching standings…"
+    : family === "diverging" ? "Fetching answers…" : family === "stream" ? "Fetching traffic…" : "Fetching survey results…";
   const lineLoading = id === "line-loading" || id === "line-loading-placeholder";
   const lastCategory = Math.max(0, source.categories.length - 1);
   const firstVisible = id === "line-linked-brush" ? Math.round(lastCategory * 0.66) : 0;
@@ -177,10 +186,10 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
     return optionsData.series.map((item, index) => {
       const panel = getOption(example, { ...optionsData, series: [{ ...item, color: colorFor(item, index, theme) }] }, theme, compact, view);
       if (id === "area-small-multiples") panel.yAxis = { ...(Array.isArray(panel.yAxis) ? panel.yAxis[0] : panel.yAxis), min: Math.floor(low / 10) * 10, max: Math.ceil(high / 10) * 10 };
-      if ((id === "line-linked-brush" || id === "line-synced") && index !== optionsData.series.length - 1) {
+      if ((id === "line-linked-brush" || id === "line-synced" || id === "bar-synced") && index !== optionsData.series.length - 1) {
         const axis = categoryAxis(optionsData.categories, theme);
         panel.xAxis = { ...axis, axisLabel: { ...axis.axisLabel, show: false } };
-        panel.grid = { top: 8, bottom: 6, left: compact ? 29 : 48, right: 15 };
+        panel.grid = { top: 8, bottom: 6, left: id === "bar-synced" ? 14 : compact ? 29 : 48, right: id === "bar-synced" ? 14 : 15 };
       }
       return { item, panel };
     });
@@ -309,11 +318,12 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
   if (id === "line-deadline-fills") return <DeadlineFills example={example} data={source} theme={theme} compact={compact} controls={controls} />;
 
   const legends = id === "line-profit-loss-legend" ? [{ name: "Profit", color: up }, { name: "Loss", color: down }]
-    : id === "dumbbell-legend" ? source.series.slice(0, 2).map((item, index) => ({ name: item.name, color: colorFor(item, index, theme) })) : [];
+    : [];
   const selectionText = controls.selection ? controls.selection.map(index => optionsData.categories[index]).join(" – ") : "";
   const areaLoading = id === "area-loading" && isLoading;
+  const barLoading = id === "bar-loading" && isLoading;
   const liveLineLoading = id === "line-loading" && isLoading;
-  const skeleton = isLoading && startLoading && family !== "gantt" && !areaLoading && id !== "line-loading";
+  const skeleton = isLoading && startLoading && family !== "gantt" && !areaLoading && !barLoading && !comparisonLoading && id !== "line-loading";
   const showControls = !compact && (range || brushes || startLoading && id !== "line-loading-placeholder" || tableToggle || id === "line-band-fill" || id === "line-trend"
     || id === "line-export" || powerUser || id === "bar-depth" || legends.length > 0);
 
@@ -326,7 +336,7 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
           <Button disabled={!controls.selection} onClick={() => update("selection", null)}>Clear</Button>
           {selectionText && <output className="cartesian-muted" aria-live="polite">{selectionText}</output>}
         </>}
-        {startLoading && !lineLoading && id !== "area-loading" && <Toggle pressed={isLoading} onPressedChange={setLoading}>{id === "gantt-loading" ? "Loading" : isLoading ? "Show data" : "Show loading"}</Toggle>}
+        {startLoading && !lineLoading && id !== "area-loading" && <Toggle pressed={isLoading} onPressedChange={setLoading}>{(id === "gantt-loading" || id === "bar-loading" || comparisonFamily) ? "Loading" : isLoading ? "Show data" : "Show loading"}</Toggle>}
         {id === "line-loading" && <LineLoadToggle loading={isLoading} onChange={setLoading} />}
         {id === "area-loading" && <Choices label="Chart state" className="cartesian-choice-group" options={loadChoices} value={isLoading ? placeholder : "Loaded"} onChange={mode => { setLoading(mode !== "Loaded"); if (mode !== "Loaded") setPlaceholder(mode); }} />}
         {id === "bar-depth" && <Toggle pressed={pulsePaused} onPressedChange={setPulsePaused}>{pulsePaused ? "Resume pulse" : "Pause pulse"}</Toggle>}
@@ -355,24 +365,31 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
                 <EChart option={panel} label={`${example.title}, ${item.name}`} compact={compact} group={connection} />
               </div>
             ))}
-          </div> : <div className={lineLegend && !compact ? id === "line-legend" ? "line-with-side-legend" : "line-with-footer-legend" : "line-single-plot"}>
-          <div className={`cartesian-plot${liveLineLoading ? " line-chart-loading" : ""}${brushes && !compact ? " cartesian-plot--selection" : ""}${id === "area-selection" ? " cartesian-area-selection" : ""}${areaLoading ? ` cartesian-area-loading cartesian-area-loading--${placeholder.toLowerCase()}` : ""}`} aria-busy={areaLoading || liveLineLoading || undefined} ref={plotRef}
+          </div> : <div className={chartLegend && !compact ? sideLegend ? "line-with-side-legend" : "line-with-footer-legend" : "line-single-plot"}>
+          <div className={`cartesian-plot${liveLineLoading ? " line-chart-loading" : ""}${barLoading || comparisonLoading ? " cartesian-comparison-loading" : ""}${brushes && !compact ? " cartesian-plot--selection" : ""}${id === "area-selection" ? " cartesian-area-selection" : ""}${areaLoading ? ` cartesian-area-loading cartesian-area-loading--${placeholder.toLowerCase()}` : ""}`} aria-busy={areaLoading || barLoading || comparisonLoading || liveLineLoading || undefined} ref={plotRef}
             onDoubleClick={zoom && !compact ? () => chartRef.current?.dispatchAction({ type: "dataZoom", start: 0, end: 100 }) : undefined}
             onPointerDown={brushes && !compact ? beginSelection : undefined} onPointerUp={brushes && !compact ? commitSelection : undefined}
             onPointerCancel={brushes && !compact ? clearSelectionDrag : undefined} onLostPointerCapture={brushes && !compact ? clearSelectionDrag : undefined}
             onKeyDown={brushes && !compact ? selectionKey : pointOnly ? event => { if (event.key === "Escape") setPointCrosshair(null); } : undefined}
             onPointerMove={brushes && !compact ? dragSelection : undefined} onBlur={pointOnly ? () => setPointCrosshair(null) : undefined}>
-            <EChart option={option} label={liveLineLoading ? "Loading chart" : example.title} compact={compact || areaLoading || liveLineLoading} chartRef={chartRef} renderer={renderer}
-              mergeUpdates={range || id === "line-loading"} onEvents={onEvents} />
+            <EChart option={option} label={liveLineLoading ? "Loading chart" : example.title} compact={compact || areaLoading || barLoading || comparisonLoading || liveLineLoading} chartRef={chartRef} renderer={renderer}
+              mergeUpdates={range || id === "line-loading" || id === "bar-loading" || (startLoading && comparisonFamily)} onEvents={onEvents} />
             {liveLineLoading && <span className="line-skeleton-label" role="status">Loading revenue</span>}
             {areaLoading && <span className="cartesian-area-loading-status" role="status">Loading orders</span>}
+            {barLoading && <span className="cartesian-area-loading-status" role="status">Fetching orders…</span>}
+            {comparisonLoading && <span className="cartesian-area-loading-status" role="status">{loadingMessage}</span>}
             {barPulse && pulsePosition && <span className="cartesian-bar-pulse" aria-hidden="true" style={{ left: pulsePosition[0] + 3, top: pulsePosition[1] - 3 }} />}
             {dragRange && <div className="cartesian-selection" aria-hidden="true" style={{ left: dragRange.left, width: dragRange.right - dragRange.left }} />}
             {pointOnly && pointCrosshair && <div className="cartesian-point-crosshair" aria-hidden="true"
               style={{ left: pointCrosshair.x, top: pointCrosshair.y, height: Math.max(0, (plotRef.current?.clientHeight ?? 0) - pointCrosshair.y - 25) }} />}
           </div>
-          {lineLegend && !compact && <LineLegend currency={id === "line-export"} active={view.activeLegend}
-            series={source.series.map((item, index) => ({ ...item, color: colorFor(item, index, theme) }))}
+          {chartLegend && !compact && <LineLegend currency={id === "line-export" || barLegend} exactCurrency={barLegend} title={barLegend ? "Six-month total" : id === "dumbbell-legend" ? "Average score" : id === "bump-ascending" ? "June, seconds" : id === "diverging-legend" ? "Customers" : undefined}
+            metric={id === "bump-ascending" ? item => item.values.at(-1) ?? 0 : id === "dumbbell-legend" ? item => {
+              const values = item.values.filter((value): value is number => typeof value === "number");
+              return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0;
+            } : undefined} active={view.activeLegend}
+            series={source.series.map((item, index) => ({ ...item, color: id === "diverging-legend" ? divergingColor(index, false, item.color) : colorFor(item, barLegend && index > 0 ? index + 1 : index, theme),
+              name: id === "dumbbell-legend" && !data ? `${item.name} survey` : item.name }))}
             onActive={index => update("activeLegend", index)} />}
           </div>)}
           {overview && !compact && <RangeBrush data={source} range={[brushStart, brushEnd]} change={setRangeOverride} theme={theme} showLaunch={id === "line-date-highlights-brush"} />}

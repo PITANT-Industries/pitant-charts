@@ -11,6 +11,8 @@ npm run dev
 
 Open the URL printed by Vite. Search or filter by family, switch to list view, and save examples for later. The browser stores saved charts and theme preferences. A variant’s URL opens it directly. **Compare** puts the local chart alongside the live shadcn.io preview and shows the available parity notes. **Code** shows how to use the example in React. **Parity review** tracks notes for each family, with filters for variants that have notes and those awaiting review.
 
+Search within **Parity review** to find checked behavior and remaining gaps by keyword. Copy the URL while **Compare** or **Code** is selected to share that view of the variant.
+
 [Component index and progress](https://chatgpt.com/space/page_158565692cf88191bb821bf62112a8d1)
 
 ## Use the React library

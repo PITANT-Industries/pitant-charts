@@ -38,11 +38,10 @@ test('each catalog family is routed to exactly one renderer group', () => {
   assert.deepEqual(mapped.sort(), catalog.map((family) => family.id).sort())
 })
 
-test('parity notes refer to catalog examples and identify checked behavior', () => {
+test('every catalog example has a record of checked behavior and remaining gaps', () => {
   const ids = new Set(catalog.flatMap((family) => family.examples.map((example) => example.id)))
-  assert(Object.keys(parityNotes).length > 0)
+  assert.deepEqual(new Set(Object.keys(parityNotes)), ids)
   for (const [id, note] of Object.entries(parityNotes)) {
-    assert(ids.has(id), `Unknown parity note variant ${id}`)
     assert(typeof note.checked === 'string' && note.checked.trim(), `Missing verification for ${id}`)
     assert(typeof note.remaining === 'string' && note.remaining.trim(), `Missing remaining comparison for ${id}`)
   }

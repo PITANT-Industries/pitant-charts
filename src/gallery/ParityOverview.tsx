@@ -8,11 +8,11 @@ import parityData from './parity-notes.json'
 export const parityNotes: Readonly<Record<string, { checked: string; remaining: string } | undefined>> = parityData
 export const notedCount = Object.keys(parityNotes).length
 export type ParityFilter = 'all' | 'documented' | 'pending'
-const parityFilters = [
+const parityFilters: { value: ParityFilter; label: React.ReactNode }[] = [
   { value: 'all', label: <><strong>{examples.length}</strong> Catalog variants</> },
   { value: 'documented', label: <><strong>{notedCount}</strong> With notes</> },
-  { value: 'pending', label: <><strong>{examples.length - notedCount}</strong> Awaiting notes</> },
-] as const
+]
+const pendingFilter = { value: 'pending' as const, label: <><strong>{examples.length - notedCount}</strong> Awaiting notes</> }
 
 export function ParityOverview({ filter, onFilter, onFamily }: {
   filter: ParityFilter
@@ -23,9 +23,9 @@ export function ParityOverview({ filter, onFilter, onFamily }: {
     <section className="parity-overview" aria-labelledby="parity-overview-title">
       <div className="parity-overview-heading">
         <ClipboardCheck size={24} aria-hidden="true" />
-        <div><h1 id="parity-overview-title">Parity review</h1><p>Track checks against the live shadcn.io catalog. Open a variant’s Compare tab to inspect its notes and reference.</p></div>
+        <div><h1 id="parity-overview-title">Parity review</h1><p>Search checked behavior and remaining gaps. Open a variant’s Compare tab to see the live reference.</p></div>
       </div>
-      <Choices className="parity-filters" label="Filter by review notes" options={parityFilters} value={filter} onChange={onFilter} />
+      <Choices className="parity-filters" label="Filter by review notes" options={examples.length !== notedCount || filter === 'pending' ? [...parityFilters, pendingFilter] : parityFilters} value={filter} onChange={onFilter} />
       <Collapsible className="parity-families">
         <CollapsibleTrigger>Review coverage by chart family</CollapsibleTrigger>
         <CollapsiblePanel><div className="parity-family-grid">

@@ -101,6 +101,7 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 .card-plot { height: 164px; position: relative; padding: 0 6px; }
 .example-grid > .example-card:nth-child(n+7) .card-plot { content-visibility: auto; contain-intrinsic-block-size: auto 175px; }
 .example-footer { display: flex; justify-content: space-between; align-items: center; min-height: 40px; gap: 8px; padding: 5px 9px 5px 15px; border-top: 1px solid var(--border); margin-top: 8px; font-size: 11px; color: var(--muted-foreground); }
+.example-review-state { flex: none; text-align: end; font-size: 10px; }
 @container (inline-size < 280px) {
   .example-header { padding-inline: 9px 7px; }
   .example-title { font-size: 13px; }

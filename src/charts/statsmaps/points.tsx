@@ -1,8 +1,8 @@
 import { useMemo, useState, type CSSProperties, type PointerEvent } from "react";
-import { Toggle } from "@ui-sdk/react/toggle";
 import { contourDensity } from "d3-contour";
 import { geoPath } from "d3-geo";
 import type { EChartsOption } from "echarts";
+import { Choices } from "../../ui/Choices";
 import EChart from "../EChart";
 import { useChartTheme } from "../theme";
 import {
@@ -14,6 +14,8 @@ const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 const dateLabel = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone: "UTC" });
 const compactNumber = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
 const dayMs = 86_400_000;
+const requestStart = Date.UTC(2026, 9, 5);
+const scatterCounts = [10000, 50000].map(value => ({ value: String(value), label: `${value / 1000}k`, ariaLabel: `${format.format(value)} points` }));
 const dollar = new Intl.NumberFormat("en", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const fractionalShare = new Intl.NumberFormat("en", { style: "percent", maximumFractionDigits: 1, minimumFractionDigits: 1 });
 
@@ -54,8 +56,9 @@ function CanvasScatter({ example, compact, data }: DemoProps) {
     if (custom) return custom;
     const random = createRandom(511);
     return Array.from({ length: compact ? 1600 : count }, () => {
-      const x = random() * 7;
-      const y = Math.max(1, 43 + Math.sin(x * 1.5) * 10 + normal(random) * 13);
+      const day = random() * 7;
+      const x = requestStart + day * dayMs;
+      const y = Math.min(998, Math.round(Math.max(18, (125 + Math.sin(day * 1.5) * 18) * Math.exp(normal(random) * .64))));
       return { x, y, group: "Requests" };
     });
   }, [data, compact, count]);
@@ -66,9 +69,18 @@ function CanvasScatter({ example, compact, data }: DemoProps) {
     animation: false,
     color: palette,
     grid: { top: 22, left: 48, right: 24, bottom: 39, containLabel: false },
-    xAxis: { type: "value", name: compact ? "" : "Day", nameLocation: "middle", nameGap: 27, nameTextStyle: { color: theme.muted }, axisLabel: { color: theme.muted }, splitLine: { lineStyle: { color: theme.grid, type: "dashed" } } },
-    yAxis: { type: "value", name: "Latency", nameTextStyle: { color: theme.muted }, axisLabel: { color: theme.muted }, splitLine: { lineStyle: { color: theme.grid, type: "dashed" } } },
-    tooltip: { trigger: "item", show: !compact, confine: true, textStyle: { color: theme.text }, backgroundColor: theme.surface, borderColor: theme.grid, valueFormatter: (value) => typeof value === "number" ? format.format(value) : String(value) },
+    xAxis: { type: data ? "value" : "time", min: data ? undefined : requestStart, max: data ? undefined : requestStart + dayMs * 7,
+      axisLabel: { color: theme.muted, formatter: (value: number) => data ? format.format(value) : dateLabel.format(value) }, splitLine: { show: false } },
+    yAxis: { type: "value", min: data ? undefined : 0, max: data ? undefined : 1000, interval: data ? undefined : 200,
+      axisLabel: { color: theme.muted, formatter: (value: number) => value === 1000 && !data ? "1k" : format.format(value) }, splitLine: { lineStyle: { color: theme.grid, type: "dashed" } } },
+    tooltip: { trigger: "item", show: !compact, confine: true, textStyle: { color: theme.text }, backgroundColor: theme.surface, borderColor: theme.grid,
+      formatter: params => {
+        const point = Array.isArray(params) ? params[0] : params;
+        const values = point?.value;
+        if (!Array.isArray(values)) return "";
+        const [x, y] = values.map(Number);
+        return `${data ? format.format(x) : dateLabel.format(x)}<br/>${format.format(y)}${data ? "" : " ms"}`;
+      } },
     series: names.map((name, index) => ({
       name, type: "scatter", symbolSize: compact ? 2 : 3, data: points.filter((point) => point.group === name).map(({ x, y }) => [x, y]),
       itemStyle: { color: palette[index], opacity: .25 }, progressive: 2000, progressiveThreshold: 3000,
@@ -77,10 +89,9 @@ function CanvasScatter({ example, compact, data }: DemoProps) {
   };
   return (
     <div className="stat-demo stat-canvas">
-      {!compact && !data && <div className="stat-controls">
-        {[10000, 50000].map((size) => <Toggle className="stat-control" key={size} pressed={count === size} onPressedChange={() => setCount(size)}>{format.format(size)} points</Toggle>)}
-      </div>}
+      {!compact && !data && <div className="stat-controls"><span>Points</span><Choices label="Request count" options={scatterCounts} value={String(count)} onChange={size => setCount(Number(size))} itemClassName="stat-control" /></div>}
       <EChart option={options} label={example.title} compact={compact} renderer="canvas" />
+      {!compact && !data && <p className="stat-map-summary" role="status">{format.format(points.length)} requests in one week</p>}
     </div>
   );
 }
