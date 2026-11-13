@@ -161,10 +161,11 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
   [data-plot-layout='tooltip-controls'], [data-plot-layout='candlestick'], [data-plot-layout='radar'],
   [data-plot-layout='heatmap'], [data-plot-layout='live-line'], [data-plot-layout='sankey'],
   [data-plot-layout='radial'], [data-plot-layout='gauge'], [data-plot-layout='funnel'],
-  [data-plot-layout='ring']
+  [data-plot-layout='ring'], [data-plot-layout='cartesian-controls']
 ) > .chart-preview {
   block-size: auto;
 }
+.comparison-measured[data-plot-layout='cartesian-controls'] { --comparison-plot-height: 50cqw; }
 .comparison-measured[data-plot-layout='candlestick'] { --comparison-plot-height: 50cqw; }
 .comparison-measured[data-plot-layout='live-line'] { --comparison-plot-height: 260px; }
 .comparison-measured[data-plot-id='live-line-right-axis'] { --comparison-plot-height: 240px; }

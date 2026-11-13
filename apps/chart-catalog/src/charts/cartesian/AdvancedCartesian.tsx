@@ -75,8 +75,8 @@ export function AdvancedCartesian({ variant, label, data, compact, theme }: {
 
   const { width, height } = size;
   const isBar = variant === "bar-stacked";
-  const sideInset = Math.min(compact ? 20 : 40, width * .13);
-  const verticalInset = Math.min(compact ? 20 : 40, height * .24);
+  const sideInset = Math.min(compact ? 20 : 40, width * (isBar && !compact ? .32 : .13));
+  const verticalInset = Math.min(compact ? 20 : 40, height * (isBar && !compact ? .45 : .24));
   const left = sideInset + (!compact && !isBar ? 16 : 0);
   const right = Math.max(left + 1, width - sideInset);
   const top = verticalInset;
@@ -121,7 +121,7 @@ export function AdvancedCartesian({ variant, label, data, compact, theme }: {
   });
   const pillWidth = cartesianPillWidth(activeCategory);
   const pillX = Math.min(width - pillWidth / 2, Math.max(pillWidth / 2, activeX));
-  const labelCount = compact ? 3 : isBar ? Math.min(6, Math.max(3, Math.floor(plotWidth / 35))) : width < 500 ? 4 : 5;
+  const labelCount = compact ? 3 : isBar ? Math.min(6, Math.max(3, Math.floor(plotWidth / 28))) : width < 500 ? 4 : 5;
   const axisLabels = Array.from({ length: Math.min(count, labelCount) }, (_, index) => {
     const fraction = index / (labelCount - 1);
     const category = count <= labelCount ? index : Math.min(count - 1, Math.floor(fraction * count));

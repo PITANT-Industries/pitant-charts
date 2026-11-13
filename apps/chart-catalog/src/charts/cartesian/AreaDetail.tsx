@@ -54,9 +54,9 @@ export function AreaDetail({ variant, label, data, compact, theme }: {
   }, []);
 
   const { maximum, step, ticks } = detailedAreas[variant];
-  const left = Math.min(compact ? 15 : 40, width * .17);
+  const left = Math.min(compact ? 15 : 40, width / 4);
   const right = Math.max(left + 1, width - left);
-  const top = Math.min(compact ? 13 : 40, height * .24);
+  const top = Math.min(compact ? 13 : 40, height / 3);
   const bottom = Math.max(top + 1, height - (compact ? 22 : top));
   const yAt = (value: number) => bottom - value / maximum * (bottom - top);
   const series = data.series[0];
@@ -72,6 +72,7 @@ export function AreaDetail({ variant, label, data, compact, theme }: {
   const trend = variant === "area-trend";
   const targetBand = variant === "area-reference-band";
   const launchWeek = variant === "area-reference-range";
+  const xTicks = width < 340 && (targetBand || launchWeek) ? [0, 15, 30] : ticks;
   const color = theme.colors[trend ? 1 : 0];
   const ticksY = Array.from({ length: Math.floor(maximum / step) + 1 }, (_, index) => index * step);
   const strokePath = line<Point>().x(point => point.x).y(point => point.y).curve(curveMonotoneX);
@@ -174,7 +175,7 @@ export function AreaDetail({ variant, label, data, compact, theme }: {
           </g>
         </g>)}
         <g fill={theme.muted} fontSize={compact ? 9 : 12}>
-          {ticks.map(index => {
+          {xTicks.map(index => {
             const point = points[index];
             return <text key={index} data-area-tick="" x={point.x} y={bottom + (compact ? 14 : 24)} textAnchor="middle"
               opacity={active && Math.abs(point.x - pillX) < pillWidth / 2 + 18 ? 0 : 1}>{trend ? day.format(new Date(point.date)) : point.category}</text>;
