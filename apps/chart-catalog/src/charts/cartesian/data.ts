@@ -70,7 +70,7 @@ export function resolveData(example: ChartExample, data?: ChartData): CartesianD
     : suppliedCandles ? suppliedCandles.map((row, index) => String(row.category ?? row.date ?? index + 1))
     : suppliedSchedule ? suppliedSchedule.map((row, index) => String(row.name ?? row.category ?? `Task ${index + 1}`))
     : data.series && !data.rows ? Array.from({ length: count }, (_, index) => String(index + 1)) : fixture.categories;
-  const usesCustomRows = example.family === "line" || example.family === "composed"
+  const usesCustomRows = example.family === "line" || example.family === "area" || example.family === "composed"
     || (["candlestick", "sparkline"].includes(example.family) && Boolean(data.series));
   return { categories, series, rows: data.rows ?? (usesCustomRows ? undefined : fixture.rows) };
 }

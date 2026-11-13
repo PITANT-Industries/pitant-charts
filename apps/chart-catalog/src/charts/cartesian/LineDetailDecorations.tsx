@@ -1,8 +1,9 @@
 import { area, curveNatural, line } from "d3-shape";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@ui-sdk/react/button";
 import { lineDate } from "./line-format";
 import type { LineBounds, LineVariant } from "./line-detail-data";
+import { lineEventFanPosition, readLineEvents } from "./line-events";
 
 export type Fill = "pattern" | "gradient" | "solid";
 export const negative = "var(--chart-negative, #dc5149)";
@@ -96,37 +97,76 @@ export function LineDateRegions({ id, variant, fill, categories, top, bottom, ri
   </g>;
 }
 
-export function LineEvents({ rows, x, top, bottom, compact }: {
+export function LineEvents({ rows, x, top, bottom, compact, onInspectMarkers }: {
   rows: readonly Record<string, unknown>[];
   x: (index: number) => number;
   top: number;
   bottom: number;
   compact: boolean;
+  onInspectMarkers: () => void;
 }) {
   const [open, setOpen] = useState<number | null>(null);
-  return <g data-line-event-rules="">
+  const rules = useRef<SVGGElement>(null);
+  useEffect(() => {
+    if (open === null) return;
+    const outside = (event: globalThis.PointerEvent) => {
+      if (!rules.current?.querySelector(`[data-line-event-group="${open}"]`)?.contains(event.target as Node)) setOpen(null);
+    };
+    document.addEventListener("pointerdown", outside, true);
+    return () => document.removeEventListener("pointerdown", outside, true);
+  }, [open]);
+  return <g ref={rules} data-line-event-rules="">
     {rows.map((row, index) => {
-      const events = Array.isArray(row.events) ? row.events.filter((value): value is string => typeof value === "string") : [];
+      const events = readLineEvents(row);
       if (!events.length) return null;
       const isOpen = open === index;
-      const [icon] = events[0].split(" ");
       return <g key={index} transform={`translate(${x(index)},${top - 8})`}>
-        <line y1={18} y2={bottom - top + 8} stroke="var(--border)" strokeWidth="1" strokeDasharray="4 4" />
-        <foreignObject x="-21" y="-21" width="42" height="42" className="line-detail-event">
-          <Button type="button" className="line-detail-event-button" tabIndex={compact ? -1 : undefined}
-            aria-label={events.join(", ")} aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : index)}
-            onPointerEnter={() => { if (!compact) setOpen(index); }} onPointerLeave={() => setOpen(null)} onBlur={() => setOpen(null)}>
-            {icon}
-            {events.length > 1 && <span className="line-detail-event-count">{events.length}</span>}
-          </Button>
-        </foreignObject>
-        {isOpen && <g pointerEvents="none" role="status">
-          {events.map((event, position) => <g key={event} transform={`translate(${(position - (events.length - 1) / 2) * 30},30)`}>
-            {events.length > 1 && <circle r={14} fill="var(--card)" stroke="var(--border)" />}
-            {events.length > 1 && <text dominantBaseline="central" textAnchor="middle" fontSize={14}>{event.split(" ")[0]}</text>}
-          </g>)}
-          <text x="0" y={events.length > 1 ? -20 : 31} textAnchor="middle" fill="var(--foreground)" fontSize={11}>{events.map(event => event.replace(/^\S+\s/, "")).join(" · ")}</text>
-        </g>}
+        <line y1={18} y2={bottom - top + 8} stroke="var(--border)" strokeWidth="1" strokeDasharray="4 4" pointerEvents="none" />
+        <g data-line-event-group={index} data-expanded={isOpen && events.length > 1 || undefined}
+          onPointerEnter={() => { if (!compact) { onInspectMarkers(); setOpen(index); } }}
+          onPointerMove={event => event.stopPropagation()}
+          onPointerDown={event => event.stopPropagation()}
+          onPointerLeave={event => { if (event.pointerType !== "touch" && !event.currentTarget.contains(document.activeElement)) setOpen(null); }}
+          onFocus={event => { if (!compact && !event.currentTarget.contains(event.relatedTarget)) { onInspectMarkers(); setOpen(index); } }}
+          onKeyDown={event => {
+            if (event.key !== "Escape" || !isOpen || events.length < 2) return;
+            event.preventDefault();
+            event.stopPropagation();
+            setOpen(null);
+            event.currentTarget.querySelector<HTMLButtonElement>(".line-detail-event-origin button")?.focus();
+          }}
+          onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(null); }}>
+          <g className="line-detail-event-body" aria-hidden="true" pointerEvents="none">
+            <circle cy="2" r="14" fill="black" fillOpacity=".15" />
+            <circle data-line-event-disc="" r="14" fill="var(--chart-marker-background, var(--background))" stroke="var(--chart-marker-border, var(--border))" strokeWidth="1.5" />
+            <text y="1" textAnchor="middle" dominantBaseline="middle" fill="var(--chart-marker-foreground, var(--foreground))" fontSize="14">{events[0].icon}</text>
+            {events.length > 1 && <g>
+              <circle cx="16" cy="-16" r="9" fill="var(--chart-marker-badge-background, var(--foreground))" />
+              <text x="16" y="-16" textAnchor="middle" dominantBaseline="middle" fill="var(--chart-marker-badge-foreground, var(--background))" fontSize="11" fontWeight="600">{events.length}</text>
+            </g>}
+          </g>
+          <foreignObject x="-21" y="-28" width="42" height="42" className="line-detail-event line-detail-event-origin">
+            <Button type="button" className="line-detail-event-button" tabIndex={compact ? -1 : undefined}
+              aria-label={events.map(event => event.title).join(", ")} aria-expanded={events.length > 1 ? isOpen : undefined}
+              onClick={event => { if (!compact) setOpen(event.detail === 0 && isOpen ? null : index); }}>
+            </Button>
+          </foreignObject>
+          {isOpen && events.length > 1 && <>
+            <rect x="-71" y="-71" width="142" height="99" fill="transparent" />
+            <circle r="7" fill="var(--border)" opacity=".5" pointerEvents="none" />
+            {events.map((event, position) => {
+              const point = lineEventFanPosition(position, events.length);
+              return <g key={position} className="line-detail-event-fan" transform={`translate(${point.x},${point.y})`}>
+                <circle data-line-event-fan-disc={position} r="14" fill="var(--chart-marker-background, var(--background))" stroke="var(--chart-marker-border, var(--border))" strokeWidth="1.5" pointerEvents="none" />
+                <text y="1" textAnchor="middle" dominantBaseline="middle" fontSize="14" fill="var(--chart-marker-foreground, var(--foreground))" aria-hidden="true" pointerEvents="none">{event.icon}</text>
+                <foreignObject data-line-event-fan={position} x="-21" y="-21" width="42" height="42" className="line-detail-event">
+                  <Button type="button" className="line-detail-event-button" aria-label={[event.title, event.description].filter(Boolean).join(": ")}
+                    onClick={() => setOpen(index)} />
+                </foreignObject>
+              </g>;
+            })}
+          </>}
+        </g>
       </g>;
     })}
   </g>;

@@ -37,6 +37,8 @@
 .choropleth-summary strong { font-weight: 600; }
 .choropleth-summary span { color: var(--muted-foreground); }
 @media (prefers-reduced-motion: no-preference) {
+  .choropleth-stage[data-pannable='true'] .choropleth-viewport { transition: transform .18s ease-out; }
+  .choropleth-stage[data-pannable='true'][data-dragging='true'] .choropleth-viewport { transition: none; }
   .choropleth-tooltip { animation: choropleth-tooltip-fade 120ms; }
   .choropleth-tooltip .cartesian-focus-readout {
     transform-origin: 0 0;

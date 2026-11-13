@@ -5,10 +5,11 @@ const daily = (count: number, month: number, day: number) => dates(count, Date.U
 const weekly = (count: number, month: number, day: number) => daily((count - 1) * 7 + 1, month, day).filter((_, index) => index % 7 === 0);
 const series = (name: string, values: number[]): ChartSeries => ({ name, values });
 
-export const lineEvents: Record<number, readonly { icon: string; label: string }[]> = {
-  7: [{ icon: "✨", label: "New onboarding" }],
-  15: [{ icon: "⚠️", label: "Incident" }],
-  22: [{ icon: "🚀", label: "Release" }, { icon: "🐛", label: "Hotfix" }, { icon: "📣", label: "Announcement" }],
+export const lineEvents: Record<number, readonly { icon: string; title: string; description?: string }[]> = {
+  7: [{ icon: "✨", title: "Feature launch", description: "Shared dashboards for teams" }],
+  15: [{ icon: "⚠️", title: "Incident", description: "Checkout down for 40 minutes" }],
+  22: [{ icon: "🚀", title: "v2.4 released", description: "Faster charts and a new editor" },
+    { icon: "🐛", title: "Bug fix", description: "Fixed the export timeout" }, { icon: "📣", title: "Announcement" }],
 };
 const forecastBounds = [[133, 165], [146, 182], [144, 181], [142, 177], [152, 186], [164, 197], [167, 196], [173, 199], [189, 214], [195, 220], [183, 209], [172, 200], [169, 202], [162, 199], [152, 190], [153, 194], [167, 212], [177, 222], [178, 219], [184, 221], [197, 232], [201, 232], [198, 228], [210, 242]];
 const northBounds = [[28, 41], [30, 45], [33, 49], [35, 52], [37, 54], [38, 55], [40, 55], [40, 53], [40, 51], [39, 49], [38, 47], [36, 45], [33, 43], [31, 42], [29, 42], [27, 43], [27, 44], [28, 45], [29, 47], [32, 49], [36, 50], [40, 53], [44, 55], [48, 57]];
@@ -56,7 +57,7 @@ const fixtures: Record<string, () => CartesianData> = {
       series("Users", [1480, 1530, 1460, 1590, 1310, 1270, 1650, 1820, 1960, 1880, 1910, 1570, 1530, 1940, 2010, 1760, 1720, 2040, 1690, 1660, 2110, 2170, 2380, 2490, 2420, 2010, 1960, 2530, 2610, 2680]),
       series("Sessions", [5200, 5450, 5100, 5600, 4700, 4500, 5800, 6400, 6900, 6600, 6750, 5600, 5400, 6800, 7050, 6200, 6100, 7150, 6000, 5900, 7400, 7600, 8300, 8700, 8450, 7100, 6900, 8800, 9100, 9350]),
     ],
-    rows: daily(30, 9, 1).map((_, index) => ({ events: lineEvents[index]?.map(event => `${event.icon} ${event.label}`) })),
+    rows: daily(30, 9, 1).map((_, index) => ({ events: lineEvents[index] })),
   }),
   "line-time-range": () => ({
     categories: daily(90, 7, 1),
