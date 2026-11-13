@@ -28,7 +28,6 @@ export interface BandBounds {
 function formatValue(id: string, value: number, series: string) {
   if (["line-profit-loss", "line-profit-loss-legend", "line-projection-manual", "line-loading"].includes(id) || id === "line-dual-axis" && series === "Revenue") return lineMoney(value);
   if (id === "line-dual-axis" && series === "Conversion" || id === "line-fixed-scale") return `${integer.format(value)}%`;
-  if (id === "line-threshold") return `${integer.format(value)} ms`;
   return integer.format(value);
 }
 

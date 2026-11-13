@@ -8,6 +8,7 @@ import { EChart } from "../EChart";
 import { useChartTheme } from "../theme";
 import { ShadcnBasics } from "./ShadcnBasics";
 import { SparklineExamples } from "./Sparkline";
+import { AdvancedCartesian } from "./AdvancedCartesian";
 import { Candles } from "./Candles";
 import { LiveLine } from "./LiveLine";
 import { DeadlineFills, downloadLineChart, LineLegend, LineLoadToggle, LineSkeleton } from "./LineExtras";
@@ -62,6 +63,7 @@ export default function Cartesian(props: ChartPreviewProps) {
   const source = useMemo(() => resolveData(example, props.data), [example, props.data]);
   if (example.family === "candlestick") return <Candles key={example.id} example={example} data={source} compact={compact} theme={theme} />;
   if (example.family === "live-line") return <LiveLine key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
+  if (example.id === "bar-stacked" || example.id === "line-threshold") return <AdvancedCartesian key={example.id} variant={example.id} label={example.title} data={source} compact={compact} theme={theme} />;
   return <CartesianExample key={example.id} example={example} compact={compact} data={props.data} source={source} theme={theme} />;
 }
 
@@ -314,7 +316,7 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
   } : undefined;
 
   if (family === "sparkline") return <SparklineExamples example={example} data={source} compact={compact} theme={theme} />;
-  if (basics.has(id)) return <ShadcnBasics family={family} data={source} theme={theme} label={example.title} />;
+  if (basics.has(id)) return <ShadcnBasics family={family} data={source} theme={theme} label={example.title} compact={compact} fixture={!data} />;
   if (id === "line-deadline-fills") return <DeadlineFills example={example} data={source} theme={theme} compact={compact} controls={controls} />;
 
   const legends = id === "line-profit-loss-legend" ? [{ name: "Profit", color: up }, { name: "Loss", color: down }]

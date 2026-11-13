@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsPanel, TabsTab } from '@ui-sdk/react/tabs'
 import { Toggle } from '@ui-sdk/react/toggle'
 import {
   ArrowDown, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, Check, ChevronLeft, ChevronRight,
-  ClipboardCheck, Columns2, Code2, Copy, ExternalLink, Grid2X2, List, Menu, Moon, Search, Sun, X,
+  ClipboardCheck, Columns2, Code2, Copy, ExternalLink, Grid2X2, List, Menu, Moon, Palette, Search, Sun, X,
 } from 'lucide-react'
 import { examples, galleryOrder, getExample, getFamily, getGroupForFamily, groups } from '../catalog'
 import { ChartPreview } from '../charts/ChartPreview'
@@ -139,14 +139,22 @@ function Modal({ children, onClose, labelledBy, wide }: { children: ReactNode; o
 }
 
 function ReferenceComparison({ example, theme }: { example: ChartExample; theme: 'light' | 'dark' }) {
+  const [matchReference, setMatchReference] = usePreference('chart-library:compare-reference-colors', true)
   const params = new URLSearchParams({ c: example.id, theme })
   const note = parityNotes[example.id]
   return (
     <>
+      <div className="comparison-options">
+        <Toggle className="text-button comparison-palette-toggle" pressed={matchReference} onPressedChange={setMatchReference}>
+          <Palette size={15} aria-hidden="true" /> Match reference colors
+        </Toggle>
+      </div>
       <div className="comparison">
         <section aria-labelledby="comparison-local">
           <h3 id="comparison-local">Library</h3>
-          <div className="detail-plot"><ChartPreview key={example.id} example={example} /></div>
+          <div className={matchReference ? 'detail-plot comparison-reference-colors' : 'detail-plot'} data-theme={matchReference ? theme : undefined}>
+            <ChartPreview key={example.id} example={example} />
+          </div>
         </section>
         <section aria-labelledby="comparison-reference">
           <h3 id="comparison-reference">shadcn.io reference</h3>

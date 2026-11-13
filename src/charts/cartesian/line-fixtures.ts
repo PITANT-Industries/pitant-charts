@@ -20,7 +20,10 @@ const signupBand = signupValues.map((value, index) => {
 
 export function lineFixture(id: string): CartesianData | undefined {
   switch (id) {
-    case "line-default": return { categories: october(31), series: [series("Users", curve(31, 4, 1250, 450, 32)), series("Pageviews", curve(31, 4, 4300, 1480, 123))] };
+    case "line-default": return { categories: october(30, 2), series: [
+      series("Users", [1_200, 1_350, 1_100, 1_450, 1_380, 1_520, 1_600, 1_480, 1_550, 1_420, 1_680, 1_750, 1_620, 1_580, 1_720, 1_850, 1_780, 1_650, 1_920, 1_880, 1_750, 1_980, 2_050, 1_920, 2_100, 2_180, 2_050, 2_250, 2_320, 2_400]),
+      series("Pageviews", [4_500, 4_800, 4_200, 5_100, 4_900, 5_400, 5_800, 5_200, 5_500, 5_000, 6_100, 6_400, 5_900, 5_700, 6_200, 6_800, 6_500, 6_000, 7_100, 6_900, 6_400, 7_300, 7_600, 7_100, 7_800, 8_100, 7_600, 8_400, 8_700, 9_000]),
+    ] };
     case "line-dual-axis": return { categories: september(), series: [series("Revenue", curve(30, 2, 10_100, 4300, 398)), series("Conversion", curve(30, 3, 365, 91, -3.6).map(value => value / 100))] };
     case "line-grid": return { categories: october(14, 5), series: [series("Sessions", [3280, 3450, 3350, 3590, 3820, 2680, 2480, 3900, 3730, 3970, 4070, 4190, 3020, 2930])] };
     case "line-points": return { categories: october(14), series: [series("Sign-ups", [203, 215, 172, 197, 226, 229, 238, 252, 268, 197, 224, 296, 312, 315])] };
@@ -51,8 +54,8 @@ export function lineFixture(id: string): CartesianData | undefined {
     };
     case "line-threshold": return {
       categories: october(30), series: [
-        series("p95", curve(30, 3, 197, 66, 0.3).map((value, index) => index === 6 ? 310 : index === 13 ? 291 : index === 14 ? 276 : Math.min(value, 242))),
-        series("Median", curve(30, 4, 109, 38, 0.1)),
+        series("p95", [204, 196, 172, 168, 214, 231, 268, 244, 219, 181, 176, 223, 228, 291, 276, 238, 188, 179, 209, 216, 207, 212, 198, 165, 161, 189, 193, 186, 182, 177]),
+        series("Median", [112, 108, 96, 94, 118, 124, 131, 127, 115, 99, 97, 119, 122, 138, 134, 121, 101, 98, 114, 117, 113, 116, 109, 92, 90, 104, 106, 103, 101, 99]),
       ],
     };
     case "line-profit-loss": return { categories: october(), series: [series("Net income", curve(30, 2, 260, 2370, 36))] };

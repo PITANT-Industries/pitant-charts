@@ -2,7 +2,7 @@ import { Button } from "@ui-sdk/react/button";
 import { useId, useState, type KeyboardEvent } from "react";
 import { useChartTheme } from "../theme";
 import { dollars, number, short, tone, type Props } from "./shared";
-import { hierarchyShare, selectMark, useChartLoading } from "./hierarchy-interaction";
+import { hierarchyShare, selectMark, useChartLoading, usePlotSize } from "./hierarchy-interaction";
 import type { SunburstNode } from "./upstream/sunburst-data";
 import { sumValues } from "./upstream/sunburst-layout";
 import { readHierarchy, treeFixtures, treemapFixtures } from "./treemap-tree-fixtures";
@@ -23,18 +23,20 @@ function layoutTiles(nodes: SunburstNode[], box: Box): { node: SunburstNode; box
   const areaPerValue = box.w * box.h / total;
   const tiles: ReturnType<typeof layoutTiles> = [];
   let { x, y, w, h } = box;
-  const worst = (first: number, last: number, area: number, side: number) => Math.max(side * side * first / (area * area), area * area / (side * side * last));
   for (let start = 0; start < entries.length;) {
     const vertical = w > h;
     const side = vertical ? h : w;
     if (side < .001) break;
+    const ratio = vertical ? 1.4 : 1;
+    const spanRatio = side * side * ratio;
+    const worst = (first: number, last: number, area: number) => Math.max(spanRatio * first / (area * area), area * area / (spanRatio * last));
     const first = entries[start].value * areaPerValue;
     let end = start + 1;
     let area = first;
     while (end < entries.length) {
       const next = entries[end].value * areaPerValue;
       const previous = entries[end - 1].value * areaPerValue;
-      if (worst(first, previous, area, side) < worst(first, next, area + next, side)) break;
+      if (worst(first, previous, area) < worst(first, next, area + next)) break;
       area += next;
       end++;
     }
@@ -52,7 +54,7 @@ function layoutTiles(nodes: SunburstNode[], box: Box): { node: SunburstNode; box
 }
 
 function visibleTiles(root: SunburstNode, path: number[], bounds: Box, compact: boolean | undefined) {
-  const inset = 2;
+  const inset = 3;
   const header = compact ? 15 : 23;
   return layoutTiles(root.children ?? [], bounds).flatMap(({ node, index, box }) => {
     const group = !!node.children?.length;
@@ -84,6 +86,7 @@ export function Treemap({ example, compact, data }: Props) {
   const { loading, hasDemo, control } = useChartLoading(example.id, compact);
   const [path, setPath] = useState<number[]>([]);
   const [hover, setHover] = useState<number | null>(null);
+  const size = usePlotSize<SVGSVGElement>(width, height);
   const clip = useId();
   const portfolio = example.id === "treemap-portfolio";
   const bundle = example.id === "treemap-drilldown";
@@ -94,7 +97,7 @@ export function Treemap({ example, compact, data }: Props) {
   const realPath = path.slice(0, levels.length - 1);
   const back = realPath.length > 0;
   const total = sumValues(root);
-  const bounds = { x: 2, y: back ? 27 : 2, w: width - 4, h: height - (back ? 29 : 4) };
+  const bounds = { x: 0, y: back ? 27 : 0, w: size.width, h: Math.max(0, size.height - (back ? 27 : 0)) };
   const tiles = visibleTiles(current, realPath, bounds, compact);
   const active = hover === null ? undefined : tiles[hover];
   const format = (value: number, long = false) => bundle ? `${number.format(value)} kB` : hasDemo ? value >= 1000 ? `${number.format(value / 1000)} TB` : `${number.format(value)} GB` :
@@ -114,10 +117,10 @@ export function Treemap({ example, compact, data }: Props) {
         onClick={() => focusPath(realPath.slice(0, index))}>{level.name}</Button>)}
     </nav>}
     <div className={styles.graph}>
-      <svg className={`${styles.native} ${charts.plot}`} viewBox={`0 0 ${width} ${height}`} role="img" aria-roledescription="chart" aria-label={example.title}
+      <svg ref={size.plot} className={`${styles.native} ${charts.plot}`} viewBox={`0 0 ${size.width} ${size.height}`} role="img" aria-roledescription="chart" aria-label={example.title}
         aria-busy={loading || undefined} tabIndex={compact || loading ? undefined : 0} onKeyDown={onKey} onBlur={() => setHover(null)} onPointerLeave={() => setHover(null)}>
         {back && !loading && <g className={charts.mark} onClick={() => focusPath(realPath.slice(0, -1))}>
-          <rect x="2" y="2" width={width - 4} height="21" rx="4" fill={theme.grid} />
+          <rect x="2" y="2" width={Math.max(0, size.width - 4)} height="21" rx="4" fill={theme.grid} />
           <text x="12" y="16" fontSize="11" fill={theme.text}>‹ {levels.map(node => node.name).join(" / ")}</text>
         </g>}
         {loading ? layoutTiles((fixture.children ?? []).flatMap(node => node.children ?? [node]), bounds).map(({ box }, index) => <rect key={`s-${index}`} data-mark="treemap-bone" x={box.x + 1} y={box.y + 1}
@@ -155,13 +158,13 @@ export function Treemap({ example, compact, data }: Props) {
   </div>;
 }
 
-type TreeMark = { id: string; path: string[]; node: SunburstNode; parent: TreeMark | undefined; depth: number; group: number; order: number; x: number; y: number; folded: number };
+type TreeMark = { id: string; path: string[]; node: SunburstNode; parent: TreeMark | undefined; depth: number; group: number; order: number; angle: number; x: number; y: number; folded: number };
 
 function descendants(node: SunburstNode): number {
   return node.children?.reduce((total, child) => total + 1 + descendants(child), 0) ?? 0;
 }
 
-function treeLayout(root: SunburstNode, hidden: ReadonlySet<string>, mode: "left" | "top" | "radial") {
+function treeLayout(root: SunburstNode, hidden: ReadonlySet<string>, mode: "left" | "top" | "radial", viewWidth: number, viewHeight: number) {
   const nodes: TreeMark[] = [];
   let order = 0;
   let maxDepth = 0;
@@ -170,7 +173,7 @@ function treeLayout(root: SunburstNode, hidden: ReadonlySet<string>, mode: "left
     const id = ids.join(".");
     maxDepth = Math.max(maxDepth, depth);
     const folded = hidden.has(id) ? descendants(node) : 0;
-    const mark: TreeMark = { id, node, path, parent, depth, group, order: 0, x: 0, y: 0, folded };
+    const mark: TreeMark = { id, node, path, parent, depth, group, order: 0, angle: 0, x: 0, y: 0, folded };
     nodes.push(mark);
     const children = folded ? [] : node.children ?? [];
     const childMarks = children.map((child, index) => visit(child, [...path, child.name], [...ids, index], depth ? group : index, mark));
@@ -178,18 +181,17 @@ function treeLayout(root: SunburstNode, hidden: ReadonlySet<string>, mode: "left
     return mark;
   }
   visit(root, [root.name], [], -1);
-  const radial = mode === "radial";
-  const viewWidth = radial ? 390 : width;
-  const viewHeight = radial ? 390 : height;
   const cx = viewWidth / 2;
   const cy = viewHeight / 2;
+  const shortSide = Math.min(viewWidth, viewHeight);
+  const radius = Math.max(shortSide / 2 - 78.4, shortSide * .19);
   for (const node of nodes) {
     const depth = node.depth / Math.max(maxDepth, 1);
     const across = order > 1 ? node.order / (order - 1) : .5;
-    if (radial) {
-      const angle = (node.order + .5) / Math.max(1, order) * Math.PI * 2 - Math.PI / 2;
-      node.x = cx + Math.cos(angle) * depth * 132;
-      node.y = cy + Math.sin(angle) * depth * 132;
+    if (mode === "radial") {
+      node.angle = node.order / Math.max(1, order) * Math.PI * 2 - Math.PI / 2;
+      node.x = cx + Math.cos(node.angle) * depth * radius;
+      node.y = cy + Math.sin(node.angle) * depth * radius;
     } else if (mode === "top") {
       node.x = 53 + across * (viewWidth - 106);
       node.y = 22 + depth * (viewHeight - 57);
@@ -198,13 +200,13 @@ function treeLayout(root: SunburstNode, hidden: ReadonlySet<string>, mode: "left
       node.y = 21 + across * (viewHeight - 44);
     }
   }
-  return { nodes, viewWidth, viewHeight, cx, cy };
+  return { nodes, cx, cy };
 }
 
 function treeEdge(node: TreeMark, parent: TreeMark, mode: "left" | "top" | "radial", cx: number, cy: number) {
   if (mode === "radial") {
-    const parentAngle = Math.atan2(parent.y - cy, parent.x - cx);
-    const childAngle = Math.atan2(node.y - cy, node.x - cx);
+    const parentAngle = parent.angle;
+    const childAngle = node.angle;
     const middleRadius = (Math.hypot(parent.x - cx, parent.y - cy) + Math.hypot(node.x - cx, node.y - cy)) / 2;
     return `M${parent.x},${parent.y} C${cx + Math.cos(parentAngle) * middleRadius},${cy + Math.sin(parentAngle) * middleRadius} ${cx + Math.cos(childAngle) * middleRadius},${cy + Math.sin(childAngle) * middleRadius} ${node.x},${node.y}`;
   }
@@ -224,7 +226,10 @@ export function Tree({ example, compact, data }: Props) {
   const root = data?.rows ? { name: fixture.name, children: readHierarchy(data.rows) } : fixture;
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set(mode === "top" && !data ? ["1"] : []));
   const [hover, setHover] = useState<number | null>(null);
-  const { nodes, viewWidth, viewHeight, cx, cy } = treeLayout(root, collapsed, mode);
+  const size = usePlotSize<SVGSVGElement>(448, 448);
+  const viewWidth = mode === "radial" ? size.width : width;
+  const viewHeight = mode === "radial" ? size.height : height;
+  const { nodes, cx, cy } = treeLayout(root, collapsed, mode, viewWidth, viewHeight);
   const active = hover === null ? undefined : nodes[hover];
   const label = mode === "top" ? "Views" : mode === "radial" ? "Installs" : hasDemo ? "Pages" : "Headcount";
   const unit = mode === "top" ? "k views" : mode === "radial" ? "k a week" : hasDemo ? " pages" : " people";
@@ -243,31 +248,38 @@ export function Tree({ example, compact, data }: Props) {
   return <div className={styles.frame}>
     {control}
     <div className={styles.graph}>
-      <svg className={`${styles.native} ${charts.plot}`} viewBox={`0 0 ${viewWidth} ${viewHeight}`} role="img" aria-roledescription="chart" aria-label={example.title}
+      <svg ref={mode === "radial" ? size.plot : undefined} className={`${styles.native} ${charts.plot}`} viewBox={`0 0 ${viewWidth} ${viewHeight}`} role="img" aria-roledescription="chart" aria-label={example.title}
         aria-busy={loading || undefined} tabIndex={compact || loading ? undefined : 0} onBlur={() => setHover(null)} onPointerLeave={() => setHover(null)} onKeyDown={onKey}>
         {nodes.map((mark, index) => {
           if (!mark.parent) return null;
           const near = !active || active.path.slice(0, mark.path.length).join("/") === mark.path.join("/") || mark.parent.id === active.id;
+          const color = tone(theme, mark.group);
           return <path key={mark.id} data-mark="tree-edge" data-node={mark.node.name} d={treeEdge(mark, mark.parent, mode, cx, cy)} fill="none" pathLength="1"
-            stroke={loading ? theme.grid : tone(theme, mark.group)} strokeWidth={mode === "radial" ? 1.2 : 1.6} opacity={near ? .62 : .2}
+            stroke={loading ? theme.grid : mode === "radial" ? `color-mix(in oklab, ${color} 55%, ${theme.surface})` : color} strokeWidth={mode === "radial" ? 1.5 : 1.6} opacity={near ? mode === "radial" ? 1 : .62 : .2}
             className={loading ? charts.bone : hasDemo ? charts.draw : undefined} style={hasDemo ? { animationDelay: `${index * 19}ms` } : undefined} />;
         })}
         {nodes.map((mark, index) => {
           const { node, x, y, folded, group } = mark;
           const branch = !!node.children?.length;
           const color = group < 0 ? theme.text : tone(theme, group, node.color);
-          const radialLeft = mode === "radial" && x < cx;
-          const textX = x + (mode === "top" || mode === "radial" && group < 0 ? 0 : radialLeft ? -9 : 9);
-          const textY = y + (mode === "top" ? -10 : mode === "radial" && group < 0 ? -10 : 3.5);
+          const radial = mode === "radial";
+          const leaf = !branch && mark.depth > 0;
+          const angle = mark.angle;
+          const radialLeft = Math.cos(angle) < -1e-9;
+          const labelOffset = radial ? group < 0 ? 0 : leaf ? 12.5 : 16.5 : 0;
+          const textX = x + (radial ? Math.cos(angle) * labelOffset : mode === "top" ? 0 : 9);
+          const textY = y + (radial ? group < 0 ? -13.5 : Math.sin(angle) * labelOffset : mode === "top" ? -10 : 3.5);
+          const textAnchor = radial ? leaf ? radialLeft ? "end" : "start" : "middle" : mode === "top" ? "middle" : "start";
+          const rotation = radial && leaf ? `rotate(${angle * 180 / Math.PI + (radialLeft ? 180 : 0)} ${textX} ${textY})` : undefined;
           return <g key={mark.id} data-mark={loading ? "tree-bone" : "tree-node"} data-node={node.name} data-folded={folded || undefined}
             className={`${branch && !compact && !loading ? charts.mark : ""} ${loading ? charts.bone : hasDemo ? charts.reveal : ""}`}
             style={hasDemo ? { animationDelay: `${index * 19}ms` } : undefined}
             onPointerEnter={!loading && !compact ? () => setHover(index) : undefined}
             onClick={branch && !loading && !compact ? () => toggle(mark) : undefined}>
-            <circle cx={x} cy={y} r={group < 0 ? 6 : active === mark ? 6 : 4.5} fill={loading ? theme.grid : branch && !folded && group >= 0 ? theme.surface : color} stroke={loading ? theme.grid : color} strokeWidth="1.4" />
+            <circle cx={x} cy={y} r={active === mark || !radial && group < 0 ? 6 : 4.5} fill={loading ? theme.grid : branch && !folded && group >= 0 ? theme.surface : color} stroke={loading ? theme.grid : color} strokeWidth="1.4" />
             {loading ? <rect x={x + 10} y={y - 3} width={Math.min(78, 17 + node.name.length * 3)} height="6" rx="3" fill={theme.grid} /> :
-              <text x={textX} y={textY} textAnchor={textX === x ? "middle" : radialLeft ? "end" : "start"} fill={theme.text}
-                fontSize={mode === "radial" ? 9 : 11} fontWeight={branch ? 600 : 450} stroke={theme.surface} strokeWidth="1.8" paintOrder="stroke">{node.name}{folded ? ` +${folded}` : ""}</text>}
+              <text x={textX} y={textY} textAnchor={textAnchor} transform={rotation} dominantBaseline={radial ? "middle" : undefined} fill={radial && branch ? theme.muted : theme.text}
+                fontSize={radial ? compact ? 9 : 12 : 11} fontWeight={radial ? 500 : branch ? 600 : 450} stroke={theme.surface} strokeWidth="1.8" paintOrder="stroke">{node.name}{folded ? ` +${folded}` : ""}</text>}
           </g>;
         })}
       </svg>

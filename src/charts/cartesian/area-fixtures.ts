@@ -36,11 +36,10 @@ export function makeAreaFixture(id: string): CartesianData {
   const august = daySequence(2026, 8, 31);
   const october = daySequence(2026, 10, 31);
   switch (id) {
-    case "area-default": {
-      const revenue = wave(30, 12_000, 394, 2_700, 0.2, 100);
-      const costs = revenue.map((value, index) => Math.round(value * (0.72 + 0.01 * Math.cos(index)) / 100) * 100);
-      return records(september, [{ name: "Revenue", values: revenue }, { name: "Costs", values: costs }]);
-    }
+    case "area-default": return records(september, [
+      { name: "Revenue", values: [12_000, 13_500, 11_000, 14_500, 13_800, 15_200, 16_000, 14_800, 15_500, 14_200, 16_800, 17_500, 16_200, 15_800, 17_200, 18_500, 17_800, 16_500, 19_200, 18_800, 17_500, 19_800, 20_500, 19_200, 21_000, 21_800, 20_500, 22_500, 23_200, 24_000] },
+      { name: "Costs", values: [8_500, 9_200, 7_800, 10_100, 9_400, 10_800, 11_200, 10_500, 10_900, 9_800, 11_800, 12_400, 11_500, 11_200, 12_100, 13_200, 12_600, 11_700, 13_800, 13_400, 12_400, 14_200, 14_800, 13_600, 15_200, 15_800, 14_600, 16_200, 16_800, 17_400] },
+    ]);
     case "area-fill":
       return records(august, [{ name: "Visitors", values: weekdayTraffic(august, 3_260, 31, 285, 0.75) }]);
     case "area-gradient-fill":

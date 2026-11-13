@@ -354,10 +354,10 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
   const dashed = id === "line-dashed";
 
   const glow = id === "line-glow";
-  const showY = ["line-dual-axis", "line-grid", "line-table", "line-threshold", "line-fixed-scale", "line-export", "line-large-data"].includes(id);
+  const showY = ["line-dual-axis", "line-grid", "line-table", "line-fixed-scale", "line-export", "line-large-data"].includes(id);
   const decimals = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
   const lineValueTick = (value: number) => id === "line-dual-axis" || id === "line-export" ? `$${decimals.format(value)}`
-    : fixed ? `${value}%` : id === "line-threshold" ? `${value} ms` : decimals.format(value);
+    : fixed ? `${value}%` : decimals.format(value);
   const timeAxis = { ...xAxis, axisLabel: { ...xAxis.axisLabel, formatter: (value: string) => value },
     splitLine: id === "line-grid" ? { show: true, lineStyle: { color: theme.grid, type: "dotted" as const } } : undefined };
   const yDefaults = numericAxis(theme, !glow);
@@ -403,7 +403,6 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
     markLines.push({ xAxis: launch, name: "Launch", lineStyle: { color: down, type: "solid" }, label: { formatter: "Launch" } });
     markAreas.push(markRange(launch, lastIndex, gradient(tint(down, 0.18), tint(down, 0), true), pattern(tint(down, 0.25))));
   }
-  if (id === "line-threshold") markLines.push({ yAxis: 250, name: "Target", lineStyle: { color: down, type: "solid" }, label: { formatter: "250 ms target", position: "insideEndTop" } });
   if (loss) markLines.push({ yAxis: 0, lineStyle: { color: theme.muted, type: "solid" }, label: { show: false } });
   if (controls.selection) {
     const [start, end] = controls.selection;
@@ -412,7 +411,7 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
   }
   const series: (LineSeriesOption | CustomSeriesOption)[] = [];
   const hasBand = id.startsWith("line-band") || id === "line-bollinger";
-  const detailedTooltip = ["line-dual-axis", "line-grid", "line-points", "line-dashed", "line-markers", "line-legend", "line-time-range", "line-table", "line-projection", "line-projection-manual", "line-threshold", "line-profit-loss", "line-profit-loss-legend", "line-weekends", "line-deadline", "line-deadline-fills", "line-glow", "line-trend", "line-crosshair-point", "line-fixed-scale", "line-straight", "line-export", "line-loading", "chart-data-table"].includes(id);
+  const detailedTooltip = ["line-dual-axis", "line-grid", "line-points", "line-dashed", "line-markers", "line-legend", "line-time-range", "line-table", "line-projection", "line-projection-manual", "line-profit-loss", "line-profit-loss-legend", "line-weekends", "line-deadline", "line-deadline-fills", "line-glow", "line-trend", "line-crosshair-point", "line-fixed-scale", "line-straight", "line-export", "line-loading", "chart-data-table"].includes(id);
   if (hasBand || detailedTooltip || id === "line-large-data" || id === "line-synced") {
     const label = data.series[0]?.name ?? "";
     const units = id === "line-band-range" ? " °C" : id === "line-large-data" || label === "p95 latency" ? " ms" : label === "Error rate" ? "%" : "";
@@ -441,7 +440,7 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
     const legend = id === "line-legend" || id === "line-export";
     const dimmed = legend && controls.activeLegend !== undefined && controls.activeLegend !== index;
     const lineStyle = glow ? { color: gradient(theme.colors[1], color, true), width: 2.5, shadowBlur: 17, shadowColor: tint(color, 0.8) }
-      : { color, opacity: dimmed ? 0.3 : 1, width: loss ? 0 : id === "line-threshold" && index === 0 ? 3 : 2.5 };
+      : { color, opacity: dimmed ? 0.3 : 1, width: loss ? 0 : 2.5 };
     const eventMarkers = id === "line-markers" && index === 0 ? releaseEvents(data, item.values, controls.activeMarker) : [];
 
     const regular = lineFor(item, index, theme, {

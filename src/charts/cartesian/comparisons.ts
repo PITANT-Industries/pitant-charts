@@ -3,7 +3,7 @@ import type { ChartExample, ChartSeries } from "../../types";
 import { dates, candleRows, type CartesianData } from "./data";
 import { baseOption, categoryAxis, colorFor, down, gradient, numericAxis, signedStroke, strokeFade, tint, transparent, trendValues, up, valueFormat, type ChartTheme } from "./options";
 import { escapeTooltipHtml } from "../evil-tooltip";
-import { squareBars, stackedBars } from "./BarMarks";
+import { squareBars } from "./BarMarks";
 
 function makeBar(item: ChartSeries, index: number, theme: ChartTheme, extra: Partial<BarSeriesOption> = {}): BarSeriesOption {
   const color = colorFor(item, index, theme);
@@ -41,14 +41,12 @@ export function buildBar(example: ChartExample, data: CartesianData, theme: Char
     option.yAxis = { ...categoryAxis(data.categories, theme, true), inverse: true };
   }
   option.tooltip = { ...option.tooltip, show: !loading };
-  if (squares || id === "bar-stacked") {
+  if (squares) {
     const rows = data.series.map((item, index) => ({
       name: item.name, color: colorFor(item, index, theme), value: (category: number) => typeof item.values[category] === "number" ? valueFormat.format(item.values[category]!) : "—",
     }));
     option.tooltip = { ...option.tooltip, backgroundColor: "transparent", padding: 0, borderWidth: 0, extraCssText: "box-shadow:none", formatter: composedTooltip(data, rows) };
-  }
-  if (squares || id === "bar-stacked") {
-    option.series = squares ? squareBars(data, theme, active) : [stackedBars(data, theme)];
+    option.series = squareBars(data, theme, active);
     return option;
   }
   if (id === "bar-depth") {

@@ -134,9 +134,50 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 .detail-toolbar > .segmented { scrollbar-width: thin; }
 .detail-toolbar > .segmented button { flex: none; white-space: nowrap; }
 .detail-plot { height: clamp(230px,51vh,420px); min-height: 230px; padding: 5px; border: 1px solid var(--border); border-radius: 10px; overflow: auto; }
+.comparison-options { display: flex; justify-content: flex-start; margin-block-end: 9px; }
+.comparison-palette-toggle { max-width: 100%; text-align: start; }
+.comparison-palette-toggle svg { flex: none; }
 .comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; --comparison-height: clamp(320px, 58dvh, 540px); }
 .comparison h3 { font-size: 12px; font-weight: 590; color: var(--muted-foreground); margin: 0 0 6px; }
 .comparison .detail-plot { height: var(--comparison-height); }
+/* Reference chart palette sampled from the React preview, applied only to the local Compare plot. */
+.comparison-reference-colors {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  --muted: oklch(.97 0 0);
+  --muted-foreground: oklch(.556 0 0);
+  --border: oklch(.922 0 0);
+  --primary: oklch(0 0 0);
+  --primary-foreground: oklch(.985 0 0);
+  --chart-focus-pill: var(--primary);
+  --chart-focus-pill-text: var(--primary-foreground);
+  --chart-1: oklch(.809 .105 251.813);
+  --chart-2: oklch(.623 .214 259.815);
+  --chart-3: oklch(.546 .245 262.881);
+  --chart-4: oklch(.488 .243 264.376);
+  --chart-5: oklch(.424 .199 265.638);
+  --chart-positive: oklch(.508 .118 165.612);
+  --chart-negative: oklch(.577 .245 27.325);
+  background: var(--background);
+  color: var(--foreground);
+}
+.comparison-reference-colors[data-theme='dark'] {
+  --background: oklch(.145 0 0);
+  --foreground: oklch(.985 0 0);
+  --card: oklch(.205 0 0);
+  --popover: oklch(.205 0 0);
+  --muted: oklch(.269 0 0);
+  --muted-foreground: oklch(.708 0 0);
+  --border: oklch(1 0 0 / .1);
+  --primary: oklch(.922 0 0);
+  --primary-foreground: oklch(.205 0 0);
+  --chart-positive: oklch(.696 .17 162.48);
+  --chart-negative: oklch(.704 .191 22.216);
+}
 .comparison-frame { display: block; width: 100%; height: var(--comparison-height); border: 1px solid var(--border); border-radius: 10px; color-scheme: normal; }
 .comparison-notes { margin-top: 10px; color: var(--muted-foreground); font-size: 12px; line-height: 1.55; }
 .comparison-notes [data-slot='collapsible-trigger'], .parity-families [data-slot='collapsible-trigger'] { width: fit-content; border: 0; padding: 4px 0; background: transparent; color: var(--foreground); text-align: start; }
@@ -205,6 +246,11 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
   .example-grid { grid-template-columns: minmax(0,1fr); gap: 13px; }
   .card-plot { height: 155px; }
   .dialog-inner { padding: 15px; }
+}
+@media (max-width: 400px) {
+  .site-header-inner { padding-inline: 10px; gap: 6px; }
+  .header-actions { gap: 6px; }
+  .brand { gap: 7px; }
 }
 @media (max-width: 350px) { .header-link { display: none; } .family-filter { width: 95px; } }
 @media (prefers-reduced-motion: reduce) {

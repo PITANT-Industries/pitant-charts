@@ -1,7 +1,7 @@
 {
   "area-default": {
-    "checked": "Two translucent fills compare daily Revenue and Costs across September, with both upper strokes fading at the ends.",
-    "remaining": "Compare exact data, axis styling, and entrance timing."
+    "checked": "All 30 September Revenue and Costs dates match. At a 728 × 364 px plot, the two filled traces and grid align with the reference within 0.5 px. Keyboard inspection exposes both values.",
+    "remaining": "Compare exact fade and entrance timing across themes."
   },
   "area-fill": {
     "checked": "The August Visitors series uses a dense vertical gradient with 5% opacity at the baseline and no visible top stroke.",
@@ -80,16 +80,16 @@
     "remaining": "Compare the exact pulse and sweep animation and fixture counts."
   },
   "bar-default": {
-    "checked": "Six January–June revenue bars use the shadcn Recharts renderer. Keyboard inspection exposes the reference’s monthly figures, including $12,000 in January.",
-    "remaining": "Compare hover fades, mark spacing, and exact entrance timing."
+    "checked": "All six monthly revenue values match. At 728 px plot width the bars now measure 83.61 px, matching the reference. Hover dims unselected bars.",
+    "remaining": "Compare exact fade and entrance timing across themes."
   },
   "bar-grouped": {
     "checked": "Six pairs show Revenue and Profit on the same abbreviated numeric axis. June inspection reports 21,200 and 8,800.",
     "remaining": "Compare corner treatment, hover dimming, and group spacing."
   },
   "bar-stacked": {
-    "checked": "Organic, Paid, and Referral form eighteen rounded stack segments across six months. The first stack has a measured two-pixel divider and the June readout reports 1,520, 840, and 420.",
-    "remaining": "Compare scale, divider proportions, and hover timing."
+    "checked": "Organic, Paid, and Referral form 18 rounded segments. Their measured bounds differ from the live reference by at most 0.008 px across three matched sizes. The June readout reports 1,520, 840, and 420.",
+    "remaining": "Compare entrance timing, exact paint, and hover transitions."
   },
   "bar-values": {
     "checked": "Twelve orders bars show formatted values above the marks. November’s label and keyboard readout both show 1,120.",
@@ -124,8 +124,8 @@
     "remaining": "Compare shimmer treatment and exact per-bar reveal timing."
   },
   "line-default": {
-    "checked": "The shadcn-derived chart draws two series. Keyboard inspection shows the active date pill and the Users and Pageviews values.",
-    "remaining": "Compare the complete fixture and entrance timing."
+    "checked": "All 30 October dates match for Users and Pageviews. At a 728 × 364 px plot, trace bounds and grid match within 0.5 px. Keyboard inspection shows the active date pill and both values.",
+    "remaining": "Compare exact edge fades, marker treatment, and entrance timing."
   },
   "line-dual-axis": {
     "checked": "Revenue uses the left dollar axis and Conversion uses the right percentage axis. Hover reports both with their units.",
@@ -188,8 +188,8 @@
     "remaining": "Compare forecast segment time spacing and source values."
   },
   "line-threshold": {
-    "checked": "A solid 250 ms target appears with a heavier p95 stroke and a lighter Median stroke. Both tooltip values have ms units.",
-    "remaining": "Compare the full latency series and exact axis domain."
+    "checked": "The 250 ms target and the p95 and Median line geometry match at three plot sizes. All 60 values match the live reference through keyboard inspection.",
+    "remaining": "Compare the threshold highlight paint, transitions, and exact tooltip typography."
   },
   "line-profit-loss": {
     "checked": "The Net income line changes green and red at interpolated zero crossings. Keyboard inspection formats the reading as currency.",
@@ -976,8 +976,8 @@
     "remaining": "Compare hatch angles and spacing."
   },
   "treemap-default": {
-    "checked": "Five cloud-spend groups and sixteen service tiles use proportional area. Keyboard inspection shows Platform / Compute at $48k and 22% of all teams, and Enter drills into Platform before Escape returns.",
-    "remaining": "Compare the precise squarified coordinates, small-tile label truncation, and zoom easing."
+    "checked": "Five cloud-spend groups and sixteen service tiles fill the plot. Matched group boxes differ by 1.19 px on average at desktop width and 0.64 px at narrow width. Enter drills into Platform and Escape returns.",
+    "remaining": "Compare individual leaf placement, text clipping, and zoom easing."
   },
   "treemap-drilldown": {
     "checked": "The production bundle begins with node_modules, src, and assets. Two levels of keyboard drilldown reach @tanstack / charts at 64 kB, and the dist breadcrumb returns to the 13-tile overview.",
@@ -996,8 +996,8 @@
     "remaining": "Compare the exact node spacing, link curvature, and hover emphasis."
   },
   "tree-radial": {
-    "checked": "A square radial tree places the UI kit at the center and distributes 24 components across five colored groups. The Forms branch tooltip reports 582k installs per week.",
-    "remaining": "Compare the exact angles, curve geometry, and radial label spacing."
+    "checked": "The 24 component nodes and their group nodes match the reference radial layout to within 0.006 px mean displacement at both tested sizes. Radial leaf labels and the Forms readout are available.",
+    "remaining": "Compare link styling, label typography, and entrance motion."
   },
   "tree-vertical": {
     "checked": "The top-down site map begins with Docs +6 folded. Keyboard inspection reads 244k views, Enter reveals all six descendants including Webhooks, and a second Enter folds the branch again.",
@@ -1008,8 +1008,8 @@
     "remaining": "Compare the skeleton pulse and root-to-leaf reveal easing."
   },
   "network-default": {
-    "checked": "Twenty named dependencies use the reference's 25 links. Keyboard inspection reports the Web app at 4,200 req/s with two links, and dragging updates the node and its connected edges.",
-    "remaining": "Compare exact graph coordinates at different widths and hover and drag motion."
+    "checked": "Twenty dependencies and 25 links match the default layout to within 0.033 px mean node displacement at desktop width and 0.012 px at narrow width. Dragging updates connected edges. The Web app readout shows 4,200 req/s.",
+    "remaining": "Compare node and link styling, hover emphasis, and drag motion."
   },
   "network-legend": {
     "checked": "Twenty people and 36 review ties render in four color groups. The Design legend highlights its five people, and keyboard inspection reads Ava in Design with four links.",
@@ -1280,47 +1280,47 @@
     "remaining": "Compare reveal timing and motion."
   },
   "tooltip-standard": {
-    "checked": "Three area series share a date, crosshair, and date pill. Keyboard inspection shows one tooltip row and one focus dot per channel.",
-    "remaining": "Compare the September data, area fills, and cursor easing."
+    "checked": "All 30 September readouts match the live reference for Organic, Direct, and Referral. The filled series share a vertical guide, date pill, and 5 px focus dots with halos.",
+    "remaining": "Compare area gradient, panel placement near both edges, and cursor easing."
   },
   "tooltip-crosshair": {
-    "checked": "A dashed crosshair and dated Sign-ups panel remain visible while the focus dots and date pill are disabled.",
-    "remaining": "Compare exact dash spacing and marker styling across themes."
+    "checked": "All 31 October Sign-ups readouts match. The 6 px dash and 4 px gap guide appears without focus dots or a date pill.",
+    "remaining": "Compare cursor color and movement timing across themes."
   },
   "tooltip-indicator": {
-    "checked": "The Line, Thin, Medium, and Thick controls switch the cursor geometry. Medium is selected on entry.",
-    "remaining": "Compare exact cursor color, stroke treatment, and tooltip positioning across themes."
+    "checked": "All 21 July Users readouts match. Line, Thin, Medium, and Thick set the guide to 1, 2, 4, and 8 px, with Medium selected initially.",
+    "remaining": "Compare the guide fade and motion across themes."
   },
   "tooltip-motion": {
-    "checked": "Eased, Matched, and Instant switch how the panel follows the pointer. Instant disables the transition.",
-    "remaining": "Compare the spring timing and how the panel follows the cursor on rapid motion."
+    "checked": "All 21 August Web and App readouts match. Eased, Matched, and Instant change the movement of the panel and active marks. Reduced motion suppresses these transitions.",
+    "remaining": "Compare spring duration and rapid pointer movement against the reference."
   },
   "tooltip-rows": {
-    "checked": "The tooltip shows Users and Pageviews, then divides Pageviews by Users to one decimal. Only the two measured series appear on the plot.",
-    "remaining": "Compare the June fixtures and panel layout."
+    "checked": "All 30 June readouts match, including Pages per user rounded to one decimal. The Users and Pageviews traces stay unfilled.",
+    "remaining": "Compare panel typography and cursor easing."
   },
   "tooltip-content": {
-    "checked": "The custom body shows the day, USD revenue, and signed percentage change from the previous day when a comparison exists.",
-    "remaining": "Compare fixture values, typography, and change colors."
+    "checked": "All 30 April revenue and day-over-day readouts match, including the first-day message. The area has a dollar axis and reports signed percentage change.",
+    "remaining": "Compare panel typography, axis density at narrow widths, and change colors."
   },
   "tooltip-pinned": {
-    "checked": "The pinned view reveals the day's revenue by channel. Enter and Space pin the selected day, and Escape clears the pin inside the preview.",
-    "remaining": "Compare pinned-panel layout, number animation, and touch interactions."
+    "checked": "All 30 November pinned readouts match the total and three-channel breakdown. The plot shows one aggregate trace. Enter and Space pin the selected day, and Escape or the close control releases it.",
+    "remaining": "Compare collapsed panel treatment, animated expansion, and touch interactions across browsers."
   },
   "tooltip-ring": {
-    "checked": "Online and Retail bars share a monthly tooltip. A rounded ring marks the top of each active bar.",
-    "remaining": "Compare exact marker spacing and motion."
+    "checked": "All nine monthly readouts match. Eighteen bars show Online and Retail revenue. Square rounded outlines track both active bar tops.",
+    "remaining": "Compare corner treatment and entrance and hover timing."
   },
   "tooltip-horizontal-crosshair": {
-    "checked": "Moving the pointer vertically moves the price readout even when the selected date stays the same.",
-    "remaining": "Compare price formatting and tick-label fading at both edges of the axis."
+    "checked": "All 30 trading-day readouts match. The horizontal guide updates its price label as the pointer moves vertically, independently of the date.",
+    "remaining": "Compare tick-label fading at both edges and guide timing."
   },
   "tooltip-header": {
-    "checked": "The focused trading day appears above a divider, followed by the USD close and the signed change in price.",
-    "remaining": "Compare the trading-day fixtures and header styling."
+    "checked": "All 30 trading-day readouts match, including the USD close and signed daily change under the date divider.",
+    "remaining": "Compare header typography, hover timing, and gradient."
   },
   "tooltip-custom-indicator": {
-    "checked": "A bar below the active month marks the selection. The chart displays a revenue tooltip and omits the vertical cursor line.",
-    "remaining": "Compare indicator motion and placement at narrow widths."
+    "checked": "All eight monthly Revenue readouts match. The 3 px strip spans the active bar and replaces the vertical guide.",
+    "remaining": "Compare the indicator motion and narrow chart label density."
   }
 }
