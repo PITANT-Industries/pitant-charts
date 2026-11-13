@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useChartTheme } from "../theme";
 import { arc, Controls, Legend, metrics, number, Pattern, percent, point, sector, seriesData, sum, tone, type Props } from "./shared";
+import { Donut, usesDonut } from "./Donut";
 import styles from "./styles.module.css";
 
 const pieNames = ["Platform", "Services", "Marketplace", "Support", "Other"];
@@ -38,7 +39,11 @@ function CustomCenter({ x, y, children }: { x: number; y: number; children: Reac
   </foreignObject>;
 }
 
-export function Pie({ example, compact, data, renderCenter }: Props) {
+export function Pie(props: Props) {
+  return usesDonut(props.example.id) || props.renderCenter ? <Donut {...props} /> : <PieSlices {...props} />;
+}
+
+function PieSlices({ example, compact, data }: Props) {
   const id = example.id;
   const theme = useChartTheme();
   const instance = useId();
@@ -46,17 +51,11 @@ export function Pie({ example, compact, data, renderCenter }: Props) {
   const [effect, setEffect] = useState(0);
   const patterned = id.includes("pattern");
   const gradient = id === "pie-gradients";
-  const isHalf = id === "pie-half-donut";
-  const donut = id.includes("center") || id === "pie-hover-legend" || isHalf || ["pie-donut-grow", "pie-glow", "pie-patterns"].includes(id) || Boolean(renderCenter);
   const rows = metrics(data, pieNames, pieValues);
   const total = sum(rows);
   const item = active === null ? undefined : rows[active];
-  const display = useAnimatedNumber(item?.value ?? total, donut && !compact);
-  const selectedEffect = id === "pie-hover-effects" ? effect : (isHalf || id === "pie-donut-grow" ? 1 : id === "pie-glow" ? 2 : 0);
-  const angle = isHalf ? 180 : 360;
-  const centerY = isHalf ? 161 : 120;
-  const gap = donut ? 2.2 : .65;
-  let start = isHalf ? 180 : -90;
+  const selectedEffect = id === "pie-hover-effects" ? effect : 0;
+  let start = -90;
   return <div className={styles.frame}>
     {!compact && id === "pie-hover-effects" && <Controls items={["Translate", "Grow", "None"]} value={effect} onChange={setEffect} />}
     <svg className={styles.native} viewBox="0 0 420 240" role="img" aria-label={example.title}>
@@ -69,14 +68,11 @@ export function Pie({ example, compact, data, renderCenter }: Props) {
               <stop offset="0" stopColor={tone(theme, index + 1)} />
               <stop offset="1" stopColor={color} />
             </radialGradient>
-            <filter id={`${instance}-glow-${index}`} x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="0" stdDeviation="7" floodColor={color} floodOpacity=".9" />
-            </filter>
           </g>;
         })}
       </defs>
       {rows.map((row, index) => {
-        const sweep = total > 0 ? angle * Math.max(0, row.value) / total : 0;
+        const sweep = total > 0 ? 360 * Math.max(0, row.value) / total : 0;
         const from = start;
         start += sweep;
         const isActive = active === index;
@@ -84,10 +80,9 @@ export function Pie({ example, compact, data, renderCenter }: Props) {
         const usePattern = patterned && (id !== "pie-pattern" || index === 1);
         const color = usePattern ? `url(#${instance}-pattern-${index})`
           : gradient ? `url(#${instance}-gradient-${index})` : tone(theme, index, row.color);
-        return sweep > 0 && <path key={index} d={sector(210, centerY, (isHalf ? 117 : 101) + (isActive && selectedEffect === 1 ? 6 : 0), donut ? (isHalf ? 73 : 59) : 0, from + Math.min(gap, sweep / 5), start - Math.min(gap, sweep / 5))}
+        return sweep > 0 && <path key={index} d={sector(210, 120, 101 + (isActive && selectedEffect === 1 ? 6 : 0), 0, from + Math.min(.65, sweep / 5), start - Math.min(.65, sweep / 5))}
           transform={`translate(${tx} ${ty})`} fill={color} opacity={active === null || isActive || selectedEffect === 2 && id === "pie-hover-effects" ? 1 : .48}
-          stroke={donut ? color : theme.surface} strokeWidth={donut ? 2.5 : 1.5} strokeLinejoin="round"
-          filter={id === "pie-glow" && isActive ? `url(#${instance}-glow-${index})` : undefined}
+          stroke={theme.surface} strokeWidth={1.5} strokeLinejoin="round"
           style={{ transition: "opacity 150ms, transform 200ms, d 220ms" }}
           tabIndex={compact ? undefined : 0} aria-label={`${row.name}: ${number.format(row.value)}`}
           onMouseEnter={() => setActive(index)} onMouseLeave={() => setActive(null)}
@@ -95,15 +90,11 @@ export function Pie({ example, compact, data, renderCenter }: Props) {
           <title>{`${row.name} · ${number.format(row.value)} · ${percent(row.value, total).toFixed(1)}%`}</title>
         </path>;
       })}
-      {renderCenter ? <CustomCenter x={210} y={isHalf ? centerY - 14 : centerY}>
-        {renderCenter({ name: item?.name ?? null, value: item?.value ?? total, total, share: percent(item?.value ?? total, total) / 100 })}
-      </CustomCenter> : (donut || item) && <g pointerEvents="none" textAnchor="middle">
-        <text x="210" y={centerY + 3} fill={item ? tone(theme, active ?? 0, item.color) : theme.text} fontSize="25" fontWeight="650">{number.format(Math.round(display))}</text>
-        <text x="210" y={centerY + 22} fill={theme.muted} fontSize="11">{item?.name ?? (id === "pie-center-custom" ? "Product revenue" : "Total")}</text>
-        {id === "pie-center-share" && item && <text x="210" y={centerY + 36} fill={theme.muted} fontSize="10">{percent(item.value, total).toFixed(1)}% of total</text>}
+      {item && <g pointerEvents="none" textAnchor="middle">
+        <text x="210" y="123" fill={tone(theme, active ?? 0, item.color)} fontSize="25" fontWeight="650">{number.format(item.value)}</text>
+        <text x="210" y="142" fill={theme.muted} fontSize="11">{item.name}</text>
       </g>}
     </svg>
-    {!compact && id === "pie-hover-legend" && <Legend items={rows} theme={theme} active={active} onActive={setActive} />}
   </div>;
 }
 

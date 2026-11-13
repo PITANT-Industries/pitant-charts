@@ -92,7 +92,7 @@
 @media (prefers-reduced-motion: reduce) {
   .stat-loading .stat-load, .stat-map-pulse { animation: none; opacity: .23; }
   .stat-heat-reveal, .stat-ecdf-reveal { animation: none; }
-  .stat-map-viewport, .stat-ocean-dot, .stat-land-dot, .stat-heat-scale { transition: none; }
+  .stat-map-viewport, .stat-ocean-dot, .stat-land-dot, .stat-heat-scale { transition: none !important; }
 }
 .stat-canvas { display: flex; flex-direction: column; height: 100%; }
 .stat-canvas .chart-renderer { flex: 1 1 auto; min-height: 165px; }

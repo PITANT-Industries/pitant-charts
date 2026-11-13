@@ -30,10 +30,10 @@ async def run(browser, queue, results, local_url):
         errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
         if local_url:
-            await page.add_init_script(f'''() => {{
+            await page.add_init_script(f'''(() => {{
                 localStorage.setItem('chart-library:layout', '"list"');
                 localStorage.setItem('chart-library:theme', '"{theme}"');
-            }}''')
+            }})()''')
             await page.goto(local_url, wait_until='domcontentloaded')
         for example in examples:
             slug = example['id']
