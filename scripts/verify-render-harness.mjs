@@ -195,28 +195,33 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
     tab,
     `document.readyState === "complete" &&
       window.__PITANT_RENDER_HARNESS_STATE__?.renderer === ${JSON.stringify(renderer)} &&
-      window.__PITANT_RENDER_HARNESS_STATE__?.profile === ${JSON.stringify(profile)} &&
-      document.querySelectorAll(".chart-surface").length === ${JSON.stringify(expectedSurfaces)}`,
+      window.__PITANT_RENDER_HARNESS_STATE__?.profile === ${JSON.stringify(profile)}`,
     20_000,
   )
   await sleep(900)
 
-  const state = await evaluate(tab, 'window.__PITANT_RENDER_HARNESS_STATE__')
-  const stateErrors = validateProfileState(state, profile)
-  await evaluate(tab, 'window.scrollTo(0, 0)')
-  const rects = await evaluate(
+  const { state, rects } = await waitForExpression(
     tab,
-    `Array.from(document.querySelectorAll(".chart-surface")).map((element) => {
-      const rect = element.getBoundingClientRect()
-      return {
-        x: rect.x,
-        y: rect.y,
-        width: rect.width,
-        height: rect.height,
-        className: element.className
+    `(() => {
+      const state = window.__PITANT_RENDER_HARNESS_STATE__
+      const surfaces = [...document.querySelectorAll(".chart-surface")]
+      if (document.readyState !== "complete" ||
+          state?.renderer !== ${JSON.stringify(renderer)} ||
+          state?.profile !== ${JSON.stringify(profile)} ||
+          surfaces.length !== ${expectedSurfaces}) return null
+      if (window.scrollX || window.scrollY) {
+        window.scrollTo(0, 0)
+        return null
       }
-    })`,
+      const rects = surfaces.map((element) => {
+        const { x, y, width, height } = element.getBoundingClientRect()
+        return { x, y, width, height, className: element.className }
+      })
+      return { state, rects }
+    })()`,
+    20_000,
   )
+  const stateErrors = validateProfileState(state, profile)
   const captureHeight = Math.ceil(
     Math.max(VIEWPORT.height, ...rects.map(({ y, height }) => y + height)),
   )
@@ -841,7 +846,8 @@ async function evaluate(tab, expression) {
 async function waitForExpression(tab, expression, timeoutMs) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
-    if (await evaluate(tab, expression)) return
+    const result = await evaluate(tab, expression)
+    if (result) return result
     await sleep(100)
   }
   throw new Error(`Timed out waiting for browser expression: ${expression}`)
