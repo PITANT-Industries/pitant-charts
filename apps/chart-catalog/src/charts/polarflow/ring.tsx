@@ -33,6 +33,7 @@ export function Ring({ example, compact, data, renderCenter }: Props) {
   const goals = rows.map((_, index) => {
     const goal = numeric(data?.rows?.[index]?.target ?? data?.rows?.[index]?.maximum);
     if (goal > 0) return goal;
+    if (data && bookings) return 160 + index * 12;
     return data ? customMaximum : typeof fixture.maximum === "number" ? fixture.maximum : fixture.maximum[index] ?? customMaximum;
   });
   const target = active === null ? undefined : goals[active];
