@@ -1,0 +1,35 @@
+.scatter-jitter-detail { width: 100%; min-width: 0; display: grid; gap: 16px; }
+.scatter-jitter-header { display: grid; gap: 4px; }
+.scatter-jitter-title { font-size: 16px; font-weight: 500; line-height: 24px; }
+.scatter-jitter-header p, .scatter-jitter-footer p { margin: 0; color: var(--muted-foreground); }
+.scatter-jitter-header p { font-size: 14px; line-height: 20px; }
+.scatter-jitter-surface { position: relative; min-width: 0; }
+.scatter-jitter-plot { display: block; width: 100%; aspect-ratio: 2 / 1; touch-action: pan-y; }
+.scatter-jitter-readout { position: absolute; top: 8px; z-index: 1; pointer-events: none; }
+.scatter-jitter-readout .cartesian-focus-readout { min-width: 0; max-width: none; }
+.scatter-jitter-readout .cartesian-focus-readout-title { margin-bottom: 8px; line-height: 16px; }
+.scatter-jitter-readout .cartesian-focus-readout-row:last-child { min-height: 20px; }
+.scatter-jitter-footer {
+  display: grid;
+  gap: 8px;
+  margin-inline: -16px;
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in oklab, var(--muted) 50%, transparent);
+  font-size: 14px;
+  line-height: 1;
+}
+.scatter-jitter-footer div { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.scatter-jitter-footer svg { flex: none; }
+.scatter-jitter-detail[data-compact] { height: 100%; grid-template-rows: minmax(0, 1fr); }
+.scatter-jitter-detail[data-compact] .scatter-jitter-plot { height: 100%; aspect-ratio: auto; }
+
+.comparison-measured[data-plot-id="scatter-jitter"] { align-self: stretch; }
+.comparison-measured[data-plot-id="scatter-jitter"] > .chart-preview { height: 100%; }
+.comparison-measured[data-plot-id="scatter-jitter"] .scatter-jitter-detail {
+  min-height: 100%;
+  padding-block-start: 8px;
+  grid-template-rows: auto minmax(min-content, 1fr) auto;
+}
+.comparison-measured[data-plot-id="scatter-jitter"] .scatter-jitter-surface { align-self: center; }
+.comparison-measured[data-plot-id="scatter-jitter"] .scatter-jitter-footer { margin-block-end: -8px; }

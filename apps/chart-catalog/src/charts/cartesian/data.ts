@@ -59,14 +59,16 @@ export function resolveData(example: ChartExample, data?: ChartData): CartesianD
   const fixture = makeFixture(example);
   if (!data) return fixture;
   const suppliedCandles = (example.family === "candlestick" || example.id === "composed-price-volume") && data.rows;
+  const suppliedSchedule = example.family === "gantt" && data.rows;
   const rowsOnlyMarket = example.id === "composed-price-volume" && suppliedCandles;
   const series = data.series ? [...data.series] : rowsOnlyMarket ? [
     { name: "Close", values: rowsOnlyMarket.map(row => typeof row.close === "number" ? row.close : null) },
     { name: "Volume (M)", values: rowsOnlyMarket.map(row => typeof row.volume === "number" ? row.volume : null) },
   ] : fixture.series;
   const count = Math.max(0, ...series.map(item => item.values.length));
-  const categories = data.categories ? [...data.categories] : suppliedCandles
-    ? suppliedCandles.map((row, index) => String(row.category ?? row.date ?? index + 1))
+  const categories = data.categories ? [...data.categories]
+    : suppliedCandles ? suppliedCandles.map((row, index) => String(row.category ?? row.date ?? index + 1))
+    : suppliedSchedule ? suppliedSchedule.map((row, index) => String(row.name ?? row.category ?? `Task ${index + 1}`))
     : data.series && !data.rows ? Array.from({ length: count }, (_, index) => String(index + 1)) : fixture.categories;
   const usesCustomRows = example.family === "line" || example.family === "composed"
     || (["candlestick", "sparkline"].includes(example.family) && Boolean(data.series));

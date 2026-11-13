@@ -1,0 +1,23 @@
+.frame { display: grid; width: 100%; min-width: 0; }
+.frame[data-compact] { height: 100%; }
+.controls { display: flex; justify-content: flex-end; margin-block-end: 8px; }
+.toggle { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding-inline: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--foreground); font: inherit; font-size: .75rem; cursor: pointer; }
+.toggle[aria-pressed='true'] { background: var(--muted); }
+.stage { position: relative; min-width: 0; }
+.stage > svg { display: block; width: 100%; aspect-ratio: 8 / 5; font-family: inherit; }
+.frame[data-portfolio] .stage > svg { aspect-ratio: 2 / 1; }
+.frame[data-compact] .stage > svg { height: 100%; }
+.stage > svg:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 8px; }
+.branch { cursor: pointer; }
+.bone { animation: breathe 1.4s ease-in-out infinite alternate; }
+@keyframes breathe { to { opacity: 1; } }
+.tooltip { position: absolute; z-index: 1; max-width: min(210px, 65%); pointer-events: none; }
+.tooltip :global(.cartesian-focus-readout) { min-width: 0; }
+.portfolioTip { display: grid; gap: 4px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; color: var(--foreground); background: var(--card); box-shadow: 0 2px 8px #0002; font-size: .75rem; }
+.portfolioTip b { font-size: .875rem; }
+.portfolioTip span { color: var(--muted-foreground); }
+.footer { display: grid; gap: 8px; margin-block-start: 16px; font-size: .875rem; line-height: 1.25; }
+.footer strong { font-weight: 500; }
+.footer > span { color: var(--muted-foreground); }
+@media (prefers-reduced-motion: reduce) { .bone { animation: none; } }
+.footer strong { display: flex; align-items: center; gap: 8px; }

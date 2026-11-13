@@ -304,12 +304,12 @@
     "remaining": "Compare tooltip type, grid fade, and motion curves in both themes."
   },
   "scatter-jitter": {
-    "checked": "The preview shows 522 points in 12 month columns and reports the nearest point to the pointer.",
-    "remaining": "Compare the exact jitter distribution and hit regions."
+    "checked": "All 522 pull request marks match within 0.009 px, with both series, all month and line-count ticks, and the 500-line threshold. All 522 keyboard readouts match. Mouse hover and touch passed.",
+    "remaining": "Compare the focus paint and narrow tooltip placement. Escape clears the library readout."
   },
   "scatter-large-data": {
-    "checked": "The SDK count picker switches between 10,000, 50,000, and 500,000 October checkout requests. PITANT Canvas2D shows density counts in the overview and exact original coordinates for individual points after zooming.",
-    "remaining": "Compare individual request fixtures, point appearance, and hover inspection under sustained pointer movement."
+    "checked": "The overview canvas matches the reference 2:1 size and 40 px plot margins. The PITANT renderer switches between 10,000, 50,000 and 500,000 requests and exposes exact coordinates for individual points after zooming.",
+    "remaining": "Compare the reference 10,000 and 50,000 point fixtures, dot appearance and date, group and duration readouts."
   },
   "candlestick-default": {
     "checked": "All 31 dates and 124 OHLC prices match. Each body has separate upper and lower wicks. A vertical guide, Close marker and date pill appear on inspection as other candles dim to 30%.",
@@ -416,20 +416,20 @@
     "remaining": "Compare the skeleton’s animated sweep, exact connection timing, and post-connect quote sequence."
   },
   "gantt-default": {
-    "checked": "Three phases show progress, dependency arrows, a launch milestone, and Today. Keyboard inspection shows dates, duration, and dependencies.",
-    "remaining": "Compare fixture dates, bar alignment, and tooltip styling."
+    "checked": "All 11 rows and readouts match at desktop and mobile widths. The three phase bands, progress bars, eight dependency arrows and launch milestone align within 0.005 px.",
+    "remaining": "Compare hover fade and tooltip placement during scrolling."
   },
   "gantt-roadmap": {
-    "checked": "Nine initiatives use three team colors. The mobile schedule scrolls horizontally and the tooltip shows team, owner, and completion.",
-    "remaining": "Compare exact initiative timing and spacing."
+    "checked": "All nine initiative readouts match the reference owners, teams and progress. Bars, six dependency arrows and the milestone align within 0.005 px. The 720 px plot scrolls inside a narrow pane.",
+    "remaining": "Compare tooltip placement, active bar paint and entrance motion."
   },
   "gantt-milestones": {
-    "checked": "Two diamond milestones align to a bottom date axis. Inspection shows dependencies.",
-    "remaining": "Compare milestone position and shape."
+    "checked": "The four task bars, both milestone diamonds, six links and bottom date axis align within 0.005 px. Keyboard inspection reports dates, duration and dependency names.",
+    "remaining": "Compare tooltip placement near the right edge and hover transition timing."
   },
   "gantt-loading": {
-    "checked": "The loading skeleton keeps the schedule’s date grid. Reveal restores rows and tooltips.",
-    "remaining": "Compare skeleton timing and colors."
+    "checked": "The weekly grid stays in place while the Loading toggle reveals eight rows and their exact readouts. The 15 skeleton marks match within 0.009 px.",
+    "remaining": "Compare the skeleton pulse and staggered row reveal frame by frame."
   },
   "waterfall-default": {
     "checked": "All eight revenue bars and seven connectors match the reference plot at desktop and mobile sizes. The readout gives the exact signed change and running total for each fiscal step.",
@@ -524,64 +524,64 @@
     "remaining": "Compare ghost shapes and line draw timing."
   },
   "sparkline-default": {
-    "checked": "Three storefront cards show Revenue as an area, Visitors as a line, and Orders as bars. Hover updates the selected card’s date and metric independently.",
-    "remaining": "Compare colors, metric formatting, and focus animation."
+    "checked": "The Revenue, Visitors, and Orders trends match the measured paths and initial metrics. Hover and keyboard navigation update each card's date, value, and percentage from the first sample.",
+    "remaining": "Compare the card framing, footer paint, and the timing of the entrance and spring transitions."
   },
   "sparkline-line": {
-    "checked": "The 24-point revenue line is smoothed. Keyboard inspection shows the November 8 value of $4,587 and a point marker.",
-    "remaining": "Compare the chart’s vertical domain and focus fade."
+    "checked": "The 24 daily revenue points, monotone stroke, endpoint summaries, dashed guide, and pointer and keyboard positions match at both tested widths.",
+    "remaining": "Compare the entrance and spring transitions and the reference card framing."
   },
   "sparkline-area": {
-    "checked": "A gradient fills the area below the smoothed 24-day visitor line. The last day reads 1,286.",
-    "remaining": "Compare the gradient stops and vertical domain."
+    "checked": "The 24 visitor values, gradient area and monotone stroke match at both tested widths. The pointer and keyboard select the expected position, and the footer shows the measured latest value and change.",
+    "remaining": "Compare entrance and hover timing and the reference card framing."
   },
   "sparkline-area-solid": {
-    "checked": "A uniform fill sits below the 24-day visitor line. Keyboard inspection reads the active point.",
-    "remaining": "Compare exact fill opacity and axis-free geometry."
+    "checked": "The visitor paths match at both widths, with the solid blue area and reference average and peak-to-latest summary. The active marker follows hover and keyboard selection.",
+    "remaining": "Compare entrance and hover timing and the reference card framing."
   },
   "sparkline-bar": {
-    "checked": "Twenty-four order bars grow from zero. The active bar stays bright, and inspection shows 176 orders on November 8.",
-    "remaining": "Compare bar rounding, spacing, and hover easing."
+    "checked": "The 24 order bars match the measured positions and rounded caps. Hover and keyboard select an individual bar and dim the others.",
+    "remaining": "Compare the entrance timing, active motion, and reference card framing."
   },
   "sparkline-bar-negative": {
-    "checked": "Twenty P&L bars extend above and below zero, with a currency readout that shows −$200 on the final day.",
-    "remaining": "Compare bar spacing, rounding, and baseline styling."
+    "checked": "The 20 profit and loss values match the signed bar geometry on both sides of zero. The dated positive and negative readout updates with pointer and keyboard selection.",
+    "remaining": "Compare the active-bar transition timing and reference card framing."
   },
   "sparkline-end-dot": {
-    "checked": "A fixed marker remains at the last point during pointer movement. The p95 latency readout is 283 ms.",
-    "remaining": "Compare the end-marker styling and line interpolation."
+    "checked": "The static p95 latency sparkline uses the measured 32 samples, natural curve, fixed end marker and 283ms readout.",
+    "remaining": "Compare the stroke entrance timing. Fractional layout widths can differ by a fraction of a pixel from the fixed SVG width."
   },
   "sparkline-step": {
-    "checked": "Eighteen weekly points draw midpoint steps and a filled area. Keyboard inspection reaches the final 25 paid seats.",
-    "remaining": "Compare vertical scale and hover treatment."
+    "checked": "The paid-seat history uses the measured midpoint steps and a persistent final marker. Hover and keyboard inspect the same values, including the September and October downgrades.",
+    "remaining": "Compare the entrance and spring transitions and reference card framing."
   },
   "sparkline-crosshairs": {
-    "checked": "Three copies of the line show dashed, solid, and gradient guides under pointer inspection.",
-    "remaining": "Compare guide opacity and marker motion."
+    "checked": "The dashed, solid and gradient guides use the same measured revenue paths and distinct guide geometry. Pointer and keyboard select a point in each chart.",
+    "remaining": "Compare the timing of guide motion and the reference card framing."
   },
   "sparkline-hover-feel": {
-    "checked": "Three matching lines demonstrate regular easing, faster easing, and immediate hover. A fourth full-width bar example also updates immediately. Reduced motion makes all four immediate.",
-    "remaining": "Compare exact spring dynamics, geometry, and timing."
+    "checked": "The three revenue lines and order bars match the measured paths. The default and faster eased motion and the two immediate plots are distinct. Pointer and keyboard select a point.",
+    "remaining": "The eased CSS motion approximates the reference spring physics. Compare their frame-by-frame timing."
   },
   "sparkline-synced": {
-    "checked": "Inspecting any storefront series moves all three chart markers, updates all three readings, and changes the shared date. Escape clears the inspection.",
-    "remaining": "Compare marker transition timing and panel alignment."
+    "checked": "Revenue, Visitors, and Orders share the same selected date across the three measured plots. Pointer and keyboard update all values and the full date together.",
+    "remaining": "Compare the linked spring transition timing and reference card framing."
   },
   "sparkline-table": {
-    "checked": "Four plan rows use a semantic table with Trend, MRR, and Change columns. The keyboard can inspect a row’s sparkline independently.",
-    "remaining": "Compare table spacing and hover treatments."
+    "checked": "The four 120 × 24 MRR paths match the measured 16-week data. Plan values, semantic trend colors, and percentage readouts match. Table sparks support pointer and keyboard selection.",
+    "remaining": "Compare table column sizing at widths between the tested viewports, and the spring transition timing."
   },
   "sparkline-stat-card": {
-    "checked": "A seven-point sessions chart shows the daily average at rest. Keyboard inspection replaces it with the active weekday and value.",
-    "remaining": "Compare the weekly comparison series and exact card geometry."
+    "checked": "The seven daily session values, 1,344 average and full-width 160px area match. Number Flow animates the selected value, and the badge updates against the matching previous day.",
+    "remaining": "The badge sits above the plot inside the gallery preview. Compare its placement against the reference card header and check animation timing."
   },
   "sparkline-range": {
-    "checked": "The keyboard and pointer select 7, 30, or 90 samples. Changing range updates the average and period summary.",
-    "remaining": "Compare the exact daily user series, range summaries, and motion."
+    "checked": "The 7-, 30-, and 90-day controls render the measured paths. The averages and changes match at 6,471 and 5.4%, 6,221 and 2.2%, and 5,828 and 11.3%. Keyboard operates the range controls and plot.",
+    "remaining": "Compare animation on range changes and the reference footer paint."
   },
   "sparkline-grid": {
-    "checked": "The detailed preview contains 48 services with 20 samples per chart, repeating area, line, and bar. The final row remains reachable at mobile width.",
-    "remaining": "Compare service colors and grid spacing."
+    "checked": "The 48 service trends preserve the line, gradient area, and bar ordering and the 24px plot height. The responsive matrix switches from four to eight columns and supports keyboard and pointer inspection.",
+    "remaining": "Compare fractional pixel layout, entrance timing, and the spring transitions across all 48 plots."
   },
   "pie-default": {
     "checked": "All five October sales wedges match the reference path data at 280 px. Selecting a slice lifts it 10 px and dims the others to 40%. Keyboard inspection follows the reference order and Escape clears the active slice.",
@@ -916,28 +916,28 @@
     "remaining": "Compare exact per-cell shimmer phases, reveal delays, and the loading overlay styling."
   },
   "sunburst-default": {
-    "checked": "Four revenue branches total $1.18M, with Product at 37%. Arrow keys inspect segment paths, Enter zooms into a branch, and Escape goes back while keeping focus on the chart.",
-    "remaining": "Compare finer-grained fixture values, branch geometry, and drill timing at each depth."
+    "checked": "The 28 revenue segments and labels match the measured reference at desktop and mobile widths. Product leads at 37%. Arrow keys inspect the revenue path, Enter drills, and Escape goes back while preserving chart focus.",
+    "remaining": "Compare entrance and drill easing, and exact hover paint across browsers."
   },
   "sunburst-breadcrumb": {
-    "checked": "The chart opens on Cloud spend › Platform. Its Compute, Database, and Networking branches match the initial reference hierarchy, and the root breadcrumb returns to the overview.",
-    "remaining": "Compare the values of individual services and cloud teams, and the breadcrumb transitions."
+    "checked": "The chart opens on Cloud spend / Platform with seven matching segments and labels. The four teams total $236k. The breadcrumb and center return to the root, and keyboard selection can drill again.",
+    "remaining": "Compare breadcrumb focus paint and drill easing across browsers."
   },
   "sunburst-segment-colors": {
-    "checked": "The 3,000-session Social branch remains colored while other branches are muted. LinkedIn, X, and YouTube use distinct colors.",
-    "remaining": "Compare individual channel values, exact color assignments, and highlight timing."
+    "checked": "All 14 segments and labels match the measured geometry. Social accounts for 3,000 sessions and uses the first palette color through its children. Other channels use a neutral tint. Keyboard drill and back work.",
+    "remaining": "Compare exact neutral paint and highlight timing across browsers."
   },
   "sunburst-patterns": {
-    "checked": "Only Services and Partners use diagonal stripes. The $1.38M fiscal revenue hierarchy leaves the Subscriptions and Expansion branches solid and hides arc labels.",
-    "remaining": "Compare individual leaf values, stripe treatment, and interactive highlighting."
+    "checked": "All 14 segments match the measured geometry. Services and Partners use two diagonal stripe patterns on their top-level segments. Their children, Subscriptions and Expansion use solid fills. The chart hides arc labels.",
+    "remaining": "Compare exact stripe paint and animated hover and drill states."
   },
   "sunburst-legend": {
-    "checked": "The five department totals and shares match, starting with Engineering at 124 people and 51%. The legend stays visible while keyboard selection zooms into a department.",
-    "remaining": "Compare remaining team values, legend styling, and touch behavior."
+    "checked": "All 19 segments and labels match at desktop and mobile widths. Five department totals and shares match, including Engineering at 124 people and 51%. The legend stays visible while a button drills into its department.",
+    "remaining": "Compare legend hover paint and transition timing across browsers."
   },
   "sunburst-custom-hint": {
-    "checked": "The operating-expense chart hides segment labels and reports compact costs and percentage of spend for the active path, including Payroll at $768k and 66.0%.",
-    "remaining": "Compare facilities fixture details, geometry, and pointer highlight transitions."
+    "checked": "All 16 segments match the measured geometry. Keyboard and touch inspect unlabeled wedges. Payroll reports $768k and 66.0% of spend, Engineering $412k and 35.4%, and Cloud $118k and 10.1%.",
+    "remaining": "Compare exact pointer highlight and animated drill states."
   },
   "sankey-default": {
     "checked": "14 nodes and 33 links match the measured layout within 0.0051 px at three plot sizes. 47 captured readouts match. The 14 nodes preserve the traffic and outcome ordering. Links use weighted horizontal curves and source-to-target gradients.",
@@ -976,48 +976,48 @@
     "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "treemap-default": {
-    "checked": "Five cloud-spend groups and sixteen service tiles fill the plot. Matched group boxes differ by 1.19 px on average at desktop width and 0.64 px at narrow width. Enter drills into Platform and Escape returns.",
-    "remaining": "Compare individual leaf placement, text clipping, and zoom easing."
+    "checked": "All 21 cloud-spend rectangles match the live plot coordinates at both measured widths. Pointer and keyboard open Platform and the breadcrumb or Escape returns. Compute represents 22% of total spend.",
+    "remaining": "Compare exact tooltip placement, paint and zoom easing."
   },
   "treemap-drilldown": {
-    "checked": "The production bundle begins with node_modules, src, and assets. Two levels of keyboard drilldown reach @tanstack / charts at 64 kB, and the dist breadcrumb returns to the 13-tile overview.",
-    "remaining": "Compare the smallest nested bundle values, breadcrumb styling, and animation timing."
+    "checked": "All 13 initial rectangles match the measured reference at desktop and mobile widths. Pointer drill reaches node_modules / @tanstack and its 64 kB charts tile. Keyboard Enter and Escape navigate between levels.",
+    "remaining": "Compare breadcrumb and tooltip paint and zoom easing."
   },
   "treemap-portfolio": {
-    "checked": "Seventeen tiles group twelve holdings into five asset classes. S&P 500 ETF inspection reports $126,000 and about 17% of the portfolio. The portfolio remains at its overview when a holding is activated.",
-    "remaining": "Compare the exact share rounding, asset colors, and the visible tile boundaries."
+    "checked": "All 17 rectangles match at both measured widths. Touch inspection of S&P 500 ETF reports $126,000 and 16.8% of the portfolio. Activating a holding retains the overview.",
+    "remaining": "Compare exact tooltip placement, paint and entrance easing."
   },
   "treemap-loading": {
-    "checked": "Ten rounded skeleton tiles reveal four storage groups and ten labeled buckets. The Loading control works with Space and inspection reports Uploads at 1.8 TB.",
-    "remaining": "Compare the initial bone layout and the exact pop-in timing."
+    "checked": "The Loading toggle swaps ten skeleton rectangles for four groups and ten storage tiles. Every skeleton and ready rectangle matches at both measured widths. Uploads reports 1.8 TB.",
+    "remaining": "Compare skeleton pulse and the timing of the ready-state entrance animation."
   },
   "tree-default": {
-    "checked": "The left-to-right engineering chart uses 16 nodes and 15 curved links. Keyboard inspection reads 85 people at the root and Platform / API at nine people.",
-    "remaining": "Compare the exact node spacing, link curvature, and hover emphasis."
+    "checked": "All 16 nodes, labels and 15 curves match the measured reference. Platform folds and reopens through pointer or keyboard, and inspection reports all branch totals and leaf headcounts.",
+    "remaining": "Compare folding animation and tooltip placement. The reference SVG can overflow its logical plot at narrow widths."
   },
   "tree-radial": {
-    "checked": "The 24 component nodes and their group nodes match the reference radial layout to within 0.006 px mean displacement at both tested sizes. Radial leaf labels and the Forms readout are available.",
-    "remaining": "Compare link styling, label typography, and entrance motion."
+    "checked": "The 448px cap, all 30 nodes and the outward label positions match the measured reference. Keyboard inspection reports the exact installs and children for every node.",
+    "remaining": "Compare folding animation and tooltip paint."
   },
   "tree-vertical": {
-    "checked": "The top-down site map begins with Docs +6 folded. Keyboard inspection reads 244k views, Enter reveals all six descendants including Webhooks, and a second Enter folds the branch again.",
-    "remaining": "Compare branch placement, node label alignment, and expansion timing."
+    "checked": "Docs starts folded. The measured eight-node and 14-node layouts match before and after expansion. Clicking or tapping Docs reveals its six descendants.",
+    "remaining": "Compare branch movement timing and tooltip placement."
   },
   "tree-loading": {
-    "checked": "Twelve skeleton dots and label placeholders reveal a three-section documentation tree with 129 pages. Keyboard inspection and the Loading toggle work after the reveal.",
-    "remaining": "Compare the skeleton pulse and root-to-leaf reveal easing."
+    "checked": "The 12 skeleton dots, 11 links and label placeholders track the reference plot. Loading toggles the same SVG and reveals all 12 documentation readouts.",
+    "remaining": "Compare skeleton pulse and reveal timing."
   },
   "network-default": {
-    "checked": "Twenty dependencies and 25 links match the default layout to within 0.033 px mean node displacement at desktop width and 0.012 px at narrow width. Dragging updates connected edges. The Web app readout shows 4,200 req/s.",
-    "remaining": "Compare node and link styling, hover emphasis, and drag motion."
+    "checked": "All 20 service nodes and 25 links match the measured positions and widths. The readouts report the exact group, peak request rate and link count. Dragging a node moves its links.",
+    "remaining": "Compare tooltip placement and pointer-transition timing."
   },
   "network-legend": {
-    "checked": "Twenty people and 36 review ties render in four color groups. The Design legend highlights its five people, and keyboard inspection reads Ava in Design with four links.",
-    "remaining": "Compare the exact legend emphasis, line opacity, and label spacing."
+    "checked": "All 20 people and 36 links match the measured reference. The legend moves beside the chart at 608px of available width and highlights a team on hover or focus.",
+    "remaining": "Compare exact legend typography and link fade timing."
   },
   "network-loading": {
-    "checked": "An 18-node skeleton reveals 11 named workstreams and 16 shared changes. The Loading toggle and inspection of Design's 18 commits work from the keyboard.",
-    "remaining": "Compare exact loading skeleton topology and reveal easing."
+    "checked": "The skeleton has 18 dots and 18 links in the measured three-group layout. Loading retains the SVG and reveals the exact 11 workstream readouts.",
+    "remaining": "Compare skeleton pulse and reveal timing."
   },
   "waffle-default": {
     "checked": "One hundred cells show browser shares, including 52 Chrome cells. Keyboard and legend inspection report Chrome's 18,420 visitors and Safari's 9,870 visitors.",

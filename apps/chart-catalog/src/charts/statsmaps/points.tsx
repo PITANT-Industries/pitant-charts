@@ -1,6 +1,7 @@
 import { useMemo, useState, type CSSProperties, type PointerEvent } from "react";
 import { contourDensity } from "d3-contour";
 import { geoPath } from "d3-geo";
+import { ScatterJitterDetail } from "./ScatterJitterDetail";
 import { ReferenceScatter } from "./ReferenceScatter";
 import { scatterFixtures, type ScatterKind } from "./scatter-fixtures";
 import {
@@ -24,6 +25,7 @@ function jitterPoints(): Point[] {
 }
 
 export function Scatter(props: DemoProps) {
+  if (!props.data && props.example.id === "scatter-jitter") return <ScatterJitterDetail {...props} />;
   const kind = props.example.id.slice("scatter-".length);
   if (!props.data?.rows && !props.data?.series && Object.hasOwn(scatterFixtures, kind)) return <ReferenceScatter {...props} kind={kind as ScatterKind} />;
   return <ScatterSvg {...props} />;

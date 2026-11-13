@@ -4,6 +4,7 @@ import { Network, Sunburst, Tree, Treemap } from "./hierarchy";
 import { Funnel, Marimekko, Waffle } from "./quantity";
 import { Radial } from "./radial";
 import { Sankey } from "./sankey";
+import { ReferenceTreemap } from "./ReferenceTreemap";
 import { TooltipPreview } from "./tooltip-preview";
 import type { Props } from "./shared";
 
@@ -14,6 +15,7 @@ const charts = {
 };
 
 export default function PolarFlowChart(props: Props) {
+  if (!props.data && props.example.family === "treemap") return <ReferenceTreemap key={props.example.id} {...props} />;
   const Component = charts[props.example.family as keyof typeof charts];
   return Component ? <Component {...props} key={props.example.id} /> : <div role="status">Chart family unavailable</div>;
 }

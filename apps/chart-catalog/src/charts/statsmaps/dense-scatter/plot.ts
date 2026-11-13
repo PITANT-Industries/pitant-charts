@@ -4,7 +4,9 @@ import type { LineOptions } from "../../pitant/renderer/types";
 import type { Bounds, ScatterFrame } from "./data";
 import { day } from "./bounds";
 
-export const inset = { left: 48, top: 22, right: 24, bottom: 39 };
+const defaultInset = { left: 48, top: 22, right: 24, bottom: 39 };
+const demoInset = { left: 40, top: 40, right: 40, bottom: 40 };
+export const plotInsets = (example: boolean) => example ? demoInset : defaultInset;
 export const axisDate = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone: "UTC" });
 const hourLabel = new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC" });
 const dateTime = new Intl.DateTimeFormat("en", {
@@ -14,7 +16,7 @@ export const number = new Intl.NumberFormat("en", { maximumFractionDigits: 1 });
 export const exact = (value: number) => String(value);
 export const exactTime = (value: number) => `${dateTime.format(value)} UTC`;
 
-export function project([left, right, low, high]: Bounds, width: number, height: number) {
+export function project([left, right, low, high]: Bounds, width: number, height: number, inset = defaultInset) {
   const w = Math.max(1, width - inset.left - inset.right);
   const h = Math.max(1, height - inset.top - inset.bottom);
   return {
@@ -47,16 +49,17 @@ export function makeScatterPainter(canvas: HTMLCanvasElement) {
     return color;
   }
   function paint(frame: ScatterFrame | undefined, theme: ChartTheme, demo: boolean, compact: boolean) {
-    const w = canvas.clientWidth, h = canvas.clientHeight;
+    const { width: w, height: h } = canvas.getBoundingClientRect();
     if (w < 1 || h < 1) return;
     if (w !== renderer.width || h !== renderer.height || renderer.dpr !== window.devicePixelRatio) renderer.resize(w, h);
     renderer.beginFrame();
     try {
       if (!frame) return;
       const { view } = frame;
-      const plot = project(view, w, h);
+      const inset = plotInsets(demo && !compact);
+      const plot = project(view, w, h, inset);
       const line = new Float32Array(4);
-      const label = { color: rgba(theme.muted), fontSize: 11, font: "Inter, system-ui, sans-serif" } as const;
+      const label = { color: rgba(theme.muted), fontSize: demo ? 12 : 11, font: getComputedStyle(canvas).fontFamily } as const;
       context.setLineDash([4, 4]);
       for (let i = 0; i <= 5; i++) {
         const value = view[2] + (view[3] - view[2]) * i / 5;
@@ -68,11 +71,13 @@ export function makeScatterPainter(canvas: HTMLCanvasElement) {
       context.setLineDash([]);
       if (!compact) {
         const short = view[1] - view[0] < 2 * day;
-        for (let i = 0; i <= (w < 430 ? 3 : 4); i++) {
-          const parts = w < 430 ? 3 : 4;
-          const value = view[0] + (view[1] - view[0]) * i / parts;
+        const fullDemo = demo && view.every((edge, index) => edge === frame.full[index]);
+        const parts = w < 430 ? 3 : 4;
+        const ticks = fullDemo ? [1, 3, 5, 7].map(offset => view[0] + offset * day)
+          : Array.from({ length: parts + 1 }, (_, index) => view[0] + (view[1] - view[0]) * index / parts);
+        for (const [i, value] of ticks.entries()) {
           const text = demo ? (short ? hourLabel : axisDate).format(value) : number.format(value);
-          renderer.drawText(text, plot.x(value), inset.top + plot.h + 12, { ...label, align: i === parts ? "right" : i === 0 ? "left" : "center" });
+          renderer.drawText(text, plot.x(value), inset.top + plot.h + 12, { ...label, align: fullDemo ? "center" : i === parts ? "right" : i === 0 ? "left" : "center" });
         }
       }
       context.save();

@@ -7,6 +7,7 @@
 | [Simplify Charts](https://github.com/simplifyingai/ui.simplifyingai.com) | Density estimation, box plot statistics, and waterfall accumulation | [MIT](licenses/Simplify-Charts-MIT.md) |
 | [EvilCharts registry](https://evilcharts.com/r/echarts-tooltip.json) | Shared chart tooltip and color treatment | [MIT](licenses/EvilCharts-MIT.txt) |
 | [D3 Sankey](https://github.com/d3/d3-sankey) | Sankey node positioning and weighted links | [BSD-3-Clause](licenses/dependencies/d3-sankey-0.12.3-LICENSE) |
+| [D3 Hierarchy](https://github.com/d3/d3-hierarchy) | Squarified and binary treemap layouts | [ISC](licenses/dependencies/d3-hierarchy-3.1.2-LICENSE) |
 | [D3 Hexbin](https://github.com/d3/d3-hexbin) | Staggered hexagonal nearest-cell calculation | [BSD-3-Clause](licenses/d3-hexbin-BSD.txt) |
 | [Number Flow](https://github.com/barvian/number-flow) | Rolling pie and ring center values | [MIT](licenses/dependencies/number-flow-react-0.6.2-LICENSE.md) |
 | [PITANT Charts](https://github.com/PITANT-Industries/pitant-charts/tree/7f655b31227ab31b9aac625c758cde1b9bae7a2c/packages/charts/src) | Shared Canvas2D backend and dense line min/max sampling | [MIT](licenses/PITANT-Charts-MIT.txt) |

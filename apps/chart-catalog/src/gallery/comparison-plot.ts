@@ -14,6 +14,7 @@ const lineWithControls = new Set([
 
 export function comparisonPlot(example: ChartExample) {
   if (widePlots.has(example.id)) return 'wide'
+  if (example.id === 'scatter-jitter' || example.id === 'scatter-large-data') return 'intrinsic'
   if (example.family === 'composed') return 'cartesian-controls'
   if (['hexbin', 'density', 'waterfall', 'lollipop', 'dumbbell', 'histogram', 'ecdf', 'ridgeline', 'beeswarm', 'violin', 'box-plot'].includes(example.family)) return 'cartesian-controls'
   if (example.family === 'line' && (Object.hasOwn(detailedLines, example.id) || lineWithControls.has(example.id))) return 'cartesian-controls'
@@ -28,8 +29,7 @@ export function comparisonPlot(example: ChartExample) {
   if (example.family === 'radial') return 'radial'
   if (example.family === 'gauge') return 'gauge'
   if (example.family === 'funnel') return 'funnel'
-  if (example.id === 'treemap-default' || example.id === 'network-default') return 'landscape'
-  if (example.id === 'tree-radial') return 'radial-tree'
+  if (['sparkline', 'sunburst', 'treemap', 'tree', 'network', 'gantt'].includes(example.family)) return 'intrinsic'
   if (example.family === 'pie') return 'pie'
   if (example.family === 'ring') return example.id === 'ring-default' ? 'ring-default' : 'ring'
   return undefined

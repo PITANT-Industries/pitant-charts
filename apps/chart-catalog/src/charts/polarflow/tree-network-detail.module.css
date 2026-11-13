@@ -1,0 +1,27 @@
+.treeGraph, .networkGraph { flex: none; inline-size: 100%; }
+.treeGraph { aspect-ratio: 16 / 9; }
+.treeGraph[data-mode='top'] { aspect-ratio: 2; }
+.treeGraph[data-mode='radial'] { aspect-ratio: 1; max-inline-size: 448px; align-self: center; }
+.networkGraph { aspect-ratio: 8 / 5; }
+.networkGraph[data-legend='true'] { aspect-ratio: 4 / 3; }
+.treeGraph svg, .networkGraph svg { position: absolute; inset: 0; overflow: visible; }
+.detailFrame { block-size: auto; justify-content: start; }
+.networkAside { display: grid; min-inline-size: 0; gap: 16px; }
+.networkLegend { display: grid; align-content: center; gap: 4px; min-inline-size: 0; }
+.networkLegend p { margin: 0 0 4px; color: var(--muted-foreground); font-size: 12px; }
+.networkLegend > div { display: flex; flex-wrap: wrap; gap: 4px; }
+@container (min-width: 608px) {
+  .networkAside { grid-template-columns: minmax(0, 1fr) 160px; gap: 24px; }
+  .networkLegend > div { flex-direction: column; align-items: stretch; }
+}
+.positionedTip {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  max-inline-size: min(220px, 62%);
+}
+.positionedTip > div { min-inline-size: min(154px, 100%); max-inline-size: 100%; }
+.positionedTip [class*='readout-title'] { margin-block-end: 8px; }
+.positionedTip [class*='readout-row'] { min-block-size: 20px; }
+.treeGraph [data-mark='tree-node'], .networkGraph [data-mark='network-node'] { touch-action: none; }
+.networkGraph svg { touch-action: none; }

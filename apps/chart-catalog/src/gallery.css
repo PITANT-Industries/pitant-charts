@@ -174,7 +174,7 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
   [data-plot-layout='tooltip-controls'], [data-plot-layout='candlestick'], [data-plot-layout='radar'],
   [data-plot-layout='heatmap'], [data-plot-layout='live-line'], [data-plot-layout='sankey'],
   [data-plot-layout='radial'], [data-plot-layout='gauge'], [data-plot-layout='funnel'],
-  [data-plot-layout='ring'], [data-plot-layout='cartesian-controls']
+  [data-plot-layout='ring'], [data-plot-layout='cartesian-controls'], [data-plot-layout='intrinsic']
 ) > .chart-preview {
   block-size: auto;
 }
@@ -183,9 +183,6 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 .comparison-measured[data-plot-layout='live-line'] { --comparison-plot-height: 260px; }
 .comparison-measured[data-plot-id='live-line-right-axis'] { --comparison-plot-height: 240px; }
 .comparison-measured[data-plot-id='candlestick-minimal'] { --comparison-plot-height: 320px; }
-.comparison-measured[data-plot-layout='landscape'] { --comparison-plot-height: 62.5cqw; }
-.comparison-measured[data-plot-layout='radial-tree'] { --comparison-plot-height: min(100cqw, 448px); }
-.comparison-measured:is([data-plot-layout='landscape'], [data-plot-layout='radial-tree']) > .chart-preview { block-size: auto; }
 .comparison-measured:is([data-plot-layout='pie'], [data-plot-layout='ring-default']) > .chart-preview {
   margin-inline: auto;
   inline-size: min(100%, var(--comparison-circle-size));

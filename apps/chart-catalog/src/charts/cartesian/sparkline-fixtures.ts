@@ -1,5 +1,5 @@
 import type { ChartSeries } from "../../types";
-import { curve, dates, type CartesianData } from "./data";
+import { dates, type CartesianData } from "./data";
 
 const lastDay = Date.UTC(2026, 10, 8);
 const day = 86_400_000;
@@ -21,6 +21,15 @@ function storefrontSeries(): ChartSeries[] {
     { name: "Orders", values: galleryValues(3, 24, 120, 2) },
   ];
 }
+
+const dailyUsers = [
+  5610, 5922, 5936, 5738, 5482, 5286, 5254, 5449, 5759, 5888, 5620, 5093, 4729, 4809, 5195,
+  5489, 5443, 5155, 4876, 4773, 4874, 5152, 5517, 5770, 5715, 5397, 5156, 5316, 5830, 6299,
+  6377, 6097, 5777, 5674, 5800, 6029, 6236, 6308, 6136, 5734, 5345, 5286, 5608, 5986, 6020,
+  5654, 5214, 5057, 5247, 5581, 5845, 5951, 5886, 5687, 5503, 5570, 5980, 6500, 6730, 6511,
+  6107, 5939, 6159, 6548, 6792, 6765, 6541, 6240, 5982, 5905, 6094, 6413, 6537, 6254, 5739,
+  5423, 5560, 5982, 6300, 6303, 6087, 5874, 5803, 5921, 6231, 6642, 6917, 6845, 6498, 6242,
+];
 
 export function sparklineFixture(id: string): CartesianData {
   const storefront = storefrontSeries();
@@ -46,10 +55,10 @@ export function sparklineFixture(id: string): CartesianData {
     };
     case "sparkline-stat-card": return {
       categories: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-      series: [{ name: "Active sessions", values: [920, 1380, 1240, 1530, 1240, 1605, 1460] }],
-      rows: [1060, 1180, 1140, 1240, 1580, 1250, 1212].map(previous => ({ previous })),
+      series: [{ name: "Active sessions", values: [920, 1380, 1120, 1580, 1240, 1710, 1460] }],
+      rows: [850, 920, 1380, 1120, 1580, 1240, 1710].map(previous => ({ previous })),
     };
-    case "sparkline-range": return daily([{ name: "Daily active users", values: curve(90, 5, 5490, 511, 10) }], 90);
+    case "sparkline-range": return daily([{ name: "Daily active users", values: dailyUsers }], 90);
     case "sparkline-grid": return {
       categories: Array.from({ length: 20 }, (_, index) => `11:${String(40 + index).padStart(2, "0")}`),
       series: Array.from({ length: 48 }, (_, index) => ({ name: `Service ${index + 1}`, values: galleryValues(index, 20, 100, index % 7 - 3) })),
