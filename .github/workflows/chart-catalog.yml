@@ -56,7 +56,7 @@ jobs:
       - name: Render all examples in Edge
         shell: pwsh
         run: |
-          $site = Start-Process -FilePath python -ArgumentList '-m','http.server','4173','--bind','127.0.0.1','--directory','dist' -PassThru
+          $site = Start-Process -FilePath bun -ArgumentList 'run','--filter','@pitant/chart-catalog','preview','--port','4173','--strictPort','--outDir','../../dist' -PassThru
           try {
             $ready = $false
             for ($attempt = 0; $attempt -lt 30; $attempt++) {
