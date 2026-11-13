@@ -1,67 +1,72 @@
-import { useId, useState } from "react";
-import type { KeyboardEvent, PointerEvent, ReactNode } from "react";
+import { arc as d3Arc, areaRadial, curveCatmullRom, curveCatmullRomClosed, curveLinearClosed, lineRadial } from "d3-shape";
+import NumberFlow from "@number-flow/react";
+import { useId, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { Button } from "@ui-sdk/react/button";
+import { usePlotSize } from "../usePlotSize";
 import { useChartTheme } from "../theme";
-import { arc, nextChartFocus, number, numeric, point, sector, seriesData, short, tone, type Props } from "./shared";
-import { PiePattern } from "./PiePattern";
-import { cafeOrders, cloud, cloudTypes, devices, deviceTypes, forecastEnergy, hourEnd, hours, meteredEnergy, monthNames, normals, observedEnd, observedTemperatures } from "./radial-fixtures";
+import { arc, nextChartFocus, number, numeric, point, seriesData, short, tone, type Props } from "./shared";
+import { ClockAxis, dotStack, polarTurn, radialDots, radialPoint, radialRadius } from "./radial-geometry";
+import { cafeOrders, cloud, cloudTypes, devices, deviceTypes, forecastEnergy, hourEnd, hours, meteredEnergy, monthNames, observedEnd, observedTemperatures } from "./radial-fixtures";
 import { usAgeBands, usStateAgeData } from "./upstream/us-state-age-data";
 import styles from "./radial-detail.module.css";
 import shared from "./styles.module.css";
 
-const chartCenter = 160;
-const labels = [0, 6, 12, 18];
 const tenths = new Intl.NumberFormat("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const tenthsFormat = { minimumFractionDigits: 1, maximumFractionDigits: 1 };
 const total = (items: readonly (number | null)[]) => items.reduce<number>((sum, item) => sum + (item ?? 0), 0);
+const categoriesAtQuarters = [0, 6, 12, 18].map(hour => hours[hour].slice(0, 2));
 
 function useInspection(count: number, compact?: boolean) {
-  const [requested, setActive] = useState<number | null>(null);
+  const [hover, setHover] = useState<number | null>(null);
+  const [focus, setFocus] = useState<number | null>(null);
+  const requested = hover ?? focus;
   const active = requested !== null && requested < count ? requested : null;
   return {
     active,
-    select: (index: number | null) => { if (!compact) setActive(index); },
+    select: (index: number | null) => { if (!compact) setHover(index); },
     events: {
       tabIndex: compact || !count ? undefined : 0,
-      onBlur: () => setActive(null),
-      onPointerLeave: (event: PointerEvent<SVGSVGElement>) => { if (event.pointerType !== "touch") setActive(null); },
+      onBlur: () => setFocus(null),
+      onPointerLeave: (event: PointerEvent<SVGSVGElement>) => { if (event.pointerType !== "touch") setHover(null); },
       onKeyDown: (event: KeyboardEvent<SVGSVGElement>) => {
         if (event.key === "Escape" && active !== null) {
           event.preventDefault();
           event.stopPropagation();
-          setActive(null);
+          setHover(null);
+          setFocus(null);
           return;
         }
         const next = nextChartFocus(event.key, active, count);
         if (next !== undefined) {
           event.preventDefault();
-          setActive(next);
+          setHover(null);
+          setFocus(next);
         }
       },
     },
   };
 }
 
-function pointerAngle(event: PointerEvent<SVGSVGElement>, cx: number, cy: number, min: number, max: number) {
+function pointerAngle(event: PointerEvent<SVGSVGElement>, center: number, min: number, max: number) {
   const inverse = event.currentTarget.getScreenCTM()?.inverse();
   if (!inverse) return null;
-  const pointer = new DOMPoint(event.clientX, event.clientY).matrixTransform(inverse);
-  const dx = pointer.x - cx;
-  const dy = pointer.y - cy;
-  const distance = Math.hypot(dx, dy);
+  const p = new DOMPoint(event.clientX, event.clientY).matrixTransform(inverse);
+  const x = p.x - center, y = p.y - center;
+  const distance = Math.hypot(x, y);
   if (distance < min || distance > max) return null;
-  return (Math.atan2(dy, dx) * 180 / Math.PI + 450) % 360;
+  return (Math.atan2(x, -y) + polarTurn) % polarTurn;
 }
 
 function frameStatus(text: string, compact?: boolean) {
   return !compact && <span className={shared.screenReader} role="status">{text}</span>;
 }
 
-function Readout({ x = chartCenter, y = chartCenter, value, label, extra }: { x?: number; y?: number; value: string; label: string; extra?: string }) {
-  return <g textAnchor="middle" aria-hidden="true" pointerEvents="none">
-    <text className={styles.readout} data-radial-value="" x={x} y={y - 1} fontSize="24">{value}</text>
-    <text className={styles.caption} data-radial-caption="" x={x} y={y + 17} fontSize="10">{label}</text>
-    {extra && <text className={styles.caption} x={x} y={y + 32} fontSize="8.5">{extra}</text>}
-  </g>;
+function Center({ center, size, offset = 0, temperature, children }: {
+  center: number; size: number; offset?: number; temperature?: boolean; children: ReactNode;
+}) {
+  return <foreignObject x={center - size / 2} y={center - size / 2 - offset} width={size} height={size} pointerEvents="none" aria-hidden="true">
+    <div className={styles.center} data-temperature={temperature || undefined} style={{ "--radial-center-size": `${size}px` } as CSSProperties}>{children}</div>
+  </foreignObject>;
 }
 
 function CardReadout({ value, label }: { value: string; label: string }) {
@@ -84,6 +89,7 @@ function DotClock({ example, compact, data }: Props) {
   const theme = useChartTheme();
   const instance = useId();
   const activity = example.id === "radial-activity-card";
+  const { plot, width } = usePlotSize<SVGSVGElement>(activity ? 220 : 640, activity ? 220 : 640);
   const { categories, series } = seriesData(data, hours, activity ? cafeOrders : meteredEnergy);
   const count = categories.length;
   const selection = useInspection(count, compact);
@@ -91,146 +97,158 @@ function DotClock({ example, compact, data }: Props) {
   const future = !data && active !== null && active > hourEnd;
   const samples = categories.map((_, index) => total(series.map(row => row.values[index] ?? null)));
   const totals = series.map(row => total(row.values));
-  const max = Math.max(1, ...samples, ...(activity || data ? [] : forecastEnergy));
+  const maximum = data ? Math.max(1, ...samples) : activity ? 106 : 3.2;
   const activeTotal = active === null ? total(totals) : samples[active] ?? 0;
   const label = active === null ? activity ? "cups sold today" : "kWh so far" : activity
     ? `cups ${categories[active]}–${categories[(active + 1) % count]}${future ? " · later today" : ""}`
     : future ? `forecast ${categories[active]}` : `kWh at ${categories[active]}`;
-  const shown = activity ? future ? "–" : number.format(activeTotal) : tenths.format(future ? forecastEnergy[active!] : activeTotal);
-  const peakIndex = samples.indexOf(Math.max(...samples));
-  const center = chartCenter;
-  const angle = (index: number) => (index + .5) * 360 / Math.max(1, count) - 90;
-  const levels = activity ? 6 : 7;
+  const value = future && !activity ? forecastEnergy[active!] : activeTotal;
+  const shown = activity ? future ? "–" : number.format(value) : tenths.format(value);
+  const peak = samples.indexOf(Math.max(...samples));
+  const center = width / 2;
+  const inner = center * .408, outer = center * .83;
+  const spacing = (outer - inner) / 5;
+  const dots = radialDots(count, inner, outer, 5, true);
+  const colors = series.map((row, i) => tone(theme, data ? i : activity ? [0, 2][i] : [1, 0][i], row.color));
+  const slice = polarTurn / Math.max(1, count);
+  const labelText = data ? categoriesAtQuarters.map((_, i) => categories[Math.floor(i * count / 4)] ?? "") : categoriesAtQuarters;
   function move(event: PointerEvent<SVGSVGElement>) {
-    const phase = pointerAngle(event, center, center, 55, 135);
-    selection.select(phase === null || !count ? null : Math.min(count - 1, Math.floor(phase / 360 * count)));
+    const phase = pointerAngle(event, center, center * .35, center * .98);
+    selection.select(phase === null || !count ? null : Math.min(count - 1, Math.floor(phase / slice)));
   }
-  function dots(index: number, layer: number, value: number, offset: number, forecast = false) {
-    if (value <= 0) return null;
-    const count = Math.max(1, Math.round(value / max * levels));
-    return Array.from({ length: count }, (_, dot) => {
-      const [x, y] = point(center, center, 67 + (offset + dot) * 8, angle(index));
-      return <circle key={dot} data-dot-type={forecast ? "forecast" : "actual"} data-dot-series={layer} cx={x} cy={y} r="3.9"
-        fill={forecast ? `url(#${instance}-forecast)` : layer === 1 ? `url(#${instance}-grid)` : tone(theme, 0, series[0]?.color)} />;
-    });
+  function pattern(id: string, color: string, strokeWidth: number) {
+    return <pattern id={id} width=".25" height=".25" viewBox="0 0 6 6">
+      <path d="M-2 1L1 -2M-1 6L6 -1M4 7L7 4" fill="none" stroke={color} strokeWidth={strokeWidth} />
+    </pattern>;
   }
-  return <div className={`${styles.frame} ${styles.withKey} ${activity && !compact ? styles.withSide : ""}`}>
-    <svg className={styles.plot} viewBox="0 0 320 310" role="img" aria-label={example.title}
+  return <div className={styles.frame} data-radial-activity={activity || undefined} data-radial-compact={compact || undefined}>
+    <svg ref={plot} className={styles.plot} viewBox={`0 0 ${width} ${width}`} role="img" aria-roledescription="chart" aria-label={example.title}
       {...selection.events} onPointerMove={move} onPointerDown={move}>
       <defs>
-        <PiePattern id={`${instance}-grid`} color={tone(theme, 1, series[1]?.color)} type="hatch" />
-        {!activity && <PiePattern id={`${instance}-forecast`} color={theme.muted} type="hatch" />}
+        {pattern(`${instance}-grid`, colors[1] ?? theme.muted, 1.5)}
+        {!activity && pattern(`${instance}-forecast`, theme.muted, 1)}
       </defs>
-      <circle cx={center} cy={center} r="59" fill="none" stroke={theme.grid} />
-      {categories.map((_, index) => {
-        const [x1, y1] = point(center, center, 53, angle(index));
-        const [x2, y2] = point(center, center, 58, angle(index));
-        let offset = 0;
-        const projected = !activity && !data && index > hourEnd;
-        return <g key={index} data-hour={categories[index]} opacity={active === null || active === index ? projected ? .62 : 1 : .32}>
-          <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={theme.muted} />
-          {projected ? dots(index, 0, forecastEnergy[index], 0, true) : series.map((row, layer) => {
-            const value = Math.max(0, numeric(row.values[index]));
-            const marks = dots(index, layer, value, offset);
-            if (value > 0) offset += Math.max(1, Math.round(value / max * levels));
-            return <g key={layer}>{marks}</g>;
-          })}
-        </g>;
-      })}
-      {(data ? categories.filter((_, index) => index % Math.ceil(Math.max(1, count) / 4) === 0) : labels.map(index => hours[index].slice(0, 2))).map((tick, index, ticks) => {
-        const [x, y] = point(center, center, 125, index * 360 / ticks.length - 90);
-        return <text key={index} x={x} y={y + 3} fill={theme.muted} fontSize="10" textAnchor="middle">{tick}</text>;
-      })}
-      {(!activity || compact) && <Readout value={shown} label={label} />}
+      <g transform={`translate(${center} ${center})`} aria-hidden="true">
+        <ClockAxis radius={center} theme={theme} labels={labelText} />
+        {categories.map((time, index) => {
+          const projected = !activity && !data && index > hourEnd;
+          const readings = projected ? [forecastEnergy[index]] : series.map(row => numeric(row.values[index]));
+          const levels = dotStack(readings, maximum, inner, outer, 5);
+          return <g key={index} data-hour={time}>{dots[index].map(({ row, x, y }) => {
+            const layer = levels.findIndex(end => row < end);
+            if (layer < 0) return null;
+            const hatch = layer === 1 && !data;
+            return <circle key={row} data-dot-type={projected ? "forecast" : "actual"} data-dot-series={layer} cx={x} cy={y}
+              r={Math.max(0, spacing * .45 - (hatch ? .5 : 0))} stroke={hatch ? colors[layer] : undefined}
+              opacity={projected ? .6 : 1} fill={projected ? `url(#${instance}-forecast)` : hatch ? `url(#${instance}-grid)` : colors[layer]} />;
+          })}</g>;
+        })}
+        {(!activity || active !== null) && <g transform={`rotate(${((active ?? hourEnd) + .5) * 360 / Math.max(1, count)})`}>
+          <line x1="0" y1={-center * .38} x2="0" y2={-center * .895} stroke={theme.text} strokeOpacity=".45" strokeDasharray="3 3" />
+          <circle cx="0" cy={-center * .895} r={Math.max(2.5, width * .0055)} fill={theme.text} />
+        </g>}
+      </g>
+      {(!activity || compact) && <Center center={center} size={center * .69}>
+        <strong>{compact ? shown : <NumberFlow value={value} locales="en-US" format={tenthsFormat} respectMotionPreference />}</strong><span>{label}</span>
+      </Center>}
     </svg>
     {!compact && <div className={activity ? styles.cardMetrics : undefined}>
       {activity && <CardReadout value={shown} label={label} />}
       <ReadingKey>
-      {series.map((row, layer) => <span key={row.name}>{row.name} <strong>{activity
-        ? future ? "–" : number.format(active === null ? totals[layer] : numeric(row.values[active]))
-        : `${tenths.format(totals[layer])} kWh`}</strong></span>)}
-      {activity && peakIndex >= 0 && <span>Busiest hour <strong>{categories[peakIndex]} · {number.format(samples[peakIndex])} cups</strong></span>}
-    </ReadingKey></div>}
+        {series.map((row, layer) => <span key={layer}><i style={{ background: colors[layer] }} />{row.name} <strong>{activity
+          ? future ? "–" : number.format(active === null ? totals[layer] : numeric(row.values[active]))
+          : `${tenths.format(totals[layer])} kWh`}</strong></span>)}
+        {activity && peak >= 0 && <span><i style={{ background: theme.muted }} />Busiest hour <strong>{categories[peak]} · {number.format(samples[peak])} cups</strong></span>}
+      </ReadingKey>
+    </div>}
     {frameStatus(`${shown} ${label}`, compact)}
   </div>;
 }
 
 function Temperature({ example, compact, data }: Props) {
   const theme = useChartTheme();
-  const uid = useId();
   const seasonal = example.id === "radial-seasonal-card";
-  const rows = seasonal ? normals : observedTemperatures;
-  const initial = [{ name: seasonal ? "Daily average" : "2026", values: seasonal ? normals.map(row => row.avg) : observedTemperatures.map(row => row.temperature) }];
+  const { plot, width } = usePlotSize<SVGSVGElement>(seasonal ? 240 : 640, seasonal ? 240 : 640);
+  const rows = observedTemperatures;
+  const initial = [{ name: seasonal ? "Daily average" : "2026", values: rows.map(row => seasonal ? row.avg : row.temperature) }];
   const { categories, series } = seriesData(data, rows.map(row => row.label), initial);
   const count = categories.length;
   const selection = useInspection(count, compact);
-  const latest = data ? Math.max(0, count - 1) : rows.findIndex(row => row.date === observedEnd);
+  const latest = data ? count - 1 : rows.findIndex(row => row.date === observedEnd);
   const index = selection.active ?? (seasonal ? null : latest);
   const normal = !data && index !== null ? rows[index] : undefined;
   const activeValue = index !== null && index >= 0 ? series[0]?.values[index] : undefined;
   const average = data ? total(series[0]?.values ?? []) / Math.max(1, series[0]?.values.filter(value => value !== null).length ?? 0)
     : total(rows.map(row => row.avg)) / rows.length;
-  const angle = (position: number) => -90 + (position + .5) * 360 / Math.max(1, count);
-  const scale = (value: number) => data
-    ? 52 + 70 * Math.max(0, value) / Math.max(1, ...series.flatMap(row => row.values).map(value => numeric(value)))
-    : Math.sqrt(49 ** 2 + (Math.max(20, value) - 20) / 90 * (125 ** 2 - 49 ** 2));
-  const samplePoint = (value: number, at: number) => point(chartCenter, chartCenter, scale(value), angle(at));
-  function toPath(values: readonly (number | null)[], closed = false) {
-    let previous = false;
-    const path = values.map((value, at) => {
-      if (value === null || !Number.isFinite(value)) { previous = false; return ""; }
-      const command = previous ? "L" : "M";
-      previous = true;
-      return `${command}${samplePoint(value, at).join(" ")}`;
-    }).join(" ");
-    return closed && path ? `${path}Z` : path;
-  }
-  function band(low: "min" | "minmin", high: "max" | "maxmax") {
-    const a = rows.map((row, at) => samplePoint(row[high], at).join(" "));
-    const b = rows.map((row, at) => samplePoint(row[low], at).join(" ")).reverse();
-    return `M${a.join(" L")} L${a[0]} L${b[0]} L${b.join(" L")} Z`;
-  }
+  const center = width / 2;
+  const inner = center * .408, outer = center * .83;
+  const slice = polarTurn / Math.max(1, count);
+  const angle = (position: number) => (position + .5) * slice;
+  const domain = series.flatMap(row => row.values.filter(value => value != null));
+  const scale = (value: number) => radialRadius(value, data ? Math.min(0, ...domain) : 32, data ? Math.max(1, ...domain) : 105, inner, outer);
+  const indices = categories.map((_, i) => i);
+  const monthBoundaries = !data ? [...monthNames.map((_, month) => rows.findIndex(row => new Date(row.date).getUTCMonth() === month)), count]
+    : Array.from({ length: 13 }, (_, i) => Math.floor(i * count / 12));
+  const band = (low: "min" | "minmin", high: "max" | "maxmax") => areaRadial<number>().angle(angle)
+    .innerRadius(i => scale(rows[i][low])).outerRadius(i => scale(rows[i][high])).curve(curveLinearClosed)(indices) ?? undefined;
   function move(event: PointerEvent<SVGSVGElement>) {
-    const phase = pointerAngle(event, chartCenter, chartCenter, 45, 140);
-    selection.select(phase === null || !count ? null : Math.min(count - 1, Math.floor(phase / 360 * count)));
+    const phase = pointerAngle(event, center, center * .32, center * .98);
+    selection.select(phase === null || !count ? null : Math.min(count - 1, Math.floor(phase / slice)));
   }
   const forecast = index !== null && activeValue == null && normal;
-  const difference = normal && activeValue != null ? activeValue - normal.avg : 0;
-  const shown = index === null ? `${tenths.format(average)}°F` : `${tenths.format(activeValue ?? normal?.avg ?? 0)}°F`;
+  const difference = normal && activeValue != null ? Math.round((activeValue - normal.avg) * 10) / 10 : 0;
+  const value = index === null ? average : activeValue ?? normal?.avg ?? 0;
+  const shown = `${tenths.format(value)}°F`;
   const readout = index === null ? "annual average" : seasonal ? `average on ${categories[index]}`
-    : `${selection.active === null ? "Today · " : forecast ? "Normal · " : ""}${categories[index] ?? "No data"}`;
+    : `${!data && index === latest ? "Today · " : ""}${categories[index] ?? "No data"}`;
+  const delta = forecast ? "normal average" : difference === 0 ? "at normal" : `${difference > 0 ? "+" : "−"}${tenths.format(Math.abs(difference))}° vs normal`;
   const normalRange = normal ? `${Math.round(normal.min)}–${Math.round(normal.max)}°F`
     : `${Math.round(Math.min(...rows.map(row => row.min)))}–${Math.round(Math.max(...rows.map(row => row.max)))}°F`;
   const recordRange = normal ? `${normal.minmin}–${normal.maxmax}°F`
     : `${Math.min(...rows.map(row => row.minmin))}–${Math.max(...rows.map(row => row.maxmax))}°F`;
-  return <div className={`${styles.frame} ${styles.withKey} ${seasonal && !compact ? styles.withSide : ""}`}>
-    <svg className={styles.plot} viewBox="0 0 320 320" role="img" aria-label={example.title}
+  const [markerX, markerY] = radialPoint(scale(value), angle(index ?? 0));
+  return <div className={styles.frame} data-radial-seasonal={seasonal || undefined} data-radial-compact={compact || undefined}>
+    <svg ref={plot} className={styles.plot} viewBox={`0 0 ${width} ${width}`} role="img" aria-roledescription="chart" aria-label={example.title}
       {...selection.events} onPointerMove={move} onPointerDown={move}>
-      <defs>{[.23, .37].map((opacity, i) => <radialGradient key={i} id={`${uid}-band-${i}`}>
-        <stop offset="0%" stopColor={tone(theme, i)} stopOpacity={opacity * .6} />
-        <stop offset="100%" stopColor={tone(theme, i)} stopOpacity={opacity} />
-      </radialGradient>)}</defs>
-      {!seasonal && [40, 60, 80, 100].map(value => <g key={value} data-temperature-tick="">
-        <circle cx={chartCenter} cy={chartCenter} r={scale(value)} fill="none" stroke={theme.grid} />
-        {!data && <text x={chartCenter + 3} y={chartCenter - scale(value) - 2} fontSize="7" fill={theme.muted}>{value}°F</text>}
-      </g>)}
-      {!data && <><path data-temperature-band="record" d={band("minmin", "maxmax")} fill={`url(#${uid}-band-0)`} />
-        <path data-temperature-band="normal" d={band("min", "max")} fill={`url(#${uid}-band-1)`} /></>}
-      {series.map((row, layer) => <path data-temperature-series="" key={layer} d={toPath(row.values, seasonal || Boolean(data))} fill="none" stroke={tone(theme, layer, row.color)} strokeWidth="1.35" />)}
-      {(!data ? monthNames : categories.filter((_, at) => at % Math.ceil(Math.max(1, count) / 12) === 0)).map((month, at, list) => {
-        const monthAt = !data ? rows.findIndex(row => new Date(row.date).getUTCMonth() === at) : Math.floor(at * count / list.length);
-        const [x, y] = point(chartCenter, chartCenter, 137, angle(monthAt));
-        return <text key={at} x={x} y={y + 3} textAnchor="middle" fontSize="8" fill={theme.muted}>{month}</text>;
-      })}
-      {index !== null && index >= 0 && <g pointerEvents="none">
-        {selection.active !== null && <line x1={chartCenter} y1={chartCenter} x2={point(chartCenter, chartCenter, 130, angle(index))[0]} y2={point(chartCenter, chartCenter, 130, angle(index))[1]} stroke={theme.grid} strokeDasharray="2 3" />}
-        {(activeValue != null || normal) && <circle data-temperature-marker="" cx={samplePoint(activeValue ?? normal!.avg, index)[0]} cy={samplePoint(activeValue ?? normal!.avg, index)[1]} r="3" fill={tone(theme, 0)} stroke={theme.surface} />}
-      </g>}
-      {(!seasonal || compact) && <Readout value={shown} label={readout} extra={!seasonal && normal && !forecast ? `${difference >= 0 ? "+" : "−"}${tenths.format(Math.abs(difference))}° vs normal` : undefined} />}
+      <g transform={`translate(${center} ${center})`} aria-hidden="true">
+        {monthBoundaries.map((at, i) => {
+          const [x1, y1] = radialPoint(inner, at * slice);
+          const [x2, y2] = radialPoint(outer, at * slice);
+          return <line key={i} data-temperature-spoke="" x1={x1} y1={y1} x2={x2} y2={y2} stroke={theme.text} strokeOpacity=".12" strokeLinecap="round" />;
+        })}
+        {!seasonal && !data && [40, 60, 80, 100].map(tick => <g key={tick} data-temperature-tick="">
+          <circle r={scale(tick)} fill="none" stroke={theme.text} strokeOpacity=".12" />
+          <text className={styles.halo} y={-scale(tick)} fontSize={Math.max(8.5, center * .03825)} dominantBaseline="middle" textAnchor="middle" fill={theme.muted}>{tick}°F</text>
+        </g>)}
+        {!data && <><path data-temperature-band="record" d={band("minmin", "maxmax")} fill={theme.colors[0]} fillOpacity=".14" />
+          <path data-temperature-band="normal" d={band("min", "max")} fill={theme.colors[0]} fillOpacity={seasonal ? .30 : .28} /></>}
+        {series.map((row, layer) => <path data-temperature-series="" key={layer}
+          d={lineRadial<number>().angle(angle).radius(i => scale(numeric(row.values[i]))).defined(i => row.values[i] != null)
+            .curve(row.values.length === count && row.values.every(value => value !== null) ? curveCatmullRomClosed : curveCatmullRom)(indices) ?? undefined}
+          fill="none" stroke={tone(theme, layer, row.color)} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />)}
+        {monthBoundaries.slice(0, -1).map((at, i) => {
+          if (data && (at >= count || at === monthBoundaries[i + 1])) return null;
+          const [x, y] = radialPoint(center * .955, (at + monthBoundaries[i + 1]) / 2 * slice);
+          return <text key={i} data-temperature-month="" x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize={Math.max(10, center * .045)} fill={theme.muted}>{data ? categories[at] : monthNames[i]}</text>;
+        })}
+        {index !== null && index >= 0 && <g pointerEvents="none">
+          {selection.active !== null && <line x1={radialPoint(inner, angle(index))[0]} y1={radialPoint(inner, angle(index))[1]} x2={radialPoint(center * .895, angle(index))[0]}
+            y2={radialPoint(center * .895, angle(index))[1]} stroke={theme.muted} strokeOpacity=".5" />}
+          {(activeValue != null || normal) && <><circle cx={markerX} cy={markerY} r={width * .016} fill={theme.colors[0]} opacity=".16" />
+            <circle data-temperature-marker="" cx={markerX} cy={markerY} r={Math.max(3.5, width * .008)} fill={theme.colors[0]} stroke={theme.surface} strokeWidth={Math.max(1, width * .004)} /></>}
+        </g>}
+      </g>
+      {(!seasonal || compact) && <Center center={center} size={center * .69} temperature>
+        <span>{readout}</span><strong>{compact ? shown : <NumberFlow value={value} locales="en-US" format={tenthsFormat} suffix="°F" respectMotionPreference />}</strong>
+        {!data && <><span>{delta}</span><span>normal {normalRange.replace("°F", "°")}</span><span>record {recordRange.replace("°F", "°")}</span></>}
+      </Center>}
     </svg>
-    {!compact && <div className={seasonal ? styles.cardMetrics : undefined}>
-      {seasonal && <CardReadout value={shown} label={readout} />}
-      {!data && <ReadingKey><span>{index === null ? "Normal range" : "Normal low–high"} <strong>{normalRange}</strong></span><span>Record low–high <strong>{recordRange}</strong></span></ReadingKey>}
+    {!compact && seasonal && <div className={styles.cardMetrics}>
+      <CardReadout value={shown} label={readout} />
+      {!data && <ReadingKey>
+        <span><i style={{ background: theme.colors[0], opacity: .45 }} />{index === null ? "Normal range" : "Normal low–high"} <strong>{normalRange}</strong></span>
+        <span><i style={{ background: theme.colors[0], opacity: .24 }} />Record low–high <strong>{recordRange}</strong></span>
+      </ReadingKey>}
     </div>}
     {frameStatus(`${shown}, ${readout}${!data ? `, normal ${normalRange}, record ${recordRange}` : ""}`, compact)}
   </div>;
@@ -238,6 +256,7 @@ function Temperature({ example, compact, data }: Props) {
 
 function Population({ example, compact, data }: Props) {
   const theme = useChartTheme();
+  const { plot, width } = usePlotSize<SVGSVGElement>(640, 640);
   const { categories, series } = seriesData(data, usStateAgeData.map(row => row.state),
     usAgeBands.map(({ dataKey, label }) => ({ name: label, values: usStateAgeData.map(row => row[dataKey]) })));
   const selection = useInspection(categories.length, compact);
@@ -245,38 +264,48 @@ function Population({ example, compact, data }: Props) {
   const samples = categories.map((_, at) => series.map(row => Math.max(0, numeric(row.values[at]))));
   const totals = samples.map(total);
   const maximum = data ? Math.max(1, ...totals) : 40_000_000;
-  const scale = (value: number) => Math.sqrt(57 ** 2 + value / maximum * (126 ** 2 - 57 ** 2));
-  const slice = 360 / Math.max(1, categories.length);
+  const center = width / 2;
+  const inner = center * .408, outer = center * .83;
+  const scale = (value: number) => radialRadius(value, 0, maximum, inner, outer);
+  const slice = polarTurn / Math.max(1, categories.length);
   const region = index === null ? "US population" : !data ? usStateAgeData[index]?.name ?? categories[index] : categories[index];
   const selected = index === null ? [] : samples[index];
   const biggest = selected.indexOf(Math.max(...selected));
   const caption = index === null ? data ? `${categories.length} regions` : "50 states + DC"
     : selected.length && totals[index] > 0 ? `Largest: ${series[biggest].name} · ${Math.round(selected[biggest] / totals[index] * 100)}%` : "No values";
+  const value = index === null ? total(totals) : totals[index];
+  const wedge = d3Arc().padRadius(inner);
   function move(event: PointerEvent<SVGSVGElement>) {
-    const phase = pointerAngle(event, chartCenter, chartCenter, 54, 143);
+    const phase = pointerAngle(event, center, inner - 2, center * .96);
     selection.select(phase === null || !categories.length ? null : Math.min(categories.length - 1, Math.floor(phase / slice)));
   }
-  return <div className={`${styles.frame} ${styles.withKey}`}>
-    <svg className={styles.plot} viewBox="0 0 320 320" role="img" aria-label={example.title} {...selection.events} onPointerMove={move} onPointerDown={move}>
-      {[.25, .5, .75, 1].map(tick => <g key={tick}><circle cx={chartCenter} cy={chartCenter} r={scale(tick * maximum)} fill="none" stroke={theme.grid} />
-        <text x={chartCenter + 3} y={chartCenter - scale(tick * maximum)} fontSize="7" fill={theme.muted}>{short.format(tick * maximum)}</text></g>)}
-      {samples.map((values, at) => {
-        let lower = 0;
-        const start = at * slice - 90;
-        const [x, y] = point(chartCenter, chartCenter, 138, start + slice / 2);
-        return <g key={at} data-state={categories[at]} opacity={index === null || index === at ? 1 : .46}>
-          {values.map((value, layer) => {
-            const inner = scale(lower);
-            lower += value;
-            return value > 0 && <path key={layer} data-age-band={series[layer].name} fill={tone(theme, layer, series[layer].color)}
-              d={sector(chartCenter, chartCenter, scale(lower), inner, start + slice * .08, start + slice * .92)} />;
-          })}
-          <text x={x} y={y + 2} textAnchor="middle" fontSize="7" fill={theme.muted}>{categories[at]}</text>
-        </g>;
-      })}
-      <Readout value={index === null ? short.format(total(totals)) : short.format(totals[index])} label={region} extra={caption} />
+  return <div className={styles.frame} data-radial-compact={compact || undefined}>
+    <svg ref={plot} className={styles.plot} viewBox={`0 0 ${width} ${width}`} role="img" aria-roledescription="chart" aria-label={example.title}
+      {...selection.events} onPointerMove={move} onPointerDown={move}>
+      <g transform={`translate(${center} ${center})`} aria-hidden="true">
+        {[.25, .5, .75, 1].map(tick => <g key={tick} data-population-tick=""><circle r={scale(tick * maximum)} fill="none" stroke={theme.text} strokeOpacity=".12" />
+          <text className={styles.halo} x="0" y={-scale(tick * maximum)} fontSize={Math.max(8.5, center * .03825)} textAnchor="middle" dominantBaseline="middle" fill={theme.muted}>{short.format(tick * maximum)}</text>
+        </g>)}
+        {samples.map((values, at) => {
+          let lower = 0;
+          const middle = (at + .5) * slice;
+          const [x, y] = radialPoint(outer + center * .03, middle);
+          const left = middle > Math.PI;
+          return <g key={at} data-state={categories[at]} opacity={index === null || index === at ? 1 : .3}>
+            {values.map((value, layer) => {
+              const innerRadius = scale(lower);
+              lower += value;
+              return value > 0 && <path key={layer} data-age-band={series[layer].name} fill={tone(theme, layer, series[layer].color)}
+                d={wedge({ innerRadius, outerRadius: scale(lower), startAngle: at * slice, endAngle: (at + 1) * slice, padAngle: slice * .18 }) ?? undefined} />;
+            })}
+            <text data-population-state="" x={x} y={y} textAnchor={left ? "end" : "start"} dominantBaseline="middle"
+              transform={`rotate(${middle * 180 / Math.PI - 90 + (left ? 180 : 0)} ${x} ${y})`} fontSize={Math.max(8, center * .036)} fill={theme.muted}>{categories[at]}</text>
+          </g>;
+        })}
+      </g>
+      <Center center={center} size={center * .69}><strong>{short.format(value)}</strong><span>{region}</span><span>{caption}</span></Center>
     </svg>
-    {!compact && <ReadingKey>{series.map((row, layer) => <span key={row.name}><i style={{ background: tone(theme, layer, row.color) }} /> {row.name}</span>)}</ReadingKey>}
+    {!compact && <ReadingKey>{series.map((row, layer) => <span key={layer}><i style={{ background: tone(theme, layer, row.color) }} /> {row.name}</span>)}</ReadingKey>}
     {frameStatus(index === null ? `${region}, ${caption}` : `${region}, ${caption}. ${series.map((row, layer) => `${row.name}: ${number.format(selected[layer])}`).join(", ")}`, compact)}
   </div>;
 }
@@ -284,6 +313,7 @@ function Population({ example, compact, data }: Props) {
 function Storage({ example, compact, data }: Props) {
   const theme = useChartTheme();
   const cloudCard = example.id === "radial-storage-card";
+  const { plot, width } = usePlotSize<SVGSVGElement>(640, 358.4);
   const fixture = cloudCard ? cloud : devices;
   const types = cloudCard ? cloudTypes : deviceTypes;
   const { categories, series } = seriesData(data, fixture.map(row => row.name), types.map((name, layer) => ({ name, values: fixture.map(row => row.values[layer]) })));
@@ -295,49 +325,67 @@ function Storage({ example, compact, data }: Props) {
   const used = index === null ? total(amounts.map(total)) : total(amounts[index]);
   const capacity = index === null ? total(capacities) : capacities[index];
   const actual = capacity > 0 ? used / capacity : 0;
-  const width = cloudCard ? 27 : Math.min(18, 62 / Math.max(1, categories.length));
-  const cx = chartCenter, cy = 154, start = 180, end = 360;
-  const radiusAt = (at: number) => 74 + at * (width + 5);
+  const radius = width / 2;
+  const inner = radius * (cloudCard ? .66 : .408);
+  const outer = radius * (cloudCard ? .90 : .83);
+  const step = (outer - inner) / Math.max(1, categories.length);
+  const halfGap = cloudCard ? 0 : step * .09;
+  const start = -Math.PI / 2, end = Math.PI / 2;
+  const rounded = d3Arc().cornerRadius(cloudCard ? 4 : 3);
   const caption = cloudCard && !data ? `of 2.0 TB used · ${number.format(Math.max(0, capacity - used))} GB free`
     : `${number.format(used)} of ${number.format(capacity)} GB`;
   function move(event: PointerEvent<SVGSVGElement>) {
     const inverse = event.currentTarget.getScreenCTM()?.inverse();
     if (!inverse) return;
-    const pointer = new DOMPoint(event.clientX, event.clientY).matrixTransform(inverse);
-    const radius = Math.hypot(pointer.x - cx, pointer.y - cy);
-    const selected = categories.findIndex((_, at) => Math.abs(radiusAt(at) - radius) <= width / 2 + 1);
-    selection.select(pointer.y <= cy && selected !== -1 ? selected : null);
+    const p = new DOMPoint(event.clientX, event.clientY).matrixTransform(inverse);
+    const distance = Math.hypot(p.x - radius, p.y - radius);
+    const active = Math.floor((distance - inner) / step);
+    selection.select(p.y <= radius && active >= 0 && active < categories.length ? active : null);
   }
-  return <div className={`${styles.frame} ${styles.withKey}`}>
-    <svg className={styles.plot} viewBox="0 0 320 195" role="img" aria-label={example.title} {...selection.events} onPointerMove={move} onPointerDown={move}>
-      {!cloudCard && [0, 25, 50, 75, 100].map(tick => {
-        const angle = start + tick * 1.8;
-        const [x1, y1] = point(cx, cy, 59, angle);
-        const [x2, y2] = point(cx, cy, 129, angle);
-        const [x, y] = point(cx, cy, 141, angle);
-        return <g key={tick} data-storage-tick=""><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={theme.grid} />
-          <text x={x} y={y - 2} textAnchor="middle" fontSize="8" fill={theme.muted}>{tick}%</text></g>;
-      })}
-      {amounts.map((values, at) => {
-        const radius = radiusAt(at);
-        let angle = start;
-        return <g key={at} data-device={categories[at]} opacity={index === null || index === at ? 1 : .38}>
-          <path data-device-track="" d={arc(cx, cy, radius, start, end)} fill="none" stroke={theme.grid} strokeWidth={width} />
-          {values.map((amount, layer) => {
-            const from = angle;
-            angle += 180 * amount / Math.max(1, capacities[at]);
-            const gap = Math.min(.7, (angle - from) / 4);
-            return amount > 0 && <path key={layer} data-storage-type={series[layer].name}
-              d={arc(cx, cy, radius, from + gap, angle - gap)} fill="none" stroke={tone(theme, layer, series[layer].color)}
-              strokeWidth={width} opacity={highlight === null || highlight === layer ? 1 : .3} />;
+  return <div className={styles.frame} data-radial-compact={compact || undefined}>
+    <svg ref={plot} className={styles.plot} viewBox={`0 0 ${width} ${width * .56}`} role="img" aria-roledescription="chart" aria-label={example.title}
+      {...selection.events} onPointerMove={move} onPointerDown={move}>
+      <g transform={`translate(${radius} ${radius})`} aria-hidden="true">
+        {!cloudCard && <>
+          <path data-storage-outer="" d={arc(0, 0, outer, 180, 360)} fill="none" stroke={theme.text} strokeOpacity=".12" />
+          {[0, 25, 50, 75, 100].map(tick => {
+            const angle = 180 + tick * 1.8;
+            const [x1, y1] = point(0, 0, inner, angle);
+            const [x2, y2] = point(0, 0, outer, angle);
+            const [x, y] = point(0, 0, radius * .955, angle);
+            return <g key={tick} data-storage-tick=""><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={theme.text} strokeOpacity=".12" strokeLinecap="round" />
+              <text x={x} y={y} dominantBaseline="middle" textAnchor="middle" fontSize={Math.max(10, radius * .045)} fill={theme.muted}>{tick}%</text>
+            </g>;
           })}
-          {!cloudCard && <text x={cx - radius} y={cy + 6} transform={`rotate(80 ${cx - radius} ${cy + 6})`} textAnchor="start" fill={theme.muted} fontSize="7.5">{categories[at]}</text>}
-        </g>;
-      })}
-      <Readout x={cx} y={cy - 33} value={cloudCard && !data ? `${tenths.format(used / 1000)} TB` : `${Math.round(actual * 100)}%`}
-        label={cloudCard ? caption : index === null ? "used across devices" : `${categories[index]} used`} extra={cloudCard ? undefined : caption} />
+        </>}
+        {amounts.map((values, at) => {
+          const innerRadius = inner + at * step + halfGap;
+          const outerRadius = inner + (at + 1) * step - halfGap;
+          const last = values.reduce((lastPositive, value, layer) => value > 0 ? layer : lastPositive, -1);
+          const first = values.findIndex(value => value > 0);
+          const pad = 3 / Math.hypot(innerRadius, outerRadius);
+          const x = -(innerRadius + outerRadius) / 2, y = Math.max(6, radius * .027);
+          let angle = start;
+          return <g key={at} data-device={categories[at]} opacity={index === null || index === at ? 1 : .38}>
+            <path data-device-track="" d={rounded({ innerRadius, outerRadius, startAngle: start, endAngle: end }) ?? undefined} fill={theme.text} fillOpacity=".06" />
+            {values.map((amount, layer) => {
+              const from = angle;
+              angle += Math.PI * amount / Math.max(1, capacities[at]);
+              return amount > 0 && <path key={layer} data-storage-type={series[layer].name}
+                d={rounded({ innerRadius, outerRadius, startAngle: from - (layer === first ? pad / 2 : 0), endAngle: angle + (layer === last ? pad / 2 : 0), padAngle: pad }) ?? undefined}
+                fill={tone(theme, layer, series[layer].color)} opacity={highlight === null || highlight === layer ? 1 : .3} />;
+            })}
+            {!cloudCard && <text data-storage-label="" x={x} y={y} transform={`rotate(-90 ${x} ${y})`} textAnchor="end" dominantBaseline="middle" fill={theme.muted} fontSize={Math.max(8, radius * .036)}>{categories[at]}</text>}
+          </g>;
+        })}
+      </g>
+      <Center center={radius} size={radius * (cloudCard ? 1.19 : .69)} offset={radius * (cloudCard ? .262 : .207)}>
+        <strong>{cloudCard && !data ? `${tenths.format(used / 1024)} TB` : `${Math.round(actual * 100)}%`}</strong>
+        <span>{cloudCard ? caption : index === null ? "used across devices" : `${categories[index]} used`}</span>
+        {!cloudCard && <span>{caption}</span>}
+      </Center>
     </svg>
-    {!compact && <ReadingKey>{series.map((row, layer) => <Button key={row.name} data-active={highlight === layer}
+    {!compact && <ReadingKey>{series.map((row, layer) => <Button key={layer} data-active={highlight === layer}
       onPointerEnter={() => setHighlight(layer)} onPointerLeave={() => setHighlight(null)}
       onFocus={() => setHighlight(layer)} onBlur={() => setHighlight(null)} onClick={() => setHighlight(highlight === layer ? null : layer)}>
       <i style={{ background: tone(theme, layer, row.color) }} />{row.name}{cloudCard && <strong>{number.format(total(row.values))} GB</strong>}
