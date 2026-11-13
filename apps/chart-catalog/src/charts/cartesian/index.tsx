@@ -20,11 +20,10 @@ import { isLineTable, LineTableDetail } from "./LineTableDetail";
 import { LineSyncExportDetail } from "./LineSyncExportDetail";
 import { LineZoomDetail } from "./LineZoomDetail";
 import { isLineBrushVariant, LineBrushDetail } from "./LineBrushDetail";
-import { LineLargeDetail } from "./LineLargeDetail";
 import { DeadlineFills, downloadLineChart, LineLegend, LineLoadToggle, LineSkeleton } from "./LineExtras";
 import { buildGantt, buildStream } from "./comparisons";
 import { buildDiverging, buildDumbbell, buildLollipop, buildRanking, buildWaterfall, divergingColor } from "./comparison-options";
-import { initialLargeCount, minuteLatency, resolveData, type CartesianData } from "./data";
+import { resolveData, type CartesianData } from "./data";
 import { buildLine, categoryAxis, colorFor, initialControls, up, down, valueFormat, type ChartTheme, type Controls } from "./options";
 import { buildArea } from "./area-options";
 import { clampBrush, RangeBrush, type BrushRange } from "./Brush";
@@ -35,7 +34,6 @@ const basics = new Set(["area-default", "bar-default", "line-default"]);
 const connected = new Set(["line-synced", "area-small-multiples"]);
 const brushExamples = new Set(["line-segment", "area-selection"]);
 const overviewExamples = new Set(["line-brush", "line-linked-brush", "line-date-highlights-brush"]);
-const countChoices = [10000, 50000, 100000].map(count => ({ value: String(count), label: `${count / 1000}k points` }));
 const fillChoices = ["Solid", "Gradient", "Pattern"].map(value => ({ value, label: value }));
 const trendChoices = ["Dashed", "Solid", "Gradient"].map(value => ({ value, label: value }));
 const loadChoices = ["Pulse", "Sweep", "Loaded"].map(value => ({ value, label: value }));
@@ -68,11 +66,11 @@ function getOption(example: ChartPreviewProps["example"], data: CartesianData, t
 export default function Cartesian(props: ChartPreviewProps) {
   const theme = useChartTheme();
   const { example, compact = false } = props;
-  const denseDemo = !props.data && example.id === "line-large-data";
-  const source = useMemo(() => denseDemo ? null : resolveData(example, props.data), [denseDemo, example, props.data]);
-  if (source === null) return <LineLargeDetail key={example.id} label={example.title} compact={compact} theme={theme} />;
+  const streaming = example.family === "live-line" && Boolean(props.liveStream);
+  const source = useMemo(() => streaming && !props.data ? { categories: [], series: [] }
+    : resolveData(example, props.data), [streaming, example, props.data]);
   if (example.family === "candlestick") return <Candles key={example.id} example={example} data={source} compact={compact} theme={theme} />;
-  if (example.family === "live-line") return <LiveLine key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
+  if (example.family === "live-line") return <LiveLine key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data && !props.liveStream} stream={props.liveStream} />;
   if (example.family === "composed") return <ComposedDetail key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
   if (example.id === "bar-stacked" || example.id === "line-threshold") return <AdvancedCartesian key={example.id} variant={example.id} label={example.title} data={source} compact={compact} theme={theme} />;
   if (example.family === "bar" && example.id !== "bar-default") return <ReferenceBar key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
@@ -113,9 +111,7 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
   const brushes = brushExamples.has(id);
   const pointOnly = id === "line-crosshair-point";
   const emphasizePoint = id === "line-points" || id === "line-glow";
-  const powerUser = id === "line-large-data";
   const zoom = id === "line-zoom";
-  const renderer = powerUser ? "canvas" : "svg";
   const lineLegend = id === "line-legend" || id === "line-export";
   const comparisonLegend = id === "dumbbell-legend" || id === "bump-ascending" || id === "diverging-legend";
   const sideLegend = id === "line-legend" || comparisonLegend;
@@ -169,9 +165,8 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
       };
     }
     if (overview && !compact) return sliceRange(source, [brushStart, brushEnd]);
-    if (powerUser && !data) return controls.count === initialLargeCount ? source : minuteLatency(controls.count);
     return source;
-  }, [brushEnd, brushStart, compact, controls.count, controls.range, data, overview, powerUser, range, source]);
+  }, [brushEnd, brushStart, compact, controls.range, overview, range, source]);
 
   const view = useMemo(() => overview ? { ...controls, brushOffset: compact ? 0 : brushStart, brushLength: source.categories.length, chartWidth }
     : controls, [overview, controls, compact, brushStart, source.categories.length, chartWidth]);
@@ -327,7 +322,7 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
   const liveLineLoading = id === "line-loading" && isLoading;
   const skeleton = isLoading && startLoading && family !== "gantt" && !areaLoading && !comparisonLoading && id !== "line-loading";
   const showControls = !compact && (range || brushes || startLoading && id !== "line-loading-placeholder" || tableToggle || id === "line-band-fill" || id === "line-trend"
-    || id === "line-export" || powerUser || legends.length > 0);
+    || id === "line-export" || legends.length > 0);
 
   return (
     <div className={`cartesian-example${id === "area-small-multiples" ? " cartesian-area-multiples" : ""}`}>
@@ -348,7 +343,6 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
           <Button aria-label="Download PNG" onClick={() => void exportFile("png")}>PNG</Button>
           {exportFailed && <span role="status" className="cartesian-muted">Chart download failed. Try again.</span>}
         </>}
-        {powerUser && !data && <Choices label="Points per series" className="cartesian-choice-group" options={countChoices} value={String(controls.count)} onChange={count => update("count", Number(count))} />}
         {tableToggle && <Toggle pressed={viewTable} onPressedChange={setViewTable}>{viewTable ? "View chart" : "View as table"}</Toggle>}
         {legends.map((item, index) => <Toggle key={index} pressed={index === controls.activeLegend} onMouseEnter={() => update("activeLegend", index)} onMouseLeave={() => update("activeLegend", undefined)} onFocus={() => update("activeLegend", index)} onBlur={() => update("activeLegend", undefined)} onPressedChange={pressed => update("activeLegend", pressed ? index : undefined)}><i className="cartesian-swatch" style={{ backgroundColor: item.color }} />{item.name}</Toggle>)}
       </div>}
@@ -373,7 +367,7 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
             onPointerCancel={brushes && !compact ? clearSelectionDrag : undefined} onLostPointerCapture={brushes && !compact ? clearSelectionDrag : undefined}
             onKeyDown={brushes && !compact ? selectionKey : pointOnly ? event => { if (event.key === "Escape") setPointCrosshair(null); } : undefined}
             onPointerMove={brushes && !compact ? dragSelection : undefined} onBlur={pointOnly ? () => setPointCrosshair(null) : undefined}>
-            <EChart option={option} label={liveLineLoading ? "Loading chart" : example.title} compact={compact || areaLoading || comparisonLoading || liveLineLoading} chartRef={chartRef} renderer={renderer}
+            <EChart option={option} label={liveLineLoading ? "Loading chart" : example.title} compact={compact || areaLoading || comparisonLoading || liveLineLoading} chartRef={chartRef}
               mergeUpdates={range || id === "line-loading" || (startLoading && comparisonFamily)} onEvents={onEvents} />
             {liveLineLoading && <span className="line-skeleton-label" role="status">Loading revenue</span>}
             {areaLoading && <span className="cartesian-area-loading-status" role="status">Loading orders</span>}
@@ -392,7 +386,6 @@ function CartesianExample({ example, compact = false, data, theme, source }: Cha
             onActive={index => update("activeLegend", index)} />}
           </div>)}
           {overview && !compact && <RangeBrush data={source} range={[brushStart, brushEnd]} change={setRangeOverride} theme={theme} showLaunch={id === "line-date-highlights-brush"} />}
-          {powerUser && !compact && <div className="cartesian-status">{valueFormat.format(optionsData.categories.length)} points per series{!data ? ` · ${Math.ceil(optionsData.categories.length / 1440)} days at one sample per minute` : ""}</div>}
           {zoom && !compact && <div className="cartesian-status">Ctrl or ⌘ and scroll to zoom · Drag to pan · Double-click to reset</div>}
           {id === "gantt-loading" && isLoading && !compact && <div className="cartesian-status" role="status">Loading schedule</div>}
           {!compact && (tableToggle || linked) && <DataTable data={optionsData} active={focusedRow} onActive={linked ? showRow : undefined} linked={linked} hidden={tableToggle && !viewTable} />}

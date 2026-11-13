@@ -1,13 +1,15 @@
 import { TrendingUp } from "lucide-react";
-import { useId, useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useId, useMemo, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import { Toggle } from "@ui-sdk/react/toggle";
 import { usePlotSize } from "../usePlotSize";
-import { calendarValues, heatmapLayout } from "./heatmap-layout";
+import { calendarValues, dayMs, firstAtOrAfter, heatmapLayout } from "./heatmap-layout";
+import { HeatmapTiles } from "./HeatmapTiles";
 import { format, type DemoProps } from "./primitives";
 import "./heatmap.css";
 
 const month = new Intl.DateTimeFormat("en", { month: "long", timeZone: "UTC" });
 const weekday = new Intl.DateTimeFormat("en", { weekday: "long", timeZone: "UTC" });
+const exact = new Intl.NumberFormat("en", { maximumSignificantDigits: 21 });
 const levels = [0, 1, 2, 3, 4] as const;
 
 function ordinal(day: number) {
@@ -74,13 +76,20 @@ export function Heatmap({ example, compact, data }: DemoProps) {
   const scaled = variant === "heatmap-active-scale";
   const continuous = variant === "heatmap-gradient-legend";
   const instant = variant === "heatmap-default";
-  const scrolling = !compact && variant === "heatmap-scroll";
   const demo = !data?.rows && !data?.series;
   const values = useMemo(() => calendarValues(data, variant), [data, variant]);
-  const { cells, months, quarters, labels, width, height, cellWidth, cellHeight, top, paddingStart } = useMemo(
-    () => heatmapLayout(values, measuredWidth, variant, demo, scrolling), [values, measuredWidth, variant, demo, scrolling],
+  // Keep individual days inspectable when several years would compress the cells into subpixel columns.
+  const large = !demo && values.length > 0 && (+values.at(-1)!.date - +values[0].date) / dayMs >= 2048;
+  const scrolling = large || (!compact && variant === "heatmap-scroll");
+  const tiled = scrolling;
+  const layout = useMemo(() => heatmapLayout(values, measuredWidth, variant, demo, scrolling), [values, measuredWidth, variant, demo, scrolling]);
+  const { cellAt, indexAt, indexAtDay, months, quarters, labels, width, height, cellWidth, cellHeight, top, paddingStart, rowStep } = layout;
+  const viewportWidth = scrolling ? measuredWidth : width;
+  const left = Math.max(0, Math.min(scrollLeft, width - viewportWidth));
+  const visibleLabels = <T extends { x: number }>(items: readonly T[]) => !tiled ? items : items.slice(
+    firstAtOrAfter(items, left - 40, item => item.x), firstAtOrAfter(items, left + viewportWidth + 40, item => item.x),
   );
-  const activeCell = loading ? undefined : cells[hover ?? focus ?? -1];
+  const activeCell = loading ? undefined : cellAt(hover ?? focus ?? -1);
   const filteredLevel = hoveredLevel ?? level;
   const legendLevel = filteredLevel ?? (instant ? undefined : activeCell?.strength);
   const inactiveOpacity = dots ? .8 : scaled ? .45 : .3;
@@ -88,9 +97,9 @@ export function Heatmap({ example, compact, data }: DemoProps) {
   const fill = (index: number) => stripes && index === 2 ? `url(#${id}-stripe)` : color(index);
   const stripeColor = `color-mix(in oklch, ${color(2)} 45%, white)`;
   const borderRadius = dots ? 999 : 2;
-  const [summary, detail] = compact ? [] : footer(variant, values, demo, loading);
+  const [summary, detail] = useMemo(() => compact ? [] : footer(variant, values, demo, loading), [compact, variant, values, demo, loading]);
   const panelWidth = Math.min(140, measuredWidth);
-  const anchorX = activeCell ? activeCell.x + cellWidth / 2 - scrollLeft : 0;
+  const anchorX = activeCell ? activeCell.x + cellWidth / 2 - left : 0;
   const panelOffset = scaled ? 18 : split || scrolling ? 17.5 : 17;
   const rightX = anchorX + panelOffset;
   const panelLeft = Math.max(0, Math.min(measuredWidth - panelWidth, rightX + panelWidth <= measuredWidth ? rightX : anchorX - panelWidth - panelOffset));
@@ -99,9 +108,9 @@ export function Heatmap({ example, compact, data }: DemoProps) {
 
   function select(index: number) {
     setFocus(index);
-    const cell = cells[index];
+    const cell = cellAt(index);
     const viewport = scroll.current;
-    if (!cell || !scrolling || !viewport) return;
+    if (!cell || !scrolling || compact || !viewport) return;
     if (cell.x < viewport.scrollLeft) viewport.scrollLeft = Math.max(0, cell.x - paddingStart);
     else if (cell.x + cellWidth > viewport.scrollLeft + viewport.clientWidth) viewport.scrollLeft = cell.x + cellWidth + 12 - viewport.clientWidth;
     setScrollLeft(viewport.scrollLeft);
@@ -116,24 +125,49 @@ export function Heatmap({ example, compact, data }: DemoProps) {
       setLevel(null);
       return;
     }
-    if (!cells.length) return;
+    if (!interactive || !values.length) return;
     const movement = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
     if (!movement && event.key !== "Home" && event.key !== "End") return;
     event.preventDefault();
-    const current = activeCell ?? cells[0];
+    const current = activeCell ?? cellAt(0)!;
     setHover(null);
     if (!movement) {
-      select(event.key === "Home" ? 0 : cells.length - 1);
+      select(event.key === "Home" ? 0 : values.length - 1);
       return;
     }
     const [dx, dy] = movement;
-    const match = cells.findIndex(cell => cell.column === current.column + dx && cell.row === current.row + dy);
+    const column = current.column + dx, row = current.row + dy;
+    const match = row >= 0 && row < 7 ? indexAtDay(column, row) : -1;
     if (match >= 0) select(match);
     else if (!demo) {
-      const distance = (cell: typeof current) => Math.abs(cell.column - current.column - dx) + Math.abs(cell.row - current.row - dy);
-      select(cells.reduce((best, cell, index) => distance(cell) < distance(cells[best]) ? index : best, 0));
+      let nearest = 0, distance = Infinity;
+      const origin = firstAtOrAfter(values, +current.date, entry => +entry.date);
+      for (const step of [-1, 1]) {
+        for (let i = origin; i >= 0 && i < values.length; i += step) {
+          const cell = cellAt(i)!;
+          const across = Math.abs(cell.column - column);
+          if (across > distance && (step < 0 ? cell.column < column : cell.column > column)) break;
+          const score = across + Math.abs(cell.row - row);
+          if (score < distance || (score === distance && i < nearest)) { distance = score; nearest = i; }
+        }
+      }
+      select(nearest);
     }
   }
+
+  function hit(event: MouseEvent<SVGSVGElement> | PointerEvent<SVGSVGElement>) {
+    const box = event.currentTarget.getBoundingClientRect();
+    const x = left + (event.clientX - box.left) * viewportWidth / box.width;
+    const y = (event.clientY - box.top) * height / box.height;
+    const index = indexAt(x, y);
+    if (dots && index >= 0) {
+      const cell = cellAt(index)!;
+      if (((x - cell.x) / cellWidth * 2 - 1) ** 2 + ((y - cell.y) / cellHeight * 2 - 1) ** 2 > 1) return -1;
+    }
+    return index;
+  }
+
+  const interactive = !compact && !loading;
 
   return (
     <div className="stat-heatmap" data-heat-variant={variant} data-heat-compact={compact || undefined} data-heat-quarter-rail={split || undefined}>
@@ -142,13 +176,32 @@ export function Heatmap({ example, compact, data }: DemoProps) {
       </div>}
       <div className="stat-heatmap-plot" onPointerLeave={() => setHover(null)}>
         {scrolling && <div className="stat-heatmap-weekday-rail" aria-hidden="true">
-          {[[1, "Mon"], [3, "Wed"], [5, "Fri"]].map(([row, day]) => <span key={row} style={{ top: top + Number(row) * 20 + .5 }}>{day}</span>)}
+          {[[1, "Mon"], [3, "Wed"], [5, "Fri"]].map(([row, day]) => <span key={row} style={{ top: top + Number(row) * rowStep + .5 }}>{day}</span>)}
         </div>}
         <div ref={scroll} className={scrolling ? "stat-heatmap-viewport stat-heat-scroll" : "stat-heatmap-viewport"}
-          onScroll={scrolling ? event => setScrollLeft(event.currentTarget.scrollLeft) : undefined}>
-          <svg className="stat-heatmap-svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={example.title}
+          onScroll={scrolling ? event => { setScrollLeft(event.currentTarget.scrollLeft); setHover(null); } : undefined}>
+          <div className={tiled ? "stat-heatmap-track" : undefined} style={tiled ? { width, height } : undefined}>
+          <div className={tiled ? "stat-heatmap-window" : undefined} style={tiled ? { width: viewportWidth, height } : undefined}>
+          {tiled && <HeatmapTiles layout={layout} left={left} width={viewportWidth} active={activeCell}
+            filtered={filteredLevel} inactiveOpacity={inactiveOpacity} dots={dots} weekdays={weekdays} stripes={stripes}
+            mutedByFocus={split || quarter} scaled={scaled} instant={instant} loading={loading} />}
+          <svg className="stat-heatmap-svg" width={viewportWidth} height={height} viewBox={`${left} 0 ${viewportWidth} ${height}`} role="img" aria-label={example.title}
             aria-describedby={!compact ? instructions : undefined} aria-busy={loading || undefined} tabIndex={!compact && !loading ? 0 : undefined}
-            onFocus={() => { if (!loading && !activeCell) select(0); }} onBlur={() => setFocus(null)} onKeyDown={onKeyDown}>
+            onFocus={() => {
+              if (interactive && !activeCell) {
+                const firstVisible = tiled ? layout.visibleCells(left, viewportWidth)[0]?.index : 0;
+                if (firstVisible !== undefined && (tiled || values.length)) select(firstVisible);
+              }
+            }} onBlur={() => setFocus(null)} onKeyDown={onKeyDown}
+            onPointerMove={tiled && interactive ? event => {
+              if (event.pointerType === "touch") return;
+              const index = hit(event);
+              setHover(index < 0 ? null : index);
+            } : undefined}
+            onClick={tiled && interactive ? event => {
+              const index = hit(event);
+              if (index >= 0) { setHover(null); select(index); }
+            } : undefined}>
             <defs>
               {stripes && <pattern id={`${id}-stripe`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform={`translate(${paddingStart} ${top - 2})`}>
                 <rect width="6" height="6" fill={color(2)} /><path d="M-2 1L1 -2M-1 6L6 -1M4 7L7 4" stroke={stripeColor} strokeWidth="1" />
@@ -162,18 +215,19 @@ export function Heatmap({ example, compact, data }: DemoProps) {
             {!compact && <desc id={instructions}>Use the arrow keys to inspect days and weeks, Home and End to move to the first or last date, and Escape to clear inspection.</desc>}
             {!values.length && <text className="stat-heatmap-axis" x={width / 2} y={height / 2} textAnchor="middle">No data to display</text>}
             <g aria-hidden="true" className="stat-heatmap-axis">
-              {quarters.map(item => <text key={item.key} data-heat-quarter="" x={item.x} y={split ? -8 : 21} dominantBaseline="middle"
+              {visibleLabels(quarters).map(item => <text key={item.key} data-heat-quarter="" x={item.x} y={split ? tiled ? 8 : -8 : 21} dominantBaseline="middle"
                 fill={dots ? "var(--chart-3)" : solid ? "var(--foreground)" : undefined}>{item.name}</text>)}
-              {months.map(item => <text key={item.key} data-heat-month="" x={item.x} y="12">{item.name}</text>)}
+              {visibleLabels(months).map(item => <text key={item.key} data-heat-month="" x={item.x} y={split && tiled ? 25 : 12}>{item.name}</text>)}
               {labels.map(item => <text key={item.row} data-heat-weekday={item.row} x={item.x} y={item.y} opacity={item.opacity}
                 textAnchor="end" dominantBaseline="middle">{item.label}</text>)}
             </g>
             <g aria-hidden="true">
-              {quarters.flatMap(item => item.rule === undefined ? [] : <line key={item.key} data-heat-divider="" x1={item.rule} x2={item.rule}
-                y1={split ? -18.5 : 29} y2={height} stroke={solid ? "var(--border)" : `url(#${id}-rule)`}
+              {visibleLabels(quarters).flatMap(item => item.rule === undefined ? [] : <line key={item.key} data-heat-divider="" x1={item.rule} x2={item.rule}
+                y1={split ? tiled ? 0 : -18.5 : 29} y2={height} stroke={solid ? "var(--border)" : `url(#${id}-rule)`}
                 strokeLinecap="round" strokeDasharray={dashed ? "3 5" : undefined} />)}
-              {cells.map((cell, index) => {
-                const active = cell === activeCell;
+              {!tiled && values.map((_, index) => {
+                const cell = cellAt(index)!;
+                const active = index === (hover ?? focus);
                 const muted = filteredLevel !== null && filteredLevel !== cell.strength || activeCell && (dots || quarter || solid || dashed);
                 const opacity = (weekdays && cell.row >= 5 ? .35 : 1) * (muted ? inactiveOpacity : 1);
                 const scale = dots && muted ? .94 : 1;
@@ -190,11 +244,13 @@ export function Heatmap({ example, compact, data }: DemoProps) {
                     onClick={!compact && !loading ? () => { setHover(null); select(index); } : undefined} />
                 </g>;
               })}
-              {activeCell && !instant && <rect data-heat-highlight="" className="stat-heatmap-highlight" x={activeCell.x} y={activeCell.y} width={cellWidth} height={cellHeight} rx={borderRadius}
+              {!tiled && activeCell && !instant && <rect data-heat-highlight="" className="stat-heatmap-highlight" x={activeCell.x} y={activeCell.y} width={cellWidth} height={cellHeight} rx={borderRadius}
                 fill={fill(activeCell.strength)} fillOpacity={weekdays && activeCell.row >= 5 ? .35 : 1}
                 style={{ transform: scaled ? "scale(1.1)" : undefined }} />}
             </g>
           </svg>
+          </div>
+          </div>
         </div>
         {!compact && loading && <div className="stat-heatmap-loading-status" role="status">Loading contributions</div>}
         {!compact && <div className="stat-heatmap-status" role="status" style={{ left: panelLeft + (scrolling ? 44 : 0), top: panelTop }}>
@@ -202,7 +258,7 @@ export function Heatmap({ example, compact, data }: DemoProps) {
             <div className="stat-heatmap-date">{month.format(activeCell.date)} {activeCell.date.getUTCDate()}{ordinal(activeCell.date.getUTCDate())} {activeCell.date.getUTCFullYear()}</div>
             <div className="stat-heatmap-tooltip-weekday">{weekday.format(activeCell.date)}</div>
             <div className="stat-heatmap-tooltip-rule" />
-            <div>{format.format(activeCell.value)} {activeCell.value === 1 ? "contribution" : "contributions"}</div>
+            <div>{exact.format(activeCell.value)} {activeCell.value === 1 ? "contribution" : "contributions"}</div>
           </div>}
         </div>}
       </div>

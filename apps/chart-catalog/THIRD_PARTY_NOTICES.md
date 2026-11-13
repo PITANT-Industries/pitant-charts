@@ -8,6 +8,7 @@
 | [EvilCharts registry](https://evilcharts.com/r/echarts-tooltip.json) | Shared chart tooltip and color treatment | [MIT](licenses/EvilCharts-MIT.txt) |
 | [D3 Sankey](https://github.com/d3/d3-sankey) | Sankey node positioning and weighted links | [BSD-3-Clause](licenses/dependencies/d3-sankey-0.12.3-LICENSE) |
 | [Number Flow](https://github.com/barvian/number-flow) | Rolling pie and ring center values | [MIT](licenses/dependencies/number-flow-react-0.6.2-LICENSE.md) |
+| [PITANT Charts](https://github.com/PITANT-Industries/pitant-charts/tree/7f655b31227ab31b9aac625c758cde1b9bae7a2c/packages/charts/src) | Shared Canvas2D backend and dense line min/max sampling | [MIT](licenses/PITANT-Charts-MIT.txt) |
 
 The chart library uses React, Recharts, Apache ECharts, D3, TopoJSON, World Atlas, and [Vercel Labs UI SDK](https://github.com/vercel-labs/ui) under Apache-2.0. The gallery also uses Lucide icons, Geist fonts, and [Hanken Grotesk](https://github.com/marcologous/hanken-grotesk) under OFL-1.1. Dependency license files are collected in `licenses/dependencies`. World Atlas geography is derived from Natural Earth public-domain data.
 

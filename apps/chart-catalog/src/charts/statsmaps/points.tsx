@@ -1,10 +1,6 @@
 import { useMemo, useState, type CSSProperties, type PointerEvent } from "react";
 import { contourDensity } from "d3-contour";
 import { geoPath } from "d3-geo";
-import type { EChartsOption } from "echarts";
-import { Choices } from "../../ui/Choices";
-import EChart from "../EChart";
-import { useChartTheme } from "../theme";
 import { ReferenceScatter } from "./ReferenceScatter";
 import { scatterFixtures, type ScatterKind } from "./scatter-fixtures";
 import {
@@ -13,11 +9,7 @@ import {
 } from "./primitives";
 
 const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const dateLabel = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone: "UTC" });
 const compactNumber = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
-const dayMs = 86_400_000;
-const requestStart = Date.UTC(2026, 9, 5);
-const scatterCounts = [10000, 50000].map(value => ({ value: String(value), label: `${value / 1000}k`, ariaLabel: `${format.format(value)} points` }));
 const dollar = new Intl.NumberFormat("en", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const fractionalShare = new Intl.NumberFormat("en", { style: "percent", maximumFractionDigits: 1, minimumFractionDigits: 1 });
 
@@ -31,56 +23,7 @@ function jitterPoints(): Point[] {
   }).sort((a, b) => a.x - b.x);
 }
 
-function CanvasScatter({ example, compact, data }: DemoProps) {
-  const [count, setCount] = useState(10000);
-  const theme = useChartTheme();
-  const points = useMemo(() => {
-    const custom = xyData(data);
-    if (custom) return custom;
-    const random = createRandom(511);
-    return Array.from({ length: compact ? 1600 : count }, () => {
-      const day = random() * 7;
-      const x = requestStart + day * dayMs;
-      const y = Math.min(998, Math.round(Math.max(18, (125 + Math.sin(day * 1.5) * 18) * Math.exp(normal(random) * .64))));
-      return { x, y, group: "Requests" };
-    });
-  }, [data, compact, count]);
-  if (!points.length) return <NoData example={example} compact={compact} />;
-  const names = [...new Set(points.map(({ group }) => group))];
-  const palette = seriesColors(names, theme.colors, data);
-  const options: EChartsOption = {
-    animation: false,
-    color: palette,
-    grid: { top: 22, left: 48, right: 24, bottom: 39, containLabel: false },
-    xAxis: { type: data ? "value" : "time", min: data ? undefined : requestStart, max: data ? undefined : requestStart + dayMs * 7,
-      axisLabel: { color: theme.muted, formatter: (value: number) => data ? format.format(value) : dateLabel.format(value) }, splitLine: { show: false } },
-    yAxis: { type: "value", min: data ? undefined : 0, max: data ? undefined : 1000, interval: data ? undefined : 200,
-      axisLabel: { color: theme.muted, formatter: (value: number) => value === 1000 && !data ? "1k" : format.format(value) }, splitLine: { lineStyle: { color: theme.grid, type: "dashed" } } },
-    tooltip: { trigger: "item", show: !compact, confine: true, textStyle: { color: theme.text }, backgroundColor: theme.surface, borderColor: theme.grid,
-      formatter: params => {
-        const point = Array.isArray(params) ? params[0] : params;
-        const values = point?.value;
-        if (!Array.isArray(values)) return "";
-        const [x, y] = values.map(Number);
-        return `${data ? format.format(x) : dateLabel.format(x)}<br/>${format.format(y)}${data ? "" : " ms"}`;
-      } },
-    series: names.map((name, index) => ({
-      name, type: "scatter", symbolSize: compact ? 2 : 3, data: points.filter((point) => point.group === name).map(({ x, y }) => [x, y]),
-      itemStyle: { color: palette[index], opacity: .25 }, progressive: 2000, progressiveThreshold: 3000,
-      emphasis: { itemStyle: { opacity: 1 } },
-    })),
-  };
-  return (
-    <div className="stat-demo stat-canvas">
-      {!compact && !data && <div className="stat-controls"><span>Points</span><Choices label="Request count" options={scatterCounts} value={String(count)} onChange={size => setCount(Number(size))} itemClassName="stat-control" /></div>}
-      <EChart option={options} label={example.title} compact={compact} renderer="canvas" />
-      {!compact && !data && <p className="stat-map-summary" role="status">{format.format(points.length)} requests in one week</p>}
-    </div>
-  );
-}
-
 export function Scatter(props: DemoProps) {
-  if (props.example.id === "scatter-large-data") return <CanvasScatter {...props} />;
   const kind = props.example.id.slice("scatter-".length);
   if (!props.data?.rows && !props.data?.series && Object.hasOwn(scatterFixtures, kind)) return <ReferenceScatter {...props} kind={kind as ScatterKind} />;
   return <ScatterSvg {...props} />;

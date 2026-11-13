@@ -24,8 +24,12 @@
 .stat-heatmap-plot { position: relative; display: flex; min-width: 0; }
 .stat-heatmap-viewport { flex: 1 1 auto; min-width: 0; }
 .stat-heatmap-viewport.stat-heat-scroll { overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }
+.stat-heatmap[data-heat-compact] .stat-heatmap-viewport.stat-heat-scroll { overflow-x: hidden; }
 .stat-heatmap-svg { display: block; overflow: visible; }
 .stat-heatmap-viewport.stat-heat-scroll .stat-heatmap-svg { margin-top: 0; }
+.stat-heatmap-window { position: sticky; left: 0; }
+.stat-heatmap-tiles { display: block; position: absolute; inset: 0; pointer-events: none; }
+.stat-heatmap-window .stat-heatmap-svg { position: relative; }
 .stat-heatmap-svg:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; border-radius: 5px; }
 .stat-heatmap-axis { fill: var(--muted-foreground); font-size: 12px; font-family: inherit; }
 .stat-heatmap-weekday-rail { position: relative; flex: 0 0 44px; }
