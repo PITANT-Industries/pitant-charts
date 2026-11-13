@@ -379,20 +379,22 @@ function buildPointSeries(
   }
 }
 
-function buildDensitySeries(
+interface DensitySeriesOptions {
+  color: RgbaColor
+  columns: number
+  rows: number
+  sourceCount: number
+  xOrigin: number
+  xRange: NumericRange
+  yRange: NumericRange
+  minAlpha: number
+  maxAlpha: number
+}
+
+function binDensityPoints(
   source: ScatterPlotSeries,
-  options: {
-    color: RgbaColor
-    columns: number
-    rows: number
-    sourceCount: number
-    xOrigin: number
-    xRange: NumericRange
-    yRange: NumericRange
-    minAlpha: number
-    maxAlpha: number
-  },
-): ScatterPlannedSeries {
+  options: DensitySeriesOptions,
+): { counts: Uint32Array; touched: number[]; filteredPointCount: number; maxCount: number } {
   const cellCount = options.columns * options.rows
   const counts = new Uint32Array(cellCount)
   const touched: number[] = []
@@ -407,8 +409,6 @@ function buildDensitySeries(
   const yMax = options.yRange[1]
   const xSpan = Math.max(Number.EPSILON, xMax - xMin)
   const ySpan = Math.max(Number.EPSILON, yMax - yMin)
-  const cellWidth = xSpan / columns
-  const cellHeight = ySpan / rows
   const finiteBounds =
     Number.isFinite(xMin) &&
     Number.isFinite(xMax) &&
@@ -447,6 +447,20 @@ function buildDensitySeries(
     filteredPointCount += 1
   }
 
+  return { counts, touched, filteredPointCount, maxCount }
+}
+
+function buildDensitySeries(
+  source: ScatterPlotSeries,
+  options: DensitySeriesOptions,
+): ScatterPlannedSeries {
+  const { counts, touched, filteredPointCount, maxCount } = binDensityPoints(source, options)
+  const xMin = options.xRange[0]
+  const yMin = options.yRange[0]
+  const xSpan = Math.max(Number.EPSILON, options.xRange[1] - xMin)
+  const ySpan = Math.max(Number.EPSILON, options.yRange[1] - yMin)
+  const cellWidth = xSpan / options.columns
+  const cellHeight = ySpan / options.rows
   const cells: ScatterDensityCell[] = []
   const alphaSpan = Math.max(0, options.maxAlpha - options.minAlpha)
   const logMax = Math.log1p(maxCount)
