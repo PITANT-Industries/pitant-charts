@@ -7,7 +7,9 @@
 .stage > svg { display: block; width: 100%; aspect-ratio: 8 / 5; font-family: inherit; }
 .frame[data-portfolio] .stage > svg { aspect-ratio: 2 / 1; }
 .frame[data-compact] .stage > svg { height: 100%; }
-.stage > svg:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 8px; }
+.stage > svg:focus-visible { outline: 2px solid var(--treemap-focus-ring, var(--bkm-focus-ring, var(--ring))); outline-offset: -2px; border-radius: 6px; }
+:global(.comparison-reference-colors) .stage { --treemap-focus-ring: color-mix(in oklab, oklch(.708 0 0) 55%, transparent); }
+:global(.comparison-reference-colors[data-theme='dark']) .stage { --treemap-focus-ring: oklch(.556 0 0); }
 .branch { cursor: pointer; }
 @property --treemap-focus-opacity {
   syntax: "<number>";

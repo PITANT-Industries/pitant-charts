@@ -33,7 +33,8 @@ export function useChoroplethCameraMotion({ active, width, height, target, tilt,
   const frame = useRef<Frame>({ ...target, tilt, yaw });
   const viewTarget = useRef(target);
   const viewFlight = useRef<Flight<MapView> | null>(null);
-  const angleFlight = useRef<Flight<Angles> | null>(null);
+  const tiltFlight = useRef<Flight<number> | null>(null);
+  const yawTween = useRef<Flight<number> | null>(null);
   const yawFlight = useRef<YawSpring | null>(null);
   const yawVelocity = useRef(0);
   const request = useRef(0);
@@ -60,7 +61,8 @@ export function useChoroplethCameraMotion({ active, width, height, target, tilt,
     cancelAnimationFrame(request.current);
     request.current = 0;
     viewFlight.current = null;
-    angleFlight.current = null;
+    tiltFlight.current = null;
+    yawTween.current = null;
     yawFlight.current = null;
     yawVelocity.current = 0;
   }
@@ -76,13 +78,19 @@ export function useChoroplethCameraMotion({ active, width, height, target, tilt,
       frame.current.k = Math.exp(Math.log(view.from.k) + (Math.log(view.to.k) - Math.log(view.from.k)) * t);
       if (elapsed >= 1) { Object.assign(frame.current, view.to); viewFlight.current = null; }
     }
-    const angles = angleFlight.current;
-    if (angles) {
-      const elapsed = Math.max(0, now - angles.start) / 700;
+    const tiltTween = tiltFlight.current;
+    if (tiltTween) {
+      const elapsed = Math.max(0, now - tiltTween.start) / 700;
       const t = ease(elapsed);
-      frame.current.tilt = angles.from.tilt + (angles.to.tilt - angles.from.tilt) * t;
-      frame.current.yaw = angles.from.yaw + (angles.to.yaw - angles.from.yaw) * t;
-      if (elapsed >= 1) { Object.assign(frame.current, angles.to); angleFlight.current = null; }
+      frame.current.tilt = tiltTween.from + (tiltTween.to - tiltTween.from) * t;
+      if (elapsed >= 1) { frame.current.tilt = tiltTween.to; tiltFlight.current = null; }
+    }
+    const yawTransition = yawTween.current;
+    if (yawTransition) {
+      const elapsed = Math.max(0, now - yawTransition.start) / 700;
+      const t = ease(elapsed);
+      frame.current.yaw = yawTransition.from + (yawTransition.to - yawTransition.from) * t;
+      if (elapsed >= 1) { frame.current.yaw = yawTransition.to; yawTween.current = null; }
     }
     const spring = yawFlight.current;
     if (spring) {
@@ -103,7 +111,7 @@ export function useChoroplethCameraMotion({ active, width, height, target, tilt,
       yawVelocity.current = spring.velocity;
     }
     write();
-    if (viewFlight.current || angleFlight.current || yawFlight.current) request.current = requestAnimationFrame(tick);
+    if (viewFlight.current || tiltFlight.current || yawTween.current || yawFlight.current) request.current = requestAnimationFrame(tick);
   }
 
   useLayoutEffect(() => {
@@ -141,13 +149,18 @@ export function useChoroplethCameraMotion({ active, width, height, target, tilt,
       if (viewTarget.current.cx !== target.cx || viewTarget.current.cy !== target.cy || viewTarget.current.k !== target.k) {
         viewFlight.current = { from: { cx: from.cx, cy: from.cy, k: from.k }, to: target, start: now };
       }
-      if (pointer && from.tilt === tilt) {
-        angleFlight.current = null;
+      const returningTilt = tiltFlight.current?.to === tilt;
+      if (pointer && (from.tilt === tilt || returningTilt)) {
+        // Pointer yaw is independent of the tilt returning from a focused
+        // view. Keep that flight's original deadline when the pointer moves.
+        if (!returningTilt) tiltFlight.current = null;
+        yawTween.current = null;
         yawFlight.current = { value: from.yaw, to: yaw, velocity: yawVelocity.current, last: now };
       } else {
         yawFlight.current = null;
         yawVelocity.current = 0;
-        angleFlight.current = { from: { tilt: from.tilt, yaw: from.yaw }, to: { tilt, yaw }, start: now };
+        tiltFlight.current = { from: from.tilt, to: tilt, start: now };
+        yawTween.current = { from: from.yaw, to: yaw, start: now };
       }
       if (!request.current) request.current = requestAnimationFrame(tick);
     }

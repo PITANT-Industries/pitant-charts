@@ -118,13 +118,18 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
   const [loading, setLoading] = useState(hasLoading);
   const [path, setPath] = useState<string[]>([]);
   const [focus, setFocus] = useState<Focus | null>(null);
+  const [keyboardFocus, setKeyboardFocus] = useState<number | null>(null);
   const [entering, setEntering] = useState(true);
   const [loadingDelay, setLoadingDelay] = useState(0);
   const exit = useRef<SVGSVGElement | null>(null);
   const pendingLayout = useRef<ReturnType<typeof captureTreemapLayout> | null>(null);
   const finishLayout = useRef<(() => void) | null>(null);
   const current = hierarchyAt(root, path);
-  const { plot, width, height } = usePlotSize<SVGSVGElement>(576, isPortfolio ? 288 : 360);
+  const measured = usePlotSize<SVGSVGElement>(576, isPortfolio ? 288 : 360);
+  const { plot } = measured;
+  // Use the declared aspect ratio instead of a browser's quantized block size.
+  const width = measured.width;
+  const height = compact ? measured.height : width / (isPortfolio ? 2 : 1.6);
   const entranceScale = 420 / (width + height);
   const marks = useMemo(() => loading ? [] : treemapTiles(root, path, current, width, height, isPortfolio),
     [current, height, isPortfolio, loading, path, root, width]);
@@ -192,6 +197,7 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
     finishLayout.current = null;
     setEntering(!glide);
     setPath(next);
+    setKeyboardFocus(null);
     setFocus(point ? { point } : null);
   }
 
@@ -255,7 +261,7 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
       event.preventDefault();
       event.stopPropagation();
       if (path.length) goBack();
-      else setFocus(null);
+      else { setKeyboardFocus(null); setFocus(null); }
     } else if (key === "Enter" || key === " ") {
       if (path.length && currentFocus?.index === backIndex) {
         event.preventDefault();
@@ -270,6 +276,7 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
       const index = nextChartFocus(key, currentFocus?.index ?? null, marks.length + offset);
       if (index !== undefined) {
         event.preventDefault();
+        setKeyboardFocus(index);
         setFocus({ index });
       }
     }
@@ -284,7 +291,7 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
     if (compact || loading) return;
     const point = pointerPoint(event);
     const next = point && inspect(marks, path.length > 0, point, width);
-    if (next || focus?.point) setFocus(next && point ? { point } : null);
+    if (next || focus?.point) setFocus(next && point ? { point } : keyboardFocus === null ? null : { index: keyboardFocus });
   }
 
   function handlePlotClick(event: MouseEvent<SVGSVGElement>) {
@@ -312,12 +319,13 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
       </Toggle>
     </div>}
     <div className={styles.stage} data-inspecting={!!currentFocus || undefined}>
-      <svg ref={plot} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={example.title} aria-roledescription="chart" aria-busy={loading}
+      <svg ref={plot} viewBox={`0 0 ${Number(width.toFixed(2))} ${Number(height.toFixed(2))}`} role="img" aria-label={example.title} aria-roledescription="chart" aria-busy={loading}
         aria-description={loading ? "Loading" : `Viewing ${current.name}. Use arrow keys to inspect rectangles${isPortfolio ? "." : ", Enter or Space to zoom, and Escape to go back."}`}
         tabIndex={compact || loading ? undefined : 0} onKeyDown={handleKeys}
         onPointerMove={handlePlotPointer} onClick={handlePlotClick}
         onPointerDown={event => { if (event.pointerType === "touch") handlePlotPointer(event); }}
-        onBlur={() => setFocus(null)} onPointerLeave={() => { if (document.activeElement !== plot.current || focus?.point) setFocus(null); }}>
+        onBlur={() => { setKeyboardFocus(null); setFocus(null); }}
+        onPointerLeave={() => setFocus(document.activeElement === plot.current && keyboardFocus !== null ? { index: keyboardFocus } : null)}>
         {loading && <g className={styles.skeleton} style={{ animationDelay: `${loadingDelay}ms` }}>
           {skeletonTiles(width, height).map(([key, bounds]) => {
             const x = (bounds.x + bounds.width / 2) / width;

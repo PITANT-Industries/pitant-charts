@@ -1,5 +1,5 @@
 import { area, curveCatmullRom, curveMonotoneX, curveStepAfter, line, type CurveFactory } from "d3-shape";
-import { useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { Choices } from "../../ui/Choices";
 import { usePlotSize } from "../usePlotSize";
 import { CartesianDatePill, CartesianFocusPoint, CartesianReadout, cartesianPillWidth } from "./CartesianFocus";
@@ -13,7 +13,7 @@ const variants = {
   "area-default": { maximum: 28_000, step: 5000, topOpacity: .3, fadeFill: true, fadeStroke: true },
   "area-fill": { maximum: 4500, step: 1000, topOpacity: .6, bottomOpacity: .05, fadeFill: true, showStroke: false },
   "area-gradient-fill": { maximum: 12_000, step: 2000, topOpacity: .7, bottomOpacity: .05 },
-  "area-pattern": { maximum: 6000, step: 1000, topOpacity: 0, texture: "diagonal" },
+  "area-pattern": { maximum: 6000, step: 1000, topOpacity: 0, texture: "diagonal", strokeWidth: 2.5 },
   "area-mixed": { maximum: 500, step: 100, topOpacity: .4, texture: "dots" },
   "area-background": { maximum: 2200, step: 0, topOpacity: .4 },
   "area-small-multiples": { maximum: 4500, step: 2000, topOpacity: .4 },
@@ -37,6 +37,7 @@ interface AreaSpec {
   fadeFill?: boolean;
   fadeStroke?: boolean;
   showStroke?: boolean;
+  strokeWidth?: number;
 }
 type Variant = keyof typeof variants;
 type LoadingState = "Pulse" | "Sweep" | "Loaded";
@@ -161,6 +162,7 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   const id = useId();
   const { plot, width, height } = usePlotSize<HTMLDivElement>(728, 364);
   const tip = useRef<HTMLDivElement>(null);
+  const [measuredTipWidth, setMeasuredTipWidth] = useState(0);
   const drag = useRef<{ pointer: number; anchor: number } | null>(null);
   const [selection, setSelection] = useState<Range | null>(null);
   const [rangeAnchor, setRangeAnchor] = useState<number | null>(null);
@@ -192,7 +194,8 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   };
   const grid = guideTicks(mainMax, mainExtent.minimum, load && demo ? 50 : spec.step);
   const indices = isMultiple ? [] : xTicks(variant, count, width, Boolean(demo));
-  const colors = data.series.map((item, index) => colorFor(item, index, theme));
+  const colors = data.series.map((item, index) => demo && item.color === undefined
+    ? rgb(index, theme.colors[index % theme.colors.length]) : colorFor(item, index, theme));
   const points = data.series.map((item, seriesIndex) => {
     const values = load && demo ? loadingOrders : item.values;
     return data.categories.map((_, index) => {
@@ -211,13 +214,23 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   const labelText = Number.isFinite(times[selected]) || variant === "area-custom-labels" ? pill : data.categories[selected] ?? "";
   const pillWidth = cartesianPillWidth(labelText ?? "");
   const pillX = Math.max(pillWidth / 2, Math.min(width - pillWidth / 2, Math.round(xAt(selected))));
-  const tipWidth = tip.current?.offsetWidth ?? Math.min(145, width - 8);
+  const tipWidth = measuredTipWidth || Math.min(145, width - 8);
   const focusX = xAt(selected);
   const tipX = Math.max(4, Math.min(width - tipWidth - 4, focusX + tipWidth + 16 > width ? focusX - tipWidth - 16 : focusX + 16));
   const focusEntries = data.series.flatMap((item, index) => {
     const point = points[index][selected];
     return point ? [{ name: item.name, value: point.value, color: colors[index] }] : [];
   });
+  useLayoutEffect(() => {
+    if (tip.current) setMeasuredTipWidth(tip.current.offsetWidth);
+  }, [visible, selected, width, data]);
+  useLayoutEffect(() => {
+    const panel = tip.current;
+    if (!panel || typeof ResizeObserver !== "function") return;
+    const observer = new ResizeObserver(() => setMeasuredTipWidth(panel.offsetWidth));
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, [visible, focusEntries.length]);
   const from = selection ? Math.min(...selection) : null;
   const to = selection ? Math.max(...selection) : null;
   const rangeStart = from !== null && from < count ? xAt(from) : left;
@@ -293,11 +306,22 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   }
 
   const textureIndex = spec.texture === "dots" ? 1 : 0;
+  const textureBounds = (points[textureIndex] ?? []).reduce((bounds, point) => point ? {
+    top: Math.min(bounds.top, point.y), bottom: Math.max(bounds.bottom, point.y),
+  } : bounds, { top: yAt(0, textureIndex), bottom: yAt(0, textureIndex) });
+  const diagonalTexture = spec.texture === "diagonal";
+  const strokeWidth = spec.strokeWidth ?? 2;
   const background = variant === "area-background";
   const visibleRange = canSelect && selection !== null && rangeEnd > rangeStart;
   const loadingStroke = `url(#${id}-loading)`;
   const focusClipStart = xAt(Math.max(0, selected - 1));
   const focusClipEnd = xAt(Math.min(count - 1, selected + 1));
+  const focusBottom = Math.round(bottom);
+  const focusY = (point: Position, seriesIndex: number) => {
+    const minimum = dual && seriesIndex === 1 ? conversionExtent.minimum : mainExtent.minimum;
+    const maximum = dual && seriesIndex === 1 ? conversionExtent.maximum : mainMax;
+    return focusBottom - (point.value - minimum) / (maximum - minimum) * (focusBottom - top);
+  };
 
   return <div className="catalog-area-plot" ref={plot} data-area-load={load ? loading : undefined}
     style={{ "--area-plot-inset": `${left}px` } as CSSProperties} aria-busy={load || undefined}>
@@ -326,11 +350,15 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
         {calendar && <linearGradient id={`${id}-deadline`}><stop stopColor={red} /><stop offset="1" stopColor={red} stopOpacity="0" /></linearGradient>}
         {(spec.texture || background || calendar) && <pattern id={`${id}-tile`} x={left} y={top} width={calendar ? 9 : 6} height={calendar ? 9 : 6} viewBox="0 0 6 6" patternUnits="userSpaceOnUse">
           {spec.texture === "dots" ? <circle cx="2.5" cy="2.5" r="1.35" fill={colors[textureIndex]} />
-            : <path d="M-2 1L1 -2M-1 6L6 -1M4 7L7 4" fill="none" stroke={calendar ? theme.muted : background ? theme.grid : colors[textureIndex]} strokeWidth="1" />}
+            : <path d={diagonalTexture ? "M0 6l6-6M-1.5 1.5l3-3M4.5 7.5l3-3" : "M-2 1L1 -2M-1 6L6 -1M4 7L7 4"}
+              shapeRendering={diagonalTexture ? "crispEdges" : undefined} fill="none" stroke={calendar ? theme.muted : background ? theme.grid : colors[textureIndex]} strokeWidth="1" />}
         </pattern>}
-        {variant === "area-pattern-fade" && <mask id={`${id}-pattern-vertical`}>
-          <linearGradient id={`${id}-pattern-opacity`} x2="0%" y2="100%"><stop stopColor="white" /><stop offset="1" stopColor="black" /></linearGradient>
-          <path d={fills[0]} fill={`url(#${id}-pattern-opacity)`} />
+        {variant === "area-pattern-fade" && <mask id={`${id}-pattern-vertical`} style={{ maskType: "alpha" }}>
+          <linearGradient id={`${id}-pattern-opacity`} gradientUnits="userSpaceOnUse" x2="0%"
+            y1={Number(textureBounds.top.toFixed(3))} y2={Number(textureBounds.bottom.toFixed(3))}>
+            <stop stopColor="white" /><stop offset="1" stopColor="white" stopOpacity="0" />
+          </linearGradient>
+          <rect x={left} y={top} width={available} height={bottom - top} fill={`url(#${id}-pattern-opacity)`} />
         </mask>}
         {load && <linearGradient id={`${id}-loading`}>
           <stop stopColor={theme.muted} stopOpacity=".3" /><stop offset=".5" stopColor={theme.muted} stopOpacity=".75" /><stop offset="1" stopColor={theme.muted} stopOpacity=".3" />
@@ -349,17 +377,19 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
           <rect data-catalog-area-deadline="" x={xAt(deadline)} y={top} width={right - xAt(deadline)} height={bottom - top} fill={negative} opacity=".25" />
           <line x1={xAt(deadline)} x2={xAt(deadline)} y1={top} y2={bottom} stroke={red} />
         </>}
-        {visible && <rect x={focusX - .5} y={top} width="1" height={bottom - top} fill={`url(#${id}-guide)`} />}
+        {visible && <rect data-catalog-area-guide="" x={focusX - .5} y={top} width="1" height={Math.round(bottom - top)} fill={`url(#${id}-guide)`} />}
         <g className={compact || entranceDone || load ? undefined : "cartesian-area-detail-reveal"}>
-          {spec.texture && <path d={fills[textureIndex]} fill={`url(#${id}-tile)`}
-            mask={spec.fadeFill ? `url(#${id}-pattern-vertical)` : undefined} className={spec.fadeFill ? "catalog-area-fade" : undefined} data-catalog-area-pattern="" />}
+          {spec.texture && <g mask={variant === "area-pattern-fade" ? `url(#${id}-pattern-vertical)` : undefined}>
+            <path d={fills[textureIndex]} fill={`url(#${id}-tile)`}
+              className={spec.fadeFill ? "catalog-area-fill-fade" : undefined} data-catalog-area-pattern="" />
+          </g>}
           {fills.map((path, index) => <g key={index}>
-            <path data-catalog-area-fill={index} d={path} fill={`url(#${id}-fill-${index})`} opacity={visible ? .6 : 1} className={spec.fadeFill ? "catalog-area-fade" : undefined} />
+            <path data-catalog-area-fill={index} d={path} fill={`url(#${id}-fill-${index})`} opacity={visible ? .6 : 1} className={spec.fadeFill ? "catalog-area-fill-fade" : undefined} />
             {spec.showStroke !== false && <path data-catalog-area-stroke={index} d={strokes[index]} fill="none"
               stroke={load ? loadingStroke : spec.fadeStroke ? `url(#${id}-line-${index})` : colors[index]} opacity={visible ? .6 : 1}
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={load ? "catalog-area-placeholder" : undefined} />}
-            {visible && spec.showStroke !== false && <path d={strokes[index]} fill="none" stroke={colors[index]} strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round" clipPath={`url(#${id}-focus)`} />}
+              strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={load ? "catalog-area-placeholder" : undefined} />}
+            {spec.showStroke !== false && <path data-catalog-area-highlight="" d={strokes[index]} fill="none" stroke={colors[index]} strokeWidth={strokeWidth}
+              opacity={visible ? 1 : 0} strokeLinecap="round" strokeLinejoin="round" clipPath={`url(#${id}-focus)`} />}
           </g>)}
           {variant === "area-value-labels" && !compact && <AreaValueLabels points={points} colors={colors} left={left} right={right} top={top} bottom={bottom} />}
         </g>
@@ -379,8 +409,8 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
             <text data-catalog-area-axis="" key={value} x={left - 4} y={rounded(yAt(value))} textAnchor="end" dominantBaseline="middle">{compactAxis(value)}</text>)}
         </g>
         {visible && <>
-          {points.map((series, index) => series[selected] && <CartesianFocusPoint key={index} x={focusX} y={series[selected].y} color={colors[index]} />)}
-          {!isMultiple && <CartesianDatePill x={pillX} y={bottom + 4} label={labelText ?? ""} text={theme.text} surface={theme.surface} width={pillWidth} />}
+          {points.map((series, index) => series[selected] && <CartesianFocusPoint key={index} x={focusX} y={focusY(series[selected], index)} color={colors[index]} />)}
+          {!isMultiple && <CartesianDatePill x={pillX} y={focusBottom + 4} label={labelText ?? ""} text={theme.text} surface={theme.surface} width={pillWidth} />}
         </>}
       </g>
     </svg>
