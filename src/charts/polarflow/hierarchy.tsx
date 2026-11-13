@@ -1,13 +1,15 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import type { EChartsOption } from "echarts";
+import { Sector } from "recharts";
 import { EChart } from "../EChart";
 import { useChartTheme } from "../theme";
-import { dollars, Legend, number, numeric, Pattern, percent, point, safeText, sector, tone, tooltip, useLoading, type Props } from "./shared";
+import { dollars, Legend, number, numeric, Pattern, percent, point, safeText, tone, tooltip, useLoading, type Props } from "./shared";
 import type { SunburstNode } from "./upstream/sunburst-data";
 import { buildArcs, geometryFor, ringOptions, sumValues } from "./upstream/sunburst-layout";
 import type { ArcGeometry } from "./upstream/sunburst-layout";
 import styles from "./styles.module.css";
+import sunburstStyles from "./sunburst.module.css";
 
 const branches: SunburstNode[] = [
   { name: "Platform", children: [{ name: "Cloud", children: [{ name: "Compute", children: [{ name: "Reserved", value: 22 }, { name: "On-demand", value: 16 }] }, { name: "Storage", value: 24 }] }, { name: "Database", children: [{ name: "Primary", value: 21 }, { name: "Replica", value: 12 }] }] },
@@ -99,18 +101,22 @@ export function Sunburst({ example, compact, data }: Props) {
   const [active, setActive] = useState<string | null>(null);
   const focus = focusById.get(selected ?? rootId) ?? focusById.get(rootId)!;
   const activeArc = arcs.find(item => item.id === active);
-  const radius = 101;
-  const rings = ringOptions(focus.depth, Math.max(1, maxDepth), radius);
+  const radius = 114;
+  const visibleDepth = useMemo(() => arcs.reduce((depth, item) => item.id.startsWith(`${focus.id} / `) ? Math.max(depth, item.depth) : depth, Math.min(maxDepth, focus.depth + 1)), [arcs, focus, maxDepth]);
+  const rings = ringOptions(focus.depth, Math.max(1, visibleDepth), radius);
   const targetArcs = useMemo(() => new Map(arcs.flatMap(item => {
-    const geometry = geometryFor(item, focus, maxDepth, radius);
+    const geometry = geometryFor(item, focus, visibleDepth, radius);
     return geometry && item.value > 0 ? [[item.id, { ...geometry, opacity: 1 }] as const] : [];
-  })), [arcs, focus, maxDepth]);
+  })), [arcs, focus, visibleDepth]);
   const visibleArcs = useArcMorph(targetArcs, compact);
-  const labels = arcs.filter(item => item.depth === 1);
+  const labels = arcs.filter(item => item.parentId === focus.id && item.value > 0);
   const ancestors = focus.id.split(" / ");
   const chart = useRef<SVGSVGElement>(null);
   const visibleIds = [...targetArcs.keys()];
   const toDegrees = 180 / Math.PI;
+  const cx = 140;
+  const cy = 132;
+  const showLegend = !compact && id === "sunburst-legend";
   function go(nextId: string | null, keyboard = false) {
     const next = nextId ?? rootId;
     setSelected(next);
@@ -118,9 +124,9 @@ export function Sunburst({ example, compact, data }: Props) {
   }
   function inspect(event: KeyboardEvent<SVGSVGElement>) {
     if (!visibleIds.length) return;
-    if (event.key === "Escape" && focus.parentId) {
-      event.preventDefault();
-      go(focus.parentId, true);
+    if (event.key === "Escape") {
+      if (focus.parentId) { event.preventDefault(); go(focus.parentId, true); }
+      else if (active) { event.preventDefault(); setActive(null); }
       return;
     }
     if (event.key === "Enter" || event.key === " ") {
@@ -135,55 +141,79 @@ export function Sunburst({ example, compact, data }: Props) {
     }
     const keys = focus.parentId ? [focus.id, ...visibleIds] : visibleIds;
     const index = keys.indexOf(active ?? "");
-    const offset = event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1;
-    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+    const last = keys.length - 1;
+    const previous = index <= 0 ? last : index - 1;
+    const following = (index + 1) % keys.length;
+    const next = { Home: 0, End: last, ArrowLeft: previous, ArrowUp: previous, ArrowRight: following, ArrowDown: following }[event.key];
+    if (next === undefined) return;
     event.preventDefault();
-    const next = event.key === "Home" ? 0 : event.key === "End" ? keys.length - 1 : (index + offset + keys.length) % keys.length;
     setActive(keys[next]);
   }
-  return <div className={styles.frame}>
-    {hasBreadcrumb && !compact && <div className={styles.controls} aria-label="Drill-down path">{ancestors.map((name, index) =>
-      <button key={index} className={styles.control} type="button" aria-current={index === ancestors.length - 1 ? "location" : undefined} onClick={() => go(ancestors.slice(0, index + 1).join(" / "))}>{name}</button>
-    )}</div>}
-    <svg ref={chart} className={styles.native} viewBox="0 0 420 240" role="img" aria-label={example.title} aria-roledescription="chart"
+  return <div className={sunburstStyles.frame}>
+    {hasBreadcrumb && !compact && <nav className={sunburstStyles.breadcrumb} aria-label="Drill-down path">{ancestors.map((name, index) =>
+      <span key={index}>{index > 0 && <span aria-hidden="true">›</span>}<button type="button" aria-current={index === ancestors.length - 1 ? "location" : undefined} onClick={() => go(ancestors.slice(0, index + 1).join(" / "))}>{name}</button></span>
+    )}</nav>}
+    <div className={`${sunburstStyles.body}${showLegend ? ` ${sunburstStyles.withLegend}` : ""}`}>
+    <svg ref={chart} className={sunburstStyles.plot} viewBox="0 0 280 264" role="img" aria-label={example.title} aria-roledescription="chart"
       aria-description="Use arrow keys to inspect segments and Enter or Space to zoom into a branch. Press Escape to move back."
       tabIndex={compact ? undefined : 0} onKeyDown={inspect} onFocus={() => setActive(previous => previous ?? visibleIds[0] ?? null)}
       onBlur={() => setActive(null)} onPointerLeave={() => { if (document.activeElement !== chart.current) setActive(null); }}>
-      <defs>{labels.map((item) => <Pattern key={item.id} id={`${uid}-${item.categoryIndex}`} color={tone(theme, item.categoryIndex)} />)}</defs>
+      {id === "sunburst-patterns" && <defs>{arcs.filter(item => item.depth === 1).map(item => <Pattern key={item.id} id={`${uid}-${item.categoryIndex}`} color={tone(theme, item.categoryIndex, item.color)} variant={item.categoryIndex} />)}</defs>}
+      {!targetArcs.size && <circle cx={cx} cy={cy} r={radius} fill="none" stroke={theme.grid} strokeWidth="1" />}
       {arcs.map((item) => {
         const geometry = visibleArcs.get(item.id);
-        if (!geometry || item.value <= 0) return null;
+        if (!geometry || item.value <= 0 || geometry.a1 - geometry.a0 < .0001) return null;
         const interactive = targetArcs.has(item.id);
         const highlighted = active === item.id || (active && active !== focus.id && item.id.startsWith(`${active} / `));
-        const color = id === "sunburst-segment-colors" && item.categoryIndex !== 2 ? theme.grid : tone(theme, item.categoryIndex, item.color);
-        const fill = id === "sunburst-patterns" && item.depth > 1 && item.categoryIndex % 2 === 0 ? `url(#${uid}-${item.categoryIndex})` : color;
+        const muted = id === "sunburst-segment-colors" && item.categoryIndex !== 2;
+        const color = muted ? theme.grid : tone(theme, item.categoryIndex, item.color);
+        const tint = Math.min(25, (item.depth - focus.depth - 1) * 9 + (item.arcIndex % 2) * 4);
+        const fill = id === "sunburst-patterns" && item.depth > 1 && item.categoryIndex % 2 === 0 ? `url(#${uid}-${item.categoryIndex})` : `color-mix(in srgb, ${color} ${100 - Math.max(0, tint)}%, var(--card))`;
         const click = interactive && item.hasChildren ? () => go(item.id) : undefined;
-        const middle = (geometry.a0 + geometry.a1) / 2;
-        const [tx, ty] = point(210, 120, (geometry.outerR + geometry.innerR) / 2, middle * toDegrees);
-        const enoughRoom = (geometry.outerR + geometry.innerR) / 2 * (geometry.a1 - geometry.a0) > item.name.length * 4.4;
-        const inset = Math.min(.5, (geometry.a1 - geometry.a0) * toDegrees / 4);
-        return <g key={item.id} opacity={geometry.opacity}><path d={sector(210, 120, geometry.outerR + (highlighted ? 3 : 0), geometry.innerR, geometry.a0 * toDegrees + inset, geometry.a1 * toDegrees - inset)}
-          fill={fill} fillOpacity={highlighted ? 1 : active ? .45 : 1 - Math.min(.5, .12 * (item.depth - 1))} stroke={theme.surface} strokeWidth="1.5"
-          role={click ? "button" : undefined} aria-label={interactive ? `${item.name}: ${number.format(item.value)}` : undefined}
-          onPointerEnter={interactive ? () => setActive(item.id) : undefined} onClick={click}
-          style={{ cursor: click ? "pointer" : "default", transition: "fill-opacity 150ms", pointerEvents: interactive ? "auto" : "none" }}>
-          {!customHint && <title>{`${item.trail.join(" › ")} · ${number.format(item.value)}`}</title>}
-        </path>
-        {!customHint && enoughRoom && geometry.innerR > 6 && <text pointerEvents="none" textAnchor="middle" x={tx} y={ty + 2.5}
-          fontSize="7" fontWeight="600" fill={id === "sunburst-segment-colors" && item.categoryIndex !== 2 ? theme.muted : "#fff"}>{item.name}</text>}
+        const start = geometry.a0 * toDegrees + 270;
+        const end = geometry.a1 * toDegrees + 270;
+        const mid = (start + end) / 2;
+        const midRadius = (geometry.outerR + geometry.innerR) / 2;
+        const [tx, ty] = point(cx, cy, midRadius, mid);
+        const radialSpace = geometry.outerR - geometry.innerR;
+        if (radialSpace < 1) return null;
+        const arcSpace = midRadius * (geometry.a1 - geometry.a0);
+        const horizontal = Math.abs(Math.sin(mid / toDegrees)) > .88;
+        const labelWidth = Math.max(0, Math.min(horizontal ? arcSpace : radialSpace * 1.15, 90) - 4);
+        const availableCharacters = Math.floor(labelWidth / 4.15);
+        const label = item.name.length <= availableCharacters ? item.name : `${item.name.slice(0, Math.max(0, availableCharacters - 1))}…`;
+        const rotation = (mid + 360) % 360;
+        const readableRotation = rotation > 90 && rotation < 270 ? rotation - 180 : rotation;
+        const inset = Math.min(geometry.innerR ? .38 : .18, (end - start) / 8);
+        return <g key={item.id} opacity={geometry.opacity} className={sunburstStyles.segment} data-dimmed={active !== null && active !== focus.id && !highlighted && !active.startsWith(`${item.id} / `)}>
+          <Sector cx={cx} cy={cy} innerRadius={geometry.innerR ? geometry.innerR + .43 : 0} outerRadius={geometry.outerR - .43 + (highlighted ? 2.5 : 0)}
+            startAngle={-start - inset} endAngle={-end + inset} cornerRadius={geometry.innerR ? Math.min(1.25, radialSpace / 6, arcSpace / 8) : 0}
+            fill={fill} role={click ? "button" : undefined} aria-label={interactive ? `${item.name}: ${number.format(item.value)}` : undefined}
+            onPointerEnter={interactive ? () => setActive(item.id) : undefined} onClick={click}
+            style={{ cursor: click ? "pointer" : "default", pointerEvents: interactive ? "auto" : "none" }}>
+            <title>{`${item.trail.join(" › ")} · ${number.format(item.value)}`}</title>
+          </Sector>
+          {!customHint && !compact && availableCharacters >= 4 && radialSpace > 12 && arcSpace > 12 && geometry.opacity > .7 && <text pointerEvents="none" textAnchor="middle" dominantBaseline="central" x={tx} y={ty}
+            transform={horizontal ? undefined : `rotate(${readableRotation}, ${tx}, ${ty})`}
+            className={sunburstStyles.label} data-muted={muted}>{label}</text>}
         </g>;
       })}
       {focus.parentId && <g role="button" aria-label="Back one level" style={{ cursor: "pointer" }} onClick={() => go(focus.parentId)}
         onPointerEnter={() => setActive(focus.id)}>
-        <circle cx="210" cy="120" r={Math.max(rings.centerR - 1, 12)} fill={theme.surface} stroke={active === focus.id ? tone(theme, 0) : theme.grid} />
-        <text x="210" y="124" textAnchor="middle" fill={theme.text} fontSize="14" pointerEvents="none">↑</text>
+        <circle cx={cx} cy={cy} r={Math.max(rings.centerR - 1.2, 12)} fill={theme.surface} stroke={active === focus.id ? tone(theme, 0) : theme.grid} />
+        <path d={`M${cx - 4} ${cy}l4 -4 4 4M${cx} ${cy - 4}v8`} stroke={theme.text} strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />
       </g>}
     </svg>
-    {!compact && id === "sunburst-legend" && <Legend items={labels.map(item => ({ name: item.name, value: item.value }))} theme={theme}
-      active={activeArc?.categoryIndex ?? null} onActive={index => setActive(index === null ? null : labels[index]?.id ?? null)}
-      percentageTotal={total}
-      onClick={index => { if (labels[index]?.hasChildren) go(labels[index].id); }} />}
-    {!compact && customHint && <div className={styles.hint}>{activeArc ? <><strong>{activeArc.name}</strong> · {dollars.format(activeArc.value * 1000)} · {percent(activeArc.value, total).toFixed(1)}%</> : "Focus a segment to inspect its share"}</div>}
+    {showLegend && <ul className={sunburstStyles.legend} aria-label="Visible branches">
+      {labels.map(item => <li key={item.id}><button type="button" data-active={active === item.id || !!active?.startsWith(`${item.id} / `)}
+        onPointerEnter={() => setActive(item.id)} onPointerLeave={() => setActive(null)} onFocus={() => setActive(item.id)} onBlur={() => setActive(null)}
+        onClick={() => { if (item.hasChildren) go(item.id); else setActive(item.id); }}>
+        <span className={sunburstStyles.swatch} style={{ background: tone(theme, item.categoryIndex, item.color) }} />
+        <span>{item.name}</span><strong>{number.format(item.value)}</strong><span>{Math.round(percent(item.value, total))}%</span>
+      </button></li>)}
+    </ul>}
+    </div>
+    {!compact && <div className={sunburstStyles.hint}>{activeArc && active !== focus.id ? <><strong>{activeArc.name}</strong> · {customHint && !data ? dollars.format(activeArc.value * 1000) : number.format(activeArc.value)} · {percent(activeArc.value, total).toFixed(1)}%</> : focus.parentId ? "Select the center to go back" : customHint ? "Focus a segment to inspect its cost" : "Select a branch to zoom in"}</div>}
     {!compact && <div className={styles.screenReader} role="status" aria-atomic="true">{active === focus.id && focus.parentId
       ? "Back one level" : activeArc ? `${activeArc.id.split(" / ").slice(1).join(" › ")}: level ${activeArc.depth}, value ${number.format(activeArc.value)}` : `Viewing ${focus.name}`}</div>}
   </div>;
