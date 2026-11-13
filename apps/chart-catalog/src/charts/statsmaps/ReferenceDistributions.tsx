@@ -71,7 +71,7 @@ export function ReferenceDistributions({ example, compact = false }: ChartPrevie
   const panelWidth = Math.min(width - 12, swarm ? 156 : grouped ? 207 : violin ? 244 : horizontal ? 182 : 150);
   const panelHeight = 38 + 26 * fields.length;
   const tooltipX = anchorX + panelWidth + 16 > width ? anchorX - panelWidth - 16 : anchorX + 16;
-  const tooltipY = horizontal ? anchorY - panelHeight / 2 : top;
+  const tooltipY = selectedDot || horizontal ? anchorY - panelHeight / 2 : top;
   const footer = footers[variant.replace(/-loading$/, "-default")];
   const loaderText = loadingFooters[variant];
   const nextLabel = loading ? loaderText[0] : footer[0];
@@ -137,21 +137,19 @@ export function ReferenceDistributions({ example, compact = false }: ChartPrevie
             stroke={stroke} strokeDasharray="4 4" />)}
         </g>
         <g aria-hidden="true" data-distribution-axes="" fontSize={compact ? 9 : 12} fill={axisColor}>
-          {grid.map(tick => horizontal ? <g key={tick}>
-            <text x={value(tick)} y={bottom + (compact ? 14 : 24)} textAnchor="middle">{shared ? `${tick} ms` : label(tick, integer)}</text>
-          </g> : <g key={tick}>
-            {!compact && <text x={left - 4} y={value(tick)} textAnchor="end" dominantBaseline="middle">{label(tick, integer)}</text>}
-          </g>)}
+          {grid.map(tick => horizontal
+            ? <text key={tick} x={value(tick)} y={bottom + (compact ? 14 : 24)} textAnchor="middle">{shared ? `${tick} ms` : label(tick, integer)}</text>
+            : !compact && <text key={tick} x={left - 4} y={value(tick)} textAnchor="end" dominantBaseline="middle">{label(tick, integer)}</text>)}
           {tickLabels.map(i => horizontal
             ? <text key={i} x={left - 4} y={positions[i]} textAnchor="end" dominantBaseline="middle">{compact ? names[i].slice(0, 1) : names[i]}</text>
             : <text key={i} x={positions[i]} y={bottom + (compact ? 14 : 24)} textAnchor="middle">{names[i]}</text>)}
         </g>
         <g aria-hidden="true" className="reference-distribution-marks" data-loading={loading} data-ready={loader && !loading}>
-          <g opacity={swarm && active !== null ? .3 : 1}>
-          {(shared ? [...dots].sort((a, b) => a.group - b.group || a.index - b.index) : dots).map(dot => <circle key={dot.index}
-            data-swarm={dot.name} data-swarm-index={dot.index} cx={dot.x} cy={dot.y} r={dot.radius} fill={dot.color}
-            style={{ "--distribution-delay": `${dot.index * 3}ms` } as CSSProperties} />)}
-          </g>
+          {swarm && <g opacity={active !== null ? .3 : 1}>
+            {(shared ? [...dots].sort((a, b) => a.group - b.group || a.index - b.index) : dots).map(dot => <circle key={dot.index}
+              data-swarm={dot.name} data-swarm-index={dot.index} cx={dot.x} cy={dot.y} r={dot.radius} fill={dot.color}
+              style={{ "--distribution-delay": `${dot.index * 3}ms` } as CSSProperties} />)}
+          </g>}
           {marks.map((mark, i) => {
             const { at, color, thickness, rect, marker } = mark;
             const lowCap = thickness / 4;
