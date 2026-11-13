@@ -1,5 +1,6 @@
 import { comparisonFixture } from "./comparison-fixtures";
 import { barFixture } from "./bar-fixtures";
+import { candleFixture } from "./candle-fixtures";
 import { lineFixture } from "./line-fixtures";
 import type { ChartData, ChartExample, ChartSeries } from "../../types";
 import { sparklineFixture } from "./sparkline-fixtures";
@@ -10,6 +11,7 @@ export interface CartesianData {
   categories: string[];
   series: ChartSeries[];
   rows?: ChartData["rows"];
+  candleDates?: Date[];
 }
 
 export type Candle = [open: number, close: number, low: number, high: number];
@@ -100,10 +102,12 @@ export function resolveData(example: ChartExample, data?: ChartData): CartesianD
   if (!data) return fixture;
   const series = data.series ? [...data.series] : fixture.series;
   const count = Math.max(0, ...series.map(item => item.values.length));
-  const categories = data.categories ? [...data.categories] : data.series && !data.rows
-    ? Array.from({ length: count }, (_, index) => String(index + 1))
-    : fixture.categories;
-  const usesCustomRows = example.family === "line" || (example.family === "sparkline" && Boolean(data.series));
+  const suppliedCandles = example.family === "candlestick" && data.rows;
+  const categories = data.categories ? [...data.categories] : suppliedCandles
+    ? suppliedCandles.map((row, index) => String(row.category ?? row.date ?? index + 1))
+    : data.series && !data.rows ? Array.from({ length: count }, (_, index) => String(index + 1)) : fixture.categories;
+  const usesCustomRows = example.family === "line"
+    || (["candlestick", "sparkline"].includes(example.family) && Boolean(data.series));
   return { categories, series, rows: data.rows ?? (usesCustomRows ? undefined : fixture.rows) };
 }
 
@@ -164,19 +168,7 @@ function makeFixture(example: ChartExample): CartesianData {
   }
   if (family === "sparkline") return sparklineFixture(id);
   if (family === "bar") return barFixture(id);
-  if (family === "candlestick") {
-    const weekly = id === "candlestick-colors";
-    const count = id === "candlestick-range" ? 92 : id === "candlestick-minimal" ? 20 : weekly ? 16 : id === "candlestick-pattern" ? 24 : 31;
-    const start = id === "candlestick-range" ? Date.UTC(2026, 7, 1) : id === "candlestick-minimal" ? Date.UTC(2026, 8, 1) : weekly ? Date.UTC(2026, 6, 6) : Date.UTC(2026, 9, id === "candlestick-pattern" ? 8 : 1);
-    const categories = weekly ? dates((count - 1) * 7 + 1, start).filter((_, index) => index % 7 === 0) : dates(count, start);
-    const base = weekly ? 408 : id === "candlestick-minimal" ? 60 : id === "candlestick-default" ? 194 : 154;
-    const prices = curve(count, 2, base * 100, base * 5, base * 0.26).map(value => value / 100);
-    const rows = prices.map((value, index) => {
-      const open = index ? prices[index - 1] : value - 1.38;
-      return { open, close: value, low: Math.min(open, value) - 1.26 - index % 3 * 0.31, high: Math.max(open, value) + 1.64 + index % 4 * 0.39, volume: 25 + (index * 7) % 31 };
-    });
-    return { categories, series: [], rows };
-  }
+  if (family === "candlestick") return candleFixture(id);
   if (["diverging", "lollipop", "dumbbell", "bump", "slope", "waterfall", "stream"].includes(family)) return comparisonFixture(id);
   if (family === "gantt") {
     const task = (name: string, start: number, end: number, progress: number, extra: Record<string, unknown> = {}) => ({ name, start, end, progress, ...extra });

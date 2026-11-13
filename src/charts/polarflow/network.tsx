@@ -85,7 +85,7 @@ export function Network({ example, compact, data }: Props) {
   function stopDrag(event: PointerEvent<SVGSVGElement>) {
     if (dragging.current?.pointer === event.pointerId) dragging.current = null;
   }
-  const visible = <div className={styles.graph}>
+  const visible = <div className={`${styles.graph} ${charts.measuredGraph}`}>
     <svg ref={plot} className={`${styles.native} ${charts.plot} ${charts.network}`} viewBox={`0 0 ${width} ${height}`} role="img" aria-roledescription="chart"
       aria-label={example.title} aria-busy={loading || undefined} tabIndex={compact || loading ? undefined : 0}
       onKeyDown={event => selectMark(event, hover, nodes.length, setHover)} onBlur={() => setHover(null)} onPointerLeave={() => { if (!dragging.current) setHover(null); }}

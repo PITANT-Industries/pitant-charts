@@ -10,7 +10,6 @@
 .cartesian-candles svg, .cartesian-live-plot svg { display: block; }
 .cartesian-candles svg:focus-visible, .cartesian-live-plot svg:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; border-radius: 6px; }
 .cartesian-candles--minimal { height: 320px; flex: none; }
-.cartesian-candle-tooltip { position: absolute; pointer-events: none; z-index: 1; }
 .cartesian-gantt-scroll { flex: 1; min-height: 0; min-width: 0; overflow-x: auto; overflow-y: hidden; }
 .cartesian-gantt-plot { height: 100%; }
 .cartesian-gantt-scroll:not(.cartesian-gantt-scroll--compact):not([data-gantt-layout="gantt-milestones"]) .cartesian-gantt-plot { min-width: 560px; }

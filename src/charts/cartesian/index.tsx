@@ -7,6 +7,7 @@ import { Choices } from "../../ui/Choices";
 import { EChart } from "../EChart";
 import { useChartTheme } from "../theme";
 import { ShadcnBasics } from "./ShadcnBasics";
+import { AreaDetail, detailedAreas } from "./AreaDetail";
 import { SparklineExamples } from "./Sparkline";
 import { AdvancedCartesian } from "./AdvancedCartesian";
 import { Candles } from "./Candles";
@@ -64,6 +65,8 @@ export default function Cartesian(props: ChartPreviewProps) {
   if (example.family === "candlestick") return <Candles key={example.id} example={example} data={source} compact={compact} theme={theme} />;
   if (example.family === "live-line") return <LiveLine key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
   if (example.id === "bar-stacked" || example.id === "line-threshold") return <AdvancedCartesian key={example.id} variant={example.id} label={example.title} data={source} compact={compact} theme={theme} />;
+  const area = example.id as keyof typeof detailedAreas;
+  if (!props.data && Object.hasOwn(detailedAreas, area)) return <AreaDetail key={area} variant={area} label={example.title} data={source} compact={compact} theme={theme} />;
   return <CartesianExample key={example.id} example={example} compact={compact} data={props.data} source={source} theme={theme} />;
 }
 

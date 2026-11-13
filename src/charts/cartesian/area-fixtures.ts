@@ -54,15 +54,20 @@ export function makeAreaFixture(id: string): CartesianData {
       ]);
     }
     case "area-forecast":
-      return records(monthSequence(2026, 12), [{ name: "Revenue", values: [48_200, 50_700, 53_400, 55_100, 58_600, 61_200, 63_800, 67_400, 70_800, 74_000, 77_650, 81_200] }], day => monthLabel.format(day));
+      return records(monthSequence(2026, 12), [{ name: "Revenue", values: [
+        48_200, 50_900, 53_400, 55_100, 58_600, 61_200, 63_900, 67_400, 70_800, 74_000, 77_500, 81_200,
+      ] }], day => monthLabel.format(day));
     case "area-reference-band": {
-      const values = wave(31, 217, 1.4, 37, 0.4).map((value, index) => index === 13 ? 169 : index === 14 ? 174 : Math.max(185, value));
+      const values = [
+        203, 234, 248, 240, 254, 236, 236, 234, 225, 223, 220, 201, 180, 176, 178, 192,
+        190, 190, 227, 223, 228, 251, 276, 274, 265, 277, 268, 255, 241, 243, 234,
+      ];
       return records(october, [{ name: "Sign-ups", values }]);
     }
     case "area-reference-range": {
-      const before = wave(11, 780, 9, 50, -0.35);
-      const launch = [2_960, 3_560, 3_140, 2_790, 2_490, 2_150, 1_990];
-      const after = wave(13, 1_300, 14, 50, -0.2);
+      const before = [770, 820, 810, 830, 860, 870, 820, 810, 820, 920, 840];
+      const launch = [2_800, 3_500, 3_060, 2_670, 2_430, 2_110, 1_920];
+      const after = [1_310, 1_320, 1_340, 1_320, 1_410, 1_420, 1_390, 1_410, 1_380, 1_460, 1_380, 1_370, 1_450];
       return records(october, [{ name: "Installs", values: [...before, ...launch, ...after] }]);
     }
     case "area-background":
@@ -77,7 +82,7 @@ export function makeAreaFixture(id: string): CartesianData {
     case "area-date-highlights":
       return records(october.slice(0, 22), [{ name: "Completed", values: [0, 4, 8, 12, 15, 18, 20, 22, 24, 26, 28, 29, 31, 32, 33, 34, 35, 36, 36, 37, 38, 38] }]);
     case "area-trend":
-      return records(monthSequence(2026, 10), [{ name: "Desktop", values: [204, 305, 310, 273, 275, 314, 362, 353, 341, 377] }]);
+      return records(monthSequence(2026, 10), [{ name: "Desktop", values: [186, 305, 237, 273, 209, 314, 352, 298, 341, 377] }]);
     case "area-value-labels":
       return records(monthSequence(2025, 24), [
         { name: "Desktop", values: wave(24, 1_800, 75, 545, 0.1, 10) },

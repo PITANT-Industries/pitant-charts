@@ -32,3 +32,12 @@
   @keyframes drawLink { from { stroke-dashoffset: 1; opacity: 0; } to { stroke-dashoffset: 0; opacity: .62; } }
 }
 .plot [data-mark='tree-node'] text { pointer-events: auto; }
+
+.measuredGraph {
+  flex-basis: var(--comparison-plot-height, 0);
+  block-size: var(--comparison-plot-height, auto);
+}
+:global(.comparison-measured) .measuredRadial {
+  inline-size: min(100%, 448px);
+  align-self: center;
+}

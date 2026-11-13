@@ -30,7 +30,7 @@ export function Donut({ example, compact, data, renderCenter }: Props) {
   const patterns = piePatterns[example.id]
   const patterned = Boolean(patterns)
   const glow = example.id === 'pie-glow'
-  const grows = half || example.id === 'pie-donut-grow'
+  const grows = half
   const custom = example.id === 'pie-center-custom' && !data
   const rows = metrics(data, fixture.names, fixture.values).filter((row) => row.value > 0)
   const total = sum(rows)
@@ -45,7 +45,7 @@ export function Donut({ example, compact, data, renderCenter }: Props) {
   const cx = 150
   const cy = half ? 145 : 130
   const outer = half ? 126 : 114
-  const inner = half ? 67 : showLegend ? 72 : example.id === 'pie-center-share' ? 75 : patterned ? 61 : 69
+  const inner = half ? 67 : showLegend ? 72 : patterned ? 61 : 69
   const labelY = half ? 122 : 133
   const baseLabel = data ? 'Total' : fixture.label
   const centerTitle = row?.name ?? baseLabel
@@ -109,7 +109,6 @@ export function Donut({ example, compact, data, renderCenter }: Props) {
             {custom && <text className={styles.caption} x={cx} y={labelY - 26}>{centerTitle}</text>}
             <text className={styles.value} x={cx} y={labelY} style={{ fontSize: visibleValue.length > 8 ? 22 : undefined }}>{visibleValue}</text>
             <text className={styles.caption} x={cx} y={labelY + 19}>{custom ? 'Units sold' : centerTitle}</text>
-            {example.id === 'pie-center-share' && row && <text className={styles.share} x={cx} y={labelY + 34}>{percentage.format(share)} of total</text>}
           </g>
         )}
       </svg>

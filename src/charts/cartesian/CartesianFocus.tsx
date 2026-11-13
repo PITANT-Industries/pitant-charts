@@ -8,14 +8,14 @@ export function cartesianPillWidth(label: string) {
   return Math.max(48, label.length * 7.2 + 26);
 }
 
-export function CartesianDatePill({ x, y, label, text, surface }: {
+export function CartesianDatePill({ x, y, label, text, surface, width = cartesianPillWidth(label) }: {
   x: number;
   y: number;
   label: string;
   text: string;
   surface: string;
+  width?: number;
 }) {
-  const width = cartesianPillWidth(label);
   return <g className="cartesian-focus-pill" data-line-date-pill="" aria-hidden="true" pointerEvents="none">
     <rect x={x - width / 2} y={y} width={width} height={32} rx={16} fill={text} style={{ fill: `var(--chart-focus-pill, ${text})` }} />
     <text x={x} y={y + 16} dominantBaseline="central" textAnchor="middle" fill={surface} fontSize={14} fontWeight={500}

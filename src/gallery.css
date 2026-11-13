@@ -140,6 +140,39 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 .comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; --comparison-height: clamp(320px, 58dvh, 540px); }
 .comparison h3 { font-size: 12px; font-weight: 590; color: var(--muted-foreground); margin: 0 0 6px; }
 .comparison .detail-plot { height: var(--comparison-height); }
+.comparison .detail-plot:has(> .comparison-measured) {
+  padding: 8px 16px;
+  display: flex;
+  align-items: safe center;
+}
+.comparison-measured {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  container-type: inline-size;
+}
+.comparison-measured > .chart-preview {
+  block-size: 50cqw;
+  min-block-size: 0;
+}
+.comparison-measured[data-plot-layout='tooltip-controls'] {
+  --comparison-plot-height: 50cqw;
+}
+.comparison-measured:is([data-plot-layout='tooltip-controls'], [data-plot-layout='candlestick']) > .chart-preview {
+  block-size: auto;
+}
+.comparison-measured[data-plot-layout='candlestick'] { --comparison-plot-height: 50cqw; }
+.comparison-measured[data-plot-id='candlestick-minimal'] { --comparison-plot-height: 320px; }
+.comparison-measured[data-plot-layout='landscape'] { --comparison-plot-height: 62.5cqw; }
+.comparison-measured[data-plot-layout='radial-tree'] { --comparison-plot-height: min(100cqw, 448px); }
+.comparison-measured:is([data-plot-layout='landscape'], [data-plot-layout='radial-tree']) > .chart-preview { block-size: auto; }
+.comparison-measured:is([data-plot-layout='pie'], [data-plot-layout='ring']) > .chart-preview {
+  margin-inline: auto;
+  inline-size: min(100%, var(--comparison-circle-size));
+  block-size: min(100cqw, var(--comparison-circle-size));
+}
+.comparison-measured[data-plot-layout='pie'] { --comparison-circle-size: 280px; }
+.comparison-measured[data-plot-layout='ring'] { --comparison-circle-size: 300px; }
+.comparison-reference-colors .chart-preview { font-family: 'Hanken Grotesk Variable', system-ui, sans-serif; }
 /* Reference chart palette sampled from the React preview, applied only to the local Compare plot. */
 .comparison-reference-colors {
   --background: oklch(1 0 0);

@@ -43,3 +43,8 @@
   .panel[data-tooltip-motion='eased'] { transition: transform 140ms ease-out; }
   .panel[data-tooltip-motion='matched'], .matchedGuide { transition: transform 280ms cubic-bezier(.2,1.3,.45,1); }
 }
+
+.tooltipGraph {
+  flex-basis: var(--comparison-plot-height, 0);
+  block-size: var(--comparison-plot-height, auto);
+}

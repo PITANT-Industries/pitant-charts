@@ -5,6 +5,8 @@ import type { EChartsOption } from "echarts";
 import { Choices } from "../../ui/Choices";
 import EChart from "../EChart";
 import { useChartTheme } from "../theme";
+import { ReferenceScatter } from "./ReferenceScatter";
+import { scatterFixtures, type ScatterKind } from "./scatter-fixtures";
 import {
   Grid, Legend, NoData, PLOT, SvgPlot, createRandom, domain, format, linear, normal,
   percent, seriesColors, ticks, useVariantLoading, xyData, type DemoProps, type HoverInfo, type Point,
@@ -19,33 +21,14 @@ const scatterCounts = [10000, 50000].map(value => ({ value: String(value), label
 const dollar = new Intl.NumberFormat("en", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const fractionalShare = new Intl.NumberFormat("en", { style: "percent", maximumFractionDigits: 1, minimumFractionDigits: 1 });
 
-function generateScatter(id: string): Point[] {
+function jitterPoints(): Point[] {
   const random = createRandom(18342);
-  if (id === "scatter-jitter") return Array.from({ length: 522 }, (_, index) => {
+  return Array.from({ length: 522 }, (_, index) => {
     const month = index % 12;
     const reviewed = index >= 242;
     const y = reviewed ? Math.max(25, Math.min(2500, 110 + random() ** 2.7 * 2400)) : Math.round(15 + random() ** 1.8 * 480);
     return { x: month + 1, y, group: reviewed ? "Reviewed" : "Auto-merged", label: monthLabels[month] };
   }).sort((a, b) => a.x - b.x);
-  if (id === "scatter-rings") return Array.from({ length: 21 }, (_, i) => ({
-    x: Date.UTC(2026, 9, 5) + i * dayMs,
-    y: Math.round(1200 + i * 10.2 + Math.sin(i / 1.7) * 48 + normal(random) * 43), group: "Orders",
-  }));
-  if (id === "scatter-solid") return Array.from({ length: 60 }, (_, i) => ({
-    x: Date.UTC(2026, 8, 1) + i * dayMs,
-    y: Math.round(Math.max(40, Math.min(250, 188 - i * 1.06 + Math.sin(i / 4) * 16 + normal(random) * 24))), group: "API",
-  }));
-  if (id === "scatter-outline") return Array.from({ length: 16 }, (_, i) => ({
-    x: Date.UTC(2026, 6, 6) + i * 7 * dayMs,
-    y: Math.max(0, 11.2 + i * .63 + Math.sin(i / 2) * 2.3 + normal(random) * 1.6), group: "Trials converted",
-  }));
-  return Array.from({ length: 24 }, (_, week) => {
-    const x = Date.UTC(2026, 4, 18) + week * 7 * dayMs;
-    return [
-      { x, y: Math.max(8, Math.round(260 + Math.sin(week / 3) * 155 + week * 2 + normal(random) * 22)), group: "Organic" },
-      { x, y: Math.max(8, Math.round(165 + Math.cos((week + 1) / 2.5) * 103 + normal(random) * 17)), group: "Referral" },
-    ];
-  }).flat();
 }
 
 function CanvasScatter({ example, compact, data }: DemoProps) {
@@ -98,6 +81,8 @@ function CanvasScatter({ example, compact, data }: DemoProps) {
 
 export function Scatter(props: DemoProps) {
   if (props.example.id === "scatter-large-data") return <CanvasScatter {...props} />;
+  const kind = props.example.id.slice("scatter-".length);
+  if (!props.data?.rows && !props.data?.series && Object.hasOwn(scatterFixtures, kind)) return <ReferenceScatter {...props} kind={kind as ScatterKind} />;
   return <ScatterSvg {...props} />;
 }
 
@@ -109,8 +94,7 @@ function ScatterSvg({ example, compact, data }: DemoProps) {
   const outlined = id === "scatter-outline";
   const solid = id === "scatter-solid";
   const jitter = id === "scatter-jitter";
-  const fixtureDates = !data && !jitter;
-  const points = useMemo(() => xyData(data) ?? generateScatter(id), [data, id]);
+  const points = useMemo(() => xyData(data) ?? (jitter ? jitterPoints() : []), [data, jitter]);
   if (!points.length) return <NoData example={example} compact={compact} />;
   const names = [...new Set(points.map((point) => point.group))];
   const palette = seriesColors(names, Array.from({ length: 8 }, (_, i) => `var(--chart-${i + 1})`), data);
@@ -118,12 +102,11 @@ function ScatterSvg({ example, compact, data }: DemoProps) {
   const yd: [number, number] = !data && (solid || outlined || jitter) ? [0, solid ? 250 : outlined ? 23 : 2600] : domain(points.map(({ y }) => y), .13);
   const x = linear(xd, [PLOT.left, PLOT.right]);
   const y = linear(yd, [PLOT.bottom, PLOT.top]);
-  const xTicks = !data ? jitter ? monthLabels.map((_, i) => i + 1) :
-    (defaultScatter ? [0, 8, 16, 23] : rings ? [0, 5, 10, 15, 20] : outlined ? [0, 5, 10, 15] : [0, 15, 30, 44, 59]).map((i) => points[defaultScatter ? i * 2 : i].x) : ticks(xd, 6);
+  const xTicks = jitter && !data ? monthLabels.map((_, i) => i + 1) : ticks(xd, 6);
   const yTicks = !data && (solid || outlined || jitter) ? (solid ? [0, 50, 100, 150, 200, 250] : outlined ? [0, 5, 10, 15, 20] : [0, 500, 1000, 1500, 2000, 2500]) : ticks(yd, 5);
   const sizes = rings ? [4.1, 8.5] : solid || jitter ? [jitter ? 2.15 : 3.5, 0] : [3.9, 6.8];
   const axisY = (value: number) => outlined ? percent.format(value / 100) : solid ? `${format.format(value)} ms` : jitter ? compactNumber.format(value) : format.format(value);
-  const axisX = (value: number) => fixtureDates ? dateLabel.format(value) : jitter && !data ? monthLabels[value - 1] : format.format(value);
+  const axisX = (value: number) => jitter && !data ? monthLabels[value - 1] : format.format(value);
   const labelFor = (point: Point) => point.label ?? axisX(point.x);
   const weeks = new Map<number, Point[]>();
   if (groupedHover) for (const point of points) {

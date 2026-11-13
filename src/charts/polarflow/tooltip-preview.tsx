@@ -209,7 +209,7 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
   return <div className={styles.frame}>
     {!compact && styled && <Controls label="Tooltip indicator style" items={["Line", "Thin", "Medium", "Thick"]} value={mode} onChange={setMode} />}
     {!compact && panelMotion && <Controls label="Tooltip movement" items={["Eased", "Matched", "Instant"]} value={mode} onChange={setMode} />}
-    <div className={styles.graph} ref={chartHost}>
+    <div className={`${styles.graph} ${tooltipStyles.tooltipGraph}`} ref={chartHost}>
       <svg ref={graph} className={styles.native} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={example.title}
         tabIndex={compact ? undefined : 0} onPointerMove={move} onPointerLeave={(event) => { if (pinned === null && event.pointerType !== "touch") setActive(null); }}
         onPointerUp={select}

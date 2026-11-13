@@ -116,7 +116,7 @@ export function Treemap({ example, compact, data }: Props) {
       {levels.map((level, index) => <Button key={index} className={styles.control} disabled={index === levels.length - 1}
         onClick={() => focusPath(realPath.slice(0, index))}>{level.name}</Button>)}
     </nav>}
-    <div className={styles.graph}>
+    <div className={`${styles.graph} ${charts.measuredGraph}`}>
       <svg ref={size.plot} className={`${styles.native} ${charts.plot}`} viewBox={`0 0 ${size.width} ${size.height}`} role="img" aria-roledescription="chart" aria-label={example.title}
         aria-busy={loading || undefined} tabIndex={compact || loading ? undefined : 0} onKeyDown={onKey} onBlur={() => setHover(null)} onPointerLeave={() => setHover(null)}>
         {back && !loading && <g className={charts.mark} onClick={() => focusPath(realPath.slice(0, -1))}>
@@ -247,7 +247,7 @@ export function Tree({ example, compact, data }: Props) {
   }
   return <div className={styles.frame}>
     {control}
-    <div className={styles.graph}>
+    <div className={`${styles.graph} ${charts.measuredGraph} ${mode === "radial" ? charts.measuredRadial : ""}`}>
       <svg ref={mode === "radial" ? size.plot : undefined} className={`${styles.native} ${charts.plot}`} viewBox={`0 0 ${viewWidth} ${viewHeight}`} role="img" aria-roledescription="chart" aria-label={example.title}
         aria-busy={loading || undefined} tabIndex={compact || loading ? undefined : 0} onBlur={() => setHover(null)} onPointerLeave={() => setHover(null)} onKeyDown={onKey}>
         {nodes.map((mark, index) => {

@@ -19,6 +19,7 @@ import { BrandMark, groupIcons, HeroChart } from './Visuals'
 import { FamilySelect } from './FamilySelect'
 import { notedCount, ParityOverview, parityNotes } from './ParityOverview'
 import type { ParityFilter } from './ParityOverview'
+import { comparisonPlot } from './comparison-plot'
 
 const pageSize = 12
 const referenceUrl = 'https://www.shadcn.io/charts'
@@ -142,18 +143,21 @@ function ReferenceComparison({ example, theme }: { example: ChartExample; theme:
   const [matchReference, setMatchReference] = usePreference('chart-library:compare-reference-colors', true)
   const params = new URLSearchParams({ c: example.id, theme })
   const note = parityNotes[example.id]
+  const plotLayout = comparisonPlot(example)
   return (
     <>
       <div className="comparison-options">
         <Toggle className="text-button comparison-palette-toggle" pressed={matchReference} onPressedChange={setMatchReference}>
-          <Palette size={15} aria-hidden="true" /> Match reference colors
+          <Palette size={15} aria-hidden="true" /> Match reference styling
         </Toggle>
       </div>
       <div className="comparison">
         <section aria-labelledby="comparison-local">
           <h3 id="comparison-local">Library</h3>
           <div className={matchReference ? 'detail-plot comparison-reference-colors' : 'detail-plot'} data-theme={matchReference ? theme : undefined}>
-            <ChartPreview key={example.id} example={example} />
+            {plotLayout ? <div className="comparison-measured" data-plot-layout={plotLayout} data-plot-id={example.id}>
+              <ChartPreview key={example.id} example={example} />
+            </div> : <ChartPreview key={example.id} example={example} />}
           </div>
         </section>
         <section aria-labelledby="comparison-reference">

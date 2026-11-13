@@ -20,16 +20,16 @@
     "remaining": "Compare precise overlap, fixture values, and dot styling."
   },
   "area-forecast": {
-    "checked": "The Revenue fill is continuous. A solid upper stroke ends in September and the dashed stroke continues to December, with all twelve months marked and one value in the tooltip.",
-    "remaining": "Compare exact monthly data and marker transitions."
+    "checked": "All 12 monthly revenue dates and values match the live reference, including $81,200 in December. A continuous area connects nine months of actuals to a three-month dashed forecast. The two traces and all 24 marker circles match measured bounds within 0.005 px at 728 × 364 and 358 × 179. Pointer, keyboard and touch show the selected date, revenue, enlarged ring and guide.",
+    "remaining": "Compare exact tooltip typography, rolling date-label motion, and the full marker reveal and hover timing across browsers."
   },
   "area-reference-band": {
-    "checked": "The target area sits between 180 and 240 sign-ups, with two dashed boundaries, inward markers, and two October dates below the lower edge.",
-    "remaining": "Compare exact daily counts, band opacity, and marker geometry."
+    "checked": "All 31 October sign-up dates and values match the live reference, including the 176 and 178 lows on October 14 and 15. The 180–240 band, two dashed rules, inward markers, and area bounds match within 0.005 px at 728 × 364 and 358 × 179. Pointer, keyboard and touch select the reference readouts.",
+    "remaining": "Compare exact tooltip typography, axis label fade, and hover and reveal timing across browsers."
   },
   "area-reference-range": {
-    "checked": "October 12–18 is highlighted with a shaded launch-week range and horizontal rules at its top and bottom.",
-    "remaining": "Compare fixture values and reference-band styling."
+    "checked": "All 31 October dates and install values match the live reference. October 12–18 totals 18,490 installs. The full-height range, its solid top and bottom rules, and the area bounds match within 0.005 px at 728 × 364 and 358 × 179. Pointer, keyboard and touch select the reference readouts.",
+    "remaining": "Compare exact tooltip typography, axis label fade, and hover and reveal timing across browsers."
   },
   "area-background": {
     "checked": "A diagonal texture fades horizontally and replaces the grid behind the August Requests area.",
@@ -44,8 +44,8 @@
     "remaining": "Compare hatch styling and transition timing."
   },
   "area-trend": {
-    "checked": "A separate least-squares line fades at both ends over ten monthly Desktop points. The tooltip reports only actual visits.",
-    "remaining": "Compare exact fixture values and trend styling."
+    "checked": "All ten monthly Desktop dates and values match the live reference. The elapsed-time least-squares fit uses a 2.5 px stroke with a two-color edge fade. Fit, fill, and trace bounds match within 0.005 px at 728 × 364 and 358 × 179. Pointer, keyboard and touch report only the measured series.",
+    "remaining": "Compare exact tooltip typography, rolling date-label motion, and the full trend and area reveal across browsers."
   },
   "area-value-labels": {
     "checked": "The chart proposes up to five formatted values per device series and suppresses overlaps. The tooltip retains both original values.",
@@ -288,20 +288,20 @@
     "remaining": "Compare the exact skeleton curve and motion timing."
   },
   "scatter-default": {
-    "checked": "The tooltip groups both series for a week, and unrelated marks blur during inspection.",
-    "remaining": "Compare precise tooltip and blur treatment with the reference fixture."
+    "checked": "All 24 weekly Organic and Referral readouts match. At both tested plot sizes, the 48 point centers and horizontal grid match within 0.005 px. Pointer or keyboard selection shows both rings for the week and blurs and dims the other marks.",
+    "remaining": "Compare the animated date pill and precise hover and entrance timing."
   },
   "scatter-rings": {
-    "checked": "The preview shows 21 daily points with wider rings and a stronger hover fade.",
-    "remaining": "Compare point spacing and marker geometry."
+    "checked": "All 21 daily order readouts match, and the point centers and grid align within 0.005 px. Each order has a 5 px core and 10 px outer ring. The focused date stays sharp while other marks dim and blur.",
+    "remaining": "Compare hover transition curves, tooltip placement near the edge, and entrance timing."
   },
   "scatter-solid": {
-    "checked": "The axes display daily samples and milliseconds.",
-    "remaining": "Compare value scale and hover styling."
+    "checked": "All 60 daily p95 latency readouts match, including ms units and the true date spacing around the October clock change. Filled 4 px points and grid positions match within 0.005 px at both tested sizes.",
+    "remaining": "Compare entrance timing and exact y-axis and readout typography."
   },
   "scatter-outline": {
-    "checked": "The axes display dates and percentages.",
-    "remaining": "Compare ring styling and axis label spacing."
+    "checked": "All 16 weekly trial-to-paid percentages match. The muted 9 px outline surrounds each filled core and inner ring. Point and grid coordinates differ by at most 0.005 px across both tested widths.",
+    "remaining": "Compare tooltip type, grid fade, and motion curves in both themes."
   },
   "scatter-jitter": {
     "checked": "The preview shows 522 points in 12 month columns and reports the nearest point to the pointer.",
@@ -312,28 +312,28 @@
     "remaining": "Compare individual request fixtures, point appearance, and hover inspection under sustained pointer movement."
   },
   "candlestick-default": {
-    "checked": "Thirty-one daily candles expose currency OHLC values and dim unrelated candles during inspection.",
-    "remaining": "Compare exact prices and candle animation."
+    "checked": "All 31 dates and 124 OHLC prices match. Each body has separate upper and lower wicks. A vertical guide, Close marker and date pill appear on inspection as other candles dim to 30%.",
+    "remaining": "Compare date-pill typography and entrance and pointer transition timing."
   },
   "candlestick-minimal": {
-    "checked": "The preview stays 320 pixels tall, keeps the date axis, and shows Close alone in the tooltip.",
-    "remaining": "Compare spacing and stroke treatment."
+    "checked": "All 20 dates and Close readouts match. The 320 px plot shows date ticks, a vertical guide and a Close marker. It omits the price scale and grid.",
+    "remaining": "Compare exact tooltip typography, edge placement and transition timing."
   },
   "candlestick-colors": {
-    "checked": "Sixteen weekly candles use separate theme colors and 18-pixel bodies at desktop width.",
-    "remaining": "Compare the exact palette and resizing behavior."
+    "checked": "All 16 weekly dates and 64 OHLC prices match. Rising and falling marks use chart colors 2 and 5. Bodies measure 18 px at 728 px plot width and 13.9 px at 358 px.",
+    "remaining": "Compare entrance and hover timing and typography."
   },
   "candlestick-range": {
-    "checked": "The three range choices show 92, 30, or 14 candles with the same ending date.",
-    "remaining": "Compare rescaling and transitions."
+    "checked": "The range buttons change the visible set to 92, 30 or 14 candles, rescale the price axis and show the correct return of 14.2%, 8.9% or 3.7%. All 92 dates and 368 prices match. The last candle remains October 31.",
+    "remaining": "Compare range morphing, precise tooltip motion and typography."
   },
   "candlestick-crosshair": {
-    "checked": "Candle bodies use gradients and the cursor changes color with rising and falling candles.",
-    "remaining": "Compare the gradient stops and easing."
+    "checked": "All 30 dates and 120 OHLC prices match. Candle bodies and wicks use two-stop directional gradients, and the fading vertical guide changes color for rising and falling candles.",
+    "remaining": "Compare exact fade timing and date-pill transitions."
   },
   "candlestick-pattern": {
-    "checked": "Diagonal bodies, solid wicks, and the rising and falling counts are visible.",
-    "remaining": "Compare hatch spacing and local prices."
+    "checked": "The 24 October candles use 6 px diagonal stripes, solid split wicks, price labels and no grid. The footer shows 14 rising and 10 falling days and a 3.7% return. The plot has no hover tooltip.",
+    "remaining": "Compare pixel-level stripe treatment, footer typography and entrance timing."
   },
   "composed-default": {
     "checked": "The chart shows run-rate area, units bars, and revenue line with dollar labels.",
@@ -584,12 +584,12 @@
     "remaining": "Compare service colors and grid spacing."
   },
   "pie-default": {
-    "checked": "Five solid wedges use the reference sales categories and total $12,100. Keyboard inspection starts with Electronics at $4,250 and 35.1% and reaches Other.",
-    "remaining": "Compare wedge geometry, the reference pointer tooltip, and entrance motion."
+    "checked": "All five October sales wedges match measured idle and active bounds at 280 px. Selecting a slice lifts it 10 px and dims the others to 40%. All five values and shares were verified in desktop and mobile Chrome in both themes.",
+    "remaining": "Compare entrance timing frame by frame and browser-specific SVG rasterization."
   },
   "pie-center": {
-    "checked": "Four subscription plans add to $120,000. The center changes from the total to the inspected plan value, starting at Starter $18,400.",
-    "remaining": "Compare digit animation, hover tooltip, and exact arc geometry."
+    "checked": "Four arcs match the reference 130 px outer and 80 px inner radii. The center rolls from $120,000 to the selected plan, with all four values and shares checked. Reduced motion uses immediate values.",
+    "remaining": "Compare exact center text metrics and digit easing."
   },
   "pie-center-custom": {
     "checked": "Caller-supplied center content receives the focused segment, value, total, and share.",
@@ -616,16 +616,16 @@
     "remaining": "Compare corner geometry, color assignment, and tooltip styling."
   },
   "pie-center-share": {
-    "checked": "Keyboard inspection replaces the center total with the selected category and its share. Electronics shows 4,250 and 35.1% of 12,100 sales.",
-    "remaining": "Compare center layout, rolling digits, and pointer transitions."
+    "checked": "Five wedges match measured bounds with the 85 px hole. The center shows 12,100 at rest and the selected value in its series color. All five percentage readouts match, including 35.1% for Electronics.",
+    "remaining": "Compare center text metrics and entrance timing frame by frame."
   },
   "pie-hover-effects": {
     "checked": "Translate, Grow, and None are available. None leaves slices stationary and undimmed.",
     "remaining": "Compare the translate and grow motion curves."
   },
   "pie-donut-grow": {
-    "checked": "The five browser groups total 92,500 sessions. Active selection expands the selected wedge outward and updates the center to its value.",
-    "remaining": "Compare exact growth distance, animation timing, and hover tooltip."
+    "checked": "All five browser shares match the reference. Selection grows the outer radius from 130 to 140 px while the inner radius stays at 75 px. The center rolls from 92,500 sessions to the selected browser count.",
+    "remaining": "Compare exact digit easing, text metrics, and intermediate entrance frames."
   },
   "pie-glow": {
     "checked": "The four cloud service values total $38,740. Selection applies a color-matched glow to the active rounded wedge and reads its value and share.",
@@ -640,8 +640,8 @@
     "remaining": "Compare texture scale, arc spacing, and hover timing."
   },
   "ring-default": {
-    "checked": "Five full-circle tracks use a 5,000-session goal. Organic reads 4,250 and 85%, and the center returns to 12,100 sessions at rest.",
-    "remaining": "Compare cap geometry, stroke widths, and entrance motion."
+    "checked": "Five tracks and rounded progress arcs match measured 300 px plot bounds. Selection scales its ring by 3%, dims others to 35%, and rolls from 12,100 to the channel value. All five goal readouts match. The entrance uses 1.1 second scaling and 80 ms stagger.",
+    "remaining": "Compare exact center text metrics and frame timing. The plot scales to fit narrow containers."
   },
   "ring-center-custom": {
     "checked": "Caller-supplied center content receives the active ring's target and attainment fraction. The idle state reports the aggregate.",

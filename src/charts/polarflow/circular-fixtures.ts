@@ -33,7 +33,7 @@ interface RingFixture {
 }
 
 export const ringFixtures: Readonly<Record<string, RingFixture | undefined>> = {
-  "ring-default": { label: "Total sessions", names: ["Organic", "Paid", "Email", "Social", "Referral"], values: [4250, 3120, 2100, 1580, 1050], maximum: 5000, start: 180, sweep: 360 },
+  "ring-default": { label: "Total Sessions", names: ["Organic", "Paid", "Email", "Social", "Referral"], values: [4250, 3120, 2100, 1580, 1050], maximum: 5000, start: 180, sweep: 360 },
   "ring-arc": { label: "Used", names: ["Photos", "Backups", "Documents"], values: [86, 41, 24], maximum: 200, start: 135, sweep: 270, unit: " GB" },
   "ring-legend": { label: "Signups", names: ["Organic", "Paid", "Referral", "Partners"], values: [4250, 3120, 1480, 860], maximum: [5000, 5000, 2000, 1500], start: 180, sweep: 360 },
   "ring-grid": { label: "Steps", names: ["Ana", "Ben", "Chloe"], values: [8200, 6400, 9100], maximum: 10000, start: 90, sweep: 270 },

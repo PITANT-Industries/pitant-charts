@@ -1,0 +1,52 @@
+.candle-range-controls {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-block-end: 4px;
+}
+.candle-range-controls button {
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--foreground);
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 12px;
+}
+.candle-range-controls button:hover,
+.candle-range-controls button[aria-pressed="true"] {
+  background: var(--muted);
+}
+.candle-readout {
+  position: absolute;
+  z-index: 1;
+  width: max-content;
+  max-width: calc(100% - 8px);
+  pointer-events: none;
+}
+.candle-readout .cartesian-focus-readout { min-width: 140px; }
+.candle-readout .cartesian-focus-readout-title { line-height: 16px; margin-block-end: 8px; }
+.candle-readout .cartesian-focus-readout-values { display: flex; flex-direction: column; gap: 6px; }
+.candle-readout .cartesian-focus-readout-row,
+.candle-readout .cartesian-focus-readout-row:last-child { min-height: 20px; }
+.candle-summary {
+  display: grid;
+  flex: none;
+  gap: 4px;
+  border-block-start: 1px solid var(--border);
+  background: var(--muted);
+  padding: 8px 4px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.candle-summary strong { display: flex; align-items: center; gap: 6px; font-weight: 560; color: var(--foreground); }
+.comparison-measured[data-plot-layout="candlestick"] .candle-example { height: auto; }
+.comparison-measured[data-plot-layout="candlestick"] .cartesian-candles {
+  flex: none;
+  height: var(--comparison-plot-height, auto);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .candle-mark { transition: opacity 160ms ease-out; }
+}
