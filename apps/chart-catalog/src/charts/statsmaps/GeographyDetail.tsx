@@ -7,7 +7,9 @@ import type { Topology, GeometryCollection } from "topojson-specification";
 import countries from "world-atlas/countries-110m.json";
 import { CartesianReadout } from "../cartesian/CartesianFocus";
 import { usePlotSize } from "../usePlotSize";
-import type { DemoProps } from "./primitives";
+import { NoData, type DemoProps } from "./primitives";
+import { callerDomain, callerPosition, callerTicks } from "./caller-spatial-scale";
+import { stationVectors } from "./station-vector-data";
 import {
   bubbleCategories, bubbleDefault, bubbleLoading, bubblePlaceholders, bubblePlaceholdersNarrow, bubbleRegion,
   globeDefault, globeLoading, globePlaceholders, globeSized,
@@ -22,6 +24,7 @@ const countryShapes = feature(atlas, atlas.objects.countries).features;
 const sphere = { type: "Sphere" } as const;
 const wholeGrid = geoGraticule().step([20, 20])();
 const metric = new Intl.NumberFormat("en");
+const callerMetric = new Intl.NumberFormat("en", { maximumSignificantDigits: 5 });
 const palette = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)"];
 const speeds = ["0.0 m/s–1.0 m/s", "1.0 m/s–4.2 m/s", "4.2 m/s–9.4 m/s", "9.4 m/s+"];
 const compass = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
@@ -152,21 +155,24 @@ function mapModel(slug: GeoVariant, width: number, height: number, rotation: Poi
     sphere: globe || flatGrid ? path(sphere) : null, grid: showGrid ? path(wholeGrid) : null };
 }
 
-function vectorModel(slug: GeoVariant, width: number, height: number, compact: boolean) {
+function vectorModel(slug: GeoVariant, width: number, height: number, compact: boolean, data?: DemoProps["data"]) {
   const stations = slug === "vector-field-stations";
   const left = compact ? 18 : stations ? 59 : 56;
   const right = Math.max(left + 1, width - (compact ? 15 : stations ? 31 : 28));
   const top = compact ? 14 : stations ? 27 : 24;
   const bottom = Math.max(top + 1, height - (compact ? 20 : stations ? 47 : 44));
-  const x = (value: number) => left + (right - left) * (stations ? value : value + 12.5) / 40;
-  const y = (value: number) => bottom - (bottom - top) * (stations ? value / 50 : (value - 35) / 25);
-  const xTicks = stations ? [0, 10, 20, 30, 40] : [-10, 0, 10, 20];
-  const yTicks = stations ? [0, 10, 20, 30, 40, 50] : [35, 40, 45, 50, 55, 60];
-  const marks = (stations ? windStations : windField).map(([lon, lat, name, speed, bearing, bucket, dx, dy, leftX, leftY, rightX, rightY]) => {
+  const source = data && stations ? stationVectors(data) : stations ? windStations : windField;
+  const xd: Point = data ? callerDomain(source.map(point => point[0]), .12) : stations ? [0, 40] : [-12.5, 27.5];
+  const yd: Point = data ? callerDomain(source.map(point => point[1]), .12) : stations ? [0, 50] : [35, 60];
+  const x = (value: number) => data ? callerPosition(value, xd, left, right) : left + (right - left) * (value - xd[0]) / (xd[1] - xd[0]);
+  const y = (value: number) => data ? callerPosition(value, yd, bottom, top) : bottom - (bottom - top) * (value - yd[0]) / (yd[1] - yd[0]);
+  const xTicks = data ? callerTicks(xd, 5) : stations ? [0, 10, 20, 30, 40] : [-10, 0, 10, 20];
+  const yTicks = data ? callerTicks(yd, 6) : stations ? [0, 10, 20, 30, 40, 50] : [35, 40, 45, 50, 55, 60];
+  const marks = source.map(([lon, lat, name, speed, bearing, bucket, dx, dy, leftX, leftY, rightX, rightY], index) => {
     const at: Point = [x(lon), y(lat)];
     const label = stations ? name : heading(lon, lat);
     const color = stations ? chartColor(1) : windColor(bucket);
-    const target: Target = { key: label, label, at,
+    const target: Target = { key: data ? `${index}:${label}` : label, label, at,
       entries: stations ? undefined : [{ name: "Speed", color, value: speed.toFixed(1) + " m/s" }, { name: "Direction", color, value: compass[Math.round(bearing / 45) % 8] + " " + bearing + "°" }],
       bare: stations ? speed + " km/h toward " + bearing + "°" : undefined,
     };
@@ -187,10 +193,18 @@ function ChartMark({ target, selected, compact, onPick, children }: { target: Ta
     onPointerLeave={!compact ? event => { if (event.pointerType !== "touch") onPick(); } : undefined}>{children}</g>;
 }
 
-export function GeographyDetail({ example, compact }: DemoProps) {
+export function GeographyDetail(props: DemoProps) {
+  if (props.data && !stationVectors(props.data).length) return <NoData example={props.example} compact={props.compact} />;
+  return <GeographyChart {...props} />;
+}
+
+function GeographyChart({ example, compact, data }: DemoProps) {
   const slug = example.id as GeoVariant;
   const id = useId();
-  const [title, description, summary, footnote, pending, loadingLabel] = geoTitle[slug] as readonly [string, string, string, string, string?, string?];
+  const fixtureText = geoTitle[slug] as readonly [string, string, string, string, string?, string?];
+  const [title, description, summary, footnote, pending, loadingLabel] = data
+    ? [example.title, "Station positions in kilometres; wind speed in km/h", `${stationVectors(data).length} stations`, "Use the arrow keys to inspect stations"]
+    : fixtureText;
   const [loading, setLoading] = useState(Boolean(pending));
   const [selectedKey, setSelectedKey] = useState<string>();
   const baseRotation: Point = slug === "globe-sized" ? [60, -15] : [-12, -30];
@@ -201,7 +215,7 @@ export function GeographyDetail({ example, compact }: DemoProps) {
   const globe = slug.startsWith("globe-");
   const aspect = globe || slug === "bubble-map-region" ? "4 / 3" : vector || slug === "route-map-region" ? "16 / 9" : "2 / 1";
   const map = useMemo(() => vector ? undefined : mapModel(slug, width, height, rotation), [slug, width, height, rotation, vector]);
-  const arrows = useMemo(() => vector ? vectorModel(slug, width, height, Boolean(compact)) : undefined, [slug, width, height, compact, vector]);
+  const arrows = useMemo(() => vector ? vectorModel(slug, width, height, Boolean(compact), data) : undefined, [slug, width, height, compact, vector, data]);
   const targets = map?.targets ?? arrows?.targets ?? [];
   const selected = loading ? undefined : targets.find(target => target.key === selectedKey);
   const select = (target?: Target) => {
@@ -351,8 +365,8 @@ export function GeographyDetail({ example, compact }: DemoProps) {
               {arrows.stations && arrows.xTicks.map(v => <line key={v} x1={arrows.x(v)} x2={arrows.x(v)} y1={arrows.top} y2={arrows.bottom} />)}
             </g>
             {!compact && <g fill="var(--muted-foreground)" fontSize={12}>
-              {arrows.xTicks.map(v => <text key={v} x={arrows.x(v)} y={height - 8} textAnchor="middle">{arrows.stations ? v + " km" : Math.abs(v) + (v < 0 ? "°W" : "°E")}</text>)}
-              {arrows.yTicks.map(v => <text key={v} x={36} y={arrows.y(v)} textAnchor="end" dominantBaseline="middle">{v + (arrows.stations ? " km" : "°N")}</text>)}
+              {arrows.xTicks.map(v => <text key={v} x={arrows.x(v)} y={height - 8} textAnchor="middle">{arrows.stations ? (data ? callerMetric : metric).format(v) + " km" : Math.abs(v) + (v < 0 ? "°W" : "°E")}</text>)}
+              {arrows.yTicks.map(v => <text key={v} x={36} y={arrows.y(v)} textAnchor="end" dominantBaseline="middle">{(data ? callerMetric : metric).format(v) + (arrows.stations ? " km" : "°N")}</text>)}
             </g>}
             {loading ? <g clipPath={`url(#${id}-bounds)`} opacity=".62">
               {Array.from({ length: loadingColumns * loadingRows }, (_, index) => {

@@ -74,10 +74,10 @@ export default function Cartesian(props: ChartPreviewProps) {
   const streaming = example.family === "live-line" && Boolean(props.liveStream);
   const source = useMemo(() => streaming && !props.data ? { categories: [], series: [] }
     : resolveData(example, props.data), [streaming, example, props.data]);
-  if (!props.data && Object.hasOwn(schedules, example.id)) return <GanttDetail key={example.id} variant={example.id as ScheduleVariant} label={example.title} compact={compact} />;
+  if (Object.hasOwn(schedules, example.id)) return <GanttDetail key={example.id} variant={example.id as ScheduleVariant} label={example.title} compact={compact} data={props.data} />;
   if (!props.data && isComparisonMarksVariant(example.id)) return <ComparisonMarksDetail key={example.id} variant={example.id} label={example.title} compact={compact} theme={theme} />;
   if (!props.data && (example.family === "bump" || example.family === "slope") && isRankingDetail(example.id)) return <RankingDetail key={example.id} example={example} source={source} compact={compact} theme={theme} />;
-  if (!props.data && example.family === "stream") return <ReferenceStream {...props} key={example.id} />;
+  if (example.family === "stream") return <ReferenceStream {...props} key={example.id} />;
   if (!props.data && example.family === "diverging") return <ReferenceDiverging {...props} key={example.id} />;
   if (example.family === "candlestick") return <Candles key={example.id} example={example} data={source} compact={compact} theme={theme} />;
   if (example.family === "live-line") return <LiveLine key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data && !props.liveStream} stream={props.liveStream} />;

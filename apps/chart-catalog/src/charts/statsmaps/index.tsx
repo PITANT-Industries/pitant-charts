@@ -10,6 +10,7 @@ import { isSpatialDensityVariant, SpatialDensityDetail } from "./SpatialDensityD
 import { DistributionDetail, isDistributionDetail } from "./DistributionDetail";
 import { ReferenceDistributions } from "./ReferenceDistributions";
 import { ChoroplethDetail } from "./ChoroplethDetail";
+import { hasCartesianStations } from "./station-vector-data";
 import "./styles.css";
 
 const renderers = {
@@ -32,9 +33,10 @@ const renderers = {
 };
 
 export default function StatisticalAndSpatialChart(props: DemoProps) {
-  if (!props.data && props.example.family === "choropleth") return <ChoroplethDetail key={props.example.id} {...props} />;
-  if (!props.data && ["bubble-map", "route-map", "globe", "vector-field"].includes(props.example.family)) return <GeographyDetail key={props.example.id} {...props} />;
-  if (!props.data && isSpatialDensityVariant(props.example.id)) return <SpatialDensityDetail key={props.example.id} {...props} />;
+  if (props.example.family === "choropleth") return <ChoroplethDetail key={props.example.id} {...props} />;
+  if ((!props.data && ["bubble-map", "route-map", "globe", "vector-field"].includes(props.example.family))
+    || props.example.id === "vector-field-stations" && props.data && hasCartesianStations(props.data)) return <GeographyDetail key={props.example.id} {...props} />;
+  if ((!props.data || props.example.id === "density-groups") && isSpatialDensityVariant(props.example.id)) return <SpatialDensityDetail key={props.example.id} {...props} />;
   if (!props.data && isDistributionDetail(props.example.id)) return <DistributionDetail key={props.example.id} {...props} />;
   if (!props.data && props.example.family === "uncertainty" && isUncertaintyDetail(props.example.id)) return <UncertaintyDetail key={props.example.id} {...props} />;
   if (!props.data && ["beeswarm", "violin", "box-plot"].includes(props.example.family)) return <ReferenceDistributions key={props.example.id} {...props} />;

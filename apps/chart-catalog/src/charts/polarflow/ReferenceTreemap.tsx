@@ -6,6 +6,7 @@ import { usePlotSize } from "../usePlotSize";
 import { skeletonTiles, treemapTiles, type TreemapTile } from "./reference-treemap-layout";
 import { captureTreemapLayout, glideTreemapLayout } from "./reference-treemap-motion";
 import { dollars, nextChartFocus, number, percent, type Props } from "./shared";
+import { referenceTreemapData } from "./reference-caller-data";
 import { referenceTreemapFixtures } from "./reference-treemap-fixtures";
 import type { SunburstNode } from "./upstream/sunburst-data";
 import { sumValues } from "./upstream/sunburst-layout";
@@ -27,8 +28,20 @@ const leafValue = (id: string, value: number) => {
   return value >= 1000 ? `$${value >= 10000 ? Math.round(value / 1000) : (value / 1000).toFixed(1)}k` : dollars.format(value);
 };
 
-function hierarchyAt(root: SunburstNode, path: string[]) {
-  return path.reduce((node, name) => node.children?.find(child => child.name === name) ?? node, root);
+function hierarchyAt(root: SunburstNode, path: readonly number[]) {
+  return path.reduce((node, index) => node.children?.[index] ?? node, root);
+}
+
+function pathNames(root: SunburstNode, path: readonly number[]) {
+  const names: string[] = [];
+  let node = root;
+  for (const index of path) {
+    const child = node.children?.[index];
+    if (!child) break;
+    names.push(child.name);
+    node = child;
+  }
+  return names;
 }
 
 function fitLabel(label: string, width: number, size: number, measure: (text: string, size: number, weight: number) => number, weight = 500) {
@@ -101,7 +114,7 @@ function TreemapReadout({ readout, point, width, height, portfolio }: {
   </div>;
 }
 
-export function ReferenceTreemap({ example, compact = false }: Props) {
+export function ReferenceTreemap({ example, compact = false, data }: Props) {
   const id = example.id;
   const theme = useChartTheme();
   const [textContext] = useState(() => typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d"));
@@ -113,10 +126,11 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
   const isPortfolio = id === "treemap-portfolio";
   const hasLoading = id === "treemap-loading";
   const hasDrilldown = id === "treemap-drilldown";
-  const root = referenceTreemapFixtures[id] ?? referenceTreemapFixtures["treemap-default"];
+  const root = useMemo(() => referenceTreemapData(data, referenceTreemapFixtures[id] ?? referenceTreemapFixtures["treemap-default"]), [data, id]);
+  const formatValue = (value: number) => data && !hasDrilldown && !hasLoading ? number.format(value) : leafValue(id, value);
   const total = sumValues(root);
   const [loading, setLoading] = useState(hasLoading);
-  const [path, setPath] = useState<string[]>([]);
+  const [path, setPath] = useState<number[]>([]);
   const [focus, setFocus] = useState<Focus | null>(null);
   const [keyboardFocus, setKeyboardFocus] = useState<number | null>(null);
   const [entering, setEntering] = useState(true);
@@ -125,20 +139,21 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
   const pendingLayout = useRef<ReturnType<typeof captureTreemapLayout> | null>(null);
   const finishLayout = useRef<(() => void) | null>(null);
   const current = hierarchyAt(root, path);
+  const displayPath = pathNames(root, path);
   const measured = usePlotSize<SVGSVGElement>(576, isPortfolio ? 288 : 360);
   const { plot } = measured;
   // Use the declared aspect ratio instead of a browser's quantized block size.
   const width = measured.width;
   const height = compact ? measured.height : width / (isPortfolio ? 2 : 1.6);
   const entranceScale = 420 / (width + height);
-  const marks = useMemo(() => loading ? [] : treemapTiles(root, path, current, width, height, isPortfolio),
-    [current, height, isPortfolio, loading, path, root, width]);
+  const marks = useMemo(() => loading || total <= 0 ? [] : treemapTiles(root, pathNames(root, path), current, width, height, isPortfolio, path),
+    [current, height, isPortfolio, loading, path, root, total, width]);
   const backIndex = path.length ? 0 : -1;
   const offset = backIndex + 1;
   const currentFocus = focus?.point ? inspect(marks, path.length > 0, focus.point, width) : focus;
   const backActive = currentFocus?.index === backIndex;
   const active = currentFocus && currentFocus.index >= offset ? marks[currentFocus.index - offset] : undefined;
-  const crumb = fitLabel(`‹  ${[root.name, ...path].join(" / ")}`, width - 16, 12, measure) || "‹";
+  const crumb = fitLabel(`‹  ${[root.name, ...displayPath].join(" / ")}`, width - 16, 12, measure) || "‹";
   const crumbWidth = Math.min(width, 16 + measure(crumb, 12, 500));
   const value = active ? sumValues(active.node) : 0;
   const readout = useMemo<Readout | null>(() => {
@@ -149,16 +164,16 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
     if (!active) return null;
     if (isPortfolio) return {
       title: `${active.path[0]} · ${active.node.name}`,
-      entries: [{ name: "Value", value: dollars.format(value) }, { name: "Share", value: `${percent(value, total).toFixed(1)}% of the portfolio` }],
+      entries: [{ name: "Value", value: data ? number.format(value) : dollars.format(value) }, { name: "Share", value: `${percent(value, total).toFixed(1)}% of the portfolio` }],
     };
     return {
       title: active.path.join(" / "),
       entries: [
-        { name: hasDrilldown ? "Size" : hasLoading ? "Stored" : "Spend", value: leafValue(id, value), color: palette(active.color) },
+        { name: hasDrilldown ? "Size" : hasLoading ? "Stored" : "Spend", value: formatValue(value), color: active.node.color ?? palette(data ? active.color % theme.colors.length : active.color) },
         { name: `Share of ${current.name}`, value: displayShare(value, sumValues(current)) },
       ],
     };
-  }, [active, backActive, current, hasDrilldown, hasLoading, id, isPortfolio, path, root, total, value]);
+  }, [active, backActive, current, data, hasDrilldown, hasLoading, id, isPortfolio, path, root, theme.colors.length, total, value]);
 
   useLayoutEffect(() => {
     finishLayout.current?.();
@@ -186,11 +201,27 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
     };
   }, []);
 
+  const previousRoot = useRef(root);
+  useLayoutEffect(() => {
+    if (previousRoot.current === root) return;
+    previousRoot.current = root;
+    finishLayout.current?.();
+    finishLayout.current = null;
+    pendingLayout.current = null;
+    exit.current?.getAnimations({ subtree: true }).forEach(animation => animation.cancel());
+    exit.current?.remove();
+    exit.current = null;
+    setLoadingDelay(0);
+    setPath([]);
+    setKeyboardFocus(null);
+    setFocus(null);
+  }, [root]);
+
   function canAnimate() {
     return !compact && !window.matchMedia("(prefers-reduced-motion: reduce)").matches && !!plot.current?.animate;
   }
 
-  function go(next: string[], glide = true, point?: Point) {
+  function go(next: number[], glide = true, point?: Point) {
     const svg = plot.current;
     pendingLayout.current = svg && glide && canAnimate() ? captureTreemapLayout(svg) : null;
     finishLayout.current?.();
@@ -244,14 +275,14 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
 
   function drillTarget(tile: TreemapTile) {
     if (isPortfolio) return null;
-    const target = tile.node.children?.length ? tile.path : tile.path.slice(0, -1);
+    const target = tile.node.children?.length ? tile.indices : tile.indices.slice(0, -1);
     return target.length > path.length ? target : null;
   }
 
   function isRelated(tile: TreemapTile) {
     if (!active) return !backActive;
-    return tile.path.every((name, index) => active.path[index] === name) ||
-      (active.frame && active.path.every((name, index) => tile.path[index] === name));
+    return tile.indices.every((value, index) => active.indices[index] === value) ||
+      (active.frame && active.indices.every((value, index) => tile.indices[index] === value));
   }
 
   function handleKeys(event: KeyboardEvent<SVGSVGElement>) {
@@ -304,8 +335,10 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
     if (target) go(target, true, point);
   }
 
-  const footer = isPortfolio ? ["71% in equities, 19% in bonds", "$750,000 across 12 holdings"] : hasDrilldown
-    ? [[root.name, ...path].join(" / "), "701 kB in all: click a folder to open it, the breadcrumb to go back"]
+  const footer = data ? [loading ? "Fetching data…" : `${formatValue(total)} in total`, hasDrilldown
+    ? `${[root.name, ...displayPath].join(" / ")} · click a folder to open it, the breadcrumb to go back`
+    : `${root.children?.length ?? 0} groups${isPortfolio ? "" : " · click a group to inspect its contents"}`] : isPortfolio ? ["71% in equities, 19% in bonds", "$750,000 across 12 holdings"] : hasDrilldown
+    ? [[root.name, ...displayPath].join(" / "), "701 kB in all: click a folder to open it, the breadcrumb to go back"]
     : hasLoading ? [loading ? "Fetching storage…" : "6.6 TB stored across ten buckets", "Turn loading off to pop the cells in from the skeleton"]
     : ["Compute is 22% of the bill", "$222.8k across five teams this month"];
   const tipPoint = focus?.point ?? (active
@@ -344,21 +377,21 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
           </text>
         </g>}
         {marks.map(mark => {
-          const { node, bounds, tint, frame, color, path, header } = mark;
+          const { node, bounds, tint, frame, color, path, indices, header } = mark;
           const { x, y, width, height } = bounds;
           if (!width || !height) return null;
           const target = drillTarget(mark);
-          const markKey = path.join("/");
-          const markColor = palette(color);
+          const markKey = data ? indices.join("/") : path.join("/");
+          const markColor = node.color ?? palette(data ? color % theme.colors.length : color);
           const fill = mix(markColor, tint);
           const textFill = frame ? "var(--popover-foreground)" : `lch(from ${fill} calc((49.44 - l) * infinity) 0 0)`;
-          const value = leafValue(id, sumValues(node));
+          const value = formatValue(sumValues(node));
           const labelWidth = frame ? width - 24 - measure(value, 11, 500) : width - 16;
           const showName = !compact && (frame ? header : width >= 36 && height >= 26);
           const name = showName ? fitLabel(node.name, labelWidth, 12, measure, frame ? 600 : 500) : "";
           const showValue = !!name && (frame || height >= 42 && measure(value, 11, 500) <= labelWidth);
           const radius = Math.min(isPortfolio ? 3 : 6, width / 2, height / 2) + (frame ? 2 : 0);
-          return <g key={markKey} data-mark={frame ? "treemap-frame" : "treemap-tile"} data-path={markKey}
+          return <g key={markKey} data-mark={frame ? "treemap-frame" : "treemap-tile"} data-path={markKey} data-label-path={path.join("/")}
             className={target && !compact ? styles.branch : undefined} data-active={active === mark || undefined} data-dimmed={!isRelated(mark) || undefined}
             data-entering={entering && !compact || undefined} style={{ "--treemap-entrance-delay": `${(x + y) * entranceScale}ms` } as CSSProperties}
             role={target && !compact ? "button" : undefined} aria-label={`${path.join(" / ")}: ${value}`}>
@@ -372,8 +405,9 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
           </g>;
         })}
       </svg>
+      {!loading && total <= 0 && !compact && <div role="status">No data available</div>}
       {readout && !compact && <TreemapReadout readout={readout} point={tipPoint} width={width} height={height} portfolio={isPortfolio} />}
     </div>
-    {!compact && <footer className={styles.footer}><strong>{footer[0]}{(id === "treemap-default" || isPortfolio) && <TrendingUp size={16} aria-hidden="true" />}</strong><span>{footer[1]}</span></footer>}
+    {!compact && <footer className={styles.footer}><strong>{footer[0]}{!data && (id === "treemap-default" || isPortfolio) && <TrendingUp size={16} aria-hidden="true" />}</strong><span>{footer[1]}</span></footer>}
   </div>;
 }

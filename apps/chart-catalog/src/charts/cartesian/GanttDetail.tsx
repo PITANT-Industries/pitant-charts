@@ -1,49 +1,65 @@
-import { useId, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useId, useLayoutEffect, useMemo, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { Toggle } from "@ui-sdk/react/toggle";
 import { LoaderCircle } from "lucide-react";
 import { usePlotSize } from "../usePlotSize";
-import { dependencyPath, schedules, scheduleSkeleton, type ScheduleRow, type ScheduleVariant } from "./gantt-detail-data";
+import { dependencyPath, schedules, scheduleSkeleton, type ScheduleVariant } from "./gantt-detail-data";
+import type { ChartData } from "../../types";
+import { adaptGanttCaller, isSchedulePhase, type CallerScheduleRow } from "./gantt-caller-data";
 import "./gantt-detail.css";
 
 const dayMilliseconds = 86_400_000;
 const shortDate = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone: "UTC" });
 const shortMonth = new Intl.DateTimeFormat("en", { month: "short", timeZone: "UTC" });
+const callerDuration = new Intl.NumberFormat("en", { maximumSignificantDigits: 15 });
 
-export function GanttDetail({ variant, label, compact = false }: { variant: ScheduleVariant; label: string; compact?: boolean }) {
+export function GanttDetail({ variant, label, compact = false, data }: { variant: ScheduleVariant; label: string; compact?: boolean; data?: ChartData }) {
   const id = useId();
   const canLoad = variant === "gantt-loading";
   const milestones = variant === "gantt-milestones";
   const roadmap = variant === "gantt-roadmap";
-  const schedule = schedules[variant];
-  const { rows, rowHeight, rowTop, minimum, maximum, radius } = schedule;
-  const today = "today" in schedule ? schedule.today : undefined;
+  const demo = !data;
+  const schedule = useMemo(() => data ? adaptGanttCaller(variant, data) : schedules[variant], [data, variant]);
+  const { rowHeight, rowTop, minimum, maximum, radius } = schedule;
+  const rows: CallerScheduleRow[] = schedule.rows;
+  const today = demo && "today" in schedule && typeof schedule.today === "number" ? schedule.today : undefined;
   const [loading, setLoading] = useState(canLoad);
   const [selected, setSelected] = useState<number | null>(null);
-  const fullHeight = rowHeight * rows.length + rowTop + 36;
+  useLayoutEffect(() => {
+    setSelected(previous => previous === null || !rows.length ? null : Math.min(previous, rows.length - 1));
+  }, [rows.length]);
+  const fullHeight = rowHeight * (demo ? rows.length : Math.max(1, rows.length)) + rowTop + 36;
   const { plot, width, height } = usePlotSize<HTMLDivElement>(728, fullHeight);
   const top = compact ? 6 : rowTop;
   const bottom = compact ? height - 6 : fullHeight - 36;
   const left = compact ? 4 : Math.min(schedule.labelWidth, width - 44);
   const right = width - (compact ? 4 : 24);
   const timelineWidth = right - left;
-  const step = (bottom - top) / rows.length;
+  const step = (bottom - top) / Math.max(1, rows.length);
   const barHeight = step * .56;
   const diamondRadius = barHeight * .42;
   const x = (day: number) => left + (day - minimum) * timelineWidth / (maximum - minimum);
   const y = (index: number) => top + step * (index + .5);
-  const date = (day: number, format = shortDate) => format.format(schedule.origin + Math.round(day) * dayMilliseconds);
+  const date = (day: number, format = shortDate) => format.format(schedule.origin + (demo ? Math.round(day) : day) * dayMilliseconds);
   const active = selected === null || loading ? undefined : rows[selected];
-  const interactive = !loading && !compact;
-  const ink = (row: ScheduleRow) => `var(--chart-${row.team === "Platform" ? 3 : milestones || row.team === "Mobile" ? 2 : 1})`;
+  const interactive = !loading && !compact && rows.length > 0;
+  const teams = [...new Set(rows.map(row => row.team ?? row.owner ?? "Unassigned"))];
+  const ink = (row: CallerScheduleRow) => !demo ? row.color ?? `var(--chart-${roadmap ? teams.indexOf(row.team ?? row.owner ?? "Unassigned") % 8 + 1 : milestones ? 2 : 1})`
+    : `var(--chart-${row.team === "Platform" ? 3 : milestones || row.team === "Mobile" ? 2 : 1})`;
+  const skeleton = demo ? scheduleSkeleton : rows.map(row => ({
+    x: (row.start - minimum) / (maximum - minimum), width: row.unavailable ? 0 : (row.end - row.start) / (maximum - minimum), label: Math.min(left - 30, row.name.length * 5.5),
+  }));
 
-  function readout(row: ScheduleRow): [string, string | number][] {
-    if (roadmap) return [["Team", row.team ?? ""], ["Owner", row.owner ?? ""], ["Done", `${row.progress}%`]];
+  function readout(row: CallerScheduleRow): [string, string | number][] {
+    if (row.unavailable) return [["Schedule", "Invalid date"]];
     const dependencies = row.dependencies.length ? [["After", row.dependencies.map(index => rows[index].name).join(", ")] as [string, string]] : [];
-    if (row.start === row.end) return [["Date", date(row.start)], ...dependencies];
+    if (roadmap && (demo || !isSchedulePhase(row))) return [["Team", row.team ?? ""], ["Owner", row.owner ?? ""], ["Done", `${row.progress}%`],
+      ...(!demo ? [...(row.phase ? [["Phase", row.phase] as [string, string]] : []), ...dependencies] : [])];
+    if (row.start === row.end && !isSchedulePhase(row)) return [["Date", date(row.start)], ...dependencies];
     return [
       ...(!milestones ? [["Progress", `${row.progress}%`] as [string, string]] : []),
-      ["Start", date(row.start)], ["End", date(row.end)], ["Duration", `${Math.round(row.end - row.start)} days`],
-      ...(row.taskCount ? [["Tasks", row.taskCount] as [string, number]] : []), ...dependencies,
+      ["Start", date(row.start)], ["End", date(row.end)], ["Duration", `${demo ? Math.round(row.end - row.start) : callerDuration.format(row.end - row.start)} days`],
+      ...(row.taskCount !== undefined ? [["Tasks", row.taskCount] as [string, number]] : []),
+      ...(!demo && row.phase ? [["Phase", row.phase] as [string, string]] : []), ...dependencies,
     ];
   }
 
@@ -57,14 +73,16 @@ export function GanttDetail({ variant, label, compact = false }: { variant: Sche
     const markX = x(row.start);
     const markY = y(index);
     const withinLabel = pointerX < left;
-    const withinMark = row.start === row.end
+    const withinMark = !row.unavailable && (row.start === row.end && !isSchedulePhase(row)
       ? Math.abs(pointerX - markX) + Math.abs(pointerY - markY) <= diamondRadius + 3
-      : pointerX >= markX && pointerX <= x(row.end) && Math.abs(pointerY - markY) <= (row.taskCount ? 6 : barHeight / 2);
+      : pointerX >= markX && pointerX <= x(row.end) && Math.abs(pointerY - markY) <= (isSchedulePhase(row) ? 6 : barHeight / 2));
     setSelected(withinLabel || withinMark ? index : null);
   }
 
   function selectByKey(event: KeyboardEvent<SVGSVGElement>) {
     const end = rows.length - 1;
+    if (end < 0) return;
+    const current = selected === null ? null : Math.max(0, Math.min(end, selected));
     if (event.key === "Escape" && selected !== null) {
       event.preventDefault();
       event.stopPropagation();
@@ -72,8 +90,8 @@ export function GanttDetail({ variant, label, compact = false }: { variant: Sche
       return;
     }
     const indices: Record<string, number> = {
-      Home: 0, End: end, ArrowRight: Math.min(end, (selected ?? -1) + 1), ArrowDown: Math.min(end, (selected ?? -1) + 1),
-      ArrowLeft: Math.max(0, (selected ?? 1) - 1), ArrowUp: Math.max(0, (selected ?? 1) - 1),
+      Home: 0, End: end, ArrowRight: Math.min(end, (current ?? -1) + 1), ArrowDown: Math.min(end, (current ?? -1) + 1),
+      ArrowLeft: Math.max(0, (current ?? 1) - 1), ArrowUp: Math.max(0, (current ?? 1) - 1),
     };
     if (!Object.hasOwn(indices, event.key)) return;
     event.preventDefault();
@@ -104,8 +122,8 @@ export function GanttDetail({ variant, label, compact = false }: { variant: Sche
             {schedule.ticks.map(day => <line key={day} data-gantt-grid="" x1={x(day)} x2={x(day)} y1={top} y2={bottom} />)}
           </g>
           {loading ? <g className="gantt-skeleton" aria-hidden="true" fill="var(--muted-foreground)">
-            {scheduleSkeleton.map((bar, index) => {
-              const phase = Boolean(rows[index].taskCount);
+            {skeleton.map((bar, index) => {
+              const phase = isSchedulePhase(rows[index]);
               const h = phase ? 6.4512 : barHeight;
               return <g key={index}>
                 {bar.width > 0 && <rect data-gantt-skeleton="bar" x={left + bar.x * timelineWidth} y={y(index) - h / 2}
@@ -114,10 +132,10 @@ export function GanttDetail({ variant, label, compact = false }: { variant: Sche
               </g>;
             })}
           </g> : <g aria-hidden="true" className={canLoad ? "gantt-reveal" : undefined}>
-            {rows.map((row, index) => row.taskCount && <rect key={row.name} data-gantt-phase-background="" x={left} y={y(index) - step / 2}
+            {rows.map((row, index) => isSchedulePhase(row) && !row.unavailable && <rect key={demo ? row.name : index} data-gantt-phase-background="" x={left} y={y(index) - step / 2}
               width={timelineWidth} height={step} fill="var(--muted)" />)}
             <g stroke="var(--muted-foreground)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" fill="none">
-              {rows.flatMap((row, index) => row.dependencies.map(previous => {
+              {rows.flatMap((row, index) => row.unavailable ? [] : row.dependencies.map(previous => {
                 const parent = rows[previous];
                 const from: [number, number] = [x(parent.end) + (parent.start === parent.end ? diamondRadius : 0), y(previous)];
                 const to: [number, number] = [x(row.start) - 1 - (row.start === row.end ? diamondRadius : 0), y(index)];
@@ -129,19 +147,21 @@ export function GanttDetail({ variant, label, compact = false }: { variant: Sche
               const start = x(row.start);
               const length = x(row.end) - start;
               const center = y(index);
-              const phase = Boolean(row.taskCount);
+              const phase = isSchedulePhase(row);
               const color = ink(row);
               const phaseHeight = barHeight * .32;
-              return <g key={row.name} data-gantt-row={row.name} opacity={selected === null || selected === index ? 1 : .38}>
-                {row.start === row.end ? <path data-gantt-milestone="" d={`M${start},${center - diamondRadius}L${start + diamondRadius},${center}L${start},${center + diamondRadius}L${start - diamondRadius},${center}Z`}
+              return <g key={demo ? row.name : index} data-gantt-row={row.name} opacity={selected === null || selected === index ? 1 : .38}>
+                {!row.unavailable && (row.start === row.end && !phase ? <path data-gantt-milestone="" d={`M${start},${center - diamondRadius}L${start + diamondRadius},${center}L${start},${center + diamondRadius}L${start - diamondRadius},${center}Z`}
                   fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" /> : <>
                   <rect data-gantt-bar={phase ? "phase" : "task"} x={start} y={center - (phase ? phaseHeight : barHeight) / 2}
                     width={length} height={phase ? phaseHeight : barHeight} rx={phase ? 2 : radius}
                     fill={phase ? "var(--muted-foreground)" : color} fillOpacity={phase || milestones ? 1 : .28} />
                   {!phase && !milestones && row.progress > 0 && <rect data-gantt-progress="" x={start} y={center - barHeight / 2}
                     width={length * row.progress / 100} height={barHeight} rx={radius} fill={color} />}
-                </>}
-                {!compact && <text data-gantt-label="" x={phase || !rows[0].taskCount ? 14 : 26} y={center} dominantBaseline="middle"
+                </>)}
+                {!compact && !demo && row.phase && !phase && <text data-gantt-phase-label="" x={14} y={center - 11}
+                  fill="var(--muted-foreground)" fontSize="9">{row.phase}</text>}
+                {!compact && <text data-gantt-label="" x={phase || !rows[0] || !isSchedulePhase(rows[0]) ? 14 : 26} y={center} dominantBaseline="middle"
                   fill={phase || selected === index ? "var(--foreground)" : "var(--muted-foreground)"} fontSize="12" fontWeight={phase ? 600 : 400}>{row.name}</text>}
               </g>;
             })}
@@ -155,6 +175,7 @@ export function GanttDetail({ variant, label, compact = false }: { variant: Sche
           </g>}
         </svg>
         {!compact && loading && <output className="gantt-loading-status">Loading schedule</output>}
+        {!compact && !loading && !rows.length && <output className="gantt-loading-status">No schedule data</output>}
         {active && selected !== null && <div className="gantt-readout cartesian-focus-readout" role="status"
           style={{ left: Math.max(0, Math.min(width - 168, hintX)), top: Math.max(0, y(selected) - 62) }}>
           <div className="cartesian-focus-readout-title">{active.name}</div>

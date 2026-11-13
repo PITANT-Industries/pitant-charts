@@ -32,45 +32,73 @@ function dateNumber(label: string) {
   return Date.UTC(Number(year), index, 1, daylightSaving ? 7 : 8);
 }
 
-export function ReferenceStream({ example, compact = false }: ChartPreviewProps) {
+function streamCallerTicks(categories: readonly string[]) {
+  const ticks = categories.map(label => {
+    if (/^[A-Z][a-z]{2} \d{4}$/.test(label) && month.has(label.slice(0, 3))) return dateNumber(label);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(label)) return NaN;
+    const value = Date.parse(`${label}T00:00:00Z`);
+    return Number.isFinite(value) && new Date(value).toISOString().slice(0, 10) === label ? value : NaN;
+  });
+  return ticks.every((value, index) => Number.isFinite(value) && (index === 0 || value > ticks[index - 1]))
+    ? ticks : categories.map((_, index) => index);
+}
+
+const callerStreamNumber = new Intl.NumberFormat("en-US", { maximumSignificantDigits: 15 });
+
+export function ReferenceStream({ example, compact = false, data: supplied }: ChartPreviewProps) {
   const id = example.id;
   const expand = id === "stream-expand";
   const hasLoading = id === "stream-loading";
   const [loading, setLoading] = useState(hasLoading);
   const selection = useQuantitySelection();
   const { plot, width, height } = usePlotSize<SVGSVGElement>(576, 288);
-  const { categories, series } = useMemo(() => comparisonFixture(id), [id]);
-  const keys = expand ? series.map(item => item.name) : hasLoading ? streamSeries.loading : streamSeries.default;
+  const demo = !supplied;
+  const { categories, series } = useMemo(() => {
+    if (!supplied) return comparisonFixture(id);
+    const series = supplied.series ? [...supplied.series] : [];
+    const count = Math.max(0, ...series.map(item => item.values.length));
+    return { categories: supplied.categories ? [...supplied.categories] : Array.from({ length: count }, (_, index) => String(index + 1)), series };
+  }, [id, supplied]);
+  const keys = !demo || expand ? series.map(item => item.name) : hasLoading ? streamSeries.loading : streamSeries.default;
   const seriesByName = new Map(series.map(row => [row.name, row]));
-  const data = categories.map((_, index) => keys.map(key => seriesByName.get(key)?.values[index] ?? 0));
+  const samples = categories.map((_, index) => keys.map((key, seriesIndex) => {
+    const value = (demo ? seriesByName.get(key) : series[seriesIndex])?.values[index];
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  }));
+  const data = samples.map(row => row.map(value => demo ? value ?? 0 : Math.max(0, value ?? 0)));
   const layers = stack<number[], number>()
     .keys(keys.map((_, index) => index))
     .order(expand ? stackOrderNone : stackOrderInsideOut)
     .offset(expand ? stackOffsetExpand : stackOffsetWiggle)(data);
   const extrema = layers.flatMap(layer => layer.flatMap(point => [point[0], point[1]]));
-  const min = expand ? 0 : Math.min(...extrema);
-  const max = expand ? 1 : Math.max(...extrema);
-  const ticks = expand ? categories.map((_, index) => index) : categories.map(dateNumber);
+  const min = expand ? 0 : extrema.reduce((minimum, value) => Math.min(minimum, value), extrema[0] ?? 0);
+  const peak = expand ? 1 : extrema.reduce((maximum, value) => Math.max(maximum, value), extrema[0] ?? 0);
+  const max = !demo && peak === min ? min + 1 : peak;
+  const ticks = expand ? categories.map((_, index) => index) : demo ? categories.map(dateNumber) : streamCallerTicks(categories);
   const left = expand && !compact ? 48 : 0;
   const right = width - 2;
   const top = 6;
   const bottom = height - (compact ? 3 : 28);
-  const x = (index: number) => left + (ticks[index] - ticks[0]) / (ticks.at(-1)! - ticks[0]) * (right - left);
+  const x = (index: number) => !demo && categories.length < 2 ? (left + right) / 2
+    : left + (ticks[index] - ticks[0]) / (ticks.at(-1)! - ticks[0]) * (right - left);
   const y = (value: number) => bottom - (value - min) / (max - min) * (bottom - top);
   const step = width < 410 ? expand || hasLoading ? 4 : 8 : expand || hasLoading ? 2 : 4;
-  const visibleTicks = categories.map((_, index) => index).filter(index => index % step === 0);
+  const visibleTicks = categories.map((_, index) => index).filter(index => demo ? index % step === 0
+    : index % Math.max(1, Math.ceil(categories.length / (width < 410 ? 3 : 6))) === 0 || index === categories.length - 1);
   const ghostTicks = width < 410 ? [0, .5, 1] : [0, .2, .4, .6, .8, 1];
   const ribbon = area<ArrayLike<number>>().x((_, index) => x(index)).y0(point => y(point[0])).y1(point => y(point[1])).curve(expand ? curveMonotoneX : curveBasis);
   const ghostRibbon = area<readonly [number, number]>().x((_, index) => left + index / 9 * (right - left))
     .y0(point => top + point[0] * (bottom - top)).y1(point => top + point[1] * (bottom - top)).curve(curveBasis);
   const labelSample = hasLoading ? [9, 2, 9] : [23, 21, 0, 12, 17];
   const labelWidth = hasLoading ? [22.23, 18, 28.34] : [20.1, 32, 21.38, 35, 18];
-  const paint = (key: number) => qtyMix(qtyColor(key), 78);
-  const active = selection.active;
+  const paint = (key: number) => !demo && series[key]?.color ? series[key].color! : qtyMix(qtyColor(key), 78);
+  const active = selection.active !== null && selection.active < categories.length ? selection.active : null;
   const format = (value: number) => expand ? qtyNumber.format(value)
     : `${compactNumber.format(value).replace(/K$/, "k")} ${hasLoading ? "requests" : "hours"}`;
-  const [headline, caption] = captions[id] ?? captions["stream-default"];
-  return <div className={styles.frame} data-compact={compact || undefined}>
+  const [headline, caption] = demo ? captions[id] ?? captions["stream-default"]
+    : [`${series.length} series across ${categories.length} periods`, "Inspect each period to compare its values"];
+  const empty = !categories.length || !series.length;
+  return <div className={styles.frame} data-compact={compact || undefined} data-stream-variant={id}>
     {hasLoading && !compact && <QuantityLoading pressed={loading} onChange={value => { selection.setActive(null); setLoading(value); }} />}
     <div className={styles.stage}>
       <svg ref={plot} role="img" aria-label={example.title} aria-roledescription="chart" aria-busy={loading}
@@ -78,12 +106,12 @@ export function ReferenceStream({ example, compact = false }: ChartPreviewProps)
         onKeyDown={event => selection.keyboard(event, categories.length, true)}
         onBlur={() => selection.setActive(null)} onPointerLeave={event => { if (event.pointerType !== "touch") selection.setActive(null); }}
         onPointerMove={event => {
-          if (compact || loading) return;
+          if (compact || loading || empty) return;
           const point = event.clientX - event.currentTarget.getBoundingClientRect().left;
           selection.setActive(categories.reduce((nearest, _, index) => Math.abs(x(index) - point) < Math.abs(x(nearest) - point) ? index : nearest, 0));
         }}
         onPointerDown={event => {
-          if (compact || loading || event.pointerType !== "touch") return;
+          if (compact || loading || empty || event.pointerType !== "touch") return;
           const point = event.clientX - event.currentTarget.getBoundingClientRect().left;
           selection.setActive(categories.reduce((nearest, _, index) => Math.abs(x(index) - point) < Math.abs(x(nearest) - point) ? index : nearest, 0));
         }}>
@@ -93,16 +121,18 @@ export function ReferenceStream({ example, compact = false }: ChartPreviewProps)
         </g>) : (loading ? ghostTicks.map(value => left + value * (right - left)) : visibleTicks.map(x)).map(at =>
           <QuantityGrid key={at} at={at} from={top} to={bottom} />))}
         {loading ? streamGhosts.map((points, index) => <path key={index} data-mark="stream-bone-layer" d={ghostRibbon(points) ?? undefined} {...ghostPaint} />)
-          : layers.map(layer => {
-            const key = layer.index;
-            const index = labelSample[key] ?? 0;
-            const inset = labelWidth[key] ?? 20;
+          : (!demo && empty ? [] : layers).map(layer => {
+            const key = demo ? layer.index : layer.key;
+            const index = demo ? labelSample[key] ?? 0 : layer.reduce((largest, point, sample) =>
+              point[1] - point[0] > layer[largest][1] - layer[largest][0] ? sample : largest, 0);
+            const inset = demo ? labelWidth[key] ?? 20 : Math.min((right - left) / 2, Math.max(20, keys[key].length * 3.6 + 4));
             const labelX = Math.min(width - inset, Math.max(left + inset, x(index)));
             const [start, end] = layer[index] ?? [0, 0];
             return <g key={layer.key}>
               <path data-mark="stream-layer" data-series={keys[key]} d={ribbon(layer) ?? undefined}
                 fill={paint(key)} className={hasLoading ? styles.sweep : undefined} />
-              {!expand && !compact && (width >= 410 || keys[key] !== "Electronic") &&
+              {!expand && !compact && (demo ? width >= 410 || keys[key] !== "Electronic"
+                : keys[key].length * 6.6 < right - left - 8 && end > start) &&
                 <text x={qtyRound(labelX)} y={qtyRound((y(start) + y(end)) / 2)} fill={qtyContrast(paint(key))} textAnchor="middle" dominantBaseline="middle" fontSize={12} fontWeight={600}>
                   {keys[key]}
                 </text>}
@@ -113,12 +143,14 @@ export function ReferenceStream({ example, compact = false }: ChartPreviewProps)
           const at = index === 0 ? center : index === ghostTicks.length - 1 ? center - 28 : center - 14;
           return <rect key={value} data-mark="stream-bone-label" x={at} y={bottom + 12} width={28} height={8} rx={4} {...ghostPaint} />;
         }) : visibleTicks.map(index => <text key={index} x={x(index)} y={bottom + 16} dominantBaseline="middle" textAnchor={index === 0 ? "start" : "middle"} fill="var(--muted-foreground)" fontSize={12}>
-          {expand || categories[index].startsWith("Jan") ? categories[index] : categories[index].slice(0, 3)}
+          {!demo || expand || categories[index].startsWith("Jan") ? categories[index] : categories[index].slice(0, 3)}
         </text>))}
         {active !== null && !loading && <line x1={x(active)} x2={x(active)} y1={top} y2={bottom} stroke="var(--foreground)" strokeOpacity={.35} />}
       </svg>
-      {!compact && !loading && active !== null && <QuantityTip label={categories[active]} width={width} height={height} x={x(active)} y={height / 2 - 18}
-        rows={keys.map((name, index) => ({ name, color: qtyColor(index), value: format(data[active][index]) }))} />}
+      {!compact && !loading && empty && <div role="status">No stream data</div>}
+      {!compact && !loading && !empty && active !== null && <QuantityTip label={categories[active]} width={width} height={height} x={x(active)} y={height / 2 - 18}
+        rows={keys.map((name, index) => ({ name, color: !demo && series[index]?.color || qtyColor(index),
+          value: demo ? format(data[active][index]) : samples[active][index] === null ? "—" : callerStreamNumber.format(samples[active][index]!) }))} />}
     </div>
     {!compact && <QuantityCaption headline={loading ? "Fetching traffic…" : headline} trend={!hasLoading}>{caption}</QuantityCaption>}
   </div>;

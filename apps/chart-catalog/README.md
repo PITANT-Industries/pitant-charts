@@ -49,6 +49,10 @@ Basic Area examples accept ISO dates in `categories`, or aligned `rows: [{ date:
 
 For `line-markers`, align `rows` with the categories and put each date's annotations in `events`, for example `rows: [{ events: [{ icon: '🚀', title: 'Release', description: 'New editor available' }] }]`. Event readouts show the first two annotations and a count of any others. Marker clusters fan out for individual inspection. Emoji/title strings such as `'🚀 Release'` are also accepted.
 
+For `density-groups`, supply `rows: [{ x: 1.2, y: 15, group: 'North', label: 'Sample 1' }]`, or categories and numeric series. The legend isolates a group; activating it again restores every group. Caller values use numeric axes and readouts, with an adaptive scale and no demo units. Matching `series` entries can provide group colors.
+
+For `vector-field-stations`, supply Cartesian station rows such as `{ x: 4, y: 6, label: 'Harbor', speed: 9, direction: 245 }`. Coordinates are kilometres and speed is km/h; `speedKmh`, `bearing` and `name` are explicit aliases. Bearings normalize modulo 360. Existing geographic `{ lon, lat, speed, direction, label }` rows continue using their geographic projection and m/s readings. Use one coordinate format per dataset.
+
 For a Live Line example, pass a stable `liveStream` object with `subscribe(receive)` and an optional `initialSamples` array. Call `receive` with batches of `{ timestamp, value, label? }` samples in nondecreasing Unix millisecond order, and return a function that unsubscribes. A `null` value leaves a gap. `capacity` controls retention and defaults to 4,096 readings. Updates are drawn once per browser frame. Pause freezes the displayed window while the stream keeps recording. An optional `data.series[0]` supplies the series name and color.
 
 ## Verify changes

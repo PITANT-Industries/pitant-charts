@@ -570,7 +570,7 @@ function AreaValueLabels({ points, colors, left, right, top, bottom, demo }: {
     {points.flatMap((series, seriesIndex) => {
       const last = series.length - 1;
       const intervals = boxWidth < 250 ? 3 : 4;
-      return [0, last, ...Array.from({ length: intervals - 1 }, (_, index) => Math.round(last * (index + 1) / intervals))]
+      return [...new Set([0, last, ...Array.from({ length: intervals - 1 }, (_, index) => Math.round(last * (index + 1) / intervals))])]
         .map(index => {
           const point = series[index];
           if (!point) return null;

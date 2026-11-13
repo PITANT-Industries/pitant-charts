@@ -12,6 +12,7 @@ function rect<T>(node: HierarchyRectangularNode<T>, top: number): Bounds {
 export type TreemapTile = {
   node: SunburstNode;
   path: string[];
+  indices: number[];
   bounds: Bounds;
   color: number;
   tint: number;
@@ -19,7 +20,7 @@ export type TreemapTile = {
   header: boolean;
 };
 
-export function treemapTiles(root: SunburstNode, path: string[], current: SunburstNode, width: number, height: number, portfolio: boolean) {
+export function treemapTiles(root: SunburstNode, path: string[], current: SunburstNode, width: number, height: number, portfolio: boolean, identityPath: readonly number[] = []) {
   const gap = portfolio ? 2 : 3;
   const top = path.length ? 30 : 0;
   const hierarchyRoot = hierarchy({ item: current, level: 0 }, ({ item, level }) =>
@@ -42,12 +43,13 @@ export function treemapTiles(root: SunburstNode, path: string[], current: Sunbur
   for (const record of plot.descendants().slice(1)) {
     const parents = record.ancestors().slice(0, -1).reverse().map(item => item.data.item.name);
     const trail = [...path, ...parents];
+    const indices = [...identityPath, ...record.ancestors().slice(0, -1).reverse().map(item => item.parent!.data.item.children!.indexOf(item.data.item))];
     const bounds = rect(record, top);
     if (bounds.width <= 0 || bounds.height <= 0) continue;
     const siblings = record.parent?.children ?? [record];
     const frame = !!record.children?.length;
     const tile = {
-      node: record.data.item, path: trail, bounds, color: root.children?.findIndex(child => child.name === trail[0]) ?? 0, frame,
+      node: record.data.item, path: trail, indices, bounds, color: indices[0] ?? 0, frame,
       tint: frame ? 12 : Math.round(62 - 26 * siblings.indexOf(record) / Math.max(1, siblings.length - 1)),
       header: frame && !portfolio && (record.children?.[0].y0 ?? record.y1) - record.y0 >= 24,
     };
