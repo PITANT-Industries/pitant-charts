@@ -180,7 +180,6 @@ export function buildScatterPlotRenderPlan(
 
     sourcePointCount += sourceCount
     const color = source.color ?? getDefaultColor(seriesIndex)
-    const filteredForSeries = countFilteredSeriesPoints(source, sourceCount, xRange, yRange)
     const planned =
       mode === 'density'
         ? buildDensitySeries(source, {
@@ -196,7 +195,7 @@ export function buildScatterPlotRenderPlan(
           })
         : buildPointSeries(source, {
             color,
-            filteredPointCount: filteredForSeries,
+            filteredPointCount: countFilteredSeriesPoints(source, sourceCount, xRange, yRange),
             maxRenderedPoints,
             pointSize: source.pointSize ?? options.pointSize ?? DEFAULT_POINT_SIZE,
             sourceCount,
