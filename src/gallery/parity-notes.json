@@ -380,40 +380,40 @@
     "remaining": "Compare crossing geometry and colors."
   },
   "live-line-default": {
-    "checked": "Samples arrive every 600 ms in a 30-second window. The endpoint pulses, the badge shows the price, and inspection stays active during new samples.",
-    "remaining": "Compare the fixture, scrolling, and pulse timing."
+    "checked": "A 30-second window receives a demo trade every 600 ms. The faded stroke and fill end in a 4 px dot, a dashed live value rule and a 24 px badge. Five clock labels and pointer, keyboard and touch inspection work at both measured widths.",
+    "remaining": "Compare the independently simulated feed, exact moving-domain easing, and frame-by-frame scroll timing. The preview adds a Pause control for continuous updates."
   },
   "live-line-momentum": {
-    "checked": "A 20-quote trend drives the stroke, fill, and endpoint colors together.",
-    "remaining": "Compare colors and the rate of transition."
+    "checked": "The chart changes its stroke, fill and endpoint together according to the last 20 quotes. A 30-second summary reports the direction and percentage. The measured plot insets and five clock labels match at desktop and mobile sizes.",
+    "remaining": "Compare exact reference colors at trend thresholds and the behavior during threshold crossings. The demo quotes continue independently."
   },
   "live-line-paused": {
-    "checked": "Pause freezes the plot while samples continue every second. Resume catches up to the latest sample.",
-    "remaining": "Compare the catch-up curve."
+    "checked": "The Pause and Resume button works with Space and Enter. The visible curve and clock ticks freeze while the live count continues. Resuming catches up to the latest sample, and keyboard or touch can inspect either state.",
+    "remaining": "Compare the resume interpolation and exact fixture values across the moving window."
   },
   "live-line-right-axis": {
-    "checked": "The chart uses an 800 ms sample interval, a 40-second window, a bare stroke, and millisecond ticks on the right.",
-    "remaining": "Compare the latency fixture and axis styling."
+    "checked": "The 240 px plot uses a bare chart-color-two stroke, a right-aligned millisecond axis and seven dashed grid rules. It shows four clock labels and the current and average p95 at 800 ms intervals.",
+    "remaining": "Compare the reference latency sequence and the moving y-range interpolation. The preview adds a Pause control."
   },
   "live-line-background": {
-    "checked": "A faded diagonal SVG texture replaces the grid.",
-    "remaining": "Compare pattern density and edge fade."
+    "checked": "A 6 px diagonal tile fills the chart region behind the live line with a fade toward every edge. Five clock labels, latest-price badge, hover and touch inspection work across the measured widths.",
+    "remaining": "Compare exact edge fade, dynamic price sequence and transition timing."
   },
   "live-line-dots": {
-    "checked": "A faded SVG dot texture replaces the grid.",
-    "remaining": "Compare dot spacing and edge fade."
+    "checked": "One-pixel squares repeat in a 6 px tile and fade toward the chart edges. The pattern, price readout and four input states were checked in both themes and plot sizes.",
+    "remaining": "Compare exact edge fade, dynamic price sequence and transition timing."
   },
   "live-line-reference-band": {
-    "checked": "A $141–$144 target is shaded with dashed boundaries and small triangular markers.",
-    "remaining": "Compare exact boundary placement and opacity."
+    "checked": "The $141–$144 shaded band starts at y=84 px and is 68 px high in the matched 260 px plots. Two centered 6 px triangles point inward from dashed boundaries.",
+    "remaining": "Compare band paint, fade and moving-domain transitions. The preview uses an independently simulated feed."
   },
   "live-line-pattern-band": {
-    "checked": "Hatching fills the $141–$144 band while dashed boundaries and triangular markers remain.",
-    "remaining": "Compare the hatch density and fill."
+    "checked": "A 6 px diagonal hatch fills the $141–$144 target band. The dashed rules enclose a 68 px band at the measured widths, with the reference’s marker-free boundaries.",
+    "remaining": "Compare exact hatch paint and fade, and target transitions as the y scale changes."
   },
   "live-line-loading": {
-    "checked": "The loading skeleton connects automatically. Reconnect returns to the skeleton and restores live samples.",
-    "remaining": "Compare the connection timing and skeleton styling."
+    "checked": "The 260 px loading plot draws four dashed rules and a neutral line before a seeded trade stream appears. Reconnect is keyboard operable and returns to the skeleton at the same height.",
+    "remaining": "Compare the skeleton’s animated sweep, exact connection timing, and post-connect quote sequence."
   },
   "gantt-default": {
     "checked": "Three phases show progress, dependency arrows, a launch milestone, and Today. Keyboard inspection shows dates, duration, and dependencies.",
@@ -664,40 +664,40 @@
     "remaining": "Compare track and label geometry and exact hover emphasis."
   },
   "radar-default": {
-    "checked": "Four shapes share five rings and spokes. The active shape grows and glows while the other three fade.",
-    "remaining": "Compare exact radar spacing and transition curves."
+    "checked": "All 20 engagement scores match the live reference. Series vertices, five rings, spokes, labels and dots match within 0.0051 px at desktop and narrow plot sizes. Selection scales the whole series by 5%, dims the other three to 30%, and applies a 12 px glow. Mouse, keyboard and touch selection passed.",
+    "remaining": "Compare hover hit boundaries, exact spring timing, and rendered footer typography across browsers."
   },
   "radar-hover": {
-    "checked": "Two teams share six axes and four unlabeled rings. Pointer and keyboard update the team and metric.",
-    "remaining": "Compare fixture values and hover colors."
+    "checked": "Both teams' six skill scores match. The 384 px and 286 px square plots reproduce four unlabeled rings, six spokes and six Web team dots within 0.0051 px. Team focus updates the footer and keyboard or axis inspection announces the current metric.",
+    "remaining": "Compare pointer hit boundaries and exact axis entrance timing across browsers."
   },
   "radar-minimal": {
-    "checked": "One profile renders without rings, spokes, or entrance animation.",
-    "remaining": "Compare typography and stroke treatment."
+    "checked": "All five v4.2 scores match. The plot caps at 320 px, and polygon, labels and dots align within 0.0051 px at both measured sizes. The plot has no rings or spokes and appears without entrance motion. The profile still responds to selection.",
+    "remaining": "Compare exact pointer transition timing and text metrics."
   },
   "radar-hover-legend": {
-    "checked": "Four legend rows show 70%, 58%, 71%, and 58%. The legend and chart highlight each other.",
-    "remaining": "Compare layout and highlight timing."
+    "checked": "All 20 campaign scores and four legend averages match. Series vertices, grid, and labels align within 0.0051 px at both measured sizes. The four vertical legend rows sit beside the plot in wide panes and below it in narrow panes. Hover and focus highlight the corresponding series and the UI SDK toggle supports keyboard and touch pinning.",
+    "remaining": "Compare exact legend and footer paint and the hover easing across browsers."
   },
   "radar-triangle": {
-    "checked": "Two profiles use a three-point layout.",
-    "remaining": "Compare fixture values and corner placement."
+    "checked": "All six Edge plan and Starter plan scores match. The five triangular rings, spokes, labels, two profiles and six dots align within 0.0051 px in both measured sizes. Pointer and keyboard select and dim the profiles.",
+    "remaining": "Compare pointer hit boundaries and exact entrance timing."
   },
   "radar-fill-only": {
-    "checked": "Two six-axis shapes use fills without outlines, vertex dots, spokes, or ring values.",
-    "remaining": "Compare fill colors and overlap opacity."
+    "checked": "All twelve Senior and Junior scores match, including the 42-point gap for Node. Both fill-only hexagons, the five unlabelled rings and metric labels match geometry within 0.0051 px at both measured sizes. Selection changes fill opacity from 15% to 35%.",
+    "remaining": "Compare exact overlap compositing and hover easing across browsers."
   },
   "radar-single": {
-    "checked": "One five-axis profile appears on five rings without vertex dots.",
-    "remaining": "Compare the grid scale and spacing."
+    "checked": "All five Model S2 scores match. The five labelled rings, five spokes and single profile without vertex dots align within 0.0051 px in both measured sizes. Selection and metric inspection work by keyboard.",
+    "remaining": "Compare exact transition timing and footer typography."
   },
   "radar-levels": {
-    "checked": "Two profiles appear on exactly three plain rings.",
-    "remaining": "Compare exact tick placement and fixture values."
+    "checked": "All ten owner scores match. Three plain rings and both profiles align within 0.0051 px in both measured sizes. Pointer, keyboard and touch switch the highlighted model.",
+    "remaining": "Compare exact entrance timing, selection hit boundaries and footer typography."
   },
   "radar-grid-only": {
-    "checked": "Two profiles share five labeled triangular rings without spokes.",
-    "remaining": "Compare grid line weight and labels."
+    "checked": "All six support scores match. The five labelled triangular rings, six dots and two profiles align within 0.0051 px in both measured sizes. Touch and keyboard selection retain the no-spoke grid.",
+    "remaining": "Compare exact grid paint, entrance timing and hover easing across browsers."
   },
   "radial-default": {
     "checked": "The chart has 96 quarter-hour positions, three statuses, and interactive legend isolation. Keyboard and pointer input inspect the current and previous day.",
@@ -872,48 +872,48 @@
     "remaining": "Compare curve shape and label spacing."
   },
   "heatmap-default": {
-    "checked": "All 364 dates use the live contribution values, from November 2, 2025 through October 31, 2026. Sunday-first columns total 583 contributions. Arrow keys inspect days and weeks.",
-    "remaining": "Compare exact grid geometry and tooltip placement."
+    "checked": "All 364 reference intensity levels and 52 weekly columns match. Cell bounds and month and weekday positions align within 0.005 CSS px at three plot widths. Pointer and keyboard inspection show the date, weekday, and contribution count.",
+    "remaining": "Compare tooltip edge behavior and typography in additional browsers."
   },
   "heatmap-patterns": {
-    "checked": "The 182-day grid totals 305 contributions. Only the second intensity level is striped. Hover or keyboard selection isolates that level.",
-    "remaining": "Compare stripe density, swatch spacing, and transition timing."
+    "checked": "The 182-day layout and all intensity levels match. The second level uses a 6 px diagonal tile. Hover and keyboard selection in the legend dim other levels to 30%.",
+    "remaining": "Compare patterned swatch rasterization and intermediate hover frames."
   },
   "heatmap-weekdays": {
-    "checked": "The calendar begins on Monday, fades Saturday and Sunday cells and labels, and reports 92% of contributions on weekdays.",
-    "remaining": "Compare the trailing partial-week treatment and fade intensity."
+    "checked": "The same 364 reference dates are arranged Monday first. Sunday moves to the last row within each week, and both weekend rows use 35% opacity. Cell bounds, intensity levels, and adaptive weekday labels match at three plot widths.",
+    "remaining": "Compare the active cell and tooltip motion on pointer entry and exit."
   },
   "heatmap-quarters": {
-    "checked": "Four labeled quarters and ten month labels appear over 308 date cells. Three dividers mark the quarter boundaries.",
-    "remaining": "Compare exact divider fade, gaps, and label positioning."
+    "checked": "The 308 cells, four quarter labels, ten month labels, and three fading rules match at three plot widths. Each new quarter inserts an 8 px gap, with the selected date lifted above the 30%-opacity grid.",
+    "remaining": "Compare the fade and active-cell transitions frame by frame."
   },
   "heatmap-gradient-legend": {
-    "checked": "One continuous legend replaces the five swatches. The fixture has activity on 110 of 182 days.",
-    "remaining": "Compare the exact gradient stops and legend dimensions."
+    "checked": "The 182-day plot matches the reference bounds and all intensity levels. Its 63 × 11 px bar blends five intensity colors at 25% intervals, and pointer and keyboard selection isolate the corresponding days.",
+    "remaining": "Compare gradient highlighting and exact paint in other browsers."
   },
   "heatmap-dots": {
-    "checked": "Inactive dots shrink and fade during inspection.",
-    "remaining": "Compare dot spacing and tooltip treatment."
+    "checked": "The 182 round marks, adaptive weekday labels, and quarter separators match measured geometry. Inactive dots shrink to 94% and fade to 80% when a date or legend level is inspected.",
+    "remaining": "Compare the active dot and transition easing frame by frame."
   },
   "heatmap-separators-solid": {
-    "checked": "The May–October grid has three quarter labels and two solid dividers, plus separate month labels and Monday, Wednesday, and Friday initials.",
-    "remaining": "Compare divider thickness and label spacing."
+    "checked": "The 182 daily cells and three quarter labels match at three widths. Two solid 1 px rules use 20 px quarter gaps, and inspection lifts one day above the 30%-opacity grid.",
+    "remaining": "Compare separator paint and hover timing in other browsers."
   },
   "heatmap-separators-dashed": {
-    "checked": "The May–October grid has two gradient-ended dashed dividers, three quarter labels, and six month labels. Weekday labels are omitted.",
-    "remaining": "Compare the exact stroke fade and spacing."
+    "checked": "The 182 daily cells and all intensity levels match. Two 3 px dash and 5 px gap separators fade at both ends. The three quarter and six month labels use the measured positions.",
+    "remaining": "Compare the exact paint of the separator fade and tooltip."
   },
   "heatmap-active-scale": {
-    "checked": "The active cell and corresponding legend swatch grow to 110%, while other swatches fade.",
-    "remaining": "Compare transition timing and intensity colors."
+    "checked": "The 182 cells and their levels match at three widths. The active cell and its swatch grow to 110%, and the other swatches fade to 45%. Touch and keyboard inspect the same date and count as pointer input.",
+    "remaining": "Compare intermediate scaling frames and tooltip positioning at both edges."
   },
   "heatmap-scroll": {
-    "checked": "The full 364-day calendar scrolls horizontally while weekday labels stay pinned. Keyboard inspection scrolls to the first or last day.",
-    "remaining": "Compare precise column widths and touch scroll behavior on physical devices."
+    "checked": "All 364 days use the measured 1052 × 169.5 px plot and a separate 44 px weekday rail. Home and End move both keyboard inspection and horizontal scroll. An emulated touch swipe moved the plot 207 px with zero rail displacement.",
+    "remaining": "Compare touch physics on physical devices and tooltip behavior near the right edge."
   },
   "heatmap-loading": {
-    "checked": "Showing the data triggers a delayed, per-cell reveal wave.",
-    "remaining": "Compare the delay and easing of the reveal."
+    "checked": "All 364 placeholders keep the final grid geometry. The Loading control works with Space and starts a staggered 450 ms reveal. Reduced motion keeps the cells static.",
+    "remaining": "Compare exact per-cell shimmer phases, reveal delays, and the loading overlay styling."
   },
   "sunburst-default": {
     "checked": "Four revenue branches total $1.18M, with Product at 37%. Arrow keys inspect segment paths, Enter zooms into a branch, and Escape goes back while keeping focus on the chart.",
@@ -940,40 +940,40 @@
     "remaining": "Compare facilities fixture details, geometry, and pointer highlight transitions."
   },
   "sankey-default": {
-    "checked": "The source, intermediate, and destination layers have 6, 5, and 3 nodes. All 33 links use gradients.",
-    "remaining": "Compare link routing and label placement."
+    "checked": "14 nodes and 33 links match the measured layout within 0.0051 px at three plot sizes. 47 captured readouts match. The 14 nodes preserve the traffic and outcome ordering. Links use weighted horizontal curves and source-to-target gradients.",
+    "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "sankey-vertical-labels": {
-    "checked": "Six rotated labels show names and totals beside eight links.",
-    "remaining": "Compare text angle and routing."
+    "checked": "6 nodes and 8 links match the measured layout within 0.0051 px at three plot sizes. 14 captured readouts match. Left and middle labels rotate −90° and outcome labels rotate 90°. The narrow reference places Converted above Bounced.",
+    "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "sankey-category-colors": {
-    "checked": "Three, two, and two nodes share stage colors. Keyboard inspection reports the source share for a selected link.",
-    "remaining": "Compare colors and node alignment."
+    "checked": "7 nodes and 10 links match the measured layout within 0.0051 px at three plot sizes. 17 captured readouts match. Each layer has its own color. Node inspection includes the share of all sessions and link inspection includes the share of its source.",
+    "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "sankey-solid-links": {
-    "checked": "All 15 links use solid source colors.",
-    "remaining": "Compare exact link routing and colors."
+    "checked": "8 nodes and 15 links match the measured layout within 0.0051 px at three plot sizes. 23 captured readouts match. Each link uses its source node color and 50% resting opacity.",
+    "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "sankey-single-color": {
-    "checked": "Nineteen unfocused links share one hue at 30% opacity.",
-    "remaining": "Compare opacity and focus transitions."
+    "checked": "10 nodes and 19 links match the measured layout within 0.0051 px at three plot sizes. 29 captured readouts match. All 19 links use the third series color at 30% opacity. Nodes keep their own colors.",
+    "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "sankey-no-labels": {
-    "checked": "Nineteen links render without SVG labels. Keyboard inspection exposes ticket totals.",
-    "remaining": "Compare exact link curves and tooltip layout."
+    "checked": "10 nodes and 19 links match the measured layout within 0.0051 px at three plot sizes. 29 captured readouts match. The plot follows a fluid 2:1 aspect ratio without node labels. Keyboard inspection still names nodes and links.",
+    "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "sankey-pattern-lines": {
-    "checked": "Upgraded and Churned links use different stripe colors. Extended keeps its gradient.",
-    "remaining": "Compare hatch treatment and routing."
+    "checked": "9 nodes and 14 links match the measured layout within 0.0051 px at three plot sizes. 23 captured readouts match. Six outcome links have distinct stripes for Upgraded, Extended, and Churned.",
+    "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "sankey-legend": {
-    "checked": "SDK keyboard controls select or clear a campaign. Reachable links and tooltips follow the selection.",
-    "remaining": "Compare highlight motion and link geometry."
+    "checked": "8 nodes and 15 links match the measured layout within 0.0051 px at three plot sizes. 9 captured readouts match. UI SDK campaign toggles support keyboard pinning and highlight downstream flows. The layout keeps weighted links and scrolls at narrow widths.",
+    "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "sankey-patterns": {
-    "checked": "Fifteen links into the three outcomes are hatched, while 18 upstream links use gradients.",
-    "remaining": "Compare hatch angles and spacing."
+    "checked": "14 nodes and 33 links match the measured layout within 0.0051 px at three plot sizes. 47 captured readouts match. All 15 outcome links use stripes and the 18 upstream links retain gradients.",
+    "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "treemap-default": {
     "checked": "Five cloud-spend groups and sixteen service tiles fill the plot. Matched group boxes differ by 1.19 px on average at desktop width and 0.64 px at narrow width. Enter drills into Platform and Escape returns.",

@@ -17,7 +17,7 @@ const contributions = [
 ];
 
 export function contributionFixture(variant: string) {
-  const start = variant === "heatmap-weekdays" ? 1 : variant === "heatmap-quarters" ? 56
-    : ["heatmap-default", "heatmap-scroll", "heatmap-loading"].includes(variant) ? 0 : 182;
+  const start = variant === "heatmap-quarters" ? 56
+    : ["heatmap-default", "heatmap-weekdays", "heatmap-scroll", "heatmap-loading"].includes(variant) ? 0 : 182;
   return contributions.slice(start).map((value, index) => ({ date: new Date(firstDay + (start + index) * dayMs), value }));
 }

@@ -1,5 +1,5 @@
 export type FlowLink = { source: string; target: string; value: number };
-type Fixture = { unit: string; links: FlowLink[]; palette?: Record<string, number> };
+type Fixture = { unit: string; links: FlowLink[] };
 
 function links(rows: [string, string, number][]): FlowLink[] {
   return rows.map(([source, target, value]) => ({ source, target, value }));
@@ -154,7 +154,7 @@ const campaigns = links([
 ]);
 
 export const sankeyFixtures: Record<string, Fixture> = {
-  "sankey-default": { unit: "sessions", links: site, palette: { "Paid Search": 1, "Organic Search": 0, Email: 3, Referral: 4, "Paid Social": 2, Direct: 0, Pricing: 2, Blog: 1, Product: 3, Docs: 4, Homepage: 0, Converted: 1, Engaged: 2, Bounced: 3 } },
+  "sankey-default": { unit: "sessions", links: site },
   "sankey-vertical-labels": { unit: "sessions", links: search },
   "sankey-category-colors": { unit: "sessions", links: checkout },
   "sankey-solid-links": { unit: "sessions", links: devices },

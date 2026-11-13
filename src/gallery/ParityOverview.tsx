@@ -3,14 +3,17 @@ import { Button } from '@ui-sdk/react/button'
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '@ui-sdk/react/collapsible'
 import { examples, getFamily, groups } from '../catalog'
 import { Choices } from '../ui/Choices'
+import { comparisonPlot } from './comparison-plot'
 import parityData from './parity-notes.json'
 
 export const parityNotes: Readonly<Record<string, { checked: string; remaining: string } | undefined>> = parityData
 export const notedCount = Object.keys(parityNotes).length
-export type ParityFilter = 'all' | 'documented' | 'pending'
+export type ParityFilter = 'all' | 'documented' | 'measured' | 'pending'
+const measuredCount = examples.filter(comparisonPlot).length
 const parityFilters: { value: ParityFilter; label: React.ReactNode }[] = [
   { value: 'all', label: <><strong>{examples.length}</strong> Catalog variants</> },
   { value: 'documented', label: <><strong>{notedCount}</strong> With notes</> },
+  { value: 'measured', label: <><strong>{measuredCount}</strong> With measured plot sizing</> },
 ]
 const pendingFilter = { value: 'pending' as const, label: <><strong>{examples.length - notedCount}</strong> Awaiting notes</> }
 
@@ -23,7 +26,7 @@ export function ParityOverview({ filter, onFilter, onFamily }: {
     <section className="parity-overview" aria-labelledby="parity-overview-title">
       <div className="parity-overview-heading">
         <ClipboardCheck size={24} aria-hidden="true" />
-        <div><h1 id="parity-overview-title">Parity review</h1><p>Search checked behavior and remaining gaps. Open a variant’s Compare tab to see the live reference.</p></div>
+        <div><h1 id="parity-overview-title">Parity review</h1><p>Search checked behavior and remaining gaps. Open Compare to see the live reference and the checks recorded for a variant.</p></div>
       </div>
       <Choices className="parity-filters" label="Filter by review notes" options={examples.length !== notedCount || filter === 'pending' ? [...parityFilters, pendingFilter] : parityFilters} value={filter} onChange={onFilter} />
       <Collapsible className="parity-families">

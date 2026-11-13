@@ -1,6 +1,6 @@
 {
   "name": "chart-library",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "private": true,
   "type": "module",
   "exports": {
@@ -33,6 +33,7 @@
     "@ui-sdk/react": "0.1.0-beta.1",
     "d3-contour": "^4.0.2",
     "d3-geo": "^3.1.1",
+    "d3-sankey": "0.12.3",
     "d3-shape": "3.2.1",
     "echarts": "^6.1.0",
     "lucide-react": "^0.577.0",
@@ -45,6 +46,7 @@
   "devDependencies": {
     "@types/d3-contour": "^3.0.6",
     "@types/d3-geo": "^3.1.0",
+    "@types/d3-sankey": "0.12.5",
     "@types/d3-shape": "3.2.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

@@ -20,8 +20,12 @@ The [shadcn.io React reference](https://www.shadcn.io/charts) enumerates 44 char
 | Scatter fixture and geometry checks | All 121 sampled weekly and daily readouts match across the default, rings, solid, and outline variants. Point centers and grid positions differ by at most 0.005 px at 728 × 364 and 358 × 179 in both themes. |
 | Candlestick geometry and readouts | Six variants and all three range windows were measured at three matched plot sizes in both themes. Bodies, wicks, grids, and labels differ by at most 0.0051 px. All 189 distinct date and price readouts in the five interactive variants match. |
 | Circular geometry and motion | Five pie and ring variants match measured idle and selected mark bounds within 0.00008 px at their reference sizes. All 24 readouts match. Rolling digits, staggered entrance, and static reduced-motion states were checked. |
-| Compare plot dimensions | 38 variants were checked at desktop and narrow widths. Plots align within 0.5 px in the tested desktop light and mobile dark comparisons. The 300 px ring is capped to 286 px in the tested narrow pane to avoid overflow. |
+| Compare plot dimensions | 76 variants were checked at desktop and narrow widths. Measured plots align within 0.5 px in the tested desktop light and mobile dark comparisons. The 300 px ring fits the 286 px narrow pane and labeled Sankey diagrams retain the reference width in a scrollable pane. |
 | Area overlays and readouts | 84 reference samples match across forecast, target band, highlighted range, and trend. Geometry of the overlays, paths, and grids matches within 0.005 px at both tested sizes. |
+| Sankey geometry and inspection | Across nine variants at three matched sizes, 86 node bounds and 166 weighted link paths align within 0.0051 px. All 238 captured keyboard readouts match. |
+| Radar geometry and inspection | All 96 series scores match across nine variants. Rings, spokes, labels, dots and profiles align within 0.0051 px at measured desktop and narrow sizes. |
+| Heatmap geometry and inspection | All 11 variants were measured at three plot widths. Marks, axes and rules align within 0.005 px, with every captured level matching. Keyboard, touch and the fixed weekday rail were checked. |
+| Live-line layout and controls | All nine variants were checked in both themes at desktop and mobile widths for plot dimensions, clock labels, keyboard and touch inspection, and reduced motion. The demo feed is simulated. Pause freezes the visible window and Resume catches up. |
 | Full behavior and visual comparison | Open |
 
 ## Remaining verification

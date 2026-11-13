@@ -1,3 +1,4 @@
+import { livePreset, liveValue } from "./live-fixtures";
 import { comparisonFixture } from "./comparison-fixtures";
 import { barFixture } from "./bar-fixtures";
 import { candleFixture } from "./candle-fixtures";
@@ -26,33 +27,6 @@ export function candleRows(data: CartesianData): Candle[] {
     const open = data.series[0]?.values[index - 1] ?? close;
     return [open, close, Math.min(open, close) - 1, Math.max(open, close) + 1];
   });
-}
-
-interface LivePreset {
-  name: string;
-  period: number;
-  window: number;
-  base: number;
-  swing: number;
-  digits: number;
-  unit: "number" | "usd" | "ms";
-}
-
-const livePrice: LivePreset = { name: "Price", period: 600, window: 30_000, base: 141.45, swing: 2.8, digits: 2, unit: "usd" };
-const livePresets: Partial<Record<string, LivePreset>> = {
-  "live-line-momentum": { name: "Index", period: 600, window: 30_000, base: 4820, swing: 27, digits: 2, unit: "number" },
-  "live-line-paused": { name: "Viewers", period: 1000, window: 60_000, base: 1280, swing: 44, digits: 0, unit: "number" },
-  "live-line-right-axis": { name: "p95 latency", period: 800, window: 40_000, base: 140, swing: 21, digits: 0, unit: "ms" },
-};
-
-export function livePreset(id: string) {
-  return livePresets[id] ?? livePrice;
-}
-
-export function liveValue(index: number, preset: LivePreset) {
-  const scale = 10 ** preset.digits;
-  const wave = Math.sin(index * .17) * .65 + Math.cos(index * .72) * .25 + Math.sin(index * 1.32) * .1;
-  return Math.round((preset.base + wave * preset.swing) * scale) / scale;
 }
 
 export const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -163,7 +137,7 @@ function makeFixture(example: ChartExample): CartesianData {
   }
   if (family === "live-line") {
     const preset = livePreset(id);
-    const count = Math.round(preset.window / preset.period) + 1;
+    const count = preset.seed.length;
     return { categories: Array.from({ length: count }, (_, index) => String(index + 1)), series: [{ name: preset.name, values: Array.from({ length: count }, (_, index) => liveValue(index, preset)) }] };
   }
   if (family === "sparkline") return sparklineFixture(id);

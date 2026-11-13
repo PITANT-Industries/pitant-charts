@@ -56,7 +56,7 @@ function getLinkState(): GalleryLink {
   const review = params.get('review')
   const tab = params.get('view')
   return { group: family === 'all' ? group : getGroupForFamily(family)?.id ?? 'all', family, example,
-    review: review === 'all' || review === 'documented' || review === 'pending' ? review : null,
+    review: review === 'all' || review === 'documented' || review === 'measured' || review === 'pending' ? review : null,
     tab: example && (tab === 'compare' || tab === 'code') ? tab : 'preview' }
 }
 
@@ -269,6 +269,7 @@ export function Gallery() {
     if (selectedGroup && !selectedGroup.families.includes(example.family)) return false
     if (showSaved && !savedIds.has(example.id)) return false
     if (link.review === 'documented' && !parityNotes[example.id]) return false
+    if (link.review === 'measured' && !comparisonPlot(example)) return false
     if (link.review === 'pending' && parityNotes[example.id]) return false
     const note = link.review ? parityNotes[example.id] : undefined
     const searchable = `${example.title} ${example.label} ${example.id} ${getFamily(example.family)?.name} ${note?.checked ?? ''} ${note?.remaining ?? ''}`.toLowerCase()
@@ -375,7 +376,7 @@ export function Gallery() {
           </section>}
           <section ref={results} id="catalog" className="catalog" aria-labelledby="catalog-title">
             <div className="catalog-heading">
-              <div><h2 id="catalog-title">{showSaved ? 'Saved charts' : selectedFamily?.name ?? selectedGroup?.name ?? (link.review === 'documented' ? 'Variants with notes' : link.review === 'pending' ? 'Variants awaiting notes' : 'All charts')}</h2><p aria-live="polite">{filtered.length} {filtered.length === 1 ? 'example' : 'examples'}</p></div>
+              <div><h2 id="catalog-title">{showSaved ? 'Saved charts' : selectedFamily?.name ?? selectedGroup?.name ?? (link.review === 'documented' ? 'Variants with notes' : link.review === 'measured' ? 'Variants with measured plot sizing' : link.review === 'pending' ? 'Variants awaiting notes' : 'All charts')}</h2><p aria-live="polite">{filtered.length} {filtered.length === 1 ? 'example' : 'examples'}</p></div>
               <form className="filter-tools" onSubmit={submitSearch}>
                 <div className="search-field"><Search size={17} aria-hidden="true" /><Input controller={searchController} ref={searchField} type="search" aria-label="Search charts" placeholder={link.review ? 'Search charts and notes…' : 'Search charts…'} value={search} onValueChange={(value) => { setSearch(value); setPage(1) }} />{search ? <Button aria-label="Clear search" onClick={() => { searchController.setValue(''); searchField.current?.focus() }}><X size={15} aria-hidden="true" /></Button> : <kbd aria-hidden="true">/</kbd>}</div>
                 <FamilySelect value={link.family} groups={selectedGroup && !link.review ? [selectedGroup] : groups} onChange={(id) => choose(id === 'all' ? link.review ? 'all' : link.group : getGroupForFamily(id)?.id ?? 'all', id, showSaved, link.review)} />
