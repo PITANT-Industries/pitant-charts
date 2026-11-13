@@ -65,7 +65,7 @@ export function numericAxis(theme: ChartTheme, splitLine = true) {
 export function baseOption(data: CartesianData, theme: ChartTheme, compact: boolean, boundaryGap = false): EChartsOption {
   return {
     color: theme.colors,
-    textStyle: { fontFamily: "Inter, system-ui, sans-serif", color: theme.text },
+    textStyle: { fontFamily: theme.fontFamily, color: theme.text },
     grid: { top: 10, right: 15, bottom: 25, left: compact ? 29 : 48 },
     xAxis: categoryAxis(data.categories, theme, boundaryGap),
     yAxis: numericAxis(theme),
