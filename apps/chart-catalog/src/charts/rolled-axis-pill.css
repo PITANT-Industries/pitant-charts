@@ -1,0 +1,31 @@
+.chart-axis-pill {
+  position: absolute;
+  display: flex;
+  gap: 4px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  padding: 4px 16px;
+  color: var(--chart-axis-pill-foreground, var(--chart-focus-pill-text, var(--primary-foreground, oklch(.985 0 0))));
+  background: var(--chart-axis-pill-background, var(--chart-focus-pill, var(--primary, oklch(0 0 0))));
+  border-radius: 9999px;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.chart-axis-pill-window {
+  block-size: 24px;
+  overflow: hidden;
+  text-align: center;
+}
+.chart-axis-pill[data-single-column] { padding-inline: 18px; }
+.chart-axis-pill-stack > div { line-height: 24px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .chart-axis-pill-stack { transition: transform 120ms ease-out; }
+  @supports (transition-timing-function: linear(0, 1)) {
+    .chart-axis-pill-stack {
+      transition-timing-function: linear(0, .084, .25, .422, .572, .692, .782, .849, .896, .929, .952, .968, .979, .986, .991, 1);
+    }
+  }
+}

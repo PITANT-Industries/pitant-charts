@@ -976,12 +976,12 @@
     "remaining": "Compare exact paint, tooltip placement, and entrance and hover motion across browsers."
   },
   "treemap-default": {
-    "checked": "Cloud-spend tiles and labels match at three widths. Selecting Compute drills into Platform. The stationary pointer immediately reports the same tile as the reference after zoom and back. The measured spring and breadcrumb behavior agree.",
-    "remaining": "Compare exact exit paint and narrow tooltip placement when the reference clips."
+    "checked": "Cloud-spend tiles and labels match at three widths. Selecting Compute drills into Platform. The stationary pointer reports the same tile as the reference after zoom and back. Rapid reversals preserve spring velocity, and enabling reduced motion clears active layout and loading animations.",
+    "remaining": "Compare frame-by-frame reversal paint and narrow tooltip placement when the reference clips."
   },
   "treemap-drilldown": {
-    "checked": "Initial and nested layouts match at three widths. Selecting charts from node_modules opens @tanstack. The nested branch swap, shared-tile spring and stationary pointer readouts follow the reference.",
-    "remaining": "Compare exact exit paint and interrupted gestures."
+    "checked": "Initial and nested layouts match at three widths. Selecting charts from node_modules opens @tanstack. The nested branch swap, shared-tile spring and stationary pointer readouts follow the reference. Rapid drill and back sequences return to the complete overview.",
+    "remaining": "Compare frame-by-frame reversal paint across browsers."
   },
   "treemap-portfolio": {
     "checked": "All 17 rectangles match at the measured widths, and inspection of S&P 500 ETF reports $126,000 and 16.8% of the portfolio. Portfolio hover highlights the selected holding and its group. Activating a holding retains the overview.",
@@ -1281,7 +1281,7 @@
   },
   "tooltip-standard": {
     "checked": "All 30 September readouts match the live reference for Organic, Direct, and Referral. Sampled pointer readouts, panel size and desktop placement agree. The plot matches the area gradient stops and the measured mobile grid and ticks.",
-    "remaining": "Compare cursor easing and the rolling axis label. The panel stays inside the plot on narrow layouts."
+    "remaining": "Compare cursor easing. The panel stays inside the plot on narrow layouts."
   },
   "tooltip-crosshair": {
     "checked": "All 31 October Sign-ups readouts match. Desktop and mobile placement use the October time scale. The 6 px dash and 4 px gap guide appears without focus dots or a date pill.",
@@ -1293,7 +1293,7 @@
   },
   "tooltip-motion": {
     "checked": "All 21 August Web and App readouts match. Eased and Matched follow the sampled 200 ms panel travel and update the guide and active marks immediately, as measured in the reference. Instant and reduced motion suppress the panel transition.",
-    "remaining": "Compare motion during rapid pointer movement and the rolling axis label."
+    "remaining": "Compare exact motion during rapid pointer movement across browsers."
   },
   "tooltip-rows": {
     "checked": "All 30 June readouts match, including Pages per user rounded to one decimal. The Users and Pageviews traces stay unfilled, and the panel uses the measured row spacing.",

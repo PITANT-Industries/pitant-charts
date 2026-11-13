@@ -3,6 +3,7 @@ import { Button } from "@ui-sdk/react/button";
 import { TrendingDown, TrendingUp, X } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useChartTheme } from "../theme";
+import { datePillColumns, RolledAxisPill } from "../RolledAxisPill";
 import { Controls, dollars, number, seriesData, tone, type Props } from "./shared";
 import { tooltipFixtures } from "./tooltip-fixtures";
 import styles from "./styles.module.css";
@@ -207,7 +208,8 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
     : [...new Set(Array.from({ length: tickCount }, (_, i) => Math.round(i * (limit - 1) / Math.max(1, tickCount - 1))))];
   const pillWidth = compact ? 43 : (bars ? 63 : 75);
   const pillHeight = compact ? 17 : 32;
-  const pillX = Math.max(pillWidth / 2 + 2, Math.min(width - pillWidth / 2 - 2, pointX));
+  const pillX = compact ? Math.max(pillWidth / 2 + 2, Math.min(width - pillWidth / 2 - 2, pointX)) : Math.round(pointX);
+  const pillColumns = !data && fixture.dates ? datePillColumns(fixture.dates) : [categories];
   const markerRadius = compact ? 3 : styled ? 6 : 5;
   const strokeWidth = area ? 2 : 2.5;
   const points = totals ? [{ name: 'Revenue', values: totals, color: series[0]?.color }] : series;
@@ -285,11 +287,13 @@ export function TooltipPreview({ example, compact, data, renderTooltip }: Props)
           <rect x={Math.max(1, plot.left - 54)} y={crossY - 13} width="47" height="26" rx="13" className={tooltipStyles.axisPill} />
           <text x={Math.max(24.5, plot.left - 30.5)} y={crossY + 4} textAnchor="middle" fontSize="12" className={tooltipStyles.axisText}>{Math.round(crossValue)}</text>
         </g>}
-        {index !== null && datePill && <g data-tooltip-date-pill="">
+        {compact && index !== null && datePill && <g data-tooltip-date-pill="">
           <rect x={pillX - pillWidth / 2} y={plot.bottom + 4} width={pillWidth} height={pillHeight} rx={pillHeight / 2} className={tooltipStyles.axisPill} />
           <text x={pillX} y={plot.bottom + 4 + pillHeight / 2 + (compact ? 3 : 5)} textAnchor="middle" fontSize={compact ? 8 : 14} fontWeight="500" className={tooltipStyles.axisText}>{categories[index]}</text>
         </g>}
       </svg>
+      {!compact && index !== null && datePill && <RolledAxisPill columns={pillColumns} index={index} x={pillX}
+        y={Math.round(plot.bottom) + 4} data-tooltip-date-pill="" />}
       {index !== null && (!compact || index > 0) && <div ref={panel} className={`${styles.panel} ${tooltipStyles.panel}`} data-pinned={isPinned} data-tooltip-motion={motion} data-tooltip-style={renderTooltip ? 'custom' : header ? 'header' : content ? 'content' : pinEnabled ? 'pin' : 'rows'} data-tooltip-variant={id}
         role={isPinned ? "region" : "status"} aria-label="Chart tooltip"
         style={{ left: 0, top: panelPosition.y, transform: `translateX(${panelPosition.x}px)` }}>

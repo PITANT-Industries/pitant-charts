@@ -2,14 +2,15 @@ const geometry = ["x", "y", "width", "height", "rx"] as const;
 type Shape = SVGRectElement | SVGTextElement;
 type Position = Partial<Record<typeof geometry[number], number>>;
 type ShapeKey = "rect" | "name" | "value";
-type Mark = { group: SVGGElement; opacity: number; shapes: Map<ShapeKey, Position> };
-type Travel = { element: Shape; from: Position; to: Position };
+type ShapeState = { position: Position; velocity: Position };
+type Mark = { group: SVGGElement; opacity: number; shapes: Map<ShapeKey, ShapeState> };
+type Travel = { element: Shape; from: ShapeState; to: Position };
 type Fade = { element: SVGGElement; from: number; to: number };
 
 const layoutEnd = 1600;
 const exitEnd = 720;
 const exitCurve = [0, .084, .25, .422, .572, .692, .782, .849, .896, .929, .952, .968, .979, .986, .991, 1];
-const animatedPositions = new WeakMap<Shape, Position>();
+const animatedShapes = new WeakMap<Shape, ShapeState>();
 
 function markGroups(svg: SVGSVGElement) {
   return Array.from(svg.querySelectorAll<SVGGElement>("[data-path], [data-mark='treemap-back'], [data-treemap-exit-key]"));
@@ -41,14 +42,22 @@ export function captureTreemapLayout(svg: SVGSVGElement) {
   return new Map<string, Mark>(markGroups(svg).map(group => [markKey(group), {
     group: group.cloneNode(true) as SVGGElement,
     opacity: Number(getComputedStyle(group).opacity),
-    shapes: new Map(shapes(group).map(shape => [shapeKey(shape), animatedPositions.get(shape) ?? position(shape)])),
+    shapes: new Map(shapes(group).map(shape => [shapeKey(shape), animatedShapes.get(shape) ?? { position: position(shape), velocity: {} }])),
   }]));
 }
 
 function spring(elapsed: number) {
   // A unit mass, stiffness 170, and damping 26 give roots of -13 ± i.
   const seconds = elapsed / 1000;
-  return 1 - Math.exp(-13 * seconds) * (Math.cos(seconds) + 13 * Math.sin(seconds));
+  const decay = Math.exp(-13 * seconds);
+  const sine = Math.sin(seconds);
+  const cosine = Math.cos(seconds);
+  return {
+    progress: 1 - decay * (cosine + 13 * sine),
+    speed: decay * 170 * sine,
+    carry: decay * sine,
+    carrySpeed: decay * (cosine - 13 * sine),
+  };
 }
 
 function fade({ element, from, to }: Fade, progress: number) {
@@ -63,24 +72,27 @@ function focusFade(elapsed: number) {
   return exitCurve[low] + (exitCurve[high] - exitCurve[low]) * (sample - low);
 }
 
-function travel({ element, from, to }: Travel, progress: number) {
+function travel({ element, from, to }: Travel, sample: ReturnType<typeof spring>) {
   const current = { ...to };
+  const velocity: Position = {};
   for (const name of geometry) {
-    const a = from[name];
+    const a = from.position[name];
     const b = to[name];
-    if (a !== undefined && b !== undefined && a !== b) {
-      current[name] = a + (b - a) * progress;
+    const initialSpeed = from.velocity[name] ?? 0;
+    if (a !== undefined && b !== undefined && (a !== b || initialSpeed !== 0)) {
+      current[name] = a + (b - a) * sample.progress + initialSpeed * sample.carry;
+      velocity[name] = (b - a) * sample.speed + initialSpeed * sample.carrySpeed;
       if (element.localName === "rect") element.style.setProperty(name, `${current[name]}px`);
     }
   }
   if (element.localName === "text" && current.x !== undefined && current.y !== undefined && to.x !== undefined && to.y !== undefined) {
     element.style.translate = `${current.x - to.x}px ${current.y - to.y}px`;
   }
-  animatedPositions.set(element, current);
+  animatedShapes.set(element, { position: current, velocity });
 }
 
 function settleTravel({ element }: Travel) {
-  animatedPositions.delete(element);
+  animatedShapes.delete(element);
   if (element.localName === "text") element.style.removeProperty("translate");
   else for (const name of geometry) element.style.removeProperty(name);
 }
@@ -121,7 +133,7 @@ export function glideTreemapLayout(svg: SVGSVGElement, previous: ReturnType<type
     group.setAttribute("aria-hidden", "true");
     group.setAttribute("pointer-events", "none");
     for (const shape of shapes(group)) {
-      const current = oldPositions.get(shapeKey(shape));
+      const current = oldPositions.get(shapeKey(shape))?.position;
       for (const name of geometry) shape.style.removeProperty(name);
       shape.style.removeProperty("translate");
       if (current) for (const name of geometry) {
@@ -148,9 +160,9 @@ export function glideTreemapLayout(svg: SVGSVGElement, previous: ReturnType<type
       finish();
       return;
     }
-    const progress = spring(elapsed);
-    moving.forEach(item => travel(item, progress));
-    entering.forEach(item => fade(item, progress));
+    const sample = spring(elapsed);
+    moving.forEach(item => travel(item, sample));
+    entering.forEach(item => fade(item, sample.progress));
     if (elapsed < exitEnd) leaving.forEach(item => fade(item, focusFade(elapsed)));
     else if (ghosts.length) {
       ghosts.forEach(ghost => ghost.remove());
@@ -159,7 +171,7 @@ export function glideTreemapLayout(svg: SVGSVGElement, previous: ReturnType<type
     }
     frame = requestAnimationFrame(draw);
   }
-  moving.forEach(item => travel(item, 0));
+  moving.forEach(item => travel(item, spring(0)));
   entering.forEach(item => fade(item, 0));
   leaving.forEach(item => fade(item, 0));
   frame = requestAnimationFrame(draw);

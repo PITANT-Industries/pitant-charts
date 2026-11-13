@@ -163,9 +163,22 @@ export function ReferenceTreemap({ example, compact = false }: Props) {
     pendingLayout.current = null;
   }, [marks, path, plot]);
 
-  useLayoutEffect(() => () => {
-    finishLayout.current?.();
-    exit.current?.remove();
+  useLayoutEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    function clearMotion() {
+      finishLayout.current?.();
+      finishLayout.current = null;
+      const overlay = exit.current;
+      overlay?.getAnimations({ subtree: true }).forEach(animation => animation.cancel());
+      overlay?.remove();
+      exit.current = null;
+    }
+    const onPreference = () => { if (media.matches) clearMotion(); };
+    media.addEventListener("change", onPreference);
+    return () => {
+      media.removeEventListener("change", onPreference);
+      clearMotion();
+    };
   }, []);
 
   function canAnimate() {

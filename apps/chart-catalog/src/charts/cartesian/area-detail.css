@@ -37,27 +37,6 @@
   margin-block-end: 8px;
 }
 .cartesian-area-detail-panel .cartesian-focus-readout-row:last-child { min-height: 20px; }
-.cartesian-area-detail-pill {
-  position: absolute;
-  display: flex;
-  gap: 4px;
-  transform: translateX(-50%);
-  pointer-events: none;
-  padding: 4px 16px;
-  color: var(--area-pill-text);
-  background: var(--area-pill-fill);
-  border-radius: 9999px;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
-  font-size: 14px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-.cartesian-area-detail-pill-window {
-  block-size: 24px;
-  overflow: hidden;
-  text-align: center;
-}
-.cartesian-area-detail-pill-stack > div { line-height: 24px; }
 .cartesian-area-detail [data-area-forecast-marker][data-dimmed] { filter: blur(2px); }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -87,7 +66,6 @@
   @starting-style {
     .cartesian-area-detail-panel > .cartesian-focus-readout { opacity: 0; }
   }
-  .cartesian-area-detail-pill-stack { transition: transform 120ms var(--area-hover-ease); }
 }
 
 @keyframes area-detail-reveal {

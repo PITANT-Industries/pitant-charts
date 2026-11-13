@@ -1,6 +1,7 @@
 import { area, curveMonotoneX, line } from "d3-shape";
 import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { usePlotSize } from "../usePlotSize";
+import { datePillColumns, RolledAxisPill } from "../RolledAxisPill";
 import { CartesianFocusPoint, CartesianReadout } from "./CartesianFocus";
 import type { CartesianData } from "./data";
 import { lineDateLabel } from "./line-format";
@@ -17,7 +18,6 @@ export const detailedAreas = {
 type Variant = keyof typeof detailedAreas;
 type Point = { x: number; y: number; value: number; date: string; category: string };
 const day = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone: "UTC" });
-const month = new Intl.DateTimeFormat("en", { month: "short", timeZone: "UTC" });
 
 function demoDate(date: string) {
   // These demo dates are local calendar days, including any daylight-saving changes.
@@ -34,23 +34,6 @@ function trendPath(points: Point[], yAt: (value: number) => number) {
   const start = points[0].x;
   const end = points[points.length - 1].x;
   return `M${start},${y(start)}L${end},${y(end)}`;
-}
-
-function AreaDatePill({ dates, index, x, y }: { dates: string[]; index: number; x: number; y: number }) {
-  const columns = [
-    dates.map(date => month.format(new Date(date))),
-    dates.map(date => String(new Date(date).getUTCDate())),
-  ];
-  return <div className="cartesian-area-detail-pill" aria-hidden="true" style={{ left: x, top: y }}>
-    {columns.map((labels, column) => {
-      const constant = labels.every(label => label === labels[0]);
-      return <div key={column} className="cartesian-area-detail-pill-window">
-        <div className="cartesian-area-detail-pill-stack" style={{ transform: `translateY(${constant ? 0 : -24 * index}px)` }}>
-          {(constant ? labels.slice(0, 1) : labels).map((label, row) => <div key={row}>{label}</div>)}
-        </div>
-      </div>;
-    })}
-  </div>;
 }
 
 export function AreaDetail({ variant, label, data, compact, theme }: {
@@ -149,8 +132,8 @@ export function AreaDetail({ variant, label, data, compact, theme }: {
 
   return <div className="cartesian-area-detail" data-area-detail={variant} ref={plot} style={{
     "--area-plot-inset": `${left}px`,
-    "--area-pill-fill": `var(--chart-focus-pill, ${theme.text})`,
-    "--area-pill-text": `var(--chart-focus-pill-text, ${theme.surface})`,
+    "--chart-axis-pill-background": `var(--chart-focus-pill, ${theme.text})`,
+    "--chart-axis-pill-foreground": `var(--chart-focus-pill-text, ${theme.surface})`,
   } as CSSProperties}>
     {width > 0 && height > 0 && <svg className="cartesian-focus-surface" viewBox={`0 0 ${width} ${height}`} role="img"
       aria-roledescription="chart" aria-label={label} aria-describedby={compact ? undefined : `${id}-instructions`} tabIndex={compact ? undefined : 0}
@@ -223,7 +206,8 @@ export function AreaDetail({ variant, label, data, compact, theme }: {
         </>}
       </g>
     </svg>}
-    {selected !== null && <AreaDatePill dates={dates} index={selected} x={pillX} y={focusBottom + 4} />}
+    {selected !== null && <RolledAxisPill className="cartesian-area-detail-pill" columns={datePillColumns(dates.map(date => new Date(date)))}
+      index={selected} x={pillX} y={focusBottom + 4} />}
     {!compact && <div className="cartesian-area-detail-panel" ref={tip} role="status" style={{ left: panelX, top }}>
       {active && <CartesianReadout label={lineDateLabel(active.date)} entries={[{ name: series.name, value: active.value, color }]} live={false} />}
     </div>}
