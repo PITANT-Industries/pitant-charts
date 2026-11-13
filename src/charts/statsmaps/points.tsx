@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type PointerEvent } from "react";
 import { contourDensity } from "d3-contour";
 import { geoPath } from "d3-geo";
 import type { EChartsOption } from "echarts";
@@ -9,14 +9,38 @@ import {
   percent, seriesColors, ticks, useVariantLoading, xyData, type DemoProps, type Point,
 } from "./primitives";
 
-function generateScatter(id: string, count: number): Point[] {
+const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const dateLabel = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone: "UTC" });
+const compactNumber = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
+const dayMs = 86_400_000;
+
+function generateScatter(id: string): Point[] {
   const random = createRandom(18342);
-  return Array.from({ length: count }, (_, index) => {
-    const x = id === "scatter-jitter" ? index % 8 + 1 + (random() - .5) * .46 : index + 1;
-    const group = id === "scatter-solid" || id === "scatter-jitter" || id === "scatter-outline" ? "Activity" : index % 2 ? "Organic" : "Direct";
-    const y = Math.max(4, 42 + Math.sin(x / 8) * 9 + (index % 2 ? 14 : 0) + normal(random) * 12);
-    return { x, y, group };
-  });
+  if (id === "scatter-jitter") return Array.from({ length: 522 }, (_, index) => {
+    const month = index % 12;
+    const reviewed = index >= 242;
+    const y = reviewed ? Math.max(25, Math.min(2500, 110 + random() ** 2.7 * 2400)) : Math.round(15 + random() ** 1.8 * 480);
+    return { x: month + 1, y, group: reviewed ? "Reviewed" : "Auto-merged", label: monthLabels[month] };
+  }).sort((a, b) => a.x - b.x);
+  if (id === "scatter-rings") return Array.from({ length: 21 }, (_, i) => ({
+    x: Date.UTC(2026, 9, 5) + i * dayMs,
+    y: Math.round(1200 + i * 10.2 + Math.sin(i / 1.7) * 48 + normal(random) * 43), group: "Orders",
+  }));
+  if (id === "scatter-solid") return Array.from({ length: 60 }, (_, i) => ({
+    x: Date.UTC(2026, 8, 1) + i * dayMs,
+    y: Math.round(Math.max(40, Math.min(250, 188 - i * 1.06 + Math.sin(i / 4) * 16 + normal(random) * 24))), group: "API",
+  }));
+  if (id === "scatter-outline") return Array.from({ length: 16 }, (_, i) => ({
+    x: Date.UTC(2026, 6, 6) + i * 7 * dayMs,
+    y: Math.max(0, 11.2 + i * .63 + Math.sin(i / 2) * 2.3 + normal(random) * 1.6), group: "Trials converted",
+  }));
+  return Array.from({ length: 24 }, (_, week) => {
+    const x = Date.UTC(2026, 4, 18) + week * 7 * dayMs;
+    return [
+      { x, y: Math.max(8, Math.round(260 + Math.sin(week / 3) * 155 + week * 2 + normal(random) * 22)), group: "Organic" },
+      { x, y: Math.max(8, Math.round(165 + Math.cos((week + 1) / 2.5) * 103 + normal(random) * 17)), group: "Referral" },
+    ];
+  }).flat();
 }
 
 function CanvasScatter({ example, compact, data }: DemoProps) {
@@ -65,41 +89,76 @@ export function Scatter(props: DemoProps) {
 
 function ScatterSvg({ example, compact, data }: DemoProps) {
   const id = example.id;
-  const points = xyData(data) ?? generateScatter(id, id === "scatter-solid" ? 60 : id === "scatter-jitter" ? 85 : 34);
+  const defaultScatter = id === "scatter-default";
+  const rings = id === "scatter-rings";
+  const groupedHover = defaultScatter || rings;
+  const outlined = id === "scatter-outline";
+  const solid = id === "scatter-solid";
+  const jitter = id === "scatter-jitter";
+  const fixtureDates = !data && !jitter;
+  const points = useMemo(() => xyData(data) ?? generateScatter(id), [data, id]);
   if (!points.length) return <NoData example={example} compact={compact} />;
   const names = [...new Set(points.map((point) => point.group))];
   const palette = seriesColors(names, Array.from({ length: 8 }, (_, i) => `var(--chart-${i + 1})`), data);
-  const xd = domain(points.map(({ x }) => x), .05);
-  const yd = domain(points.map(({ y }) => y), .13);
+  const xd: [number, number] = jitter && !data ? [.5, 12.5] : domain(points.map(({ x }) => x), .05);
+  const yd: [number, number] = !data && (solid || outlined || jitter) ? [0, solid ? 250 : outlined ? 23 : 2600] : domain(points.map(({ y }) => y), .13);
   const x = linear(xd, [PLOT.left, PLOT.right]);
   const y = linear(yd, [PLOT.bottom, PLOT.top]);
-  const xTicks = id === "scatter-jitter" && !data ? [1, 2, 3, 4, 5, 6, 7, 8] : ticks(xd, 6);
-  const yTicks = ticks(yd, 5);
-  const sizes = id === "scatter-rings" ? [3.3, 8.5] : id === "scatter-solid" ? [3.5, 0] : [2.8, 5.6];
-  const horizontal = id === "scatter-jitter" ? "Month" : "Observation";
-  const vertical = id === "scatter-outline" ? "Conversion" : id === "scatter-solid" ? "Latency" : id === "scatter-jitter" ? "Pull requests" : "Signups";
-  const hints = points.map((point) => ({
-    x: x(point.x), y: y(point.y),
-    lines: [point.label ?? point.group, `${horizontal}: ${format.format(point.x)}`, `${vertical}: ${id === "scatter-outline" ? percent.format(point.y / 100) : format.format(point.y)}`],
+  const xTicks = !data ? jitter ? monthLabels.map((_, i) => i + 1) :
+    (defaultScatter ? [0, 8, 16, 23] : rings ? [0, 5, 10, 15, 20] : outlined ? [0, 5, 10, 15] : [0, 15, 30, 44, 59]).map((i) => points[defaultScatter ? i * 2 : i].x) : ticks(xd, 6);
+  const yTicks = !data && (solid || outlined || jitter) ? (solid ? [0, 50, 100, 150, 200, 250] : outlined ? [0, 5, 10, 15, 20] : [0, 500, 1000, 1500, 2000, 2500]) : ticks(yd, 5);
+  const sizes = rings ? [4.1, 8.5] : solid || jitter ? [jitter ? 2.15 : 3.5, 0] : [3.9, 6.8];
+  const axisY = (value: number) => outlined ? percent.format(value / 100) : solid ? `${format.format(value)} ms` : jitter ? compactNumber.format(value) : format.format(value);
+  const axisX = (value: number) => fixtureDates ? dateLabel.format(value) : jitter && !data ? monthLabels[value - 1] : format.format(value);
+  const labelFor = (point: Point) => point.label ?? axisX(point.x);
+  const weeks = new Map<number, Point[]>();
+  if (groupedHover) for (const point of points) {
+    if (!weeks.has(point.x)) weeks.set(point.x, []);
+    weeks.get(point.x)?.push(point);
+  }
+  const jitterRandom = createRandom(7902);
+  const positions = points.map((point) => ({
+    x: x(point.x) + (jitter ? (jitterRandom() - .5) * 18 : 0), y: y(point.y),
+  }));
+  const hints = groupedHover ? [...weeks.entries()].sort(([a], [b]) => a - b).map(([week, entries]) => ({
+    x: x(week), y: Math.min(...entries.map((point) => y(point.y))), lines: [labelFor(entries[0]), ...entries.map(({ group, y }) => `${group}: ${format.format(y)}${defaultScatter && !data ? " signups" : ""}`)],
+  })) : points.map((point, index) => ({
+    ...positions[index], lines: [labelFor(point), `${outlined ? "Conversion" : solid ? "P95 latency" : point.group}: ${jitter ? `${format.format(point.y)} lines` : axisY(point.y)}`],
   }));
   const legend = names.length > 1 && <Legend entries={names.map((name, i) => ({ name, color: palette[i] }))} />;
+  function nearest(event: PointerEvent<SVGRectElement>) {
+    const matrix = event.currentTarget.getScreenCTM();
+    if (!matrix) return undefined;
+    const at = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+    let winner = 0;
+    let shortest = Infinity;
+    for (let i = 0; i < hints.length; i++) {
+      const hint = hints[i];
+      const distance = groupedHover ? Math.abs(at.x - hint.x) : (at.x - hint.x) ** 2 + (at.y - hint.y) ** 2;
+      if (distance < shortest) { shortest = distance; winner = i; }
+    }
+    return hints[winner];
+  }
   return (
     <SvgPlot example={example} compact={compact} hints={hints} legend={legend}>
-      {(show, active) => (
+      {(show, active, filterId) => (
         <>
-          <Grid x={xTicks.map(x)} xLabels={xTicks.map((n) => format.format(n))} y={yTicks.map(y)} yLabels={yTicks.map((n) => id === "scatter-outline" ? percent.format(n / 100) : format.format(n))} xTitle={horizontal} yTitle={vertical} />
+          <defs><filter id={`${filterId}-scatter-blur`} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation={rings ? 1.5 : .8} /></filter></defs>
+          <Grid x={xTicks.map(x)} xLabels={xTicks.map(axisX)} y={yTicks.map(y)} yLabels={groupedHover && !data ? undefined : yTicks.map(axisY)} hideVertical />
+          {active && groupedHover && <path d={`M${active.x} ${PLOT.top}V${PLOT.bottom}`} stroke="var(--muted-foreground)" opacity=".45" strokeDasharray="4 5" />}
           {points.map((point, index) => {
-            const hint = hints[index];
-            const focused = active === hint;
+            const at = positions[index];
+            const focused = groupedHover ? active?.x === at.x : active === hints[index];
             const color = palette[names.indexOf(point.group)];
             return (
-              <g key={index} opacity={active && !focused ? id === "scatter-rings" ? .2 : .4 : .9}>
-                {sizes[1] > 0 && <circle cx={hint.x} cy={hint.y} r={sizes[1] + (focused ? 2 : 0)} fill="none" stroke={id === "scatter-outline" ? "var(--muted-foreground)" : color} strokeWidth={id === "scatter-outline" ? .9 : 1.4} />}
-                <circle cx={hint.x} cy={hint.y} r={sizes[0] + (focused ? 1 : 0)} fill={color} />
-                <circle cx={hint.x} cy={hint.y} r={Math.max(8, sizes[1] + 2)} fill="transparent" {...markEvents(hint, show)} />
+              <g key={index} className="stat-scatter-point" opacity={active && !focused ? rings ? .2 : .38 : .94} filter={groupedHover && active && !focused ? `url(#${filterId}-scatter-blur)` : undefined}>
+                {sizes[1] > 0 && <circle cx={at.x} cy={at.y} r={sizes[1] + (focused ? 2 : 0)} fill="none" stroke={outlined ? "var(--muted-foreground)" : color} strokeWidth={outlined ? .75 : 1.6} />}
+                <circle cx={at.x} cy={at.y} r={sizes[0] + (focused ? 1 : 0)} fill={color} />
               </g>
             );
           })}
+          {!compact && <rect x={PLOT.left} y={PLOT.top} width={PLOT.right - PLOT.left} height={PLOT.bottom - PLOT.top} fill="transparent"
+            onPointerMove={(event) => show(nearest(event) ?? null)} onPointerLeave={() => show(null)} />}
         </>
       )}
     </SvgPlot>

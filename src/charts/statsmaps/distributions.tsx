@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, type PointerEvent } from "react";
 import {
-  Grid, Legend, NoData, PLOT, SvgPlot, domain, format, linePath, linear,
-  markEvents, minMax, percent, quantile, sampleSeries, ticks, useVariantLoading,
+  Grid, Legend, NoData, PLOT, SvgPlot, createRandom, domain, format, linePath, linear,
+  markEvents, minMax, normal, percent, quantile, sampleSeries, ticks, useVariantLoading,
   type DemoProps,
 } from "./primitives";
 import { distributionStatistics, estimate } from "./simplify-statistics";
@@ -9,22 +9,51 @@ import { distributionStatistics, estimate } from "./simplify-statistics";
 const themeColor = (index: number) => `var(--chart-${index % 8 + 1})`;
 const regionNames = ["North", "South", "East", "West"];
 const monthNames = ["January", "February", "March", "April", "May", "June"];
+const cumulativePercent = new Intl.NumberFormat("en", { style: "percent", maximumFractionDigits: 1 });
+
+function requestFixtures(names: readonly string[], sessions = false) {
+  return names.map((name, index) => {
+    const random = createRandom(2914 + index);
+    const center = sessions ? name === "Mobile" ? 7 : 14 : name === "Before" ? 323 : 208;
+    const dispersion = sessions ? .57 : name === "Before" ? .47 : .41;
+    const after = !sessions && name !== "Before";
+    const values = Array.from({ length: sessions ? 200 : 240 }, () => {
+      const sample = Math.round(center * Math.exp(normal(random) * dispersion));
+      return after ? Math.max(73, Math.min(632, sample)) : sample;
+    })
+      .sort((a, b) => a - b);
+    if (after) {
+      values[0] = 73;
+      values[values.length - 1] = 632;
+    }
+    return { name, color: undefined, values };
+  });
+}
 
 export function Histogram({ example, compact, data }: DemoProps) {
   const { loading, button } = useVariantLoading(example.id);
   const overlay = example.id === "histogram-overlay";
   const stacked = example.id === "histogram-stacked";
-  const sets = sampleSeries(data, overlay ? ["Before", "After"] : stacked ? ["Mobile", "Desktop"] : ["Requests"], 240);
+  const names = overlay ? ["Before", "After"] : stacked ? ["Mobile", "Desktop"] : ["Requests"];
+  const sets = data ? sampleSeries(data, []) : requestFixtures(names, stacked);
   const [hidden, setHidden] = useState<string[]>([]);
+  const [hoveredSeries, setHoveredSeries] = useState<string | null>(null);
   if (!sets.length) return <NoData example={example} compact={compact} />;
-  const [min, max] = minMax(sets.flatMap(({ values }) => values));
-  const count = 16;
+  const [dataMin, dataMax] = minMax(sets.flatMap(({ values }) => values));
+  const step = stacked ? 2 : overlay ? 50 : 20;
+  const min = data ? dataMin : stacked ? 0 : Math.floor(dataMin / step) * step;
+  const max = data ? dataMax : stacked ? 40 : Math.ceil(dataMax / step) * step;
+  const count = data ? 16 : Math.max(1, Math.round((max - min) / step));
   const width = (max - min) / count;
   const x = linear([min, max], [PLOT.left, PLOT.right]);
-  const xTicks = ticks([min, max], 6);
+  const tickStep = stacked ? 10 : overlay ? 200 : 100;
+  const xTicks = data ? ticks([min, max], 6) : Array.from({ length: Math.floor(max / tickStep) + 1 }, (_, index) => index * tickStep).filter((value) => value >= min);
+  const unit = data ? "" : stacked ? " min" : " ms";
+  const axisLabel = (value: number) => `${format.format(value)}${unit}`;
   const bins = sets.map(({ values }) => {
     const histogram = new Array<number>(count).fill(0);
     values.forEach((value) => {
+      if (value < min || value > max) return;
       histogram[Math.min(count - 1, Math.max(0, Math.floor((value - min) / width)))]++;
     });
     return histogram;
@@ -46,28 +75,35 @@ export function Histogram({ example, compact, data }: DemoProps) {
       const bx = x(min + binIndex * width) + 1;
       const by = y(base + value);
       const displayHeight = loading ? 24 + 122 * Math.sin(Math.PI * (binIndex + 1) / (count + 2)) ** 2 : y(base) - by;
-      return { x: bx, y: loading ? PLOT.bottom - displayHeight : by, height: displayHeight,
+      return { x: bx, y: loading ? PLOT.bottom - displayHeight : by, height: displayHeight, name,
         color: color ?? themeColor(seriesIndex), value,
-        hint: { x: bx + barWidth / 2, y: by, lines: [`${format.format(min + binIndex * width)}–${format.format(min + (binIndex + 1) * width)}`, `${name}: ${value}`] },
+        hint: { x: bx + barWidth / 2, y: by, lines: [`${format.format(min + binIndex * width)}–${axisLabel(min + (binIndex + 1) * width)}`, `${name}: ${value}`] },
         key: `${seriesIndex}-${binIndex}`,
       };
     });
   });
-  const legend = sets.length > 1 && (
+  const toggle = (name: string) => setHidden((prev) => prev.includes(name) ? prev.filter((entry) => entry !== name) : [...prev, name]);
+  const legend = overlay && sets.length > 1 ? <div className="stat-legend" aria-label="Median response">
+    <span>Median response</span>
+    {sets.map(({ name, color, values }, i) => <button key={name} type="button" aria-label={name} aria-pressed={visible[i]} disabled={compact} onPointerEnter={() => setHoveredSeries(name)} onPointerLeave={() => setHoveredSeries(null)} onFocus={() => setHoveredSeries(name)} onBlur={() => setHoveredSeries(null)} onClick={() => toggle(name)}>
+      <i style={{ background: color ?? themeColor(i) }} aria-hidden="true" /> {name} <strong>{axisLabel(quantile(values, .5))}</strong>
+    </button>)}
+  </div> : sets.length > 1 && (
     <Legend
       entries={sets.map(({ name, color }, i) => ({ name, color: color ?? themeColor(i) }))}
       active={sets.filter((_, i) => visible[i]).map(({ name }) => name)}
-      onToggle={compact ? undefined : (name) => setHidden((prev) => prev.includes(name) ? prev.filter((entry) => entry !== name) : [...prev, name])}
+      onToggle={compact ? undefined : toggle}
     />
   );
   return (
     <SvgPlot example={example} compact={compact} hints={bars.map(({ hint }) => hint)} loading={loading} controls={button} legend={legend}>
       {(show, active) => (
         <>
-          <Grid x={xTicks.map(x)} xLabels={xTicks.map((value) => format.format(value))} y={yTicks.map(y)} yLabels={yTicks.map((value) => format.format(value))} xTitle="Sample value" yTitle="Frequency" hideVertical />
+          <Grid x={xTicks.map(x)} xLabels={xTicks.map(axisLabel)} y={yTicks.map(y)} yLabels={yTicks.map((value) => format.format(value))} xTitle={data ? "Sample value" : undefined} yTitle={data ? "Frequency" : undefined} hideVertical />
           {bars.map((bar) => (
             <rect
               key={bar.key}
+              data-series={bar.name}
               className={loading ? "stat-load" : undefined}
               x={bar.x}
               y={bar.y}
@@ -75,7 +111,7 @@ export function Histogram({ example, compact, data }: DemoProps) {
               height={Math.max(0, bar.height)}
               fill={bar.color}
               rx={3}
-              opacity={active && active !== bar.hint ? .42 : overlay ? .63 : .9}
+              opacity={hoveredSeries && hoveredSeries !== bar.name ? .18 : active && active !== bar.hint ? .42 : overlay ? .63 : .9}
               {...markEvents(bar.hint, show, !loading)}
             />
           ))}
@@ -89,54 +125,90 @@ export function Ecdf({ example, compact, data }: DemoProps) {
   const { loading, button } = useVariantLoading(example.id);
   const [hidden, setHidden] = useState<string[]>([]);
   const compare = example.id === "ecdf-compare";
-  const sets = sampleSeries(data, compare ? ["After", "Before"] : ["Requests"], 60);
+  const sets = data ? sampleSeries(data, []) : requestFixtures(compare ? ["Before", "After"] : ["Requests"]);
   if (!sets.length) return <NoData example={example} compact={compact} />;
-  const [min, max] = domain(sets.flatMap(({ values }) => values), .04);
+  const samples = sets.flatMap(({ values }) => values);
+  const extent = minMax(samples);
+  const [min, max] = data ? domain(samples, .04) : [0, Math.max(800, Math.ceil(extent[1] / 200) * 200)];
   const x = linear([min, max], [PLOT.left, PLOT.right]);
   const y = linear([0, 1], [PLOT.bottom, PLOT.top]);
-  const xTicks = ticks([min, max], 5);
-  const yTicks = ticks([0, 1], 5);
+  const xTicks = data ? ticks([min, max], 5) : Array.from({ length: Math.round(max / 200) + 1 }, (_, index) => index * 200);
+  const yTicks = ticks([0, 1], 6);
+  const axisLabel = (value: number) => `${format.format(value)}${data ? "" : " ms"}`;
   const graphs = sets.map(({ name, color, values }, i) => {
     const start: [number, number] = [x(min), y(0)];
     const points: [number, number][] = [start];
-    const hints = values.map((value, index) => {
+    values.forEach((value, index) => {
       const share = (index + 1) / values.length;
       points.push([x(value), y(index / values.length)], [x(value), y(share)]);
-      return { x: x(value), y: y(share), lines: [name, `Value: ${format.format(value)}`, `Cumulative: ${percent.format(share)}`] };
     });
     points.push([x(max), y(1)]);
-    return { name, path: linePath(points), color: color ?? themeColor(i), hints };
+    return { name, path: linePath(points), color: color ?? themeColor(i), values };
   }).filter(({ name }) => !hidden.includes(name));
   const legend = sets.length > 1 && <Legend
     entries={sets.map(({ name, color }, i) => ({ name, color: color ?? themeColor(i) }))}
     active={graphs.map(({ name }) => name)}
     onToggle={compact ? undefined : (name) => setHidden((prev) => prev.includes(name) ? prev.filter((entry) => entry !== name) : [...prev, name])}
   />;
-  const hints = graphs.flatMap((graph) => graph.hints);
+  const thresholds = [...new Set(graphs.flatMap(({ values }) => values))].sort((a, b) => a - b);
+  const proportion = (values: readonly number[], threshold: number) => {
+    let lower = 0;
+    let upper = values.length;
+    while (lower < upper) {
+      const middle = Math.floor((lower + upper) / 2);
+      if (values[middle] <= threshold) lower = middle + 1;
+      else upper = middle;
+    }
+    return lower / values.length;
+  };
+  const hints = thresholds.map((threshold) => {
+    const groups = graphs.map(({ name, values, color }) => ({ name, color, value: proportion(values, threshold) }));
+    return {
+      x: x(threshold), y: y(Math.max(...groups.map(({ value }) => value))), groups,
+      lines: [`≤ ${axisLabel(threshold)}`, ...groups.map(({ name, value }) => `${name}: ${cumulativePercent.format(value)}`)],
+    };
+  });
+  const marks = compare ? [.9] : [.5, .9];
   const placeholder = Array.from({ length: 10 }, (_, index) => {
     const position = x(min + (max - min) * (index + 1) / 10);
     return `H${position}V${y(Math.min(1, (index + 1) / 10))}`;
   }).join("");
+  function nearestThreshold(event: PointerEvent<SVGRectElement>) {
+    const matrix = event.currentTarget.getScreenCTM();
+    if (!matrix || !hints.length) return null;
+    const { x } = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+    return hints.reduce((closest, hint) => Math.abs(hint.x - x) < Math.abs(closest.x - x) ? hint : closest);
+  }
   return (
     <SvgPlot example={example} compact={compact} hints={hints} loading={loading} controls={button} legend={legend}>
       {(show, active, id) => (
         <>
-          <defs><linearGradient id={`${id}-cdf`} x1="0" y1="0" x2="0" y2="1"><stop stopColor={themeColor(0)} stopOpacity=".29" /><stop offset="100%" stopColor={themeColor(0)} stopOpacity=".04" /></linearGradient></defs>
-          <Grid x={xTicks.map(x)} xLabels={xTicks.map((value) => format.format(value))} y={yTicks.map(y)} yLabels={yTicks.map((value) => percent.format(value))} xTitle="Sample value" yTitle="Cumulative share" />
+          <defs>
+            <linearGradient id={`${id}-cdf`} x1="0" y1="0" x2="0" y2="1"><stop stopColor={themeColor(0)} stopOpacity=".29" /><stop offset="100%" stopColor={themeColor(0)} stopOpacity=".04" /></linearGradient>
+            <clipPath id={`${id}-reveal`}><rect className="stat-ecdf-reveal" x={PLOT.left - 2} y={PLOT.top - 2} width={PLOT.right - PLOT.left + 4} height={PLOT.bottom - PLOT.top + 4} /></clipPath>
+          </defs>
+          <Grid x={xTicks.map(x)} xLabels={xTicks.map(axisLabel)} y={yTicks.map(y)} yLabels={yTicks.map((value) => percent.format(value))} xTitle={data ? "Sample value" : undefined} yTitle={data ? "Cumulative share" : undefined} hideVertical />
           {loading ? <path d={`M${x(min)} ${y(0)}${placeholder}`} fillOpacity={0} className="stat-load" strokeWidth={5} /> : (
             <>
-              {graphs.map((graph) => (
-                <g key={graph.name}>
+              <g clipPath={example.id === "ecdf-loading" ? `url(#${id}-reveal)` : undefined}>
+                {graphs.map((graph) => <g key={graph.name}>
                   {!compare && <path d={`${graph.path}L${x(max)} ${y(0)}Z`} fill={`url(#${id}-cdf)`} />}
                   <path d={graph.path} fill="none" stroke={graph.color} strokeWidth={2.8} strokeLinejoin="round" />
-                  {graph.hints.map((hint, index) => <circle key={index} cx={hint.x} cy={hint.y} r={7} fill="transparent" {...markEvents(hint, show)} />)}
-                </g>
-              ))}
-              {!compare && graphs.length > 0 && [.5, .9].map((p) => {
-                const qx = x(quantile(sets[0].values, p));
-                return <path key={p} d={`M${PLOT.left} ${y(p)}H${qx}V${PLOT.bottom}`} fill="none" stroke={themeColor(0)} opacity=".6" strokeDasharray="5 4" />;
-              })}
-              {active && <circle cx={active.x} cy={active.y} r={5} fill={themeColor(0)} stroke="var(--background)" strokeWidth={2} />}
+                </g>)}
+              </g>
+              {graphs.length > 0 && marks.map((p) => <g key={p}>
+                <text className="stat-axis" x={PLOT.left - 9} y={y(p) + 3} textAnchor="end">p{Math.round(p * 100)}</text>
+                <path d={`M${PLOT.left} ${y(p)}H${Math.max(...graphs.map(({ values }) => x(quantile(values, p))))}`} fill="none" stroke={themeColor(0)} opacity=".55" strokeDasharray="5 4" />
+                {graphs.map(({ name, values, color }) => {
+                  const qx = x(quantile(values, p));
+                  return <path key={name} d={`M${qx} ${y(p)}V${PLOT.bottom}`} fill="none" stroke={color} opacity=".45" strokeDasharray="5 4" />;
+                })}
+              </g>)}
+              {active && <g aria-hidden="true">
+                <path d={`M${active.x} ${PLOT.top}V${PLOT.bottom}`} stroke="var(--muted-foreground)" opacity=".6" strokeDasharray="4 4" />
+                {hints.find((hint) => hint === active)?.groups.map(({ name, value, color }) => <circle key={name} cx={active.x} cy={y(value)} r="4.5" fill={color} stroke="var(--background)" strokeWidth="1.6" />)}
+              </g>}
+              {!compact && <rect x={PLOT.left} y={PLOT.top} width={PLOT.right - PLOT.left} height={PLOT.bottom - PLOT.top} fill="transparent" onPointerMove={(event) => show(nearestThreshold(event))} onPointerLeave={() => show(null)} />}
             </>
           )}
         </>

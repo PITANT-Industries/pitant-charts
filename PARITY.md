@@ -6,13 +6,24 @@ The [shadcn.io React reference](https://www.shadcn.io/charts) enumerates 44 char
 | --- | --- |
 | Reference entries accounted for | 331 of 331 unique example IDs and reference URLs |
 | Renderer routing | All 44 chart families and Tooltips |
-| Chromium render sweep | 331 examples rendered across the Cartesian, polar and flow, and statistical and geographic groups |
+| Reference Chromium render sweep | 331 live reference previews in desktop light, desktop dark, mobile light, and mobile dark |
+| Local Chromium render sweep | 331 examples rendered across the Cartesian, polar and flow, and statistical and geographic groups |
 | Gallery | Desktop and mobile layout, family filters, search, saved examples across reloads, list view, deep links, theme and usage snippets checked |
+| Live side-by-side comparison | Compare uses the selected variant and theme. Checked live controls and variant navigation on desktop and the stacked dark layout on mobile. |
 | Representative chart behaviors | Time range, range selection, synchronized sparklines, data table, PNG and SVG export, live pause, gauge controls, tooltip pinning, hierarchy drill-down, loading states, large scatter, heatmap scrolling, map zoom, and globe drag checked |
 | Full behavior and visual comparison | Open |
 
 ## Remaining verification
 
-Compare each demo with its linked reference in both themes and at narrow and wide widths. Verify the named feature against the original, including pointer and keyboard interaction where applicable. Representative tests confirm behavior for selected variants. The complete render sweep confirms the catalog opens across every family.
+The gallery’s **Compare** tab shows the live reference and current notes for individual variants. For each variant, compare its named feature, pointer and keyboard interactions, and chart treatment in both themes and at narrow and wide widths. The render checks establish that a preview mounted and showed chart output. Interaction checks cover selected variants.
 
-The previews use local fixture data and our palette. Animation timing and some rendering details differ across the two implementations. Important comparisons include linked brush timing, forecast band styling, gauge transitions, hierarchy layout and map camera motion. See the variant’s Reference preview for the expected presentation and interactions.
+The previews use local fixture data and our palette. Remaining comparisons include forecast band styling, exact motion timing, hierarchy geometry, and chart-specific loading and hover effects. [Polar, flow, and hierarchy notes](src/charts/polarflow/PARITY.md)
+
+## Repeat the render audit
+
+The audit uses Python Playwright with Chromium. Pass `CHROMIUM_PATH` if using a separately installed Chromium or Chrome binary.
+
+```sh
+python scripts/audit-renders.py --reference
+python scripts/audit-renders.py --local http://127.0.0.1:4173/
+```

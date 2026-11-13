@@ -3,12 +3,13 @@ import {
   WIDTH, createRandom, format, markEvents, number, rows, useVariantLoading, type DemoProps, type HoverInfo,
 } from "./primitives";
 
-const weekDays = ["M", "T", "W", "T", "F", "S", "S"];
+const mondayFirst = ["M", "T", "W", "T", "F", "S", "S"];
+const sundayFirst = ["S", "M", "T", "W", "T", "F", "S"];
 const month = new Intl.DateTimeFormat("en", { month: "short", timeZone: "UTC" });
 const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "long", timeZone: "UTC" });
 const dayMs = 86_400_000;
 
-function calendar(data: DemoProps["data"], quarterMode: boolean) {
+function calendar(data: DemoProps["data"], variant: string) {
   if (data?.rows) {
     return rows(data).flatMap((row) => {
       const date = typeof row.date === "string" ? Date.parse(row.date) : NaN;
@@ -24,8 +25,11 @@ function calendar(data: DemoProps["data"], quarterMode: boolean) {
     });
   }
   const random = createRandom(1121);
-  return Array.from({ length: quarterMode ? 298 : 365 }, (_, index) => ({
-    date: new Date(Date.UTC(2025, 0, 1) + index * dayMs),
+  const short = variant === "heatmap-dots" || variant === "heatmap-active-scale";
+  const loading = variant === "heatmap-loading";
+  const start = short ? Date.UTC(2026, 4, 3) : loading ? Date.UTC(2025, 10, 1) : Date.UTC(2025, 0, 1);
+  return Array.from({ length: short ? 182 : variant === "heatmap-quarters" ? 304 : 365 }, (_, index) => ({
+    date: new Date(start + index * dayMs),
     value: random() > .33 ? Math.round((random() ** 1.8) * 18) : 0,
   }));
 }
@@ -33,7 +37,7 @@ function calendar(data: DemoProps["data"], quarterMode: boolean) {
 export function Heatmap({ example, compact, data }: DemoProps) {
   const id = useId().replaceAll(":", "");
   const { loading, button } = useVariantLoading(example.id);
-  const [hover, setHover] = useState<HoverInfo | null>(null);
+  const [hover, setHover] = useState<number | null>(null);
   const [focus, setFocus] = useState<number | null>(null);
   const [level, setLevel] = useState<number | null>(null);
   const scroll = useRef<HTMLDivElement>(null);
@@ -46,16 +50,17 @@ export function Heatmap({ example, compact, data }: DemoProps) {
   const dividers = quarter || round || dashed || example.id === "heatmap-separators-solid";
   const continuous = example.id === "heatmap-gradient-legend";
   const scrolling = !compact && example.id === "heatmap-scroll";
+  const weekDays = weekend || scrolling ? mondayFirst : sundayFirst;
   const values = useMemo(() => {
     const daily = new Map<number, number>();
-    for (const { date, value } of calendar(data, quarter)) {
+    for (const { date, value } of calendar(data, example.id)) {
       const utcDay = Math.floor(date.getTime() / dayMs) * dayMs;
       daily.set(utcDay, (daily.get(utcDay) ?? 0) + value);
     }
     return [...daily].sort(([a], [b]) => a - b).map(([date, value]) => ({ date: new Date(date), value }));
-  }, [data, quarter]);
+  }, [data, example.id]);
   const first = values[0]?.date.getTime() ?? Date.UTC(2025, 0, 1);
-  const beginning = first - (((values[0]?.date.getUTCDay() ?? 1) + 6) % 7) * dayMs;
+  const beginning = first - (((values[0]?.date.getUTCDay() ?? 1) + (weekend || scrolling ? 6 : 0)) % 7) * dayMs;
   const color = (i: number) => i ? `color-mix(in srgb, var(--chart-1) ${25 + i * 18}%, var(--muted))` : "var(--muted)";
   const max = Math.max(1, ...values.map(({ value }) => value));
   const firstQuarter = values[0] ? values[0].date.getUTCFullYear() * 4 + Math.floor(values[0].date.getUTCMonth() / 3) : 0;
@@ -77,7 +82,8 @@ export function Heatmap({ example, compact, data }: DemoProps) {
   });
   const width = scrolling ? Math.max(WIDTH, (geometry.at(-1)?.x ?? 0) + 30) : WIDTH;
   const height = 35 + 7 * perCell;
-  const current = loading ? null : hover ?? (focus === null ? null : geometry[focus]?.hint) ?? null;
+  const activeCell = loading ? undefined : geometry[hover ?? focus ?? -1];
+  const current = activeCell?.hint;
   const monthStarts = geometry.filter((cell, i) => i === 0 || cell.date.getUTCMonth() !== geometry[i - 1].date.getUTCMonth());
   const quarterStarts = geometry.filter((cell, i) => i > 0 && cell.quarterIndex !== geometry[i - 1].quarterIndex);
   const months = quarter ? [geometry[0], ...quarterStarts].filter(Boolean) : monthStarts;
@@ -115,16 +121,16 @@ export function Heatmap({ example, compact, data }: DemoProps) {
               <linearGradient id={`${id}-divider`} x2="0" y2="1"><stop stopColor="var(--muted-foreground)" stopOpacity=".15" /><stop offset="50%" stopColor="var(--muted-foreground)" stopOpacity=".7" /><stop offset="100%" stopColor="var(--muted-foreground)" stopOpacity=".15" /></linearGradient>
             </defs>
             {!values.length && <text className="stat-axis" x={width / 2} y={height / 2} textAnchor="middle">No data to display</text>}
-            {!dashed && !scrolling && weekDays.map((day, index) => <text key={index} className="stat-axis" x="28" y={26 + index * perCell + perCell * .66} opacity={weekend && index >= 5 ? .4 : 1} textAnchor="end">{day}</text>)}
+            {!dashed && !scrolling && weekDays.map((day, index) => scaled && ![1, 3, 5].includes(index) ? null : <text key={index} className="stat-axis" x="28" y={26 + index * perCell + perCell * .66} opacity={weekend && index >= 5 ? .4 : 1} textAnchor="end">{day}</text>)}
             {months.map((cell) => <text key={cell.date.toISOString()} className="stat-axis" x={cell.x} y="15">{quarter ? `Q${cell.group + 1}` : month.format(cell.date)}</text>)}
             {dividers && quarterStarts.map((cell) => <path key={cell.quarterIndex} d={`M${cell.x - 3} 23V${height - 6}`} stroke={dashed || quarter ? `url(#${id}-divider)` : "var(--border)"} strokeDasharray={dashed ? "4 4" : undefined} />)}
-            {geometry.map((cell) => {
-              const active = current === cell.hint;
+            {geometry.map((cell, index) => {
+              const active = cell === activeCell;
               const opacity = level !== null && level !== cell.strength || current && !active && (round || scaled) ? .44 : weekend && cell.weekday >= 5 ? .39 : 1;
               const fill = stripes && cell.strength === 2 ? `url(#${id}-stripe)` : color(cell.strength);
-              const style = { opacity, transform: `scale(${active && (round || scaled) ? 1.1 : current && round ? .93 : 1})`, animationDelay: `${cell.week % 10 * 60}ms` };
-              const className = `stat-heat-scale ${loading ? "stat-load" : ""}`;
-              const events = markEvents(cell.hint, setHover, !compact && !loading);
+              const style = { opacity, transform: `scale(${active && scaled ? 1.1 : current && round && !active ? .93 : 1})`, animationDelay: `${loading ? cell.week % 10 * 60 : cell.week * 11 + cell.weekday * 5}ms` };
+              const className = `stat-heat-scale ${loading ? "stat-load" : example.id === "heatmap-loading" ? "stat-heat-reveal" : ""}`;
+              const events = markEvents(cell.hint, (hint) => setHover(hint ? index : null), !compact && !loading);
               const size = Math.max(.3, perCell - (scrolling ? 4 : Math.min(2.1, perCell * .2)));
               return round
                 ? <circle key={cell.date.toISOString()} className={className} cx={cell.x + size / 2} cy={cell.y + size / 2} r={size / 2} fill={fill} style={style} {...events} />
@@ -142,7 +148,7 @@ export function Heatmap({ example, compact, data }: DemoProps) {
         <span>Less</span>
         {continuous ? <i className="stat-heat-gradient" style={{ width: 110, background: `linear-gradient(90deg, ${color(0)}, ${color(4)})` }} /> : [0, 1, 2, 3, 4].map((i) => (
           <button className="stat-heat-scale" key={i} type="button" aria-label={`Intensity ${i} of 4`} aria-pressed={level === null || level === i} onClick={() => setLevel(level === i ? null : i)} tabIndex={compact ? -1 : undefined} disabled={compact}
-            style={{ transform: scaled && current && geometry.find((cell) => cell.hint === current)?.strength === i ? "scale(1.3)" : undefined }}>
+            style={{ transform: scaled && activeCell?.strength === i ? "scale(1.1)" : undefined, opacity: scaled && activeCell && activeCell.strength !== i ? .44 : undefined }}>
             <i style={{ "--legend-color": stripes && i === 2 ? `repeating-linear-gradient(135deg, ${color(2)} 0 2px, ${color(4)} 2px 3px)` : color(i) } as CSSProperties} />
           </button>
         ))}

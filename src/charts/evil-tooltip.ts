@@ -3,6 +3,7 @@
 import type { DefaultLabelFormatterCallbackParams, EChartsOption } from 'echarts'
 
 type TooltipOption = Exclude<NonNullable<EChartsOption['tooltip']>, unknown[]>
+type ValueFormatter = TooltipOption['valueFormatter']
 
 export function escapeTooltipHtml(value: string) {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;')
@@ -14,18 +15,19 @@ function formatValue(value: unknown): string {
   return typeof value === 'string' ? value : '—'
 }
 
-function tooltipRow(item: DefaultLabelFormatterCallbackParams, showSeries: boolean) {
+function tooltipRow(item: DefaultLabelFormatterCallbackParams, showSeries: boolean, format?: ValueFormatter) {
   const name = showSeries ? item.seriesName : item.name || item.seriesName
   const marker = typeof item.marker === 'string' ? item.marker : ''
-  return `<div class="cl-tooltip-row"><span>${marker}${escapeTooltipHtml(name ?? '')}</span><strong>${escapeTooltipHtml(formatValue(item.value))}</strong></div>`
+  const value = format && item.value !== undefined ? format(item.value as Parameters<NonNullable<ValueFormatter>>[0], item.dataIndex) : formatValue(item.value)
+  return `<div class="cl-tooltip-row"><span>${marker}${escapeTooltipHtml(name ?? '')}</span><strong>${escapeTooltipHtml(value)}</strong></div>`
 }
 
-function tooltipShell(params: DefaultLabelFormatterCallbackParams | DefaultLabelFormatterCallbackParams[]) {
+function tooltipShell(params: DefaultLabelFormatterCallbackParams | DefaultLabelFormatterCallbackParams[], format?: ValueFormatter) {
   const items = Array.isArray(params) ? params : [params]
   if (!items.length) return ''
   const label = items[0].name
   const header = label && Array.isArray(params) ? `<div class="cl-tooltip-heading">${escapeTooltipHtml(label)}</div>` : ''
-  const rows = items.map((item) => tooltipRow(item, Array.isArray(params))).join('')
+  const rows = items.map((item) => tooltipRow(item, Array.isArray(params), format)).join('')
   return `<div class="cl-tooltip">${header}<div class="cl-tooltip-rows">${rows}</div></div>`
 }
 
@@ -41,7 +43,7 @@ export function applyTooltipStyle(option: EChartsOption): EChartsOption {
       borderWidth: 0,
       padding: 0,
       extraCssText: 'box-shadow:none;',
-      formatter: tooltipShell,
+      formatter: (params) => tooltipShell(params, tooltip.valueFormatter),
     },
   }
 }

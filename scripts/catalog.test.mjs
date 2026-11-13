@@ -6,6 +6,7 @@ const root = new URL('../', import.meta.url)
 const read = (path) => readFile(new URL(path, root), 'utf8')
 const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
+const parityNotes = JSON.parse(await read('src/gallery/parity-notes.json'))
 
 test('covers 44 chart families and all 331 reference entries', () => {
   const ids = new Set()
@@ -35,4 +36,14 @@ test('each catalog family is routed to exactly one renderer group', () => {
   const mapped = Array.from(groups.matchAll(/'([^']+)'/g), (match) => match[1])
   assert.equal(mapped.length, 45)
   assert.deepEqual(mapped.sort(), catalog.map((family) => family.id).sort())
+})
+
+test('parity notes refer to catalog examples and identify checked behavior', () => {
+  const ids = new Set(catalog.flatMap((family) => family.examples.map((example) => example.id)))
+  assert(Object.keys(parityNotes).length > 0)
+  for (const [id, note] of Object.entries(parityNotes)) {
+    assert(ids.has(id), `Unknown parity note variant ${id}`)
+    assert(typeof note.checked === 'string' && note.checked.trim(), `Missing verification for ${id}`)
+    assert(typeof note.remaining === 'string' && note.remaining.trim(), `Missing remaining comparison for ${id}`)
+  }
 })

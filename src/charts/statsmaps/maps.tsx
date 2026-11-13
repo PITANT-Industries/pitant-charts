@@ -1,6 +1,6 @@
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import {
-  geoCentroid, geoContains, geoGraticule, geoInterpolate, geoMercator,
+  geoBounds, geoContains, geoGraticule, geoInterpolate, geoMercator,
   geoNaturalEarth1, geoOrthographic, geoPath, type GeoProjection,
 } from "d3-geo";
 import { feature, merge } from "topojson-client";
@@ -22,6 +22,8 @@ const world = feature(atlas, atlas.objects.countries) as FeatureCollection<Polyg
 const land = merge(atlas, atlas.objects.countries.geometries.filter((shape): shape is TopoPolygon<CountryProperties> | TopoMultiPolygon<CountryProperties> => (shape.type === "Polygon" || shape.type === "MultiPolygon") && shape.id !== "010"));
 const mapHeight = HEIGHT;
 const center: Coordinate = [WIDTH / 2, mapHeight / 2];
+const graticuleLines = geoGraticule().step([10, 10])();
+const worldProjection = () => geoNaturalEarth1().fitExtent([[18, 10], [WIDTH - 18, mapHeight - 8]], { type: "Sphere" }).clipExtent([[0, 0], [WIDTH, mapHeight]]);
 
 function screenToMap(svg: SVGSVGElement, clientX: number, clientY: number): Coordinate {
   const matrix = svg.getScreenCTM();
@@ -127,17 +129,25 @@ function visibleOnGlobe(projection: GeoProjection, at: Coordinate) {
   return difference < .01 && Math.abs(invert[1] - at[1]) < .01;
 }
 
-const dotCache = new Map<number, Coordinate[]>();
-const dotBackdrop = geoOrthographic().translate(center).scale(153).rotate([-13, -23]);
+const countriesWithBounds = world.features.filter((shape) => shape.id !== "010").map((shape) => ({ shape, bounds: geoBounds(shape) }));
+const dotCache = new Map<number, { x: number; y: number; country: string | null }[]>();
 function dotPoints(step: number) {
   const existing = dotCache.get(step);
   if (existing) return existing;
-  const lattice = geoNaturalEarth1().fitExtent([[20, 12], [WIDTH - 20, mapHeight - 12]], { type: "Sphere" });
-  const result: Coordinate[] = [];
-  for (let y = 3; y < mapHeight; y += step * .86) {
-    for (let x = Math.floor(y / (step * .86)) % 2 * step / 2; x < WIDTH; x += step) {
+  const lattice = worldProjection();
+  const result: { x: number; y: number; country: string | null }[] = [];
+  for (let row = 0; 4 + row * step * .86 < mapHeight; row++) {
+    const y = 4 + row * step * .86;
+    for (let x = 4 + row % 2 * step / 2; x < WIDTH; x += step) {
       const at = lattice.invert?.([x, y]);
-      if (at && Math.abs(at[0]) <= 180 && Math.abs(at[1]) <= 82 && geoContains(land, at)) result.push(at);
+      let country = null;
+      if (at && Math.abs(at[0]) <= 180 && Math.abs(at[1]) <= 90 && geoContains(land, at)) {
+        const [lon, lat] = at;
+        const found = countriesWithBounds.find(({ shape, bounds: [[west, south], [east, north]] }) =>
+          lat >= south && lat <= north && (west <= east ? lon >= west && lon <= east : lon >= west || lon <= east) && geoContains(shape, at));
+        country = found?.shape.properties.name ?? "";
+      }
+      result.push({ x, y, country });
     }
   }
   dotCache.set(step, result);
@@ -145,6 +155,27 @@ function dotPoints(step: number) {
 }
 
 const initialPan = { x: 0, y: 0, scale: 1 };
+type Pan = typeof initialPan;
+const clampScale = (scale: number) => Math.max(1, Math.min(7, scale));
+
+function scaleBetween(pan: Pan, previousAnchor: Coordinate, nextAnchor: Coordinate, scale: number): Pan {
+  const factor = scale / pan.scale;
+  return { scale, x: nextAnchor[0] - (previousAnchor[0] - pan.x) * factor, y: nextAnchor[1] - (previousAnchor[1] - pan.y) * factor };
+}
+
+function fitCamera(point: Coordinate, scale: number, tiltX: number, tiltY: number): Pan {
+  return {
+    scale,
+    x: center[0] - scale * (point[0] + tiltX * (point[1] - center[1])),
+    y: center[1] - scale * (point[1] + tiltY * (point[0] - center[0])),
+  };
+}
+
+function dragPair(points: Map<number, Coordinate>) {
+  const [a, b] = points.values();
+  if (!a || !b) return null;
+  return { distance: Math.hypot(a[0] - b[0], a[1] - b[1]), at: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] as Coordinate };
+}
 const countryNames: Record<string, number> = { Germany: 81, France: 69, Spain: 39, Canada: 49, "United States of America": 91, Brazil: 64, Japan: 74, Australia: 47, India: 87, Norway: 26, "United Kingdom": 82, Sweden: 52, Finland: 24, Mexico: 61, Italy: 57, Netherlands: 60, Argentina: 36, Indonesia: 29, "South Africa": 23 };
 
 export function GeoMap({ example, compact, data }: DemoProps) {
@@ -154,24 +185,27 @@ export function GeoMap({ example, compact, data }: DemoProps) {
   const isGlobe = chart === "globe";
   const dotGrid = example.id === "choropleth-dot-grid";
   const pointerCamera = example.id === "choropleth-pointer-camera";
-  const rotating = isGlobe || dotGrid || pointerCamera;
   const clickZoom = example.id === "choropleth-click-to-zoom";
+  const camera = clickZoom || pointerCamera || dotGrid;
   const backgrounds = example.id === "choropleth-background";
   const patterns = example.id === "choropleth-patterns";
   const graticule = example.id === "choropleth-graticule";
-  const markersMode = example.id === "choropleth-markers" || clickZoom || pointerCamera;
+  const markersMode = example.id === "choropleth-markers" || camera;
   const categoryMode = example.id === "bubble-map-categories" || example.id === "route-map-region";
   const sized = example.id === "globe-sized" || chart === "bubble-map";
   const region = example.id.endsWith("-region");
   const [pan, setPan] = useState(initialPan);
   const [rotation, setRotation] = useState<Rotation>(() => isGlobe && sized ? [92, -23] : [-13, -23]);
   const [hover, setHover] = useState<HoverInfo | null>(null);
-  const [focus, setFocus] = useState<number | null>(null);
+  const [focus, setFocus] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [tilt, setTilt] = useState<Coordinate>([0, 0]);
   const [hidden, setHidden] = useState<string[]>([]);
-  const [cameraTarget, setCameraTarget] = useState<Rotation | null>(null);
   const frame = useRef<SVGSVGElement>(null);
-  const drag = useRef<{ x: number; y: number; initialX: number; initialY: number; active: boolean } | null>(null);
+  const pointers = useRef(new Map<number, Coordinate>());
+  const drag = useRef<{ pointerId: number; x: number; y: number; initialX: number; initialY: number; active: boolean } | null>(null);
+  const pinch = useRef<{ distance: number; at: Coordinate; pan: Pan } | null>(null);
+  const moved = useRef(false);
   const markers = useMemo(() => chart === "bubble-map" || isGlobe || markersMode
     ? getMarkers(data, region, markersMode ? "markers" : chart)
     : [], [chart, isGlobe, markersMode, data, region]);
@@ -186,51 +220,26 @@ export function GeoMap({ example, compact, data }: DemoProps) {
     }
     return matched;
   }, [chart, data]);
-  useEffect(() => {
-    if (!cameraTarget) return;
-    const from: Rotation = [...rotation];
-    const deltaLon = ((cameraTarget[0] - from[0] + 540) % 360) - 180;
-    const deltaLat = cameraTarget[1] - from[1];
-    const began = performance.now();
-    let raf = 0;
-    const animate = (now: number) => {
-      const t = Math.min(1, (now - began) / 430);
-      const progress = 1 - (1 - t) ** 3;
-      setRotation([from[0] + deltaLon * progress, from[1] + deltaLat * progress]);
-      if (t < 1) raf = requestAnimationFrame(animate);
-    };
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setRotation(cameraTarget);
-    else raf = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(raf);
-    // Rotation changes during the transition.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cameraTarget]);
   const projection = useMemo(() => {
-    if (rotating) return geoOrthographic().translate(center).scale(dotGrid ? 155 : pointerCamera ? 153 : 144).rotate([rotation[0], rotation[1], dotGrid ? -10 : 0]).clipAngle(90);
+    if (isGlobe) return geoOrthographic().translate(center).scale(144).rotate(rotation).clipAngle(90);
     const project = region
       ? geoMercator().translate(center).scale(111)
-      : geoNaturalEarth1().fitExtent([[18, 10], [WIDTH - 18, mapHeight - 8]], { type: "Sphere" });
+      : worldProjection();
     if (region) fitToSites(project, [...markers.map(({ at }) => at), ...routes.flatMap(({ from, to }) => [from, to])]);
     project.clipExtent([[0, 0], [WIDTH, mapHeight]]);
     return project;
-  }, [rotating, dotGrid, pointerCamera, rotation, region, markers, routes]);
+  }, [isGlobe, rotation, region, markers, routes]);
   const path = geoPath(projection);
   const geography = useMemo(() => {
     const projectPath = geoPath(projection);
     return world.features.filter((shape) => shape.id !== "010").flatMap((shape) => {
       const d = projectPath(shape);
       if (!d) return [];
-      return [{ shape, d, point: projectPath.centroid(shape) }];
+      return [{ shape, d, point: projectPath.centroid(shape), key: `country:${shape.properties.name ?? shape.id}` }];
     });
   }, [projection]);
-  const dots = dotGrid || pointerCamera ? dotPoints(compact ? 9 : 6.5) : [];
-  const dotProjection = pointerCamera ? dotBackdrop : projection;
-  const showDots = dots.flatMap((at) => {
-    const screen = dotProjection(at);
-    return screen && visibleOnGlobe(dotProjection, at) ? [screen] : [];
-  });
-  const showCountries = !dotGrid;
-  const countryInteractive = !compact && !loading && chart === "choropleth" && !pointerCamera;
+  const dots = dotGrid ? dotPoints(compact ? 8 : 5.5) : [];
+  const countryInteractive = !compact && !loading && chart === "choropleth";
   const routePath = ({ from, to }: Route) => {
     const interpolate = geoInterpolate(from, to);
     const curve: LineString = { type: "LineString", coordinates: Array.from({ length: 32 }, (_, i) => interpolate(i / 31)) };
@@ -239,7 +248,7 @@ export function GeoMap({ example, compact, data }: DemoProps) {
   const routeColors = [...new Set(routes.map(({ category }) => category))];
   const markerColors = [...new Set(markers.map(({ category }) => category))];
   const groups = chart === "route-map" ? routeColors : markerColors;
-  const showMarker = (marker: Marker) => !rotating || visibleOnGlobe(projection, marker.at);
+  const showMarker = (marker: Marker) => !isGlobe || visibleOnGlobe(projection, marker.at);
   const markerMaximum = Math.max(1, ...markers.map(({ value }) => value));
   const routeMaximum = Math.max(1, ...routes.map(({ value }) => value));
   const screenMarkers = markers.flatMap((marker, index) => {
@@ -247,102 +256,163 @@ export function GeoMap({ example, compact, data }: DemoProps) {
     if (!position || !showMarker(marker) || hidden.includes(marker.category)) return [];
     const [x, y] = position;
     const radius = sized ? Math.max(2.7, Math.sqrt(marker.value / markerMaximum) * (chart === "bubble-map" ? 14 : 10)) : 4.8;
-    return [{ ...marker, index, x, y, radius, hint: { x, y, lines: [marker.label, categoryMode ? marker.category : "", sized ? `Value: ${format.format(marker.value)}` : ""].filter(Boolean) } }];
+    return [{ ...marker, index, x, y, radius, key: `marker:${index}`, hint: { x, y, lines: [marker.label, categoryMode ? marker.category : "", sized ? `Value: ${format.format(marker.value)}` : ""].filter(Boolean) } }];
   });
   const visibleRoutes = routes.filter(({ category }) => !hidden.includes(category)).flatMap((route) => {
     const d = routePath(route);
     if (!d) return [];
     const [x, y] = projection(geoInterpolate(route.from, route.to)(.5)) ?? center;
-    return [{ route, d, hint: { x, y, lines: [route.label, categoryMode ? route.category : "", `Passengers: ${format.format(route.value)}`].filter(Boolean) } }];
+    return [{ route, d, key: `route:${route.label}:${routes.indexOf(route)}`, hint: { x, y, lines: [route.label, categoryMode ? route.category : "", `Passengers: ${format.format(route.value)}`].filter(Boolean) } }];
   });
-  const transformHint = (hint: HoverInfo) => !rotating ? { ...hint, x: hint.x * pan.scale + pan.x, y: hint.y * pan.scale + pan.y } : hint;
   const valueExtent = Math.max(1, ...countriesValues.values());
-  const countryValueMode = example.id === "choropleth-values" || backgrounds;
+  const countryValueMode = example.id === "choropleth-values" || backgrounds || clickZoom || dotGrid;
   const countryHint = (shape: Country, x: number, y: number): HoverInfo => {
     const name = shape.properties.name ?? String(shape.id ?? "Country");
     const value = countriesValues.get(name) ?? 0;
     return { x, y, lines: [name, countryValueMode ? `Value: ${format.format(value)}` : ""].filter(Boolean) };
   };
-  const hints = [
-    ...screenMarkers.map(({ hint }) => hint),
-    ...visibleRoutes.map(({ hint }) => hint),
-    ...(countryInteractive ? geography.filter(({ point }) => point.every(Number.isFinite)).map(({ shape, point }) => countryHint(shape, ...point)) : []),
+  const targets = [
+    ...screenMarkers.map(({ key, hint, x, y }) => ({ key, hint, at: [x, y] as Coordinate })),
+    ...visibleRoutes.map(({ key, hint }) => ({ key, hint, at: [hint.x, hint.y] as Coordinate })),
+    ...(countryInteractive ? geography.filter(({ point }) => point.every(Number.isFinite)).map(({ shape, point, key }) => ({ key, at: point, hint: countryHint(shape, ...point) })) : []),
   ];
-  const active = loading ? null : hover ?? (focus === null ? null : hints[focus]) ?? null;
+  const keyboardTarget = targets.find(({ key }) => key === focus);
+  const active = loading ? null : hover ?? keyboardTarget?.hint ?? null;
+  const tiltX = selected ? -.105 : dotGrid ? -.06 : pointerCamera ? tilt[0] : 0;
+  const tiltY = selected ? .045 : pointerCamera ? tilt[1] : 0;
+  const matrix = `matrix(1, ${tiltY}, ${tiltX}, 1, ${-tiltX * center[1]}, ${-tiltY * center[0]})`;
+  const transformHint = (hint: HoverInfo) => isGlobe ? hint : {
+    ...hint, x: (hint.x + tiltX * (hint.y - center[1])) * pan.scale + pan.x,
+    y: (hint.y + tiltY * (hint.x - center[0])) * pan.scale + pan.y,
+  };
   const pointInFrame = (event: PointerEvent<SVGSVGElement>) => screenToMap(event.currentTarget, event.clientX, event.clientY);
   const reset = () => {
     setPan(initialPan);
     setRotation(isGlobe && sized ? [92, -23] : [-13, -23]);
-    setCameraTarget(null);
+    setTilt([0, 0]);
     setSelected(null);
     setHover(null);
     setFocus(null);
   };
-  const rotateTo = (position: Coordinate) => setCameraTarget([-position[0], -position[1]]);
-  const zoomAt = (point: Coordinate) => {
-    setPan({ scale: 2.25, x: center[0] - point[0] * 2.25, y: center[1] - point[1] * 2.25 });
+  const zoomAt = (key: string, at: Coordinate) => {
+    if (selected === key) { reset(); return; }
+    setPan(fitCamera(at, dotGrid ? 2.45 : 2.8, -.105, .045));
+    setSelected(key);
+    setHover(null);
+  };
+  const clickTarget = (event: MouseEvent<SVGElement>, key: string, at: Coordinate) => {
+    event.stopPropagation();
+    if (!moved.current) zoomAt(key, at);
+  };
+  const startDrag = (pointerId: number, [x, y]: Coordinate) => {
+    drag.current = { pointerId, x, y, initialX: isGlobe ? rotation[0] : pan.x, initialY: isGlobe ? rotation[1] : pan.y, active: false };
+  };
+  const down = (event: PointerEvent<SVGSVGElement>) => {
+    if (compact || loading || event.button !== 0) return;
+    const point = pointInFrame(event);
+    if (!pointers.current.size) moved.current = false;
+    pointers.current.set(event.pointerId, point);
+    if (!drag.current) startDrag(event.pointerId, point);
+    if (isGlobe || pointers.current.size !== 2) return;
+    const pair = dragPair(pointers.current);
+    if (!pair || pair.distance < 1) return;
+    pinch.current = { ...pair, pan };
+    moved.current = true;
+    drag.current = null;
+    setHover(null);
   };
   const move = (event: PointerEvent<SVGSVGElement>) => {
     if (compact || loading) return;
     const [x, y] = pointInFrame(event);
-    if (pointerCamera && !drag.current) {
-      setRotation([(x / WIDTH - .5) * 110 - 12, (.5 - y / mapHeight) * 48 - 20]);
+    if (pointers.current.has(event.pointerId)) pointers.current.set(event.pointerId, [x, y]);
+    if (pinch.current) {
+      const pair = dragPair(pointers.current);
+      if (!pair) return;
+      const { at, distance, pan: original } = pinch.current;
+      setPan(scaleBetween(original, at, pair.at, clampScale(original.scale * pair.distance / distance)));
       return;
     }
-    if (!drag.current) return;
-    const dx = x - drag.current.x;
-    const dy = y - drag.current.y;
-    if (!drag.current.active && Math.hypot(dx, dy) <= 4) return;
-    if (!drag.current.active) {
-      drag.current.active = true;
+    const state = drag.current;
+    if (!state) {
+      if (pointerCamera && !selected && event.pointerType !== "touch") setTilt([(x / WIDTH - .5) * .21, (.5 - y / mapHeight) * .13]);
+      return;
+    }
+    if (state.pointerId !== event.pointerId) return;
+    const dx = x - state.x;
+    const dy = y - state.y;
+    if (!state.active && Math.hypot(dx, dy) <= 4) return;
+    if (!state.active) {
+      state.active = true;
+      moved.current = true;
       event.currentTarget.setPointerCapture(event.pointerId);
       setHover(null);
     }
-    if (rotating) setRotation([drag.current.initialX + dx * .43, Math.max(-85, Math.min(85, drag.current.initialY - dy * .43))]);
-    else setPan((prev) => ({ ...prev, x: drag.current!.initialX + dx, y: drag.current!.initialY + dy }));
+    if (isGlobe) setRotation([state.initialX + dx * .43, Math.max(-85, Math.min(85, state.initialY - dy * .43))]);
+    else setPan((prev) => ({ ...prev, x: state.initialX + dx, y: state.initialY + dy }));
+  };
+  const end = (event: PointerEvent<SVGSVGElement>) => {
+    pointers.current.delete(event.pointerId);
+    if (pinch.current && pointers.current.size < 2) pinch.current = null;
+    if (drag.current?.pointerId === event.pointerId) drag.current = null;
+    if (!drag.current && pointers.current.size === 1) {
+      const [remainingId, point] = pointers.current.entries().next().value!;
+      startDrag(remainingId, point);
+    }
   };
   function onKeyDown(event: KeyboardEvent<SVGSVGElement>) {
     if (event.key === "Escape") {
+      if (!active && !selected && pan === initialPan && tilt.every((value) => value === 0) && rotation[0] === (isGlobe && sized ? 92 : -13) && rotation[1] === -23) return;
       event.preventDefault();
       event.stopPropagation();
       reset();
       return;
     }
+    if (camera && keyboardTarget && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      zoomAt(keyboardTarget.key, keyboardTarget.at);
+      return;
+    }
+    if (!isGlobe && ["+", "=", "-"].includes(event.key)) {
+      event.preventDefault();
+      setPan((prev) => scaleBetween(prev, center, center, clampScale(prev.scale * (event.key === "-" ? 1 / 1.4 : 1.4))));
+      return;
+    }
     const direction = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
     if (direction === undefined && event.key !== "Home" && event.key !== "End") return;
     event.preventDefault();
-    if (rotating && event.shiftKey && direction !== undefined) {
-      setRotation(([x, y]) => event.key === "ArrowRight" || event.key === "ArrowLeft" ? [x + direction * 10, y] : [x, Math.max(-85, Math.min(85, y + direction * 10))]);
+    if (event.shiftKey && direction !== undefined) {
+      const horizontal = event.key === "ArrowRight" || event.key === "ArrowLeft";
+      if (isGlobe) setRotation(([x, y]) => horizontal ? [x + direction * 10, y] : [x, Math.max(-85, Math.min(85, y + direction * 10))]);
+      else setPan((prev) => ({ ...prev, x: prev.x - (horizontal ? direction * 28 : 0), y: prev.y - (horizontal ? 0 : direction * 28) }));
       return;
     }
-    if (!hints.length) return;
+    if (!targets.length) return;
     setHover(null);
-    setFocus(event.key === "Home" ? 0 : event.key === "End" ? hints.length - 1 : ((focus ?? 0) + (direction ?? 0) + hints.length) % hints.length);
+    const index = targets.findIndex(({ key }) => key === focus);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? targets.length - 1 : index < 0 ? direction === -1 ? targets.length - 1 : 0 : (index + (direction ?? 0) + targets.length) % targets.length;
+    setFocus(targets[next].key);
   }
   useEffect(() => {
-    if (compact || rotating || loading || !frame.current) return;
+    if (compact || isGlobe || loading || !frame.current) return;
     const svg = frame.current;
     const wheel = (event: WheelEvent) => {
       event.preventDefault();
-      const [x, y] = screenToMap(svg, event.clientX, event.clientY);
-      setPan((prev) => {
-        const scale = Math.min(7, Math.max(1, prev.scale * Math.exp(-event.deltaY * .0017)));
-        return { scale, x: x - (x - prev.x) * scale / prev.scale, y: y - (y - prev.y) * scale / prev.scale };
-      });
+      const point = screenToMap(svg, event.clientX, event.clientY);
+      const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? mapHeight : 1);
+      setPan((prev) => scaleBetween(prev, point, point, clampScale(prev.scale * Math.exp(-delta * .0017))));
     };
     svg.addEventListener("wheel", wheel, { passive: false });
     return () => svg.removeEventListener("wheel", wheel);
-  }, [compact, rotating, loading]);
+  }, [compact, isGlobe, loading]);
   const controls = <>
     {button}
     {!loading && <button className="stat-control" type="button" onClick={reset}>Reset view</button>}
   </>;
   const displayHint = active && transformHint(active);
-  const tilt = clickZoom && selected ? " skewX(-6deg) scaleY(.91)" : "";
   const categoryColor = (name: string) => `var(--chart-${groups.indexOf(name) % 8 + 1})`;
   const countryFill = (shape: Country) => {
     const label = shape.properties.name ?? "";
-    if (selected === label) return "var(--chart-2)";
+    if (selected === `country:${label}`) return "var(--chart-2)";
     if (patterns) {
       const value = countriesValues.get(label) ?? 0;
       return value > 67 ? "var(--chart-1)" : value > 23 ? `url(#${id}-market)` : "var(--muted)";
@@ -357,48 +427,60 @@ export function GeoMap({ example, compact, data }: DemoProps) {
     }
     return "color-mix(in srgb, var(--chart-1) 17%, var(--muted))";
   };
+  const viewport = isGlobe ? undefined : `translate(${pan.x}px,${pan.y}px) scale(${pan.scale}) ${matrix}`;
   return (
     <div className={`stat-demo stat-map ${compact ? "stat-compact" : ""}`}>
       {!compact && <div className="stat-controls">{controls}</div>}
       <div className="stat-frame">
-        <svg ref={frame} className={`stat-svg stat-map-svg ${compact ? "" : "stat-map-pan"} ${loading ? "stat-loading" : ""}`} viewBox={`0 0 ${WIDTH} ${mapHeight}`} role="img" aria-label={example.title} aria-busy={loading || undefined}
+        <svg ref={frame} className={`stat-svg stat-map-svg ${compact ? "" : "stat-map-pan"} ${loading ? "stat-loading" : ""}`} viewBox={`0 0 ${WIDTH} ${mapHeight}`} role="img" aria-roledescription="map" aria-label={example.title} aria-busy={loading || undefined}
           tabIndex={compact || loading ? undefined : 0} onKeyDown={onKeyDown} onBlur={() => setFocus(null)}
+          onFocus={(event) => { if (event.target === event.currentTarget && !pointers.current.size) setFocus(targets[0]?.key ?? null); }}
           onPointerMove={move}
-          onPointerDown={(event) => {
-            if (compact || loading || event.button !== 0) return;
-            const [x, y] = pointInFrame(event);
-            setCameraTarget(null);
-            drag.current = { x, y, initialX: rotating ? rotation[0] : pan.x, initialY: rotating ? rotation[1] : pan.y, active: false };
+          onPointerDown={down}
+          onPointerUp={end}
+          onPointerCancel={(event) => { end(event); setHover(null); }}
+          onPointerLeave={(event) => {
+            if (!drag.current?.active && !pinch.current) end(event);
+            setHover(null);
+            if (pointerCamera && !selected) setTilt([0, 0]);
           }}
-          onPointerUp={() => { if (drag.current) drag.current = null; }}
-          onPointerCancel={() => { drag.current = null; setHover(null); }}
-          onPointerLeave={() => { if (!drag.current?.active) drag.current = null; setHover(null); }}
+          onClick={camera && !compact ? () => { if (!moved.current) reset(); } : undefined}
         >
+          <desc>{isGlobe ? "Drag or hold Shift and press an arrow key to rotate. Use the arrow keys to inspect visible locations." : `Drag to pan or use Shift with the arrow keys. Scroll, pinch or press Plus and Minus to zoom. Use the arrow keys to inspect data.${camera ? " Press Enter to fly to a location and Escape to fly back." : ""}`}</desc>
           <defs>
             <clipPath id={`${id}-bounds`}><rect width={WIDTH} height={mapHeight} rx="9" /></clipPath>
             <pattern id={`${id}-market`} width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="var(--muted)" /><path d="M0 0v6" stroke="var(--chart-2)" strokeWidth="2" /></pattern>
             <pattern id={`${id}-backdrop`} width="10" height="10" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><path d="M0 0v10" stroke="var(--border)" strokeWidth="1" /></pattern>
+            <pattern id={`${id}-dots`} width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r=".62" fill="var(--chart-1)" opacity=".22" /></pattern>
             <radialGradient id={`${id}-ocean`} cx="36%" cy="31%" r="70%"><stop stopColor="var(--chart-1)" stopOpacity=".09" /><stop offset="90%" stopColor="var(--chart-1)" stopOpacity=".015" /><stop offset="100%" stopColor="var(--chart-1)" stopOpacity=".13" /></radialGradient>
           </defs>
           {backgrounds && <rect width={WIDTH} height={mapHeight} fill={`url(#${id}-backdrop)`} />}
-          {rotating && <circle className={loading ? "stat-load" : undefined} cx={center[0]} cy={center[1]} r={projection.scale()} fill={`url(#${id}-ocean)`} stroke="var(--border)" />}
+          {pointerCamera && <rect className="stat-map-backdrop" width={WIDTH} height={mapHeight} fill={`url(#${id}-dots)`} />}
+          {isGlobe && <circle className={loading ? "stat-load" : undefined} cx={center[0]} cy={center[1]} r={projection.scale()} fill={`url(#${id}-ocean)`} stroke="var(--border)" />}
           <g clipPath={`url(#${id}-bounds)`}>
-            <g className={clickZoom ? "stat-map-viewport" : undefined} style={rotating ? undefined : { transform: `translate(${pan.x}px,${pan.y}px) scale(${pan.scale})${tilt}` }}>
-              {(graticule || isGlobe || pointerCamera) && <path d={path(geoGraticule().step([10, 10])()) ?? undefined} fill="none" stroke="var(--border)" strokeWidth=".7" opacity=".9" />}
-              {showCountries && geography.map(({ shape, d, point }, index) => {
-                const name = shape.properties.name ?? "";
+            <g className={!isGlobe ? "stat-map-viewport" : undefined} style={viewport ? { transform: viewport, transitionDuration: camera && !drag.current?.active && !pinch.current ? selected || !pointerCamera ? undefined : ".16s" : "0s" } : undefined}>
+              {(graticule || isGlobe || clickZoom) && <path d={path(graticuleLines) ?? undefined} fill="none" stroke="var(--border)" strokeWidth=".7" opacity={clickZoom && selected ? .25 : .9} pointerEvents="none" />}
+              {!dotGrid && geography.map(({ shape, d, point, key }, index) => {
                 const hint = countryHint(shape, ...point);
-                const fill = hover?.lines[0] === name ? "var(--chart-2)" : countryFill(shape);
-                return <path key={shape.id ?? index} className={loading ? "stat-load" : undefined} d={d} fill={fill} fillOpacity={pointerCamera ? .27 : 1} stroke="var(--background)" strokeWidth={rotating ? .47 : .57}
+                const current = hover?.lines[0] === hint.lines[0] || !hover && focus === key;
+                const fill = current ? "var(--chart-2)" : countryFill(shape);
+                return <path key={shape.id ?? index} data-map-location={countryInteractive ? key : undefined} className={loading ? "stat-load" : undefined} d={d} fill={fill} fillOpacity={pointerCamera && !current ? .68 : 1} stroke="var(--background)" strokeWidth={isGlobe ? .47 : .57}
                   onPointerEnter={countryInteractive ? () => !drag.current?.active && point.every(Number.isFinite) && setHover(hint) : undefined}
                   onPointerLeave={countryInteractive ? () => setHover(null) : undefined}
-                  onClick={countryInteractive && clickZoom ? () => { zoomAt(point); setSelected(name); } : undefined}
+                  onClick={countryInteractive && camera && point.every(Number.isFinite) ? (event) => clickTarget(event, key, point) : undefined}
                 />;
               })}
-              {(dotGrid || pointerCamera) && showDots.map(([x, y], index) => <circle key={index} cx={x} cy={y} r={dotGrid ? 1.7 : 1.05} fill="var(--chart-1)" opacity={dotGrid ? .65 : .3} />)}
-              {dotGrid && !compact && geography.map(({ shape, d, point }, index) => <path key={shape.id ?? index} d={d} fill="transparent"
-                onPointerEnter={() => point.every(Number.isFinite) && setHover(countryHint(shape, ...point))} onPointerLeave={() => setHover(null)}
-                onClick={() => { rotateTo(geoCentroid(shape)); setSelected(shape.properties.name ?? null); }} />)}
+              {dotGrid && <g pointerEvents="none" aria-hidden="true">{dots.map(({ x, y, country }, index) => {
+                const value = country === null ? 0 : countriesValues.get(country) ?? 0;
+                const highlighted = country !== null && (selected === `country:${country}` || active?.lines[0] === country);
+                return <circle key={index} className={country === null ? "stat-ocean-dot" : "stat-land-dot"} cx={x} cy={y}
+                  r={country === null ? 1.05 : selected ? 1.85 : 1.55}
+                  fill={highlighted || value > 0 ? "var(--chart-1)" : "var(--muted-foreground)"}
+                  opacity={country === null ? selected ? .018 : .065 : highlighted ? 1 : value > 0 ? .37 + .58 * value / valueExtent : .29} />;
+              })}</g>}
+              {dotGrid && countryInteractive && geography.map(({ shape, d, point, key }, index) => <path key={shape.id ?? index} data-map-location={key} d={d} fill="transparent"
+                onPointerEnter={() => !drag.current?.active && point.every(Number.isFinite) && setHover(countryHint(shape, ...point))} onPointerLeave={() => setHover(null)}
+                onClick={point.every(Number.isFinite) ? (event) => clickTarget(event, key, point) : undefined} />)}
               {visibleRoutes.map(({ route, d, hint }, index) => (
                 <g key={index}>
                   <path className={loading ? "stat-load" : undefined} d={d} fill="none" fillOpacity={0} stroke={categoryColor(route.category)} strokeWidth={1 + 2.3 * route.value / routeMaximum} opacity={active && active !== hint ? .24 : .82} />
@@ -410,17 +492,20 @@ export function GeoMap({ example, compact, data }: DemoProps) {
                 </g>
               ))}
               {screenMarkers.map((marker) => {
-                const { x, y, radius, hint, index, category, label } = marker;
+                const { x, y, radius, hint, key, index, category, label } = marker;
                 const color = categoryMode ? categoryColor(category) : `var(--chart-${chart === "bubble-map" ? 1 : 2})`;
-                return <g key={index} transform={`translate(${x} ${y})`} className={loading ? "stat-load" : undefined}
-                  opacity={active && active !== hint && chart !== "choropleth" ? .48 : 1}
-                  onPointerEnter={!compact && !loading ? () => setHover(hint) : undefined} onPointerLeave={!compact ? () => setHover(null) : undefined}
-                  onClick={!compact && clickZoom ? () => { zoomAt([x, y]); setSelected(label); } : undefined}
+                const current = active?.lines[0] === label || selected === key;
+                return <g key={key} data-map-location={key} transform={`translate(${x} ${y})`} className={loading ? "stat-load" : undefined}
+                  opacity={active && !current && chart !== "choropleth" ? .48 : 1}
+                  onPointerEnter={!compact && !loading ? () => !drag.current?.active && setHover(hint) : undefined} onPointerLeave={!compact ? () => setHover(null) : undefined}
+                  onClick={!compact && camera ? (event) => clickTarget(event, key, [x, y]) : undefined}
                 >
-                  {markersMode && (pointerCamera || !index) && !compact && <circle className="stat-map-pulse" r={radius + 3} fill="none" stroke={color} strokeWidth="1.5" />}
-                  {markersMode ? <g fill={color} stroke="var(--chart-2)">{drawMarker(index, radius)}</g>
-                    : <circle className={loading ? "stat-load" : undefined} r={active === hint ? radius + 2 : radius} fill={color} fillOpacity={sized ? .5 : .75} stroke={color} strokeWidth="1.2" />}
-                  {markersMode && !pointerCamera && <text className="stat-axis" y={-radius - 6} textAnchor="middle" paintOrder="stroke" stroke="var(--background)" strokeWidth="2">{label}</text>}
+                  {markersMode && (pointerCamera || dotGrid || !index) && !compact && <circle className="stat-map-pulse" r={radius + 3} fill="none" stroke={color} strokeWidth="1.5" />}
+                  {markersMode ? pointerCamera
+                    ? <><path d="M0 6C-2 3-5 0-5-3a5 5 0 0 1 10 0C5 0 2 3 0 6Z" fill={color} stroke="var(--background)" strokeWidth=".85" /><circle cy="-3" r="1.6" fill="var(--background)" /></>
+                    : <g fill={color} stroke="var(--chart-2)">{drawMarker(camera ? 0 : index, radius)}</g>
+                    : <circle className={loading ? "stat-load" : undefined} r={current && !sized ? radius + 2 : radius} fill={color} fillOpacity={sized ? .5 : .75} stroke={color} strokeWidth={current ? 2 : 1.2} />}
+                  {markersMode && !pointerCamera && !dotGrid && <text className="stat-axis" y={-radius - 6} textAnchor="middle" paintOrder="stroke" stroke="var(--background)" strokeWidth="2">{label}</text>}
                 </g>;
               })}
             </g>
@@ -434,7 +519,7 @@ export function GeoMap({ example, compact, data }: DemoProps) {
       {categoryMode && sized && markers.length > 0 && <div className="stat-legend" aria-label="Bubble size scale">
         {[.25, .5, 1].map((fraction) => <span key={fraction}><i style={{ width: Math.sqrt(fraction) * 12, height: Math.sqrt(fraction) * 12, borderRadius: "50%", background: "var(--chart-1)", opacity: .6 }} />{format.format(markerMaximum * fraction)}</span>)}
       </div>}
-      {countryValueMode && <Legend entries={[{ name: "No data", color: "var(--muted)" }, { name: "Low", color: "color-mix(in srgb, var(--chart-1) 24%, var(--muted))" }, { name: "High", color: "var(--chart-1)" }]} />}
+      {countryValueMode && !camera && <Legend entries={[{ name: "No data", color: "var(--muted)" }, { name: "Low", color: "color-mix(in srgb, var(--chart-1) 24%, var(--muted))" }, { name: "High", color: "var(--chart-1)" }]} />}
     </div>
   );
 }

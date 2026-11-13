@@ -1,14 +1,10 @@
 import { useState } from "react";
-import type { ChartData, ChartExample } from "../../types";
+import type { ChartData, ChartPreviewProps } from "../../types";
 import { useChartTheme } from "../theme";
 import styles from "./styles.module.css";
 
 export type Theme = ReturnType<typeof useChartTheme>;
-export interface Props {
-  example: ChartExample;
-  compact?: boolean;
-  data?: ChartData;
-}
+export type Props = ChartPreviewProps;
 export type Metric = { name: string; value: number; color?: string };
 
 export function numeric(value: unknown, fallback = 0) {
@@ -63,12 +59,13 @@ export function tooltip(theme: Theme) {
   return { backgroundColor: theme.surface, borderColor: theme.grid, textStyle: { color: theme.text, fontSize: 12 }, confine: true };
 }
 
-export function Legend({ items, active, onActive, onClick, progress, theme }: {
+export function Legend({ items, active, onActive, onClick, progress, percentageTotal, theme }: {
   items: readonly Metric[];
   active: number | null;
   onActive: (index: number | null) => void;
   onClick?: (index: number) => void;
   progress?: number;
+  percentageTotal?: number;
   theme: Theme;
 }) {
   return (
@@ -81,6 +78,7 @@ export function Legend({ items, active, onActive, onClick, progress, theme }: {
           <i style={{ background: tone(theme, index, item.color) }} aria-hidden="true" />
           <span>{item.name}</span>
           <strong>{number.format(item.value)}</strong>
+          {percentageTotal !== undefined && <span>{Math.round(percent(item.value, percentageTotal))}%</span>}
           {progress !== undefined && <meter value={Math.max(0, Math.min(100, percent(item.value, progress)))} min={0} max={100} aria-label={`${item.name} progress`} />}
         </button>
       ))}

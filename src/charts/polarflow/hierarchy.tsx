@@ -1,10 +1,12 @@
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
 import type { EChartsOption } from "echarts";
 import { EChart } from "../EChart";
 import { useChartTheme } from "../theme";
 import { dollars, Legend, number, numeric, Pattern, percent, point, safeText, sector, tone, tooltip, useLoading, type Props } from "./shared";
 import type { SunburstNode } from "./upstream/sunburst-data";
 import { buildArcs, geometryFor, ringOptions, sumValues } from "./upstream/sunburst-layout";
+import type { ArcGeometry } from "./upstream/sunburst-layout";
 import styles from "./styles.module.css";
 
 const branches: SunburstNode[] = [
@@ -31,6 +33,56 @@ function readHierarchy(rows: readonly Record<string, unknown>[] | undefined): Su
   return rows?.map(read);
 }
 
+type VisibleArc = ArcGeometry & { opacity: number };
+
+function collapseArc(arc: VisibleArc): VisibleArc {
+  const center = (arc.a0 + arc.a1) / 2;
+  return { a0: center, a1: center, innerR: arc.innerR, outerR: arc.innerR, opacity: 0 };
+}
+
+function useArcMorph(target: ReadonlyMap<string, VisibleArc>, compact: boolean | undefined) {
+  const [view, setView] = useState(target);
+  const latest = useRef(target);
+  useEffect(() => {
+    const start = latest.current;
+    if (start === target) return;
+    if (compact || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      latest.current = target;
+      setView(target);
+      return;
+    }
+    const keys = new Set([...start.keys(), ...target.keys()]);
+    const arcs = [...keys].map(id => {
+      const from = start.get(id);
+      const to = target.get(id);
+      return { id, from: from ?? collapseArc(to!), to: to ?? collapseArc(from!) };
+    });
+    const began = performance.now();
+    let frame: number;
+    function animate(time: number) {
+      const t = Math.min(1, (time - began) / 360);
+      if (t === 1) {
+        latest.current = target;
+        setView(target);
+        return;
+      }
+      const progress = 1 - (1 - t) ** 3;
+      const mix = (a: number, b: number) => a + (b - a) * progress;
+      const next = new Map(arcs.map(({ id, from, to }) => [id, {
+        a0: mix(from.a0, to.a0), a1: mix(from.a1, to.a1),
+        innerR: mix(from.innerR, to.innerR), outerR: mix(from.outerR, to.outerR),
+        opacity: mix(from.opacity, to.opacity),
+      }]));
+      latest.current = next;
+      setView(next);
+      frame = requestAnimationFrame(animate);
+    }
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [compact, target]);
+  return compact ? target : view;
+}
+
 export function Sunburst({ example, compact, data }: Props) {
   const theme = useChartTheme();
   const uid = useId();
@@ -49,53 +101,91 @@ export function Sunburst({ example, compact, data }: Props) {
   const activeArc = arcs.find(item => item.id === active);
   const radius = 101;
   const rings = ringOptions(focus.depth, Math.max(1, maxDepth), radius);
+  const targetArcs = useMemo(() => new Map(arcs.flatMap(item => {
+    const geometry = geometryFor(item, focus, maxDepth, radius);
+    return geometry && item.value > 0 ? [[item.id, { ...geometry, opacity: 1 }] as const] : [];
+  })), [arcs, focus, maxDepth]);
+  const visibleArcs = useArcMorph(targetArcs, compact);
   const labels = arcs.filter(item => item.depth === 1);
   const ancestors = focus.id.split(" / ");
+  const chart = useRef<SVGSVGElement>(null);
+  const visibleIds = [...targetArcs.keys()];
   const toDegrees = 180 / Math.PI;
-  function go(id: string | null) {
-    setSelected(id ?? rootId);
-    setActive(null);
+  function go(nextId: string | null, keyboard = false) {
+    const next = nextId ?? rootId;
+    setSelected(next);
+    setActive(keyboard ? arcs.find(item => item.parentId === next && item.value > 0)?.id ?? null : null);
+  }
+  function inspect(event: KeyboardEvent<SVGSVGElement>) {
+    if (!visibleIds.length) return;
+    if (event.key === "Escape" && focus.parentId) {
+      event.preventDefault();
+      go(focus.parentId, true);
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      if (active === focus.id && focus.parentId) {
+        event.preventDefault();
+        go(focus.parentId, true);
+      } else if (activeArc?.hasChildren && targetArcs.has(activeArc.id)) {
+        event.preventDefault();
+        go(activeArc.id, true);
+      }
+      return;
+    }
+    const keys = focus.parentId ? [focus.id, ...visibleIds] : visibleIds;
+    const index = keys.indexOf(active ?? "");
+    const offset = event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1;
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const next = event.key === "Home" ? 0 : event.key === "End" ? keys.length - 1 : (index + offset + keys.length) % keys.length;
+    setActive(keys[next]);
   }
   return <div className={styles.frame}>
-    {hasBreadcrumb && !compact && <div className={styles.controls}>{ancestors.map((name, index) =>
-      <button key={index} className={styles.control} type="button" onClick={() => go(ancestors.slice(0, index + 1).join(" / "))}>{name}</button>
+    {hasBreadcrumb && !compact && <div className={styles.controls} aria-label="Drill-down path">{ancestors.map((name, index) =>
+      <button key={index} className={styles.control} type="button" aria-current={index === ancestors.length - 1 ? "location" : undefined} onClick={() => go(ancestors.slice(0, index + 1).join(" / "))}>{name}</button>
     )}</div>}
-    <svg className={styles.native} viewBox="0 0 420 240" role="img" aria-label={example.title}>
+    <svg ref={chart} className={styles.native} viewBox="0 0 420 240" role="img" aria-label={example.title} aria-roledescription="chart"
+      aria-description="Use arrow keys to inspect segments and Enter or Space to zoom into a branch. Press Escape to move back."
+      tabIndex={compact ? undefined : 0} onKeyDown={inspect} onFocus={() => setActive(previous => previous ?? visibleIds[0] ?? null)}
+      onBlur={() => setActive(null)} onPointerLeave={() => { if (document.activeElement !== chart.current) setActive(null); }}>
       <defs>{labels.map((item) => <Pattern key={item.id} id={`${uid}-${item.categoryIndex}`} color={tone(theme, item.categoryIndex)} />)}</defs>
       {arcs.map((item) => {
-        const geometry = geometryFor(item, focus, maxDepth, radius);
+        const geometry = visibleArcs.get(item.id);
         if (!geometry || item.value <= 0) return null;
-        const highlighted = active === item.id || (active && item.id.startsWith(`${active} / `));
+        const interactive = targetArcs.has(item.id);
+        const highlighted = active === item.id || (active && active !== focus.id && item.id.startsWith(`${active} / `));
         const color = id === "sunburst-segment-colors" && item.categoryIndex !== 2 ? theme.grid : tone(theme, item.categoryIndex, item.color);
         const fill = id === "sunburst-patterns" && item.depth > 1 && item.categoryIndex % 2 === 0 ? `url(#${uid}-${item.categoryIndex})` : color;
-        const click = item.hasChildren ? () => go(item.id) : undefined;
+        const click = interactive && item.hasChildren ? () => go(item.id) : undefined;
         const middle = (geometry.a0 + geometry.a1) / 2;
         const [tx, ty] = point(210, 120, (geometry.outerR + geometry.innerR) / 2, middle * toDegrees);
         const enoughRoom = (geometry.outerR + geometry.innerR) / 2 * (geometry.a1 - geometry.a0) > item.name.length * 4.4;
-        return <g key={item.id}><path d={sector(210, 120, geometry.outerR + (highlighted ? 3 : 0), geometry.innerR, geometry.a0 * toDegrees + .5, geometry.a1 * toDegrees - .5)}
+        const inset = Math.min(.5, (geometry.a1 - geometry.a0) * toDegrees / 4);
+        return <g key={item.id} opacity={geometry.opacity}><path d={sector(210, 120, geometry.outerR + (highlighted ? 3 : 0), geometry.innerR, geometry.a0 * toDegrees + inset, geometry.a1 * toDegrees - inset)}
           fill={fill} fillOpacity={highlighted ? 1 : active ? .45 : 1 - Math.min(.5, .12 * (item.depth - 1))} stroke={theme.surface} strokeWidth="1.5"
-          tabIndex={compact ? undefined : 0} role={item.hasChildren ? "button" : undefined}
-          onMouseEnter={() => setActive(item.id)} onMouseLeave={() => setActive(null)}
-          onFocus={() => setActive(item.id)} onBlur={() => setActive(null)} onClick={click}
-          onKeyDown={(event) => { if (click && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); click(); } }}
-          style={{ cursor: click ? "pointer" : "default", transition: "d 230ms, fill-opacity 150ms" }}>
+          role={click ? "button" : undefined} aria-label={interactive ? `${item.name}: ${number.format(item.value)}` : undefined}
+          onPointerEnter={interactive ? () => setActive(item.id) : undefined} onClick={click}
+          style={{ cursor: click ? "pointer" : "default", transition: "fill-opacity 150ms", pointerEvents: interactive ? "auto" : "none" }}>
           {!customHint && <title>{`${item.trail.join(" › ")} · ${number.format(item.value)}`}</title>}
         </path>
         {!customHint && enoughRoom && geometry.innerR > 6 && <text pointerEvents="none" textAnchor="middle" x={tx} y={ty + 2.5}
           fontSize="7" fontWeight="600" fill={id === "sunburst-segment-colors" && item.categoryIndex !== 2 ? theme.muted : "#fff"}>{item.name}</text>}
         </g>;
       })}
-      {focus.parentId && <g role="button" aria-label="Back one level" tabIndex={compact ? undefined : 0} style={{ cursor: "pointer" }}
-        onClick={() => go(focus.parentId)}
-        onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); go(focus.parentId); } }}>
-        <circle cx="210" cy="120" r={Math.max(rings.centerR - 1, 12)} fill={theme.surface} stroke={theme.grid} />
+      {focus.parentId && <g role="button" aria-label="Back one level" style={{ cursor: "pointer" }} onClick={() => go(focus.parentId)}
+        onPointerEnter={() => setActive(focus.id)}>
+        <circle cx="210" cy="120" r={Math.max(rings.centerR - 1, 12)} fill={theme.surface} stroke={active === focus.id ? tone(theme, 0) : theme.grid} />
         <text x="210" y="124" textAnchor="middle" fill={theme.text} fontSize="14" pointerEvents="none">↑</text>
       </g>}
     </svg>
     {!compact && id === "sunburst-legend" && <Legend items={labels.map(item => ({ name: item.name, value: item.value }))} theme={theme}
       active={activeArc?.categoryIndex ?? null} onActive={index => setActive(index === null ? null : labels[index]?.id ?? null)}
+      percentageTotal={total}
       onClick={index => { if (labels[index]?.hasChildren) go(labels[index].id); }} />}
     {!compact && customHint && <div className={styles.hint}>{activeArc ? <><strong>{activeArc.name}</strong> · {dollars.format(activeArc.value * 1000)} · {percent(activeArc.value, total).toFixed(1)}%</> : "Focus a segment to inspect its share"}</div>}
+    {!compact && <div className={styles.screenReader} role="status" aria-atomic="true">{active === focus.id && focus.parentId
+      ? "Back one level" : activeArc ? `${activeArc.id.split(" / ").slice(1).join(" › ")}: level ${activeArc.depth}, value ${number.format(activeArc.value)}` : `Viewing ${focus.name}`}</div>}
   </div>;
 }
 

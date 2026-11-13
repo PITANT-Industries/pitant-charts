@@ -7,8 +7,22 @@
   min-width: 0;
 }
 .cartesian-plot { position: relative; min-height: 0; flex: 1; }
+.cartesian-plot--selection { touch-action: none; cursor: crosshair; }
+.cartesian-selection { position: absolute; top: 10px; bottom: 25px; border-inline: 1px solid var(--chart-1); background: color-mix(in srgb, var(--chart-1) 17%, transparent); pointer-events: none; }
 .cartesian-point-crosshair { position: absolute; width: 2px; transform: translateX(-50%); background: linear-gradient(to bottom, var(--chart-1), var(--chart-3)); box-shadow: 0 0 10px var(--chart-2); pointer-events: none; }
 .cartesian-point-crosshair::before { content: ""; position: absolute; top: -3px; left: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--chart-1); }
+.cartesian-status { flex: none; color: var(--muted-foreground); margin: 5px 5px 1px; font-size: 10px; }
+.cartesian-brush { flex: none; padding: 7px 15px 2px 48px; }
+.cartesian-brush-track { position: relative; height: clamp(28px, 8vh, 57px); background: var(--muted); border-radius: 4px; }
+.cartesian-brush-track svg { width: 100%; height: 100%; border-radius: inherit; }
+.cartesian-brush-window, .cartesian-brush-handle { position: absolute; inset-block: 0; touch-action: none; }
+.cartesian-brush-window { cursor: grab; border-block: 1px solid var(--chart-2); }
+.cartesian-brush-window:active { cursor: grabbing; }
+.cartesian-brush-handle { width: 13px; transform: translateX(-50%); cursor: ew-resize; }
+.cartesian-brush-handle::after { content: ""; position: absolute; inset-block: 0; left: calc(50% - 1px); width: 2px; background: var(--chart-2); border-radius: 4px; }
+.cartesian-brush-handle:focus-visible, .cartesian-brush-window:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; z-index: 1; }
+.cartesian-brush-dates { display: flex; justify-content: space-between; padding-top: 5px; color: var(--muted-foreground); font-size: 10px; }
+.cartesian-brush-result { position: absolute; height: 1px; width: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .cartesian-shadcn { width: 100%; height: 100%; min-height: 76px; }
 .cartesian-controls { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 1px 2px 9px; }
 .cartesian-controls button, .cartesian-controls select {
@@ -33,7 +47,10 @@
 .cartesian-live i { background: var(--chart-1); }
 .cartesian-live strong { font-size: 11px; color: var(--foreground); font-variant-numeric: tabular-nums; }
 .cartesian-live .cartesian-pulse { animation: cartesian-pulse 1.25s ease-in-out infinite; }
-.cartesian-panels { display: grid; grid-auto-rows: minmax(50px, 1fr); height: 100%; width: 100%; min-height: 0; gap: 2px; }
+.cartesian-bar-pulse { position: absolute; width: 14px; height: 14px; border-radius: 50%; margin: -7px 0 0 -7px; background: var(--chart-1); pointer-events: none; animation: cartesian-bar-pulse 1.7s ease-out infinite; }
+.cartesian-depth--paused .cartesian-bar-pulse { animation-play-state: paused; }
+@keyframes cartesian-bar-pulse { 0% { transform: scale(.75); opacity: .65; } 72%, 100% { transform: scale(2.4); opacity: 0; } }
+.cartesian-panels { display: grid; grid-auto-rows: minmax(50px, 1fr); flex: 1; width: 100%; min-height: 0; gap: 2px; }
 .cartesian-panels--multiples { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .cartesian-panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .cartesian-panel > span { color: var(--muted-foreground); padding: 0 0 0 6px; font-size: 9px; line-height: 1.3; }
@@ -81,6 +98,6 @@
 .cartesian-spark--stiff circle { transition-duration: 110ms; }
 .cartesian-spark--none circle, .cartesian-spark--none rect { transition: none; }
 @media (prefers-reduced-motion: reduce) {
-  .cartesian-live .cartesian-pulse, .cartesian-skeleton::after, .cartesian-skeleton--pulse svg { animation: none; }
+  .cartesian-live .cartesian-pulse, .cartesian-skeleton::after, .cartesian-skeleton--pulse svg, .cartesian-bar-pulse { animation: none; }
   .cartesian-spark circle, .cartesian-spark rect { transition: none; }
 }

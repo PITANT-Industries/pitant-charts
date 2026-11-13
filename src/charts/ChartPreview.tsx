@@ -1,6 +1,7 @@
-import { Component, lazy, Suspense } from 'react'
+import { Component, lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { ComponentType, ReactNode } from 'react'
 import type { ChartPreviewProps } from '../types'
+import { ChartThemeContext, fallbackChartTheme, readChartTheme } from './theme'
 
 const Cartesian = lazy(() => import('./cartesian'))
 const PolarFlow = lazy(() => import('./polarflow'))
@@ -32,14 +33,45 @@ class ChartBoundary extends Component<{ children: ReactNode }, { failed: boolean
 
 export function ChartPreview(props: ChartPreviewProps) {
   const Renderer = renderers.get(props.example.family)
+  const host = useRef<HTMLDivElement>(null)
+  const [theme, setTheme] = useState(fallbackChartTheme)
+  useEffect(() => {
+    const element = host.current
+    if (!element) return
+    let frame = 0
+    const read = () => {
+      const next = readChartTheme(element)
+      setTheme((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next)
+    }
+    const schedule = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(read)
+    }
+    const observer = new MutationObserver(schedule)
+    for (let ancestor: HTMLElement | null = element; ancestor; ancestor = ancestor.parentElement) {
+      observer.observe(ancestor, { attributes: true, attributeFilter: ['class', 'style', 'data-theme'] })
+    }
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    media.addEventListener('change', schedule)
+    window.addEventListener('chart-theme-change', schedule)
+    read()
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(frame)
+      media.removeEventListener('change', schedule)
+      window.removeEventListener('chart-theme-change', schedule)
+    }
+  }, [Renderer])
   if (!Renderer) return <div className="chart-render-message" role="alert">Chart family unavailable.</div>
   return (
-    <div className={`chart-preview${props.compact ? ' chart-preview--compact' : ''}`}>
-      <ChartBoundary key={props.example.id}>
-        <Suspense fallback={<div className="chart-skeleton" role="status" aria-label="Loading chart" />}>
-          <Renderer {...props} />
-        </Suspense>
-      </ChartBoundary>
+    <div ref={host} className={`chart-preview${props.compact ? ' chart-preview--compact' : ''}`}>
+      <ChartThemeContext.Provider value={theme}>
+        <ChartBoundary key={props.example.id}>
+          <Suspense fallback={<div className="chart-skeleton" role="status" aria-label="Loading chart" />}>
+            <Renderer {...props} />
+          </Suspense>
+        </ChartBoundary>
+      </ChartThemeContext.Provider>
     </div>
   )
 }

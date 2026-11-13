@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useChartTheme } from "../theme";
 import { arc, Controls, number, numeric, Pattern, point, sector, tone, type Props, type Theme } from "./shared";
 import { createNotchPath } from "./upstream/gauge-notch";
@@ -25,7 +25,7 @@ interface DialOptions {
 
 const options: Record<string, DialOptions[]> = {
   "gauge-semicircle": [{ sweep: 180, name: "CPU load" }],
-  "gauge-fixed": [{ name: "Revenue" }, { sweep: 180, name: "CPU" }, { mode: "solid", name: "Storage" }],
+  "gauge-fixed": [{ name: "CPU", count: 40 }, { name: "Memory", count: 40 }, { name: "Disk", count: 40 }],
   "gauge-interactive": [{ name: "Attainment" }],
   "gauge-dial": [{ needle: "line", ruler: "inside", count: 90, name: "Reading" }],
   "gauge-arc-styles": [{ name: "Notches" }, { mode: "solid", name: "Solid arc" }, { mode: "ring", name: "Ring only" }],
@@ -41,21 +41,53 @@ const options: Record<string, DialOptions[]> = {
   "gauge-fan-duty": [{ mode: "solid", zone: "band", ruler: "outside", needle: "line", tip: .45, name: "Fan duty" }],
   "gauge-speedometer": [{ count: 90, glow: true, dots: true, ruler: "outside", zone: "fill", unit: " km/h", name: "Speed" }],
   "gauge-throughput": [{ mode: "sector", ring: true, ruler: "outside", needle: "triangle", disc: true, unit: " t", name: "Throughput" }],
-  "gauge-live-load": [{ zone: "fill", mode: "solid", name: "CPU load" }],
+  "gauge-live-load": [{ zone: "fill", mode: "solid", needle: "gradient", tip: .75, ruler: "outside", name: "CPU" }],
 };
+
+const quarterValues = [82, 94, 67, 41];
+const dialValues = [38, 56, 73, 64, 86, 47];
+const liveValues = [42, 58, 71, 86, 78, 62, 49];
+const fixedValues = [38, 71, 54];
+const clamp = (value: number) => Math.max(0, Math.min(100, value));
+
+function useSweepingValue(value: number, enabled: boolean) {
+  const [position, setPosition] = useState(value);
+  const latest = useRef(value);
+  useEffect(() => {
+    if (!enabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      latest.current = value;
+      setPosition(value);
+      return;
+    }
+    const from = latest.current;
+    if (from === value) return;
+    const start = performance.now();
+    let frame: number;
+    const update = (time: number) => {
+      const fraction = Math.min(1, (time - start) / 520);
+      const next = from + (value - from) * (1 - (1 - fraction) ** 3);
+      latest.current = next;
+      setPosition(next);
+      if (fraction < 1) frame = requestAnimationFrame(update);
+    };
+    frame = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(frame);
+  }, [enabled, value]);
+  return enabled ? position : value;
+}
 
 function gaugeColor(theme: Theme, index: number, value: number, zone: DialOptions["zone"]) {
   if (zone === "fill" || zone === "both") return value < 65 ? "#24a978" : value < 80 ? "#e7a520" : "#e65b61";
   return tone(theme, index);
 }
 
-function Dial({ options: config, value, index, total, id, theme }: {
-  options: DialOptions; value: number; index: number; total: number; id: string; theme: Theme;
+function Dial({ options: config, value, index, total, id, theme, fixed, labelValue }: {
+  options: DialOptions; value: number; index: number; total: number; id: string; theme: Theme; fixed?: boolean; labelValue?: string;
 }) {
   const size = Math.min(228, 400 / Math.max(1, total));
-  const cx = 210 + (index - (total - 1) / 2) * size;
-  const cy = config.sweep === 180 ? 150 : 110;
-  const radius = Math.min(83, size * .37);
+  const cx = fixed ? 80 : 210 + (index - (total - 1) / 2) * size;
+  const cy = fixed ? 80 : config.sweep === 180 ? 150 : 110;
+  const radius = fixed ? 68 : Math.min(83, size * .37);
   const sweep = config.sweep ?? 252;
   const start = (90 + (360 - sweep) / 2) % 360;
   const end = start + sweep * value / 100;
@@ -101,8 +133,8 @@ function Dial({ options: config, value, index, total, id, theme }: {
           fill={value > 0 && angle <= end ? activeColor : theme.grid} style={{ transition: "fill 350ms" }} />;
       })}
       {mode === "solid" && <path d={arc(cx, cy, radius - 5, start, start + sweep)} stroke={theme.grid} strokeWidth="12" fill="none" strokeLinecap="round" />}
-      {mode === "solid" && <path d={arc(cx, cy, radius - 5, start, end)} stroke={color} strokeWidth="12" fill="none" strokeLinecap="round" style={{ transition: "d 420ms" }} />}
-      {(mode === "ring" || config.ring) && <path d={arc(cx, cy, mode === "ring" ? radius : radius + 5, start, end)} stroke={color} strokeWidth={mode === "ring" ? 6 : 2} fill="none" strokeLinecap="round" style={{ transition: "d 420ms" }} />}
+      {mode === "solid" && <path d={arc(cx, cy, radius - 5, start, end)} stroke={color} strokeWidth="12" fill="none" strokeLinecap="round" />}
+      {(mode === "ring" || config.ring) && <path d={arc(cx, cy, mode === "ring" ? radius : radius + 5, start, end)} stroke={color} strokeWidth={mode === "ring" ? 6 : 2} fill="none" strokeLinecap="round" />}
       {mode === "sector" && config.pattern !== 0 && <path d={sector(cx, cy, radius, 0, start, end)} fill={fill} opacity=".8" />}
       {mode === "sector" && config.pattern === 0 && Array.from({ length: 24 }, (_, tick) => <path key={tick}
         d={sector(cx, cy, radius, 0, start + (end - start) * tick / 24, start + (end - start) * (tick + 1.02) / 24)}
@@ -130,7 +162,7 @@ function Dial({ options: config, value, index, total, id, theme }: {
       <circle cx={cx} cy={cy} r={radius * .055} fill={theme.text} />
     </g>}
     <g textAnchor="middle" transform={`translate(${cx} ${cy + (needle ? radius * .48 : 0)})`}>
-      <text y="7" fill={theme.text} fontWeight="650" fontSize={total > 2 ? 17 : 26}>{number.format(value)}{config.unit ?? "%"}</text>
+      <text y="7" fill={theme.text} fontWeight="650" fontSize={total > 2 ? 17 : 26}>{labelValue ?? `${number.format(value)}${config.unit ?? "%"}`}</text>
       <text y={total > 2 ? 19 : 23} fill={theme.muted} fontSize={total > 2 ? 8 : 10}>{config.name ?? "Annual target"}</text>
     </g>
   </g>;
@@ -139,23 +171,38 @@ function Dial({ options: config, value, index, total, id, theme }: {
 export function Gauge({ example, compact, data }: Props) {
   const theme = useChartTheme();
   const id = useId();
-  const [selected, setSelected] = useState(0);
-  const [live, setLive] = useState(66);
   const variant = example.id;
-  const values = [66, 79, 58, 91];
+  const interactive = variant === "gauge-interactive";
+  const dial = variant === "gauge-dial";
+  const live = variant === "gauge-live-load";
+  const fixed = variant === "gauge-fixed";
+  const [selected, setSelected] = useState(interactive ? 2 : 0);
+  const [sample, setSample] = useState({ count: 1, current: liveValues[0], sum: liveValues[0], peak: liveValues[0] });
   const items = options[variant] ?? [{}];
   const rowValue = data?.rows?.[0]?.value;
   const dataValue = numeric(rowValue ?? data?.series?.[0]?.values[0], Number.NaN);
+  const useFixture = !Number.isFinite(dataValue);
   const linear = variant === "gauge-linear" || variant === "gauge-linear-gradient";
-  const value = Math.max(0, Math.min(100, Number.isFinite(dataValue) ? dataValue : variant === "gauge-live-load" ? live : values[selected]));
+  const value = clamp(!useFixture ? dataValue : live ? sample.current : interactive ? quarterValues[selected] : dial ? dialValues[selected] : 66);
+  const position = useSweepingValue(value, !compact && (live || interactive || dial || !useFixture));
   useEffect(() => {
-    if (variant !== "gauge-live-load" || compact || Number.isFinite(dataValue)) return;
-    let tick = 0;
-    const timer = setInterval(() => setLive([62, 77, 91, 83, 59, 68][tick++ % 6]), 1800);
+    if (!live || compact || !useFixture) return;
+    const timer = setInterval(() => setSample((previous) => {
+      const current = liveValues[previous.count % liveValues.length];
+      return { count: previous.count + 1, current, sum: previous.sum + current, peak: Math.max(previous.peak, current) };
+    }), 1800);
     return () => clearInterval(timer);
-  }, [variant, compact, dataValue]);
+  }, [compact, live, useFixture]);
+  const fixedValue = (index: number) => clamp(numeric(data?.rows?.[index]?.value ?? data?.series?.[0]?.values[index], fixedValues[index]));
+  if (fixed && !compact) return <div className={styles.fixedGauges}>
+    {items.map((item, index) => <svg key={index} width="160" height="160" viewBox="0 0 160 160" role="img" aria-roledescription="chart"
+      aria-label={`${item.name}: ${fixedValue(index)}%`}>
+      <Dial options={item} value={fixedValue(index)} index={index} total={items.length} id={`${id}-${index}`} theme={theme} fixed />
+    </svg>)}
+  </div>;
   return <div className={styles.frame}>
-    <svg className={styles.native} viewBox="0 0 420 220" role="img" aria-label={`${example.title}: ${value}%`}>
+    {!compact && interactive && <Controls items={["Q1", "Q2", "Q3", "Q4"]} value={selected} onChange={setSelected} />}
+    <svg className={styles.native} viewBox="0 0 420 220" role="img" aria-roledescription="chart" aria-label={`${example.title}: ${value}%`}>
       {linear ? <g>
         <defs><linearGradient id={`${id}-linear`} gradientUnits="userSpaceOnUse" x1="40" x2="380">
           {theme.colors.slice(0, 5).map((color, index) => <stop key={index} offset={index / 4} stopColor={color} />)}
@@ -167,9 +214,16 @@ export function Gauge({ example, compact, data }: Props) {
           return <rect key={tick} x={42 + 336 * tick / count} y="122" width={336 / count - (count > 30 ? 0 : 4)} height="33" rx={count > 30 ? 0 : 2}
             fill={value > 0 && tick * 100 / count <= value ? count > 30 ? `url(#${id}-linear)` : tone(theme, 0) : theme.grid} />;
         })}
-      </g> : items.map((item, index) => <Dial key={index} options={item} value={variant === "gauge-fixed" ? Math.max(0, value - index * 10) : value} index={index} total={items.length} theme={theme} id={`${id}-${index}`} />)}
+      </g> : items.map((item, index) => <Dial key={index} options={dial ? { ...item, name: `Load at 14:${String(selected * 5).padStart(2, "0")}` } : interactive ? { ...item, name: `Closed in Q${selected + 1}` } : item}
+        value={fixed ? fixedValue(index) : position} index={index} total={items.length} theme={theme} id={`${id}-${index}`}
+        labelValue={interactive && useFixture ? `$${(Math.round(1.5 * position) / 100).toFixed(2)}M` : `${number.format(Math.round(fixed ? fixedValue(index) : position))}${item.unit ?? "%"}`} />)}
     </svg>
-    {!compact && variant === "gauge-interactive" && <Controls items={["Q1", "Q2", "Q3", "Q4"]} value={selected} onChange={setSelected} />}
-    {!compact && variant === "gauge-dial" && <button className={styles.control} type="button" onClick={() => setSelected((selected + 1) % values.length)}>Next reading</button>}
+    {!compact && interactive && <p className={styles.hint}>{value}% of quota in Q{selected + 1}</p>}
+    {!compact && dial && <div className={styles.controls}><button className={styles.control} type="button" onClick={() => setSelected((previous) => (previous + 1) % dialValues.length)}>Next reading</button>
+      <span className={styles.hint}>Reading {selected + 1} of {dialValues.length}</span></div>}
+    {!compact && live && <dl className={styles.gaugeSummary} aria-label="CPU sample summary">
+      {[["Now", value], ["Average", useFixture ? Math.round(sample.sum / sample.count) : value], ["Peak", useFixture ? sample.peak : value]].map(([label, reading]) =>
+        <div key={label}><dt>{label}</dt><dd>{reading}%</dd></div>)}
+    </dl>}
   </div>;
 }

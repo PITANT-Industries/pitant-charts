@@ -112,6 +112,7 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 .empty-state h3 { color: var(--foreground); font-size: 17px; margin: 0; }
 .empty-state p { margin: 0 0 3px; font-size: 13px; }
 .dialog { max-height: calc(100dvh - 38px); width: min(760px,calc(100% - 30px)); padding: 0; border: 1px solid var(--border); border-radius: 15px; background: var(--card); color: var(--foreground); box-shadow: 0 30px 80px #13102149; }
+.dialog--wide { width: min(1280px, calc(100% - 30px)); }
 .dialog::backdrop { background: #15122465; backdrop-filter: blur(3px); }
 .dialog-inner { padding: 22px; }
 .detail-header { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
@@ -121,6 +122,14 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 .detail-toolbar, .detail-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .detail-toolbar { margin: 16px 0 12px; }
 .detail-plot { height: clamp(230px,51vh,420px); min-height: 230px; padding: 5px; border: 1px solid var(--border); border-radius: 10px; overflow: auto; }
+.comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; --comparison-height: clamp(320px, 58dvh, 540px); }
+.comparison h3 { font-size: 12px; font-weight: 590; color: var(--muted-foreground); margin: 0 0 6px; }
+.comparison .detail-plot { height: var(--comparison-height); }
+.comparison-frame { display: block; width: 100%; height: var(--comparison-height); border: 1px solid var(--border); border-radius: 10px; color-scheme: normal; }
+.comparison-notes { margin-top: 10px; color: var(--muted-foreground); font-size: 12px; line-height: 1.55; }
+.comparison-notes summary { width: fit-content; cursor: pointer; color: var(--foreground); }
+.comparison-notes p { margin: 5px 0 0; }
+@media (max-width: 760px) { .comparison { grid-template-columns: 1fr; --comparison-height: 340px; } }
 .detail-footer { margin-top: 13px; }
 .detail-footer a { display: flex; align-items: center; gap: 7px; color: var(--muted-foreground); font-size: 12px; }
 .detail-footer a:hover { color: var(--primary); }

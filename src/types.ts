@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 export interface ChartExample {
   id: string
   family: string
@@ -33,8 +35,19 @@ export interface ChartData {
   rows?: readonly Record<string, unknown>[]
 }
 
+export interface ChartCenterContext {
+  name: string | null
+  value: number
+  total: number
+  /** Value divided by the relevant total or progress target. */
+  share: number
+  target?: number
+}
+
 export interface ChartPreviewProps {
   example: ChartExample
   data?: ChartData
   compact?: boolean
+  /** Custom center content for donut and ring charts. */
+  renderCenter?: (context: ChartCenterContext) => ReactNode
 }

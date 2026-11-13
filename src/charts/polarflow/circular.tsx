@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useChartTheme } from "../theme";
 import { arc, Controls, Legend, metrics, number, Pattern, percent, point, sector, seriesData, sum, tone, type Props } from "./shared";
 import styles from "./styles.module.css";
@@ -31,7 +32,13 @@ function useAnimatedNumber(value: number, enabled: boolean) {
   return enabled ? display : value;
 }
 
-export function Pie({ example, compact, data }: Props) {
+function CustomCenter({ x, y, children }: { x: number; y: number; children: ReactNode }) {
+  return <foreignObject x={x - 50} y={y - 34} width="100" height="68" pointerEvents="none">
+    <div className={styles.customCenter}>{children}</div>
+  </foreignObject>;
+}
+
+export function Pie({ example, compact, data, renderCenter }: Props) {
   const id = example.id;
   const theme = useChartTheme();
   const instance = useId();
@@ -40,7 +47,7 @@ export function Pie({ example, compact, data }: Props) {
   const patterned = id.includes("pattern");
   const gradient = id === "pie-gradients";
   const isHalf = id === "pie-half-donut";
-  const donut = id.includes("center") || id === "pie-hover-legend" || isHalf || ["pie-donut-grow", "pie-glow", "pie-patterns"].includes(id);
+  const donut = id.includes("center") || id === "pie-hover-legend" || isHalf || ["pie-donut-grow", "pie-glow", "pie-patterns"].includes(id) || Boolean(renderCenter);
   const rows = metrics(data, pieNames, pieValues);
   const total = sum(rows);
   const item = active === null ? undefined : rows[active];
@@ -51,7 +58,7 @@ export function Pie({ example, compact, data }: Props) {
   const gap = donut ? 2.2 : .65;
   let start = isHalf ? 180 : -90;
   return <div className={styles.frame}>
-    {!compact && id === "pie-hover-effects" && <Controls items={["Pop out", "Grow", "Stay put"]} value={effect} onChange={setEffect} />}
+    {!compact && id === "pie-hover-effects" && <Controls items={["Translate", "Grow", "None"]} value={effect} onChange={setEffect} />}
     <svg className={styles.native} viewBox="0 0 420 240" role="img" aria-label={example.title}>
       <defs>
         {rows.map((row, index) => {
@@ -78,7 +85,7 @@ export function Pie({ example, compact, data }: Props) {
         const color = usePattern ? `url(#${instance}-pattern-${index})`
           : gradient ? `url(#${instance}-gradient-${index})` : tone(theme, index, row.color);
         return sweep > 0 && <path key={index} d={sector(210, centerY, (isHalf ? 117 : 101) + (isActive && selectedEffect === 1 ? 6 : 0), donut ? (isHalf ? 73 : 59) : 0, from + Math.min(gap, sweep / 5), start - Math.min(gap, sweep / 5))}
-          transform={`translate(${tx} ${ty})`} fill={color} opacity={active === null || isActive ? 1 : .48}
+          transform={`translate(${tx} ${ty})`} fill={color} opacity={active === null || isActive || selectedEffect === 2 && id === "pie-hover-effects" ? 1 : .48}
           stroke={donut ? color : theme.surface} strokeWidth={donut ? 2.5 : 1.5} strokeLinejoin="round"
           filter={id === "pie-glow" && isActive ? `url(#${instance}-glow-${index})` : undefined}
           style={{ transition: "opacity 150ms, transform 200ms, d 220ms" }}
@@ -88,7 +95,9 @@ export function Pie({ example, compact, data }: Props) {
           <title>{`${row.name} · ${number.format(row.value)} · ${percent(row.value, total).toFixed(1)}%`}</title>
         </path>;
       })}
-      {(donut || item) && <g pointerEvents="none" textAnchor="middle">
+      {renderCenter ? <CustomCenter x={210} y={isHalf ? centerY - 14 : centerY}>
+        {renderCenter({ name: item?.name ?? null, value: item?.value ?? total, total, share: percent(item?.value ?? total, total) / 100 })}
+      </CustomCenter> : (donut || item) && <g pointerEvents="none" textAnchor="middle">
         <text x="210" y={centerY + 3} fill={item ? tone(theme, active ?? 0, item.color) : theme.text} fontSize="25" fontWeight="650">{number.format(Math.round(display))}</text>
         <text x="210" y={centerY + 22} fill={theme.muted} fontSize="11">{item?.name ?? (id === "pie-center-custom" ? "Product revenue" : "Total")}</text>
         {id === "pie-center-share" && item && <text x="210" y={centerY + 36} fill={theme.muted} fontSize="10">{percent(item.value, total).toFixed(1)}% of total</text>}
@@ -98,7 +107,7 @@ export function Pie({ example, compact, data }: Props) {
   </div>;
 }
 
-export function Ring({ example, compact, data }: Props) {
+export function Ring({ example, compact, data, renderCenter }: Props) {
   const id = example.id;
   const theme = useChartTheme();
   const [active, setActive] = useState<number | null>(null);
@@ -109,8 +118,10 @@ export function Ring({ example, compact, data }: Props) {
   const showGrid = id === "ring-grid" || id === "ring-semicircle";
   const goals = rows.map((_, index) => id === "ring-center-custom" ? 160 + index * 12 : Math.max(200, ...(data ? rows.map(row => row.value) : [])));
   const current = active === null ? undefined : rows[active];
+  const target = current ? goals[active ?? 0] : undefined;
+  const total = sum(rows);
   const ratio = Boolean(current && id === "ring-center-custom");
-  const display = useAnimatedNumber(ratio && current ? percent(current.value, goals[active ?? 0] ?? 1) : current?.value ?? sum(rows), !compact && !ratio);
+  const display = useAnimatedNumber(ratio && current ? percent(current.value, target ?? 1) : current?.value ?? total, !compact && !ratio);
   const width = Math.min(13, 68 / Math.max(1, rows.length));
   return <div className={styles.frame}>
     <svg className={styles.native} viewBox="0 0 420 240" role="img" aria-label={example.title}>
@@ -136,10 +147,12 @@ export function Ring({ example, compact, data }: Props) {
           {showGrid && <text x={sweep === 180 ? 200 - radius : tx - 7} y={sweep === 180 ? cy + 15 : ty + 3} textAnchor="end" fontSize="8" fill={color}>{row.name}</text>}
         </g>;
       })}
-      <g textAnchor="middle" pointerEvents="none">
+      {renderCenter ? <CustomCenter x={210} y={sweep === 180 ? cy - 12 : cy}>
+        {renderCenter({ name: current?.name ?? null, value: current?.value ?? total, total, target, share: percent(current?.value ?? total, target ?? total) / 100 })}
+      </CustomCenter> : <g textAnchor="middle" pointerEvents="none">
         <text x="210" y={cy + 3} fill={theme.text} fontSize="22" fontWeight="650">{ratio ? `${Math.round(display)}%` : number.format(Math.round(display))}</text>
         <text x="210" y={cy + 20} fill={theme.muted} fontSize="10">{current?.name ?? "Total"}</text>
-      </g>
+      </g>}
     </svg>
     {!compact && id === "ring-legend" && <Legend items={rows} active={active} onActive={setActive} progress={Math.max(...goals)} theme={theme} />}
   </div>;

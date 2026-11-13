@@ -225,7 +225,9 @@ export function SvgPlot({ example, compact, hints = [], className = "", loading 
   const id = useId().replaceAll(":", "");
   const [hover, setHover] = useState<HoverInfo | null>(null);
   const [focusIndex, setFocusIndex] = useState<number | null>(null);
-  const current = loading ? null : hover ?? (focusIndex === null ? null : hints[focusIndex]) ?? null;
+  const hovered = hover && hints.find((hint) => hint.x === hover.x && hint.y === hover.y &&
+    hint.lines.length === hover.lines.length && hint.lines.every((line, index) => line === hover.lines[index]));
+  const current = loading ? null : hovered ?? (focusIndex === null ? null : hints[focusIndex]) ?? null;
   const interactive = !compact && !loading && !!hints.length;
   function onKeyDown(event: KeyboardEvent<SVGSVGElement>) {
     if (!interactive) return;

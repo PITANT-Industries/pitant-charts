@@ -2,13 +2,14 @@ import { useDeferredValue, useEffect, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import {
   ArrowDown, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, Check, ChevronDown, ChevronLeft, ChevronRight,
-  Code2, Copy, ExternalLink, Grid2X2, List, Menu, Moon, Search, Sun, X,
+  Columns2, Code2, Copy, ExternalLink, Grid2X2, List, Menu, Moon, Search, Sun, X,
 } from 'lucide-react'
 import { examples, galleryOrder, getExample, getFamily, getGroupForFamily, groups } from '../catalog'
 import { ChartPreview } from '../charts/ChartPreview'
 import type { ChartExample } from '../types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { BrandMark, groupIcons, HeroChart } from './Visuals'
+import parityNotes from './parity-notes.json'
 
 const pageSize = 12
 const referenceUrl = 'https://www.shadcn.io/charts'
@@ -82,7 +83,7 @@ function ExampleCard({ example, saved, onOpen, onSave }: { example: ChartExample
   )
 }
 
-function Modal({ children, onClose, labelledBy }: { children: ReactNode; onClose: () => void; labelledBy: string }) {
+function Modal({ children, onClose, labelledBy, wide }: { children: ReactNode; onClose: () => void; labelledBy: string; wide?: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     dialog.current?.showModal()
@@ -91,14 +92,37 @@ function Modal({ children, onClose, labelledBy }: { children: ReactNode; onClose
     return () => { document.body.style.overflow = previous }
   }, [])
   return (
-    <dialog ref={dialog} className="dialog" aria-labelledby={labelledBy} onCancel={(event) => { event.preventDefault(); onClose() }} onClick={(event) => { if (event.target === event.currentTarget) onClose() }}>
+    <dialog ref={dialog} className={`dialog${wide ? ' dialog--wide' : ''}`} aria-labelledby={labelledBy} onCancel={(event) => { event.preventDefault(); onClose() }} onClick={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <div className="dialog-inner">{children}</div>
     </dialog>
   )
 }
 
-function ExampleDetail({ example, saved, onSave, onClose, onExample }: { example: ChartExample; saved: boolean; onSave: () => void; onClose: () => void; onExample: (id: string) => void }) {
-  const [tab, setTab] = useState<'preview' | 'code'>('preview')
+function ReferenceComparison({ example, theme }: { example: ChartExample; theme: 'light' | 'dark' }) {
+  const params = new URLSearchParams({ c: example.id, theme })
+  const note = (parityNotes as Record<string, { checked: string; remaining?: string }>)[example.id]
+  return (
+    <>
+      <div className="comparison">
+        <section aria-labelledby="comparison-local">
+          <h3 id="comparison-local">Library</h3>
+          <div className="detail-plot"><ChartPreview key={example.id} example={example} /></div>
+        </section>
+        <section aria-labelledby="comparison-reference">
+          <h3 id="comparison-reference">shadcn.io reference</h3>
+          <iframe className="comparison-frame" title={`Reference preview of ${example.title}`} src={`https://www.shadcn.io/charts-preview/react/index.html?${params}`} referrerPolicy="no-referrer" />
+        </section>
+      </div>
+      <details className="comparison-notes">
+        <summary>Parity notes</summary>
+        {note ? <><p>{note.checked}</p>{note.remaining && <p>{note.remaining}</p>}</> : <p>The live reference is available for comparison. A feature-by-feature check is pending.</p>}
+      </details>
+    </>
+  )
+}
+
+function ExampleDetail({ example, theme, saved, onSave, onClose, onExample }: { example: ChartExample; theme: 'light' | 'dark'; saved: boolean; onSave: () => void; onClose: () => void; onExample: (id: string) => void }) {
+  const [tab, setTab] = useState<'preview' | 'compare' | 'code'>('preview')
   const [copied, setCopied] = useState(false)
   const family = getFamily(example.family)
   const list = family?.examples ?? []
@@ -112,7 +136,7 @@ function ExampleDetail({ example, saved, onSave, onClose, onExample }: { example
   }, [copied])
 
   return (
-    <Modal onClose={onClose} labelledBy="example-detail-title">
+    <Modal onClose={onClose} labelledBy="example-detail-title" wide={tab === 'compare'}>
       <div className="detail-header">
         <div><p>{family?.name} <span>·</span> {example.position} of {list.length}</p><h2 id="example-detail-title">{example.title}</h2></div>
         <button className="icon-button close-button" type="button" aria-label="Close preview" onClick={onClose}><X size={20} /></button>
@@ -120,11 +144,12 @@ function ExampleDetail({ example, saved, onSave, onClose, onExample }: { example
       <div className="detail-toolbar">
         <div className="segmented" aria-label="Example view">
           <button type="button" aria-pressed={tab === 'preview'} onClick={() => setTab('preview')}><Grid2X2 size={15} /> Preview</button>
+          <button type="button" aria-pressed={tab === 'compare'} onClick={() => setTab('compare')}><Columns2 size={15} /> Compare</button>
           <button type="button" aria-pressed={tab === 'code'} onClick={() => setTab('code')}><Code2 size={16} /> Code</button>
         </div>
         <button type="button" className={`text-button${saved ? ' is-saved' : ''}`} aria-pressed={saved} onClick={onSave}><Bookmark size={16} />{saved ? 'Saved' : 'Save'}</button>
       </div>
-      {tab === 'preview' ? <div className="detail-plot"><ChartPreview key={example.id} example={example} /></div> : (
+      {tab === 'preview' ? <div className="detail-plot"><ChartPreview key={example.id} example={example} /></div> : tab === 'compare' ? <ReferenceComparison example={example} theme={theme} /> : (
         <div className="snippet">
           <div className="snippet-header"><span>React</span><button className="text-button" type="button" onClick={async () => { try { await navigator.clipboard.writeText(snippet); setCopied(true) } catch { setCopied(false) } }}>{copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'Copied' : 'Copy code'}</button></div>
           <pre><code>{snippet}</code></pre>
@@ -285,7 +310,7 @@ export function Gallery() {
           </section>
         </main>
       </div>
-      {detail && <ExampleDetail example={detail} saved={savedIds.has(detail.id)} onSave={() => toggleSaved(detail.id)} onClose={() => showExample('')} onExample={showExample} />}
+      {detail && <ExampleDetail example={detail} theme={theme} saved={savedIds.has(detail.id)} onSave={() => toggleSaved(detail.id)} onClose={() => showExample('')} onExample={showExample} />}
     </div>
   )
 }

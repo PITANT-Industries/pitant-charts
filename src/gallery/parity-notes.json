@@ -1,0 +1,202 @@
+{
+  "line-segment": {
+    "checked": "Mouse and touch drag directly on the chart select a range. Clear removes it.",
+    "remaining": "Compare selection guides and exact date fixtures."
+  },
+  "area-selection": {
+    "checked": "Mouse and touch drag directly on the chart select a range and show its dates.",
+    "remaining": "Compare the selected fill and hover treatment."
+  },
+  "line-date-highlights-brush": {
+    "checked": "At mobile width, weekend shading is hidden when dates are dense and appears after zooming in. The launch marker stays on its original date.",
+    "remaining": "Compare precise density thresholds and band styling."
+  },
+  "line-zoom": {
+    "checked": "Ctrl-wheel and Cmd-wheel zoom the chart. Double-click resets the range.",
+    "remaining": "Compare zoom sensitivity, pan easing, and limits."
+  },
+  "bar-depth": {
+    "checked": "Pause pulse and Resume pulse control the bar highlight animation.",
+    "remaining": "Compare depth, material styling, and pulse timing."
+  },
+  "area-loading": {
+    "checked": "Pulse, Sweep, and Loaded switch the placeholder and data states.",
+    "remaining": "Compare the exact skeleton and reveal animation."
+  },
+  "live-line-loading": {
+    "checked": "Reconnect shows the skeleton before restoring the live chart.",
+    "remaining": "Compare the connection timing and skeleton styling."
+  },
+  "line-brush": {
+    "checked": "The overview window pans and resizes. Its handles respond to the keyboard, and Escape restores the range after a drag.",
+    "remaining": "Compare overview styling and the timing of axis rescaling."
+  },
+  "line-linked-brush": {
+    "checked": "One overview controls both detail charts. The detail charts share a tooltip date.",
+    "remaining": "Compare animation timing and date-label behavior during continuous drag."
+  },
+  "line-synced": {
+    "checked": "Requests, latency, and errors share the same tooltip date.",
+    "remaining": "Compare the crosshair animation and panel spacing."
+  },
+  "line-band-range": {
+    "checked": "The temperature range shows both boundaries. The tooltip gives the low and high in degrees Celsius.",
+    "remaining": "Compare band styling and chart scale with the reference data."
+  },
+  "line-band-bollinger": {
+    "checked": "The band appears after the nine-point warm-up.",
+    "remaining": "Compare the remaining band styling and the exact fixture series."
+  },
+  "line-large-data": {
+    "checked": "The Canvas chart displays minute-sampled p50 and p95 series. It starts at 50,000 points and switches to 10,000 or 100,000. The tooltip reports both raw values.",
+    "remaining": "The nearest displayed minute can be affected by decimation. Compare lookup behavior and rendering performance at the largest setting."
+  },
+  "gauge-fixed": {
+    "checked": "Three gauges retain 160 × 160 pixel dimensions on desktop and mobile.",
+    "remaining": "Compare label placement and exact arc treatment."
+  },
+  "gauge-interactive": {
+    "checked": "The chart opens on Q3. Selecting Q2 sweeps the gauge and animates the revenue to $1.41 million.",
+    "remaining": "Compare the sweep and number animation timing."
+  },
+  "gauge-dial": {
+    "checked": "Next reading cycles through all six readings and returns to the first.",
+    "remaining": "Compare the dial, ruler ticks, and needle appearance."
+  },
+  "gauge-live-load": {
+    "checked": "The gauge updates every 1.8 seconds. The Now, Average, and Peak readouts update with the readings.",
+    "remaining": "Compare the later reading sequence and zone transitions."
+  },
+  "sunburst-default": {
+    "checked": "Arrow keys inspect segments, Enter drills into a branch, and Escape moves back up. Focus remains in the chart.",
+    "remaining": "Compare branch geometry and the drill animation at each depth."
+  },
+  "sunburst-breadcrumb": {
+    "checked": "Breadcrumb buttons jump back to the selected ancestor after drill-down.",
+    "remaining": "Compare breadcrumb labels and transitions with the source hierarchy."
+  },
+  "sunburst-legend": {
+    "checked": "The legend displays shares, highlights the matching branch on hover, and drills into it on click.",
+    "remaining": "Compare branch order, legend styling, and touch behavior."
+  },
+  "pie-center-custom": {
+    "checked": "Caller-supplied center content receives the focused segment, value, total, and share.",
+    "remaining": "Compare the built-in typography and digit animation."
+  },
+  "ring-center-custom": {
+    "checked": "Caller-supplied center content receives the active ring's target and attainment fraction. The idle state reports the aggregate.",
+    "remaining": "Compare built-in center styling and transitions."
+  },
+  "pie-hover-effects": {
+    "checked": "Translate, Grow, and None are available. None leaves slices stationary and undimmed.",
+    "remaining": "Compare the translate and grow motion curves."
+  },
+  "radial-default": {
+    "checked": "The chart has 96 quarter-hour positions, three statuses, and interactive legend isolation. Keyboard and pointer input inspect the current and previous day.",
+    "remaining": "Compare exact data, dot pattern, and transitions."
+  },
+  "radial-line": {
+    "checked": "A dashed previous-day line and a current-day line share 96 quarter-hour positions. The current-day line stops at 14:30.",
+    "remaining": "Compare the exact time-series fixture and curve."
+  },
+  "radial-bar-clock": {
+    "checked": "Rounded stacked bars and a rotating cursor identify the selected quarter hour. Keyboard focus wraps across midnight.",
+    "remaining": "Compare the exact scrubber spring and bar styling."
+  },
+  "radial-area-clock": {
+    "checked": "Three areas sweep in and show their edge markers at the selected quarter hour. Keyboard focus wraps across midnight.",
+    "remaining": "Compare the exact sweep and area geometry."
+  },
+  "choropleth-default": {
+    "checked": "Wheel and pinch zoom, pointer drag, keyboard country selection, and reset work.",
+    "remaining": "Compare projection, camera inertia, and geographic labels."
+  },
+  "choropleth-click-to-zoom": {
+    "checked": "An office click or keyboard activation flies to the target. Clicking the target again or clicking the sea resets the view, as does Escape.",
+    "remaining": "Compare camera projection and easing."
+  },
+  "choropleth-pointer-camera": {
+    "checked": "The map tilts with the pointer while its dot backdrop remains stationary. Keyboard activation can fly to and return from a country.",
+    "remaining": "The local camera uses an affine transform. Compare perspective with the reference."
+  },
+  "choropleth-dot-grid": {
+    "checked": "Zooming grows the land dots and fades the ocean dots. Reset restores the full world lattice.",
+    "remaining": "Compare lattice density and exact office coordinates."
+  },
+  "heatmap-active-scale": {
+    "checked": "The active cell and corresponding legend swatch grow to 110%, while other swatches fade.",
+    "remaining": "Compare transition timing and intensity colors."
+  },
+  "heatmap-dots": {
+    "checked": "Inactive dots shrink and fade during inspection.",
+    "remaining": "Compare dot spacing and tooltip treatment."
+  },
+  "heatmap-loading": {
+    "checked": "Showing the data triggers a delayed, per-cell reveal wave.",
+    "remaining": "Compare the delay and easing of the reveal."
+  },
+  "scatter-default": {
+    "checked": "The tooltip groups both series for a week, and unrelated marks blur during inspection.",
+    "remaining": "Compare precise tooltip and blur treatment with the reference fixture."
+  },
+  "scatter-rings": {
+    "checked": "The preview shows 21 daily points with wider rings and a stronger hover fade.",
+    "remaining": "Compare point spacing and marker geometry."
+  },
+  "scatter-jitter": {
+    "checked": "The preview shows 522 points in 12 month columns and reports the nearest point to the pointer.",
+    "remaining": "Compare the exact jitter distribution and hit regions."
+  },
+  "scatter-outline": {
+    "checked": "The axes display dates and percentages.",
+    "remaining": "Compare ring styling and axis label spacing."
+  },
+  "scatter-solid": {
+    "checked": "The axes display daily samples and milliseconds.",
+    "remaining": "Compare value scale and hover styling."
+  },
+  "histogram-default": {
+    "checked": "The histogram uses 20-millisecond bins and labels the intervals in the tooltip.",
+    "remaining": "Compare the exact sample distribution and bar styling."
+  },
+  "histogram-overlay": {
+    "checked": "Both distributions share 50-millisecond bins. Hovering or focusing a median legend item fades the other distribution.",
+    "remaining": "Compare exact fixture medians and opacity transitions."
+  },
+  "histogram-stacked": {
+    "checked": "The stacked bins advance in two-minute intervals, ending at the 40-minute domain limit.",
+    "remaining": "Compare bin heights and exact fixture distribution."
+  },
+  "ecdf-default": {
+    "checked": "The chart labels the p50 and p90 guides.",
+    "remaining": "Compare exact quantile values and guide styles."
+  },
+  "ecdf-compare": {
+    "checked": "Both curves share the pointer or keyboard threshold and show aligned dots and decimal percentages.",
+    "remaining": "Compare focus styling and movement across plateaus."
+  },
+  "ecdf-loading": {
+    "checked": "Toggling from the loading staircase reveals the distribution from left to right.",
+    "remaining": "Compare the reveal duration and placeholder styling."
+  },
+  "tooltip-indicator": {
+    "checked": "The Line, Thin, Medium, and Thick controls switch the cursor geometry. Medium is selected on entry.",
+    "remaining": "Compare exact cursor color, stroke treatment, and tooltip positioning across themes."
+  },
+  "tooltip-motion": {
+    "checked": "Eased, Matched, and Instant switch how the panel follows the pointer. Instant disables the transition.",
+    "remaining": "Compare the spring timing and how the panel follows the cursor on rapid motion."
+  },
+  "tooltip-pinned": {
+    "checked": "The pinned view reveals the day's revenue by channel. Enter and Space pin the selected day, and Escape clears the pin inside the preview.",
+    "remaining": "Compare pinned-panel layout, number animation, and touch interactions."
+  },
+  "tooltip-horizontal-crosshair": {
+    "checked": "Moving the pointer vertically moves the price readout even when the selected date stays the same.",
+    "remaining": "Compare price formatting and tick-label fading at both edges of the axis."
+  },
+  "tooltip-custom-indicator": {
+    "checked": "A bar below the active month marks the selection. The chart displays a revenue tooltip and omits the vertical cursor line.",
+    "remaining": "Compare indicator motion and placement at narrow widths."
+  }
+}

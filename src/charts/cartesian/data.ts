@@ -26,6 +26,23 @@ export function curve(count: number, seed: number, base: number, amplitude: numb
   ));
 }
 
+export const initialLargeCount = 50_000;
+
+export function minuteLatency(count: number): CartesianData {
+  const start = Date.UTC(2026, 6, 1);
+  const format = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC" });
+  const p50: number[] = [], p95: number[] = [];
+  const categories = Array.from({ length: count }, (_, index) => {
+    const daily = Math.sin(index / 1440 * Math.PI * 2);
+    const noise = ((Math.imul(index + 523, 0x45d9f3b) >>> 14) % 101) / 100;
+    const spike = noise > 0.988 && index % 17 === 0 ? 110 + index % 77 : 0;
+    p50.push(Math.round(28 + daily * 8 + noise * 4));
+    p95.push(Math.round(97 + daily * 23 + noise * 26 + spike));
+    return format.format(start + index * 60_000);
+  });
+  return { categories, series: [{ name: "p50 latency", values: p50 }, { name: "p95 latency", values: p95 }] };
+}
+
 function points(count: number, names: string[], base = 58) {
   return names.map((name, index) => ({
     name,
@@ -47,11 +64,28 @@ export function resolveData(example: ChartExample, data?: ChartData): CartesianD
 function makeFixture(example: ChartExample): CartesianData {
   const { family, id } = example;
   if (family === "line") {
-    const count = id === "line-large-data" ? 10_000 : id === "line-zoom" ? 365
-      : id === "line-time-range" ? 90 : 30;
-    const categories = count > 365 ? Array.from({ length: count }, (_, index) => String(index + 1)) : dates(count);
+    if (id === "line-large-data") return minuteLatency(initialLargeCount);
+    if (["line-brush", "line-linked-brush", "line-date-highlights-brush"].includes(id)) {
+      const categories = dates(90, Date.UTC(2026, 6, 1));
+      const visitors = curve(90, 3, 2410, 490, 12).map((value, index) => (index + 3) % 7 >= 5 ? Math.round(value * 0.7) : value);
+      const series = [{ name: "Visitors", values: visitors }];
+      if (id === "line-linked-brush") series.push({ name: "Signups", values: visitors.map((value, index) => Math.round(value * (0.032 + Math.sin(index) * 0.004))) });
+      return { categories, series };
+    }
+    if (id === "line-synced") {
+      const count = 45;
+      const spike = (position: number) => Math.exp(-0.4 * (position - 31) ** 2);
+      return { categories: dates(count, Date.UTC(2026, 8, 1)), series: [
+        { name: "Requests per minute", values: curve(count, 1, 1200, 460, 1) },
+        { name: "p95 latency", values: curve(count, 0, 175, 34, 0.2).map((value, index) => Math.round(value + spike(index) * 240)) },
+        { name: "Error rate", values: curve(count, 2, 22, 11).map((value, index) => value / 100 + spike(index) * 1.5) },
+      ] };
+    }
+    if (id === "line-band-range") return { categories: dates(30, Date.UTC(2026, 5, 1)), series: [{ name: "Temperature (°C)", values: curve(30, 3, 20, 4, 0.11) }] };
+    const count = id === "line-zoom" ? 365 : id === "line-time-range" ? 90 : 30;
+    const categories = dates(count, id === "line-zoom" ? Date.UTC(2026, 0, 1) : undefined);
     const one = ["line-grid", "line-points", "line-dashed", "line-segment", "line-markers", "line-glow", "line-fixed-scale", "line-trend"];
-    let series = points(count, one.includes(id) ? ["Sessions"] : id === "line-synced" ? services.slice(0, 3)
+    let series = points(count, one.includes(id) ? ["Sessions"]
       : ["line-legend", "line-weekends", "line-export"].includes(id) ? channels.slice(0, 3) : channels.slice(0, 2));
     if (id.includes("profit-loss")) series = [{ name: "Net profit", values: curve(count, 3, -8, 36, 0.71) }];
     if (id === "line-dual-axis") series = [

@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { createContext, useContext } from 'react'
 
 export interface ChartTheme {
   colors: string[]
@@ -8,7 +8,7 @@ export interface ChartTheme {
   text: string
 }
 
-const fallback: ChartTheme = {
+export const fallbackChartTheme: ChartTheme = {
   colors: ['#6d4bef', '#a78bf8', '#4e90ed', '#20aeaa', '#eb8497', '#f3a33f', '#79a850', '#7d839b'],
   muted: '#69677a',
   grid: '#e9e8f0',
@@ -16,37 +16,40 @@ const fallback: ChartTheme = {
   text: '#211d35',
 }
 
-let snapshot = fallback
+export const ChartThemeContext = createContext<ChartTheme>(fallbackChartTheme)
 
-function subscribe(change: () => void) {
-  const root = document.documentElement
-  const observer = new MutationObserver(change)
-  observer.observe(root, { attributes: true, attributeFilter: ['class', 'style', 'data-theme'] })
-  const media = window.matchMedia('(prefers-color-scheme: dark)')
-  media.addEventListener('change', change)
-  window.addEventListener('chart-theme-change', change)
-  return () => {
-    observer.disconnect()
-    media.removeEventListener('change', change)
-    window.removeEventListener('chart-theme-change', change)
+export function readChartTheme(element: HTMLElement): ChartTheme {
+  const probe = document.createElement('span')
+  probe.hidden = true
+  element.append(probe)
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = 1
+  const context = canvas.getContext('2d', { willReadFrequently: true })
+  function color(token: string, fallback: string) {
+    probe.style.color = `var(${token}, ${fallback})`
+    const value = getComputedStyle(probe).color || fallback
+    if (!context || /^rgba?\(/.test(value)) return value
+    context.clearRect(0, 0, 1, 1)
+    context.fillStyle = fallback
+    context.fillStyle = value
+    context.fillRect(0, 0, 1, 1)
+    const [red, green, blue, opacity] = context.getImageData(0, 0, 1, 1).data
+    return `rgba(${red}, ${green}, ${blue}, ${+(opacity / 255).toFixed(3)})`
   }
-}
-
-function getSnapshot() {
-  if (typeof document === 'undefined') return fallback
-  const styles = getComputedStyle(document.documentElement)
-  const read = (token: string, defaultValue: string) => styles.getPropertyValue(token).trim() || defaultValue
-  const next = {
-    colors: fallback.colors.map((color, index) => read(`--chart-${index + 1}`, color)),
-    muted: read('--muted-foreground', fallback.muted),
-    grid: read('--border', fallback.grid),
-    surface: read('--card', fallback.surface),
-    text: read('--foreground', fallback.text),
+  try {
+    const fallback = fallbackChartTheme
+    return {
+      colors: fallback.colors.map((value, index) => color(`--chart-${index + 1}`, value)),
+      muted: color('--muted-foreground', fallback.muted),
+      grid: color('--border', fallback.grid),
+      surface: color('--card', fallback.surface),
+      text: color('--foreground', fallback.text),
+    }
+  } finally {
+    probe.remove()
   }
-  if (JSON.stringify(snapshot) !== JSON.stringify(next)) snapshot = next
-  return snapshot
 }
 
 export function useChartTheme() {
-  return useSyncExternalStore(subscribe, getSnapshot, () => fallback)
+  return useContext(ChartThemeContext)
 }

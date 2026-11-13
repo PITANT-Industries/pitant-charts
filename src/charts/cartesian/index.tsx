@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import type { EChartsOption, EChartsType } from "echarts";
 import type { ChartPreviewProps } from "../../types";
 import { EChart } from "../EChart";
@@ -6,14 +6,24 @@ import { useChartTheme } from "../theme";
 import { ShadcnBasics } from "./ShadcnBasics";
 import { SparklineExamples } from "./Sparkline";
 import { buildBar, buildCandlestick, buildComposed, buildDiverging, buildDumbbell, buildGantt, buildLollipop, buildRanking, buildStream, buildWaterfall } from "./comparisons";
-import { curve, resolveData, type CartesianData } from "./data";
-import { buildLine, colorFor, down, initialControls, up, valueFormat, type ChartTheme, type Controls } from "./options";
+import { initialLargeCount, minuteLatency, resolveData, type CartesianData } from "./data";
+import { buildLine, categoryAxis, colorFor, down, initialControls, up, valueFormat, type ChartTheme, type Controls } from "./options";
+import { clampBrush, RangeBrush, type BrushRange } from "./Brush";
 import "./styles.css";
 
 const basics = new Set(["area-default", "bar-default", "line-default"]);
 const selectedRange = new Set(["line-time-range", "candlestick-range"]);
-const connected = new Set(["line-synced", "line-linked-brush", "bar-synced", "area-small-multiples"]);
+const connected = new Set(["line-synced", "bar-synced", "area-small-multiples"]);
 const brushExamples = new Set(["line-segment", "area-selection"]);
+const overviewExamples = new Set(["line-brush", "line-linked-brush", "line-date-highlights-brush"]);
+
+function sliceRange(data: CartesianData, [start, end]: BrushRange): CartesianData {
+  return {
+    categories: data.categories.slice(start, end + 1),
+    series: data.series.map(item => ({ ...item, values: item.values.slice(start, end + 1) })),
+    rows: data.rows?.slice(start, end + 1),
+  };
+}
 
 function getOption(example: ChartPreviewProps["example"], data: CartesianData, theme: ChartTheme, compact: boolean, controls: Controls): EChartsOption {
   switch (example.family) {
@@ -42,6 +52,7 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
   const [controls, setControls] = useState<Controls>(initialControls);
   const [isLoading, setLoading] = useState(example.id.endsWith("-loading") || example.id === "line-loading-placeholder");
   const [placeholder, setPlaceholder] = useState("Sweep");
+  const [pulsePaused, setPulsePaused] = useState(false);
   const [viewTable, setViewTable] = useState(false);
   const [focusedRow, setFocusedRow] = useState(-1);
   const [paused, setPaused] = useState(false);
@@ -51,12 +62,19 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
   const chartRef = useRef<EChartsType>(null);
   const candleDirection = useRef<boolean | undefined>(undefined);
   const [pointCrosshair, setPointCrosshair] = useState<{ x: number; y: number } | null>(null);
+  const [dragRange, setDragRange] = useState<{ left: number; right: number } | null>(null);
+  const selectionDrag = useRef<{ pointer: number; position: number; index: number } | null>(null);
   const plotRef = useRef<HTMLDivElement>(null);
+  const panelsRef = useRef<HTMLDivElement>(null);
+  const overview = overviewExamples.has(example.id);
+  const [rangeOverride, setRangeOverride] = useState<BrushRange | null>(null);
+  const [chartWidth, setChartWidth] = useState(0);
+  const [pulsePosition, setPulsePosition] = useState<[number, number] | null>(null);
   const connection = useId();
   const { id, family } = example;
   const live = family === "live-line";
   const startLoading = id.endsWith("-loading") || id === "line-loading-placeholder";
-  const split = connected.has(id);
+  const split = connected.has(id) || id === "line-linked-brush";
   const linked = id === "line-table";
   const tableToggle = id === "chart-data-table";
   const range = selectedRange.has(id);
@@ -64,7 +82,43 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
   const candleCrosshair = id === "candlestick-crosshair";
   const pointOnly = id === "line-crosshair-point";
   const powerUser = id === "line-large-data";
+  const zoom = id === "line-zoom";
+  const barPulse = id === "bar-depth";
   const renderer = powerUser || id === "line-export" && exportFormat === "png" ? "canvas" : "svg";
+  const lastCategory = Math.max(0, source.categories.length - 1);
+  const firstVisible = id === "line-linked-brush" ? Math.round(lastCategory * 0.66) : 0;
+  const [brushStart, brushEnd] = clampBrush(rangeOverride ?? [firstVisible, lastCategory], lastCategory);
+
+  useEffect(() => {
+    const host = plotRef.current;
+    if (!zoom || compact || !host) return;
+    function zoomFromWheel(event: WheelEvent) {
+      if (!(event.ctrlKey || event.metaKey) || !event.deltaY) return;
+      const chart = chartRef.current;
+      const bounds = host?.getBoundingClientRect();
+      if (!chart || !bounds) return;
+      const position = [event.clientX - bounds.left, event.clientY - bounds.top];
+      if (!chart.containPixel({ gridIndex: 0 }, position)) return;
+      event.preventDefault();
+      const windows = chart.getOption().dataZoom as { start?: number; end?: number }[] | undefined;
+      const start = windows?.[0]?.start ?? 0, end = windows?.[0]?.end ?? 100;
+      const origin = Math.min(end, Math.max(start, Number(chart.convertFromPixel({ xAxisIndex: 0 }, position[0])) / Math.max(1, lastCategory) * 100));
+      const factor = event.deltaY < 0 ? 0.82 : 1 / 0.82;
+      const nextStart = Math.max(0, origin + (start - origin) * factor), nextEnd = Math.min(100, origin + (end - origin) * factor);
+      if (nextEnd - nextStart >= 1) chart.dispatchAction({ type: "dataZoom", start: nextStart, end: nextEnd });
+    }
+    host.addEventListener("wheel", zoomFromWheel, { passive: false, capture: true });
+    return () => host.removeEventListener("wheel", zoomFromWheel, true);
+  }, [compact, lastCategory, zoom]);
+
+  useEffect(() => {
+    if (id !== "line-date-highlights-brush" || compact) return;
+    const host = split ? panelsRef.current : plotRef.current;
+    if (!host) return;
+    const observer = new ResizeObserver(([entry]) => setChartWidth(entry.contentRect.width));
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, [compact, id, split]);
 
   useEffect(() => {
     if (!live || compact || isLoading || data) return;
@@ -102,28 +156,44 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
         })),
       };
     }
-    if (powerUser && controls.count !== 10_000 && !data) {
-      return { categories: Array.from({ length: controls.count }, (_, index) => String(index + 1)),
-        series: source.series.map((item, index) => ({ ...item, values: curve(controls.count, index, 65, 33, 0.00001) })) };
-    }
+    if (overview && !compact) return sliceRange(source, [brushStart, brushEnd]);
+    if (powerUser && !data) return controls.count === initialLargeCount ? source : minuteLatency(controls.count);
     return source;
-  }, [controls.count, controls.range, data, frozenTick, live, paused, powerUser, range, source, ticks]);
+  }, [brushEnd, brushStart, compact, controls.count, controls.range, data, frozenTick, live, overview, paused, powerUser, range, source, ticks]);
 
-  const option = useMemo(() => getOption(example, optionsData, theme, compact, controls), [example, optionsData, theme, compact, controls]);
+  const view = useMemo(() => overview ? { ...controls, brushOffset: compact ? 0 : brushStart, brushLength: source.categories.length, chartWidth }
+    : controls, [overview, controls, compact, brushStart, source.categories.length, chartWidth]);
+  const option = useMemo(() => getOption(example, optionsData, theme, compact, view), [example, optionsData, theme, compact, view]);
+
+  useEffect(() => {
+    if (!barPulse) return;
+    const chart = chartRef.current;
+    const last = optionsData.categories.length - 1;
+    const value = optionsData.series[0]?.values[last];
+    if (!chart || typeof value !== "number") return;
+    function placePulse() {
+      const result = chart?.convertToPixel({ seriesIndex: 0 }, [last, value]) as number[] | undefined;
+      if (!result || result.length !== 2 || result.some(position => !Number.isFinite(position))) return;
+      setPulsePosition(current => current?.[0] === result[0] && current[1] === result[1] ? current : [result[0], result[1]]);
+    }
+    chart.on("finished", placePulse);
+    placePulse();
+    return () => { chart.off("finished", placePulse); };
+  }, [barPulse, optionsData]);
   const splitOptions = useMemo(() => {
     if (!split) return [];
     const high = Math.ceil(Math.max(10, ...optionsData.series.flatMap(item => item.values.map(value => value ?? 0))) / 10) * 10;
     return optionsData.series.map((item, index) => {
-      const panelExample = id === "line-linked-brush" && index !== optionsData.series.length - 1
-        ? { ...example, id: "line-synced" } : example;
-      const panel = getOption(panelExample, { ...optionsData, series: [{ ...item, color: colorFor(item, index, theme) }] }, theme, compact, controls);
+      const panel = getOption(example, { ...optionsData, series: [{ ...item, color: colorFor(item, index, theme) }] }, theme, compact, view);
       if (id === "area-small-multiples") panel.yAxis = { ...(Array.isArray(panel.yAxis) ? panel.yAxis[0] : panel.yAxis), max: high };
-      if (id === "line-linked-brush" && index !== optionsData.series.length - 1 && !compact) {
-        panel.dataZoom = [{ type: "inside", start: 25, end: 100, disabled: true }];
+      if ((id === "line-linked-brush" || id === "line-synced") && index !== optionsData.series.length - 1) {
+        const axis = categoryAxis(optionsData.categories, theme);
+        panel.xAxis = { ...axis, axisLabel: { ...axis.axisLabel, show: false } };
+        panel.grid = { top: 8, bottom: 6, left: compact ? 29 : 48, right: 15 };
       }
       return { item, panel };
     });
-  }, [split, optionsData, id, example, theme, compact, controls]);
+  }, [split, optionsData, id, example, theme, compact, view]);
 
   function update<Value extends keyof Controls>(name: Value, value: Controls[Value]) {
     setControls(previous => ({ ...previous, [name]: value }));
@@ -133,12 +203,6 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
     setFocusedRow(index);
     if (index >= 0) chartRef.current?.dispatchAction({ type: "showTip", seriesIndex: 0, dataIndex: index });
     else chartRef.current?.dispatchAction({ type: "hideTip" });
-  }
-
-  function armBrush(chart: EChartsType) {
-    requestAnimationFrame(() => {
-      if (!chart.isDisposed()) chart.dispatchAction({ type: "takeGlobalCursor", key: "brush", brushOption: { brushType: "lineX", brushMode: "single" } });
-    });
   }
 
   function exportFile() {
@@ -175,17 +239,62 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
     }
   }
 
+  function selectionPoint(event: PointerEvent<HTMLDivElement>, clamp = false) {
+    const chart = chartRef.current;
+    const bounds = plotRef.current?.getBoundingClientRect();
+    if (!chart || !bounds || lastCategory < 1) return;
+    const position = [event.clientX - bounds.left, event.clientY - bounds.top];
+    if (!clamp && !chart.containPixel({ gridIndex: 0 }, position)) return;
+    const index = Math.round(chart.convertFromPixel({ xAxisIndex: 0 }, position[0]) as number);
+    if (!Number.isFinite(index)) return;
+    const safeIndex = Math.max(0, Math.min(lastCategory, index));
+    return { index: safeIndex, position: chart.convertToPixel({ xAxisIndex: 0 }, safeIndex) as number };
+  }
+
+  function beginSelection(event: PointerEvent<HTMLDivElement>) {
+    if (!event.isPrimary || event.button !== 0) return;
+    const point = selectionPoint(event);
+    if (!point) return;
+    selectionDrag.current = { ...point, pointer: event.pointerId };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function dragSelection(event: PointerEvent<HTMLDivElement>) {
+    const start = selectionDrag.current;
+    if (!start || start.pointer !== event.pointerId) return;
+    const end = selectionPoint(event, true);
+    if (end) setDragRange({ left: Math.min(start.position, end.position), right: Math.max(start.position, end.position) });
+  }
+
+  function clearSelectionDrag() {
+    selectionDrag.current = null;
+    setDragRange(null);
+  }
+
+  function commitSelection(event: PointerEvent<HTMLDivElement>) {
+    const start = selectionDrag.current;
+    if (!start || start.pointer !== event.pointerId) return;
+    const end = selectionPoint(event, true);
+    clearSelectionDrag();
+    if (end && end.index !== start.index) update("selection", [Math.min(start.index, end.index), Math.max(start.index, end.index)]);
+  }
+
+  function selectionKey(event: KeyboardEvent<HTMLDivElement>) {
+    const drag = selectionDrag.current;
+    if (event.key === "Escape" && drag) {
+      event.preventDefault();
+      event.stopPropagation();
+      clearSelectionDrag();
+      if (event.currentTarget.hasPointerCapture(drag.pointer)) event.currentTarget.releasePointerCapture(drag.pointer);
+    }
+  }
+
   const onEvents: Record<string, (event: any) => void> | undefined = linked ? {
     updateAxisPointer(event: { axesInfo?: { value: number }[] }) {
       const value = event.axesInfo?.[0]?.value;
       if (typeof value === "number") setFocusedRow(value);
     },
     globalout() { setFocusedRow(-1); },
-  } : brushes ? {
-    brushEnd(event: { areas?: { coordRange?: [number, number] }[] }) {
-      const coordinate = event.areas?.[0]?.coordRange;
-      if (coordinate) update("selection", [Math.min(...coordinate), Math.max(...coordinate)]);
-    },
   } : candleCrosshair ? {
     updateAxisPointer(event: { axesInfo?: { value: number; axisDim?: string }[] }) {
       const index = event.axesInfo?.find(axis => axis.axisDim === "x")?.value;
@@ -222,22 +331,21 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
   const selectionText = controls.selection ? controls.selection.map(index => optionsData.categories[index]).join(" – ") : "";
   const skeleton = isLoading && startLoading;
   const showControls = !compact && (range || brushes || startLoading || tableToggle || id === "line-band-fill" || id === "line-trend"
-    || id === "line-export" || powerUser || id === "live-line-paused" || legends.length > 0);
+    || id === "line-export" || powerUser || id === "live-line-paused" || id === "bar-depth" || legends.length > 0);
 
   return (
-    <div className="cartesian-example">
+    <div className={`cartesian-example${id === "bar-depth" ? ` cartesian-depth${pulsePaused ? " cartesian-depth--paused" : ""}` : ""}`}>
       {showControls && <div className="cartesian-controls">
         {range && rangeValues.map(days => <button type="button" aria-pressed={controls.range === days} key={days} onClick={() => update("range", days)}>{days} days</button>)}
         {brushes && <>
-          <button type="button" onClick={() => { if (chartRef.current) armBrush(chartRef.current); }}>Select range</button>
-          <button type="button" disabled={!controls.selection} onClick={() => {
-            update("selection", null);
-            chartRef.current?.dispatchAction({ type: "brush", areas: [] });
-          }}>Clear</button>
-          {selectionText && <span className="cartesian-muted">{selectionText}</span>}
+          <span className="cartesian-muted">Drag across the chart to select a range</span>
+          <button type="button" disabled={!controls.selection} onClick={() => update("selection", null)}>Clear</button>
+          {selectionText && <output className="cartesian-muted" aria-live="polite">{selectionText}</output>}
         </>}
-        {startLoading && id !== "line-loading-placeholder" && <button type="button" aria-pressed={isLoading} onClick={() => setLoading(value => !value)}>{isLoading ? "Show data" : "Show loading"}</button>}
-        {id === "area-loading" && ["Pulse", "Sweep"].map(mode => <button key={mode} type="button" aria-pressed={mode === placeholder} onClick={() => { setPlaceholder(mode); setLoading(true); }}>{mode}</button>)}
+        {startLoading && !["line-loading-placeholder", "area-loading", "live-line-loading"].includes(id) && <button type="button" aria-pressed={isLoading} onClick={() => setLoading(value => !value)}>{isLoading ? "Show data" : "Show loading"}</button>}
+        {id === "area-loading" && ["Pulse", "Sweep", "Loaded"].map(mode => <button key={mode} type="button" aria-pressed={mode === (isLoading ? placeholder : "Loaded")} onClick={() => { setLoading(mode !== "Loaded"); if (mode !== "Loaded") setPlaceholder(mode); }}>{mode}</button>)}
+        {id === "live-line-loading" && <button type="button" disabled={isLoading} onClick={() => { setTicks(0); setLoading(true); }}>Reconnect</button>}
+        {id === "bar-depth" && <button type="button" aria-pressed={pulsePaused} onClick={() => setPulsePaused(value => !value)}>{pulsePaused ? "Resume pulse" : "Pause pulse"}</button>}
         {id === "line-band-fill" && ["Solid", "Gradient", "Hatched"].map(fill => <button key={fill} type="button" aria-pressed={fill === controls.fill} onClick={() => update("fill", fill)}>{fill}</button>)}
         {id === "line-trend" && ["Dashed", "Solid", "Gradient"].map(trend => <button key={trend} type="button" aria-pressed={trend === controls.trend} onClick={() => update("trend", trend)}>{trend}</button>)}
         {id === "line-export" && <>
@@ -252,20 +360,29 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
       {live && !skeleton && <div className="cartesian-live" aria-label={paused ? "Stream paused" : "Live stream"}><i className={paused ? "" : "cartesian-pulse"} />{paused ? "Paused" : "Live"} {typeof latest === "number" && <strong>{valueFormat.format(latest)}</strong>}</div>}
       {skeleton ? <ChartSkeleton family={family} label={example.title} effect={placeholder} /> : (
         <>
-          {!viewTable && (split ? <div className={`cartesian-panels ${id === "area-small-multiples" ? "cartesian-panels--multiples" : ""}`}>
+          {!viewTable && (split ? <div className={`cartesian-panels ${id === "area-small-multiples" ? "cartesian-panels--multiples" : ""}`} ref={panelsRef}>
             {(compact && id === "area-small-multiples" ? splitOptions.slice(0, 4) : splitOptions).map(({ item, panel }, index) => (
               <div className="cartesian-panel" key={index}>
                 <span>{item.name}</span>
                 <EChart option={panel} label={`${example.title}, ${item.name}`} compact={compact} group={connection} />
               </div>
             ))}
-          </div> : <div className="cartesian-plot" ref={plotRef}
-            onPointerMove={pointOnly ? movePointCrosshair : undefined} onPointerLeave={pointOnly ? () => setPointCrosshair(null) : undefined}>
+          </div> : <div className={`cartesian-plot${brushes && !compact ? " cartesian-plot--selection" : ""}`} ref={plotRef}
+            onDoubleClick={zoom && !compact ? () => chartRef.current?.dispatchAction({ type: "dataZoom", start: 0, end: 100 }) : undefined}
+            onPointerDown={brushes && !compact ? beginSelection : undefined} onPointerUp={brushes && !compact ? commitSelection : undefined}
+            onPointerCancel={brushes && !compact ? clearSelectionDrag : undefined} onLostPointerCapture={brushes && !compact ? clearSelectionDrag : undefined}
+            onKeyDown={brushes && !compact ? selectionKey : undefined}
+            onPointerMove={brushes && !compact ? dragSelection : pointOnly ? movePointCrosshair : undefined} onPointerLeave={pointOnly ? () => setPointCrosshair(null) : undefined}>
             <EChart option={option} label={example.title} compact={compact} chartRef={chartRef} renderer={renderer}
-              onEvents={onEvents} onReady={brushes && !compact ? armBrush : undefined} />
+              onEvents={onEvents} />
+            {barPulse && pulsePosition && <span className="cartesian-bar-pulse" aria-hidden="true" style={{ left: pulsePosition[0] + 3, top: pulsePosition[1] - 3 }} />}
+            {dragRange && <div className="cartesian-selection" aria-hidden="true" style={{ left: dragRange.left, width: dragRange.right - dragRange.left }} />}
             {pointOnly && pointCrosshair && <div className="cartesian-point-crosshair" aria-hidden="true"
               style={{ left: pointCrosshair.x, top: pointCrosshair.y, height: Math.max(0, (plotRef.current?.clientHeight ?? 0) - pointCrosshair.y - 25) }} />}
           </div>)}
+          {overview && !compact && <RangeBrush data={source} range={[brushStart, brushEnd]} change={setRangeOverride} theme={theme} showLaunch={id === "line-date-highlights-brush"} />}
+          {powerUser && !compact && <div className="cartesian-status">{valueFormat.format(optionsData.categories.length)} points per series{!data ? ` · ${Math.ceil(optionsData.categories.length / 1440)} days at one sample per minute` : ""}</div>}
+          {zoom && !compact && <div className="cartesian-status">Ctrl or ⌘ and scroll to zoom · Drag to pan · Double-click to reset</div>}
           {!compact && (viewTable || linked) && <DataTable data={optionsData} active={focusedRow} onActive={linked ? showRow : undefined} />}
         </>
       )}
