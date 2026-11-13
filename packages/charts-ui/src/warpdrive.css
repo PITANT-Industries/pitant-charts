@@ -1,0 +1,82 @@
+/* Warpdrive base tokens, adapted under MIT. See licenses/Warpdrive-MIT.txt. */
+:where(:root, .chart-library-theme[data-theme="light"]) {
+  --cl-wd-background: hsl(0 0% 100%);
+  --cl-wd-foreground: hsl(222.2 84% 4.9%);
+  --cl-wd-card: hsl(0 0% 100%);
+  --cl-wd-primary: hsl(222.2 47.4% 11.2%);
+  --cl-wd-primary-foreground: hsl(210 40% 98%);
+  --cl-wd-muted: hsl(210 40% 96.1%);
+  --cl-wd-muted-foreground: hsl(215.4 16.3% 46.9%);
+  --cl-wd-border: hsl(214.3 31.8% 91.4%);
+  --cl-wd-ring: hsl(244.5 57.9% 50.6%);
+  --cl-wd-link: #4338ca;
+  --cl-wd-series-1: #4338ca;
+  --cl-wd-series-2: #d15d16;
+  --cl-wd-series-3: #178d89;
+  --cl-wd-series-4: #751f2b;
+  --cl-wd-series-5: #3c405e;
+  --cl-wd-series-6: #416fac;
+  --cl-wd-series-7: #4e5d25;
+  --cl-wd-series-8: #8f4378;
+  --cl-wd-positive: hsl(162.9 93.5% 24.3%);
+  --cl-wd-negative: hsl(0 72.2% 50.6%);
+}
+
+:where(.dark, [data-theme="dark"]) {
+  --cl-wd-background: hsl(213.3 29% 6.1%);
+  --cl-wd-foreground: hsl(207.7 35.2% 92.7%);
+  --cl-wd-card: hsl(216 29.4% 10%);
+  --cl-wd-primary: hsl(231.7 100% 77.3%);
+  --cl-wd-primary-foreground: hsl(213.3 29% 6.1%);
+  --cl-wd-muted: hsl(212.3 31.7% 8%);
+  --cl-wd-muted-foreground: hsl(210 12.6% 59.6%);
+  --cl-wd-border: hsl(213 24.4% 16.1%);
+  --cl-wd-ring: hsl(231.7 100% 77.3%);
+  --cl-wd-link: #a5b4fc;
+  --cl-wd-series-1: #a5b4fc;
+  --cl-wd-series-2: #eab265;
+  --cl-wd-series-3: #b7f8e3;
+  --cl-wd-series-4: #e4506b;
+  --cl-wd-series-5: #9f9eb1;
+  --cl-wd-series-6: #368fef;
+  --cl-wd-series-7: #cbde59;
+  --cl-wd-series-8: #b26bb8;
+  --cl-wd-positive: hsl(160.1 84.1% 39.4%);
+  --cl-wd-negative: hsl(0 90.6% 70.8%);
+}
+
+:where(.chart-library-theme) {
+  --background: var(--cl-wd-background);
+  --foreground: var(--cl-wd-foreground);
+  --card: var(--cl-wd-card);
+  --card-foreground: var(--cl-wd-foreground);
+  --popover: var(--cl-wd-card);
+  --popover-foreground: var(--cl-wd-foreground);
+  --primary: var(--cl-wd-primary);
+  --primary-foreground: var(--cl-wd-primary-foreground);
+  --muted: var(--cl-wd-muted);
+  --muted-foreground: var(--cl-wd-muted-foreground);
+  --border: var(--cl-wd-border);
+  --ring: var(--cl-wd-ring);
+  --link: var(--cl-wd-link);
+  --radius: 0.5rem;
+
+  --chart-1: var(--cl-wd-series-1);
+  --chart-2: var(--cl-wd-series-2);
+  --chart-3: var(--cl-wd-series-3);
+  --chart-4: var(--cl-wd-series-4);
+  --chart-5: var(--cl-wd-series-5);
+  --chart-6: var(--cl-wd-series-6);
+  --chart-7: var(--cl-wd-series-7);
+  --chart-8: var(--cl-wd-series-8);
+  --chart-positive: var(--cl-wd-positive);
+  --chart-negative: var(--cl-wd-negative);
+}
+
+:where(.chart-library-theme.dark, .chart-library-theme[data-theme="dark"]) {
+  color-scheme: dark;
+}
+
+:where(.chart-library-theme[data-theme="light"]) {
+  color-scheme: light;
+}

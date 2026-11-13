@@ -1,4 +1,4 @@
-# @pitant/charts
+# PITANT Charts
 
 SciChart replacement for Pitant Systems: a WebGPU-first TypeScript charting
 library for scientific and industrial time-series visualization.
@@ -12,7 +12,11 @@ Part of the PITANT Plant-Physics OS polyrepo. See
 [pitant-contracts](https://github.com/PITANT-Industries/pitant-contracts) for
 the cross-repo binding surface.
 
-## Features
+## Dashboard charts
+
+The [`pitant-charts` package](packages/charts-ui/README.md) provides typed React line, bar, donut, and sunburst components for application dashboards. It includes an optional Warpdrive Day and Night theme and shares the same CSS series tokens as the industrial engine.
+
+## Industrial charts
 
 - **WebGPU primary renderer** with Canvas2D fallback
 - **Zero runtime dependencies** - tree-shakeable ESM
@@ -24,7 +28,8 @@ the cross-repo binding surface.
 | Package | Description |
 |---|---|
 | `@pitant/charts` | Core library - renderers, data engine, view transform |
-| `@pitant/charts-react` | React 19 bindings |
+| `@pitant/charts-react` | React 19 bindings for the industrial engine |
+| `pitant-charts` | React dashboard charts with Recharts and shared theme tokens |
 | `apps/benchmark` | Performance benchmark harness |
 
 ## Quick Start

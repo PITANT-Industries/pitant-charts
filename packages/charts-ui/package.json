@@ -1,0 +1,58 @@
+{
+  "name": "pitant-charts",
+  "version": "0.7.0",
+  "description": "Typed line, bar, donut, and sunburst charts for React with a Warpdrive Day and Night theme",
+  "license": "MIT",
+  "packageManager": "bun@1.4.4",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PITANT-Industries/pitant-charts.git",
+    "directory": "packages/charts-ui"
+  },
+  "bugs": {
+    "url": "https://github.com/PITANT-Industries/pitant-charts/issues"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist-library/standalone/index.d.ts",
+      "import": "./dist-library/chart-library.js"
+    },
+    "./styles.css": "./dist-library/chart-library.css",
+    "./warpdrive.css": "./dist-library/warpdrive.css"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist-library",
+    "licenses",
+    "THIRD_PARTY_NOTICES.md",
+    "PALETTE.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "vite build --config vite.library.config.ts && tsc -p tsconfig.library.json && cp src/warpdrive.css dist-library/warpdrive.css",
+    "prepack": "bun run build",
+    "palette:check": "bun scripts/check-palette.ts"
+  },
+  "dependencies": {
+    "recharts": "3.10.1"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "typescript": "^6.0.0",
+    "vite": "^8.3.8"
+  }
+}
