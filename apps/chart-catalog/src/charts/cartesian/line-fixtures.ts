@@ -30,8 +30,8 @@ export function lineFixture(id: string): CartesianData | undefined {
       series("Starter", [9100, 9500, 9900, 9800, 10_100, 10_700, 10_600, 11_000, 11_400, 12_100, 12_400, 13_100]),
     ] };
     case "chart-data-table": return { categories: months.slice(0, 6), series: [
-      series("Revenue", [12_200, 13_600, 12_800, 16_400, 18_900, 21_200]),
-      series("Expenses", [8200, 8900, 9300, 9800, 10_600, 11_100]),
+      series("Revenue", [11_000, 13_600, 12_800, 16_400, 18_900, 21_200]),
+      series("Expenses", [8400, 8900, 9300, 9800, 10_600, 11_100]),
     ] };
     default: return undefined;
   }

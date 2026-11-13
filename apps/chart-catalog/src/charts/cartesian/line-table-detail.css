@@ -1,0 +1,91 @@
+.line-table-detail {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+.line-table-plot {
+  position: relative;
+  min-inline-size: 0;
+  aspect-ratio: 2;
+}
+.line-table-detail[data-line-table='line-table'] .line-table-plot { aspect-ratio: 5 / 2; }
+.line-table-detail[data-compact='true'],
+.line-table-detail[data-compact='true'] .line-table-plot { block-size: 100%; aspect-ratio: auto; }
+.line-table-surface { position: absolute; inset: 0; }
+.line-table-surface > svg { display: block; inline-size: 100%; block-size: 100%; overflow: visible; touch-action: pan-y; }
+.line-table-grid { mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
+.line-table-tooltip { position: absolute; z-index: 1; pointer-events: none; }
+.line-table-tooltip .cartesian-focus-readout { inline-size: 140px; min-inline-size: 0; }
+.line-table-toggle {
+  position: absolute;
+  z-index: 2;
+  inset: 0 0 auto auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  block-size: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  cursor: pointer;
+}
+.line-table-toggle[aria-expanded='true'],
+.line-table-toggle:hover { background: var(--muted); }
+.line-table-toggle:focus-visible,
+.line-table-scroll:focus-visible,
+.line-table-weekly tbody tr:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.line-table-scroll {
+  position: absolute;
+  inset: 32px 0 0;
+  overflow: auto;
+  background: var(--background);
+}
+.line-table-sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.line-table-weekly,
+.line-table-monthly {
+  inline-size: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+.line-table-weekly { margin-block-start: 16px; font-size: 14px; line-height: 20px; }
+.line-table-weekly thead { color: var(--muted-foreground); font-size: 12px; line-height: 16px; }
+.line-table-weekly thead th { padding: 8px 0; font-weight: 500; }
+.line-table-weekly tbody :is(th, td) { padding: 6px 0; }
+.line-table-weekly tbody th { font-weight: 400; }
+.line-table-weekly tbody tr:not(:last-child),
+.line-table-weekly thead tr { border-block-end: 1px solid var(--border); }
+.line-table-weekly tbody tr[data-active='true'] { background: var(--muted); }
+.line-table-weekly tbody td:last-child { color: var(--muted-foreground); }
+.line-table-monthly { font-size: 12px; line-height: 16px; }
+.line-table-monthly :is(th, td) { padding: 6px 8px; border-block-end: 1px solid var(--border); }
+.line-table-monthly th { font-weight: 500; }
+.line-table-monthly thead th {
+  position: sticky;
+  inset-block-start: 0;
+  background: var(--background);
+  box-shadow: inset 0 -1px var(--border);
+}
+.line-table-weekly :is(th, td),
+.line-table-monthly :is(th, td) { text-align: end; white-space: nowrap; }
+.line-table-weekly tr > :first-child,
+.line-table-monthly tr > :first-child { text-align: start; }
+@media (prefers-reduced-motion: no-preference) {
+  .line-table-weekly tbody tr { transition: background-color 150ms ease; }
+}

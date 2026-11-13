@@ -1,0 +1,95 @@
+.line-brush-detail {
+  display: grid;
+  inline-size: 100%;
+  min-inline-size: 0;
+  gap: 12px;
+  align-self: start;
+}
+.line-brush-plot, .line-brush-overview {
+  position: relative;
+  min-inline-size: 0;
+}
+.line-brush-plot { block-size: 300px; }
+.line-brush-overview { block-size: 72px; }
+.line-brush-detail[data-linked='true'] .line-brush-plot { block-size: auto; aspect-ratio: 4; }
+.line-brush-detail[data-linked='true'] .line-brush-overview { block-size: auto; aspect-ratio: 8; }
+.line-brush-caption { color: var(--muted-foreground); font-size: 12px; line-height: 16px; }
+.line-brush-detail[data-compact='true'] {
+  block-size: 100%;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 2px;
+}
+.line-brush-detail[data-compact='true'] .line-brush-plot { block-size: 100%; aspect-ratio: auto; }
+.line-brush-plot > svg, .line-brush-overview > svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+}
+.line-brush-plot > svg { touch-action: pan-y; }
+.line-brush-grid { mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent); }
+.line-brush-pane {
+  position: absolute;
+  pointer-events: none;
+  backdrop-filter: blur(1.5px);
+}
+.line-brush-pane[data-edge='start'] { mask-image: linear-gradient(90deg, transparent, black 15%); }
+.line-brush-pane[data-edge='end'] { mask-image: linear-gradient(270deg, transparent, black 15%); }
+.line-brush-slider, .line-brush-control, .line-brush-pan { position: absolute; }
+.line-brush-control { z-index: 1; inset: 0; pointer-events: none; }
+.line-brush-track { block-size: 100%; }
+.line-brush-thumb {
+  top: 50%;
+  display: grid;
+  place-items: center;
+  inline-size: 24px;
+  block-size: 100%;
+  min-block-size: 24px;
+  pointer-events: auto;
+  cursor: ew-resize;
+  touch-action: none;
+}
+.line-brush-overview:has(.line-brush-thumb[data-index='0']:is(:hover, [data-dragging])) [data-brush-handle='start'],
+.line-brush-overview:has(.line-brush-thumb[data-index='1']:is(:hover, [data-dragging])) [data-brush-handle='end'] { fill-opacity: .9; }
+.line-brush-thumb:has(:focus-visible), .line-brush-pan:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 3px; }
+.line-brush-pan {
+  z-index: 0;
+  inset-block: 0;
+  box-sizing: border-box;
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+}
+.line-brush-pan:not(:disabled):hover { background: color-mix(in srgb, var(--muted) 20%, transparent); }
+.line-brush-pan:not(:disabled):active { cursor: grabbing; }
+.line-brush-pan:disabled { cursor: default; }
+.line-brush-tooltip {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  max-inline-size: min(165px, 47%);
+}
+.line-brush-tooltip > .cartesian-focus-readout {
+  min-inline-size: min(164px, 100%);
+  max-inline-size: 100%;
+}
+.line-brush-tooltip .cartesian-focus-readout-title { margin-block-end: 8px; line-height: 16px; }
+.line-brush-tooltip .cartesian-focus-readout-row { min-block-size: 20px; }
+.line-brush-sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (forced-colors: active) {
+  [data-brush-handle] { fill: ButtonText; }
+  .line-brush-thumb:has(:focus-visible), .line-brush-pan:focus-visible { outline-color: Highlight; }
+}
