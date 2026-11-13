@@ -12,7 +12,7 @@ export default defineConfig({
       cssFileName: 'chart-library',
     },
     rolldownOptions: {
-      external: /^(react(?:-dom)?|echarts|recharts|d3-geo|d3-contour|topojson-client)(?:\/|$)/,
+      external: /^(react(?:-dom)?|@ui-sdk\/(?:react|core)|echarts|recharts|d3-geo|d3-contour|topojson-client)(?:\/|$)/,
     },
   },
 })

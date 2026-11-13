@@ -7,6 +7,6 @@
 | [Simplify Charts](https://github.com/simplifyingai/ui.simplifyingai.com) | Density estimation, box plot statistics, and waterfall accumulation | [MIT](licenses/Simplify-Charts-MIT.md) |
 | [EvilCharts registry](https://evilcharts.com/r/echarts-tooltip.json) | Shared chart tooltip and color treatment | [MIT](licenses/EvilCharts-MIT.txt) |
 
-The chart library uses React, Recharts, Apache ECharts, D3, TopoJSON and World Atlas. The gallery also uses Lucide icons and Geist fonts. Dependency license files are collected in `licenses/dependencies`. World Atlas geography is derived from Natural Earth public-domain data.
+The chart library uses React, Recharts, Apache ECharts, D3, TopoJSON, World Atlas, and [Vercel Labs UI SDK](https://github.com/vercel-labs/ui) under Apache-2.0. The gallery also uses Lucide icons and Geist fonts. Dependency license files are collected in `licenses/dependencies`. World Atlas geography is derived from Natural Earth public-domain data.
 
 Catalog names and links identify the [shadcn.io React chart gallery](https://www.shadcn.io/charts) used for comparison. The implementation is maintained independently.

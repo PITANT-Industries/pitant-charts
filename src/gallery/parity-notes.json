@@ -1,31 +1,19 @@
 {
-  "line-segment": {
-    "checked": "Mouse and touch drag directly on the chart select a range. Clear removes it.",
-    "remaining": "Compare selection guides and exact date fixtures."
-  },
   "area-selection": {
     "checked": "Mouse and touch drag directly on the chart select a range and show its dates.",
     "remaining": "Compare the selected fill and hover treatment."
-  },
-  "line-date-highlights-brush": {
-    "checked": "At mobile width, weekend shading is hidden when dates are dense and appears after zooming in. The launch marker stays on its original date.",
-    "remaining": "Compare precise density thresholds and band styling."
-  },
-  "line-zoom": {
-    "checked": "Ctrl-wheel and Cmd-wheel zoom the chart. Double-click resets the range.",
-    "remaining": "Compare zoom sensitivity, pan easing, and limits."
-  },
-  "bar-depth": {
-    "checked": "Pause pulse and Resume pulse control the bar highlight animation.",
-    "remaining": "Compare depth, material styling, and pulse timing."
   },
   "area-loading": {
     "checked": "Pulse, Sweep, and Loaded switch the placeholder and data states.",
     "remaining": "Compare the exact skeleton and reveal animation."
   },
-  "live-line-loading": {
-    "checked": "Reconnect shows the skeleton before restoring the live chart.",
-    "remaining": "Compare the connection timing and skeleton styling."
+  "bar-depth": {
+    "checked": "Pause pulse and Resume pulse control the bar highlight animation.",
+    "remaining": "Compare depth, material styling, and pulse timing."
+  },
+  "line-segment": {
+    "checked": "Mouse and touch drag directly on the chart select a range. Clear removes it.",
+    "remaining": "Compare selection guides and exact date fixtures."
   },
   "line-brush": {
     "checked": "The overview window pans and resizes. Its handles respond to the keyboard, and Escape restores the range after a drag.",
@@ -34,6 +22,10 @@
   "line-linked-brush": {
     "checked": "One overview controls both detail charts. The detail charts share a tooltip date.",
     "remaining": "Compare animation timing and date-label behavior during continuous drag."
+  },
+  "line-zoom": {
+    "checked": "Ctrl-wheel and Cmd-wheel zoom the chart. Double-click resets the range.",
+    "remaining": "Compare zoom sensitivity, pan easing, and limits."
   },
   "line-synced": {
     "checked": "Requests, latency, and errors share the same tooltip date.",
@@ -47,49 +39,221 @@
     "checked": "The band appears after the nine-point warm-up.",
     "remaining": "Compare the remaining band styling and the exact fixture series."
   },
+  "line-date-highlights-brush": {
+    "checked": "At mobile width, weekend shading is hidden when dates are dense and appears after zooming in. The launch marker stays on its original date.",
+    "remaining": "Compare precise density thresholds and band styling."
+  },
   "line-large-data": {
     "checked": "The Canvas chart displays minute-sampled p50 and p95 series. It starts at 50,000 points and switches to 10,000 or 100,000. The tooltip reports both raw values.",
     "remaining": "The nearest displayed minute can be affected by decimation. Compare lookup behavior and rendering performance at the largest setting."
   },
-  "gauge-fixed": {
-    "checked": "Three gauges retain 160 × 160 pixel dimensions on desktop and mobile.",
-    "remaining": "Compare label placement and exact arc treatment."
+  "scatter-default": {
+    "checked": "The tooltip groups both series for a week, and unrelated marks blur during inspection.",
+    "remaining": "Compare precise tooltip and blur treatment with the reference fixture."
   },
-  "gauge-interactive": {
-    "checked": "The chart opens on Q3. Selecting Q2 sweeps the gauge and animates the revenue to $1.41 million.",
-    "remaining": "Compare the sweep and number animation timing."
+  "scatter-rings": {
+    "checked": "The preview shows 21 daily points with wider rings and a stronger hover fade.",
+    "remaining": "Compare point spacing and marker geometry."
   },
-  "gauge-dial": {
-    "checked": "Next reading cycles through all six readings and returns to the first.",
-    "remaining": "Compare the dial, ruler ticks, and needle appearance."
+  "scatter-solid": {
+    "checked": "The axes display daily samples and milliseconds.",
+    "remaining": "Compare value scale and hover styling."
   },
-  "gauge-live-load": {
-    "checked": "The gauge updates every 1.8 seconds. The Now, Average, and Peak readouts update with the readings.",
-    "remaining": "Compare the later reading sequence and zone transitions."
+  "scatter-outline": {
+    "checked": "The axes display dates and percentages.",
+    "remaining": "Compare ring styling and axis label spacing."
   },
-  "sunburst-default": {
-    "checked": "Arrow keys inspect segments, Enter drills into a branch, and Escape moves back up. Focus remains in the chart.",
-    "remaining": "Compare branch geometry and the drill animation at each depth."
+  "scatter-jitter": {
+    "checked": "The preview shows 522 points in 12 month columns and reports the nearest point to the pointer.",
+    "remaining": "Compare the exact jitter distribution and hit regions."
   },
-  "sunburst-breadcrumb": {
-    "checked": "Breadcrumb buttons jump back to the selected ancestor after drill-down.",
-    "remaining": "Compare breadcrumb labels and transitions with the source hierarchy."
+  "candlestick-default": {
+    "checked": "Thirty-one daily candles expose currency OHLC values and dim unrelated candles during inspection.",
+    "remaining": "Compare exact prices and candle animation."
   },
-  "sunburst-legend": {
-    "checked": "The legend displays shares, highlights the matching branch on hover, and drills into it on click.",
-    "remaining": "Compare branch order, legend styling, and touch behavior."
+  "candlestick-minimal": {
+    "checked": "The preview stays 320 pixels tall, keeps the date axis, and shows Close alone in the tooltip.",
+    "remaining": "Compare spacing and stroke treatment."
+  },
+  "candlestick-colors": {
+    "checked": "Sixteen weekly candles use separate theme colors and 18-pixel bodies at desktop width.",
+    "remaining": "Compare the exact palette and resizing behavior."
+  },
+  "candlestick-range": {
+    "checked": "The three range choices show 92, 30, or 14 candles with the same ending date.",
+    "remaining": "Compare rescaling and transitions."
+  },
+  "candlestick-crosshair": {
+    "checked": "Candle bodies use gradients and the cursor changes color with rising and falling candles.",
+    "remaining": "Compare the gradient stops and easing."
+  },
+  "candlestick-pattern": {
+    "checked": "Diagonal bodies, solid wicks, and the rising and falling counts are visible.",
+    "remaining": "Compare hatch spacing and local prices."
+  },
+  "composed-default": {
+    "checked": "The chart shows run-rate area, units bars, and revenue line with dollar labels.",
+    "remaining": "Compare exact data, axis scale, and transitions."
+  },
+  "composed-target": {
+    "checked": "Revenue bars share the plot with a four-week trend area and rising target.",
+    "remaining": "Compare chart scale and trend styling."
+  },
+  "composed-grouped": {
+    "checked": "Signups and Activations appear side by side under a Goal line.",
+    "remaining": "Compare spacing and legend styling."
+  },
+  "composed-stacked": {
+    "checked": "Organic and Paid stack with a measured two-pixel gap. The chart excludes a goal series.",
+    "remaining": "Compare exact bar rounding and tooltip formatting."
+  },
+  "composed-band": {
+    "checked": "A gradient expected range with dashed boundaries appears with Units and Revenue. The tooltip names the low and high.",
+    "remaining": "Compare band opacity and edge motion."
+  },
+  "composed-date-highlights": {
+    "checked": "Weekend stripes are clipped to the plot and Quarter close is marked.",
+    "remaining": "Compare fixture dates and stripe texture."
+  },
+  "composed-trend": {
+    "checked": "Each series has a least-squares trend guide. The guide uses a faded or dotted treatment and stays out of the tooltip.",
+    "remaining": "Compare fixture data and the guide fade."
+  },
+  "composed-y-domains": {
+    "checked": "Bars stay in the bottom third while the line uses the upper plot range.",
+    "remaining": "Compare the exact division and labeled ticks."
+  },
+  "composed-price-volume": {
+    "checked": "A right-side price axis, candles, quiet volume, and a five-day average share the plot and tooltip.",
+    "remaining": "Compare market data and marker treatment."
+  },
+  "composed-signal": {
+    "checked": "Daily points sit behind a calculated seven-day moving average.",
+    "remaining": "Compare line interpolation and point opacity."
+  },
+  "composed-profit-loss": {
+    "checked": "The running line crosses zero with different gain and loss colors over trade bars.",
+    "remaining": "Compare crossing geometry and colors."
+  },
+  "live-line-default": {
+    "checked": "Samples arrive every 600 ms in a 30-second window. The endpoint pulses, the badge shows the price, and inspection stays active during new samples.",
+    "remaining": "Compare the fixture, scrolling, and pulse timing."
+  },
+  "live-line-momentum": {
+    "checked": "A 20-quote trend drives the stroke, fill, and endpoint colors together.",
+    "remaining": "Compare colors and the rate of transition."
+  },
+  "live-line-paused": {
+    "checked": "Pause freezes the plot while samples continue every second. Resume catches up to the latest sample.",
+    "remaining": "Compare the catch-up curve."
+  },
+  "live-line-right-axis": {
+    "checked": "The chart uses an 800 ms sample interval, a 40-second window, a bare stroke, and millisecond ticks on the right.",
+    "remaining": "Compare the latency fixture and axis styling."
+  },
+  "live-line-background": {
+    "checked": "A faded diagonal SVG texture replaces the grid.",
+    "remaining": "Compare pattern density and edge fade."
+  },
+  "live-line-dots": {
+    "checked": "A faded SVG dot texture replaces the grid.",
+    "remaining": "Compare dot spacing and edge fade."
+  },
+  "live-line-reference-band": {
+    "checked": "A $141–$144 target is shaded with dashed boundaries and small triangular markers.",
+    "remaining": "Compare exact boundary placement and opacity."
+  },
+  "live-line-pattern-band": {
+    "checked": "Hatching fills the $141–$144 band while dashed boundaries and triangular markers remain.",
+    "remaining": "Compare the hatch density and fill."
+  },
+  "live-line-loading": {
+    "checked": "The loading skeleton connects automatically. Reconnect returns to the skeleton and restores live samples.",
+    "remaining": "Compare the connection timing and skeleton styling."
+  },
+  "gantt-default": {
+    "checked": "Three phases show progress, dependency arrows, a launch milestone, and Today. Keyboard inspection shows dates, duration, and dependencies.",
+    "remaining": "Compare fixture dates, bar alignment, and tooltip styling."
+  },
+  "gantt-roadmap": {
+    "checked": "Nine initiatives use three team colors. The mobile schedule scrolls horizontally and the tooltip shows team, owner, and completion.",
+    "remaining": "Compare exact initiative timing and spacing."
+  },
+  "gantt-milestones": {
+    "checked": "Two diamond milestones align to a bottom date axis. Inspection shows dependencies.",
+    "remaining": "Compare milestone position and shape."
+  },
+  "gantt-loading": {
+    "checked": "The loading skeleton keeps the schedule’s date grid. Reveal restores rows and tooltips.",
+    "remaining": "Compare skeleton timing and colors."
+  },
+  "uncertainty-default": {
+    "checked": "Five conversion marks include 95% confidence intervals in the tooltip.",
+    "remaining": "Compare fixture values and the interval styling."
+  },
+  "uncertainty-forest": {
+    "checked": "Six horizontal signed effects sit on a zero line and report 90% intervals.",
+    "remaining": "Compare offsets and axis labels."
+  },
+  "uncertainty-ribbon": {
+    "checked": "Nested percentile bands are visible and pointer inspection picks the nearest date.",
+    "remaining": "Compare exact geometry and band colors."
+  },
+  "uncertainty-forecast": {
+    "checked": "Actuals appear before the June seam. Forecast and interval rows appear from June, with a dashed forecast line.",
+    "remaining": "Compare forecast and actual values and rendering."
+  },
+  "uncertainty-loading": {
+    "checked": "The chart reports its busy state and reveals marks from the interval bottoms.",
+    "remaining": "Compare animation and timing."
   },
   "pie-center-custom": {
     "checked": "Caller-supplied center content receives the focused segment, value, total, and share.",
     "remaining": "Compare the built-in typography and digit animation."
   },
+  "pie-hover-effects": {
+    "checked": "Translate, Grow, and None are available. None leaves slices stationary and undimmed.",
+    "remaining": "Compare the translate and grow motion curves."
+  },
   "ring-center-custom": {
     "checked": "Caller-supplied center content receives the active ring's target and attainment fraction. The idle state reports the aggregate.",
     "remaining": "Compare built-in center styling and transitions."
   },
-  "pie-hover-effects": {
-    "checked": "Translate, Grow, and None are available. None leaves slices stationary and undimmed.",
-    "remaining": "Compare the translate and grow motion curves."
+  "radar-default": {
+    "checked": "Four shapes share five rings and spokes. The active shape grows and glows while the other three fade.",
+    "remaining": "Compare exact radar spacing and transition curves."
+  },
+  "radar-hover": {
+    "checked": "Two teams share six axes and four unlabeled rings. Pointer and keyboard update the team and metric.",
+    "remaining": "Compare fixture values and hover colors."
+  },
+  "radar-minimal": {
+    "checked": "One profile renders without rings, spokes, or entrance animation.",
+    "remaining": "Compare typography and stroke treatment."
+  },
+  "radar-hover-legend": {
+    "checked": "Four legend rows show 70%, 58%, 71%, and 58%. The legend and chart highlight each other.",
+    "remaining": "Compare layout and highlight timing."
+  },
+  "radar-triangle": {
+    "checked": "Two profiles use a three-point layout.",
+    "remaining": "Compare fixture values and corner placement."
+  },
+  "radar-fill-only": {
+    "checked": "Two six-axis shapes use fills without outlines, vertex dots, spokes, or ring values.",
+    "remaining": "Compare fill colors and overlap opacity."
+  },
+  "radar-single": {
+    "checked": "One five-axis profile appears on five rings without vertex dots.",
+    "remaining": "Compare the grid scale and spacing."
+  },
+  "radar-levels": {
+    "checked": "Two profiles appear on exactly three plain rings.",
+    "remaining": "Compare exact tick placement and fixture values."
+  },
+  "radar-grid-only": {
+    "checked": "Two profiles share five labeled triangular rings without spokes.",
+    "remaining": "Compare grid line weight and labels."
   },
   "radial-default": {
     "checked": "The chart has 96 quarter-hour positions, three statuses, and interactive legend isolation. Keyboard and pointer input inspect the current and previous day.",
@@ -107,6 +271,126 @@
     "checked": "Three areas sweep in and show their edge markers at the selected quarter hour. Keyboard focus wraps across midnight.",
     "remaining": "Compare the exact sweep and area geometry."
   },
+  "gauge-fixed": {
+    "checked": "Three gauges retain 160 × 160 pixel dimensions on desktop and mobile.",
+    "remaining": "Compare label placement and exact arc treatment."
+  },
+  "gauge-interactive": {
+    "checked": "The chart opens on Q3. Selecting Q2 sweeps the gauge and animates the revenue to $1.41 million.",
+    "remaining": "Compare the sweep and number animation timing."
+  },
+  "gauge-dial": {
+    "checked": "Next reading cycles through all six readings and returns to the first.",
+    "remaining": "Compare the dial, ruler ticks, and needle appearance."
+  },
+  "gauge-live-load": {
+    "checked": "The gauge updates every 1.8 seconds. The Now, Average, and Peak readouts update with the readings.",
+    "remaining": "Compare the later reading sequence and zone transitions."
+  },
+  "funnel-default": {
+    "checked": "Five stages show percentage pills and three halo bands.",
+    "remaining": "Compare continuous curve geometry and halo opacity."
+  },
+  "funnel-vertical": {
+    "checked": "Five straight stages sit on a grid with one-decimal percentages.",
+    "remaining": "Compare spacing and grid opacity."
+  },
+  "funnel-colors": {
+    "checked": "Four stages use distinct colors and the first uses a gradient.",
+    "remaining": "Compare the exact color stops."
+  },
+  "funnel-pattern": {
+    "checked": "Four stage cores use hatching and the outer halo bands stay solid.",
+    "remaining": "Compare stripe angles and spacing."
+  },
+  "funnel-interactive": {
+    "checked": "Keyboard inspection updates stage value, conversion, and previous-stage drop-off. The final stage shows 17%.",
+    "remaining": "Compare focus and state transitions."
+  },
+  "funnel-legend": {
+    "checked": "Progress and highlighting stay in sync between chart stages and legend rows.",
+    "remaining": "Compare row proportions and motion."
+  },
+  "funnel-straight": {
+    "checked": "Four linear-edged stages render with a flat last section.",
+    "remaining": "Compare exact slope and stage spacing."
+  },
+  "funnel-gradient": {
+    "checked": "Five stage cores use gradients.",
+    "remaining": "Compare stops and band opacity."
+  },
+  "funnel-grouped": {
+    "checked": "Stage value, ratio, and name align together near the center.",
+    "remaining": "Compare text alignment and typography."
+  },
+  "funnel-grid": {
+    "checked": "Five alternating columns have four grid dividers.",
+    "remaining": "Compare exact divider location and contrast."
+  },
+  "funnel-vertical-curved": {
+    "checked": "Five curved rows align values on the left, ratios in the center, and names on the right.",
+    "remaining": "Compare curve shape and label spacing."
+  },
+  "heatmap-dots": {
+    "checked": "Inactive dots shrink and fade during inspection.",
+    "remaining": "Compare dot spacing and tooltip treatment."
+  },
+  "heatmap-active-scale": {
+    "checked": "The active cell and corresponding legend swatch grow to 110%, while other swatches fade.",
+    "remaining": "Compare transition timing and intensity colors."
+  },
+  "heatmap-loading": {
+    "checked": "Showing the data triggers a delayed, per-cell reveal wave.",
+    "remaining": "Compare the delay and easing of the reveal."
+  },
+  "sunburst-default": {
+    "checked": "Arrow keys inspect segments, Enter drills into a branch, and Escape moves back up. Focus remains in the chart.",
+    "remaining": "Compare branch geometry and the drill animation at each depth."
+  },
+  "sunburst-breadcrumb": {
+    "checked": "Breadcrumb buttons jump back to the selected ancestor after drill-down.",
+    "remaining": "Compare breadcrumb labels and transitions with the source hierarchy."
+  },
+  "sunburst-legend": {
+    "checked": "The legend displays shares, highlights the matching branch on hover, and drills into it on click.",
+    "remaining": "Compare branch order, legend styling, and touch behavior."
+  },
+  "sankey-default": {
+    "checked": "The source, intermediate, and destination layers have 6, 5, and 3 nodes. All 33 links use gradients.",
+    "remaining": "Compare link routing and label placement."
+  },
+  "sankey-vertical-labels": {
+    "checked": "Six rotated labels show names and totals beside eight links.",
+    "remaining": "Compare text angle and routing."
+  },
+  "sankey-category-colors": {
+    "checked": "Three, two, and two nodes share stage colors. Keyboard inspection reports the source share for a selected link.",
+    "remaining": "Compare colors and node alignment."
+  },
+  "sankey-solid-links": {
+    "checked": "All 15 links use solid source colors.",
+    "remaining": "Compare exact link routing and colors."
+  },
+  "sankey-single-color": {
+    "checked": "Nineteen unfocused links share one hue at 30% opacity.",
+    "remaining": "Compare opacity and focus transitions."
+  },
+  "sankey-no-labels": {
+    "checked": "Nineteen links render without SVG labels. Keyboard inspection exposes ticket totals.",
+    "remaining": "Compare exact link curves and tooltip layout."
+  },
+  "sankey-pattern-lines": {
+    "checked": "Upgraded and Churned links use different stripe colors. Extended keeps its gradient.",
+    "remaining": "Compare hatch treatment and routing."
+  },
+  "sankey-legend": {
+    "checked": "SDK keyboard controls select or clear a campaign. Reachable links and tooltips follow the selection.",
+    "remaining": "Compare highlight motion and link geometry."
+  },
+  "sankey-patterns": {
+    "checked": "Fifteen links into the three outcomes are hatched, while 18 upstream links use gradients.",
+    "remaining": "Compare hatch angles and spacing."
+  },
   "choropleth-default": {
     "checked": "Wheel and pinch zoom, pointer drag, keyboard country selection, and reset work.",
     "remaining": "Compare projection, camera inertia, and geographic labels."
@@ -115,45 +399,13 @@
     "checked": "An office click or keyboard activation flies to the target. Clicking the target again or clicking the sea resets the view, as does Escape.",
     "remaining": "Compare camera projection and easing."
   },
-  "choropleth-pointer-camera": {
-    "checked": "The map tilts with the pointer while its dot backdrop remains stationary. Keyboard activation can fly to and return from a country.",
-    "remaining": "The local camera uses an affine transform. Compare perspective with the reference."
-  },
   "choropleth-dot-grid": {
     "checked": "Zooming grows the land dots and fades the ocean dots. Reset restores the full world lattice.",
     "remaining": "Compare lattice density and exact office coordinates."
   },
-  "heatmap-active-scale": {
-    "checked": "The active cell and corresponding legend swatch grow to 110%, while other swatches fade.",
-    "remaining": "Compare transition timing and intensity colors."
-  },
-  "heatmap-dots": {
-    "checked": "Inactive dots shrink and fade during inspection.",
-    "remaining": "Compare dot spacing and tooltip treatment."
-  },
-  "heatmap-loading": {
-    "checked": "Showing the data triggers a delayed, per-cell reveal wave.",
-    "remaining": "Compare the delay and easing of the reveal."
-  },
-  "scatter-default": {
-    "checked": "The tooltip groups both series for a week, and unrelated marks blur during inspection.",
-    "remaining": "Compare precise tooltip and blur treatment with the reference fixture."
-  },
-  "scatter-rings": {
-    "checked": "The preview shows 21 daily points with wider rings and a stronger hover fade.",
-    "remaining": "Compare point spacing and marker geometry."
-  },
-  "scatter-jitter": {
-    "checked": "The preview shows 522 points in 12 month columns and reports the nearest point to the pointer.",
-    "remaining": "Compare the exact jitter distribution and hit regions."
-  },
-  "scatter-outline": {
-    "checked": "The axes display dates and percentages.",
-    "remaining": "Compare ring styling and axis label spacing."
-  },
-  "scatter-solid": {
-    "checked": "The axes display daily samples and milliseconds.",
-    "remaining": "Compare value scale and hover styling."
+  "choropleth-pointer-camera": {
+    "checked": "The map tilts with the pointer while its dot backdrop remains stationary. Keyboard activation can fly to and return from a country.",
+    "remaining": "The local camera uses an affine transform. Compare perspective with the reference."
   },
   "histogram-default": {
     "checked": "The histogram uses 20-millisecond bins and labels the intervals in the tooltip.",
@@ -167,6 +419,18 @@
     "checked": "The stacked bins advance in two-minute intervals, ending at the 40-minute domain limit.",
     "remaining": "Compare bin heights and exact fixture distribution."
   },
+  "ridgeline-default": {
+    "checked": "Six densities use one color and show a middle-half interval during inspection.",
+    "remaining": "Compare curve geometry and sample values."
+  },
+  "ridgeline-colors": {
+    "checked": "Four distributions use distinct colors with 90 samples each.",
+    "remaining": "Compare exact curves and color choices."
+  },
+  "ridgeline-loading": {
+    "checked": "Distribution labels hold their position through the loading skeleton and reveal.",
+    "remaining": "Compare stagger timing and placeholder geometry."
+  },
   "ecdf-default": {
     "checked": "The chart labels the p50 and p90 guides.",
     "remaining": "Compare exact quantile values and guide styles."
@@ -179,6 +443,146 @@
     "checked": "Toggling from the loading staircase reveals the distribution from left to right.",
     "remaining": "Compare the reveal duration and placeholder styling."
   },
+  "beeswarm-default": {
+    "checked": "The plot shows 128 collision-free sample marks with the expected units.",
+    "remaining": "Compare exact dot positions and opacity."
+  },
+  "beeswarm-series": {
+    "checked": "Two series share a swarm with 180 collision-free marks.",
+    "remaining": "Compare group spacing and local fixtures."
+  },
+  "beeswarm-vertical": {
+    "checked": "The vertical layout shows 360 collision-free marks with labeled values.",
+    "remaining": "Compare dot placement and axes."
+  },
+  "beeswarm-loading": {
+    "checked": "The loading view holds 192 placeholder points and reveals samples in sequence.",
+    "remaining": "Compare timing and the placeholder layout."
+  },
+  "violin-default": {
+    "checked": "The plot shows the density, middle-half bar, and median marker.",
+    "remaining": "Compare exact density curves and fixture values."
+  },
+  "violin-horizontal": {
+    "checked": "Horizontal violins keep the median and middle-half treatment.",
+    "remaining": "Compare widths and tooltip positions."
+  },
+  "violin-grouped": {
+    "checked": "Grouped violins report both device medians in one region tooltip.",
+    "remaining": "Compare shape offsets and local fixtures."
+  },
+  "violin-loading": {
+    "checked": "Placeholder violins unfold to show the sample distributions.",
+    "remaining": "Compare timing and silhouette styling."
+  },
+  "box-plot-default": {
+    "checked": "Boxes include quartile, median, whisker, and outlier marks.",
+    "remaining": "Compare exact fixture values and colors."
+  },
+  "box-plot-horizontal": {
+    "checked": "The chart uses horizontal boxes and shows median and middle-half values during keyboard inspection.",
+    "remaining": "Compare layout and tooltip formatting."
+  },
+  "box-plot-grouped": {
+    "checked": "Each region reports both device medians in one tooltip.",
+    "remaining": "Compare spacing and reference fixtures."
+  },
+  "box-plot-loading": {
+    "checked": "Loading skeleton boxes unfold into their measured ranges.",
+    "remaining": "Compare silhouette and motion duration."
+  },
+  "hexbin-default": {
+    "checked": "The visible bins conserve all 900 samples and use discrete counts in the legend.",
+    "remaining": "Compare bin and color geometry."
+  },
+  "hexbin-average": {
+    "checked": "The chart bins 1,200 samples and colors each bin by its mean fare.",
+    "remaining": "Compare fare buckets and exact fixtures."
+  },
+  "hexbin-custom-tooltip": {
+    "checked": "The tooltip reports the active bin’s share of the 700-ticket quarter.",
+    "remaining": "Compare tooltip styling and ticket distribution."
+  },
+  "hexbin-loading": {
+    "checked": "Hexagonal placeholders reveal the data bins with a stagger.",
+    "remaining": "Compare reveal timing and colors."
+  },
+  "density-default": {
+    "checked": "Contour bands overlay the 500 sampled points.",
+    "remaining": "Compare contour smoothing and fixture placement."
+  },
+  "density-groups": {
+    "checked": "Three 80-sample groups show separate contours. The legend toggles groups.",
+    "remaining": "Compare contour overlap and exact data."
+  },
+  "density-contours": {
+    "checked": "The preview uses 12 filled contours without point marks.",
+    "remaining": "Compare the contour boundaries and opacity."
+  },
+  "density-loading": {
+    "checked": "The preview holds 72 placeholder points and reveals contour bands in sequence.",
+    "remaining": "Compare transition timing and skeleton styles."
+  },
+  "bubble-map-default": {
+    "checked": "Thirty city markers use area proportional to active users. The scale and keyboard tooltip report those counts.",
+    "remaining": "Compare exact marker placement, collision handling, and palette."
+  },
+  "bubble-map-categories": {
+    "checked": "Fourteen engineering locations use category colors. Selecting Americas isolates its nine locations.",
+    "remaining": "Compare regional colors and size legend spacing."
+  },
+  "bubble-map-region": {
+    "checked": "Twenty cities fit the regional projection. Inspection labels the values as orders.",
+    "remaining": "Compare regional boundaries and labels."
+  },
+  "bubble-map-loading": {
+    "checked": "Show data reveals fifteen city markers from a loading state with a staggered entrance.",
+    "remaining": "Compare exact delay and reveal styling."
+  },
+  "route-map-default": {
+    "checked": "Eighteen routes connect thirteen airports. Link widths follow volume and inspection shows passenger counts.",
+    "remaining": "Compare arc curvature and exact styling."
+  },
+  "route-map-region": {
+    "checked": "Fifteen weekly routes connect twelve airports. The Northwind control isolates ten routes.",
+    "remaining": "Compare regional labels and line colors."
+  },
+  "route-map-loading": {
+    "checked": "Eight placeholder routes give way to ten loaded routes with a path reveal.",
+    "remaining": "Compare skeleton opacity and the trace timing."
+  },
+  "globe-default": {
+    "checked": "Keyboard inspection shows region names. Rotation changes the visible locations and Reset view restores the starting position.",
+    "remaining": "Compare default angle and shading."
+  },
+  "globe-sized": {
+    "checked": "Customer counts determine marker area. Keyboard rotation and Reset view change and restore projected positions.",
+    "remaining": "Compare the globe shading, exact location positions, and marker styling."
+  },
+  "globe-loading": {
+    "checked": "Show data reveals the globe. Rotation and reset work after loading.",
+    "remaining": "Compare the skeleton texture and timing."
+  },
+  "vector-field-default": {
+    "checked": "A 187-arrow field uses speed colors. Inspection reports speed and direction in degrees and compass points.",
+    "remaining": "Compare field geometry and color interpolation."
+  },
+  "vector-field-stations": {
+    "checked": "Twenty-four station arrows share a 50 km scale. Inspection reports station speed and bearing.",
+    "remaining": "Compare station locations and direction strokes."
+  },
+  "vector-field-loading": {
+    "checked": "A 325-arrow skeleton reveals 187 wind vectors with a stagger.",
+    "remaining": "Compare reveal timing and motion."
+  },
+  "tooltip-standard": {
+    "checked": "Three area series share a date, crosshair, and date pill. Keyboard inspection shows one tooltip row and one focus dot per channel.",
+    "remaining": "Compare the September data, area fills, and cursor easing."
+  },
+  "tooltip-crosshair": {
+    "checked": "A dashed crosshair and dated Sign-ups panel remain visible while the focus dots and date pill are disabled.",
+    "remaining": "Compare exact dash spacing and marker styling across themes."
+  },
   "tooltip-indicator": {
     "checked": "The Line, Thin, Medium, and Thick controls switch the cursor geometry. Medium is selected on entry.",
     "remaining": "Compare exact cursor color, stroke treatment, and tooltip positioning across themes."
@@ -187,13 +591,29 @@
     "checked": "Eased, Matched, and Instant switch how the panel follows the pointer. Instant disables the transition.",
     "remaining": "Compare the spring timing and how the panel follows the cursor on rapid motion."
   },
+  "tooltip-rows": {
+    "checked": "The tooltip shows Users and Pageviews, then divides Pageviews by Users to one decimal. Only the two measured series appear on the plot.",
+    "remaining": "Compare the June fixtures and panel layout."
+  },
+  "tooltip-content": {
+    "checked": "The custom body shows the day, USD revenue, and signed percentage change from the previous day when a comparison exists.",
+    "remaining": "Compare fixture values, typography, and change colors."
+  },
   "tooltip-pinned": {
     "checked": "The pinned view reveals the day's revenue by channel. Enter and Space pin the selected day, and Escape clears the pin inside the preview.",
     "remaining": "Compare pinned-panel layout, number animation, and touch interactions."
   },
+  "tooltip-ring": {
+    "checked": "Online and Retail bars share a monthly tooltip. A rounded ring marks the top of each active bar.",
+    "remaining": "Compare exact marker spacing and motion."
+  },
   "tooltip-horizontal-crosshair": {
     "checked": "Moving the pointer vertically moves the price readout even when the selected date stays the same.",
     "remaining": "Compare price formatting and tick-label fading at both edges of the axis."
+  },
+  "tooltip-header": {
+    "checked": "The focused trading day appears above a divider, followed by the USD close and the signed change in price.",
+    "remaining": "Compare the trading-day fixtures and header styling."
   },
   "tooltip-custom-indicator": {
     "checked": "A bar below the active month marks the selection. The chart displays a revenue tooltip and omits the vertical cursor line.",

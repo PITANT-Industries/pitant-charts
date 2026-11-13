@@ -9,7 +9,7 @@ npm ci
 npm run dev
 ```
 
-Open the URL printed by Vite. Search or filter by family, switch to list view, and save examples for later. The browser stores saved charts and theme preferences. A variant’s URL opens it directly. **Compare** puts the local chart alongside the live shadcn.io preview and shows the available parity notes. **Code** shows how to use the example in React.
+Open the URL printed by Vite. Search or filter by family, switch to list view, and save examples for later. The browser stores saved charts and theme preferences. A variant’s URL opens it directly. **Compare** puts the local chart alongside the live shadcn.io preview and shows the available parity notes. **Code** shows how to use the example in React. **Parity review** tracks notes for each family, with filters for variants that have notes and those awaiting review.
 
 [Component index and progress](https://chatgpt.com/space/page_158565692cf88191bb821bf62112a8d1)
 
@@ -36,7 +36,7 @@ export function OrdersChart() {
 }
 ```
 
-`examples`, `families`, `groups`, `getExample`, and `getFamily` expose the catalog. `ChartData` accepts categories and numeric series for common charts and records for family-specific data such as geographic points and hierarchies. Omitting `data` uses demo fixtures. Donut and ring charts accept a `renderCenter` callback with the current value, label, total, and share.
+`examples`, `families`, `groups`, `getExample`, and `getFamily` expose the catalog. `ChartData` accepts categories and numeric series for common charts and records for family-specific data such as geographic points and hierarchies. Omitting `data` uses demo fixtures. Donut and ring charts accept a `renderCenter` callback with the current value, label, total, and share. Tooltip examples accept `renderTooltip` with the active category, whether the tooltip is pinned, and each series’ current and previous value.
 
 Use a sized container and load the stylesheet before applying your shadcn theme. Chart colors resolve from inherited CSS variables, including scope-specific overrides and OKLCH tokens. Changing a theme class, inline style, or `data-theme` on an ancestor refreshes the chart. For a dynamically replaced stylesheet, dispatch `new Event('chart-theme-change')` on `window` after the new styles apply.
 

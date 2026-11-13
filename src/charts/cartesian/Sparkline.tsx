@@ -1,7 +1,10 @@
 import { useId, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { Choices } from "../../ui/Choices";
 import type { ChartExample, ChartSeries } from "../../types";
 import type { CartesianData } from "./data";
 import { colorFor, down, tint, up, valueFormat, type ChartTheme } from "./options";
+
+const ranges = [7, 30, 90].map(day => ({ value: String(day), label: `${day} days` }));
 
 interface SparkProps {
   item: ChartSeries;
@@ -117,7 +120,7 @@ export function SparklineExamples({ example, data, theme, compact }: { example: 
   return (
     <div className="cartesian-spark-layout">
       {rangeControl && !compact && <div className="cartesian-controls" aria-label="Time range">
-        {[7, 30, 90].map(day => <button type="button" aria-pressed={range === day} key={day} onClick={() => { setRange(day); setIndices({}); }}>{day} days</button>)}
+        <Choices label="Time range" className="cartesian-choice-group" options={ranges} value={String(range)} onChange={day => { setRange(Number(day)); setIndices({}); }} />
       </div>}
       <div className={`cartesian-sparks ${matrix ? "cartesian-sparks--matrix" : table ? "cartesian-sparks--table" : ""} ${source.length === 1 ? "cartesian-sparks--single" : ""}`}>
         {source.map((item, index) => {

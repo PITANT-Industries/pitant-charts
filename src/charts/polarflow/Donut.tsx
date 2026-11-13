@@ -1,3 +1,4 @@
+import { Toggle } from "@ui-sdk/react/toggle";
 import { useId, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { Sector } from 'recharts'
@@ -125,7 +126,7 @@ export function Donut({ example, compact, data, renderCenter }: Props) {
       </svg>
       {!compact && <span className={styles.screenReader} id={`${uid}-value`} role="status">{accessibleLabel}</span>}
       {showLegend && <ul className={styles.legend} aria-label="Sales channels">
-        {rows.map((item, index) => <li key={index}><button type="button" aria-pressed={pinned === index} data-active={active === index} onPointerEnter={() => setHovered(index)} onPointerLeave={() => setHovered(null)} onFocus={() => setFocused(index)} onBlur={() => setFocused(null)} onClick={() => setPinned((previous) => previous === index ? null : index)}><span className={styles.swatch} style={{ background: tone(theme, index, item.color) }} /><span>{item.name}</span><strong>{format.format(item.value)}</strong></button></li>)}
+        {rows.map((item, index) => <li key={index}><Toggle pressed={pinned === index} data-active={active === index} onPointerEnter={() => setHovered(index)} onPointerLeave={() => setHovered(null)} onFocus={() => setFocused(index)} onBlur={() => setFocused(null)} onPressedChange={(pressed) => setPinned(pressed ? index : null)}><span className={styles.swatch} style={{ background: tone(theme, index, item.color) }} /><span>{item.name}</span><strong>{format.format(item.value)}</strong></Toggle></li>)}
       </ul>}
     </div>
   )

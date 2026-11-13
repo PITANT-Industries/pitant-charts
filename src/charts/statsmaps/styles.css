@@ -35,6 +35,37 @@
 }
 .stat-hint div:first-child { font-weight: 650; }
 .stat-hint div:not(:first-child) { color: var(--muted-foreground); }
+.stat-loading-label {
+  position: absolute;
+  inset: 42% 20% auto;
+  padding: 6px 9px;
+  width: max-content;
+  max-width: 60%;
+  margin-inline: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  pointer-events: none;
+}
+.stat-interval-reveal { transform-origin: var(--interval-origin); animation: stat-grow-interval .49s var(--stat-delay, 0ms) cubic-bezier(.21,.68,.32,1) both; }
+@keyframes stat-grow-interval { from { transform: scaleY(.02); } to { transform: scaleY(1); } }
+.stat-ridge-reveal { transform-origin: center var(--ridge-baseline); animation: stat-grow-interval .52s var(--stat-delay, 0ms) ease-out both; }
+.stat-quantile-reveal { transform-origin: var(--quantile-origin); }
+.stat-quantile-vertical { animation: stat-unfold-x .49s var(--stat-delay, 0ms) ease-out both; }
+.stat-quantile-horizontal { animation: stat-grow-interval .49s var(--stat-delay, 0ms) ease-out both; }
+@keyframes stat-unfold-x { from { transform: scaleX(.06); opacity: .28; } to { transform: scaleX(1); opacity: 1; } }
+.stat-swarm-reveal { transform-box: fill-box; transform-origin: center; animation: stat-pop .34s var(--stat-delay, 0ms) ease-out both; }
+@keyframes stat-pop { from { opacity: .16; transform: scale(.22); } 65% { transform: scale(1.12); } to { opacity: .8; transform: scale(1); } }
+.stat-hex-reveal { animation: stat-appear .3s var(--stat-delay, 0ms) ease-out both; }
+.stat-density-reveal { transform-box: fill-box; transform-origin: center; animation: stat-density-rise .43s var(--stat-delay, 0ms) ease-out both; }
+@keyframes stat-density-rise { from { opacity: 0; transform: scale(.84); } to { opacity: 1; transform: scale(1); } }
+.stat-bubble-reveal { transform-box: fill-box; transform-origin: center; animation: stat-pop .48s var(--stat-delay, 0ms) ease-out both; }
+.stat-route-reveal { stroke-dasharray: 1; animation: stat-trace .65s var(--stat-delay, 0ms) ease-out both; }
+@keyframes stat-trace { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.stat-globe-reveal { transform-origin: 320px 160px; animation: stat-density-rise .58s ease-out both; }
+.stat-vector-reveal { animation: stat-appear .31s var(--stat-delay, 0ms) ease-out both; }
 .stat-controls { display: flex; justify-content: flex-end; margin: 0 0 6px; gap: 8px; flex-wrap: wrap; }
 .stat-control {
   border: 1px solid var(--border);
@@ -91,7 +122,8 @@
 .stat-heat-gradient { border-radius: 4px; width: 110px; height: 8px; }
 @media (prefers-reduced-motion: reduce) {
   .stat-loading .stat-load, .stat-map-pulse { animation: none; opacity: .23; }
-  .stat-heat-reveal, .stat-ecdf-reveal { animation: none; }
+  .stat-heat-reveal, .stat-ecdf-reveal, .stat-interval-reveal, .stat-ridge-reveal, .stat-quantile-reveal, .stat-swarm-reveal, .stat-hex-reveal, .stat-density-reveal { animation: none; }
+  .stat-bubble-reveal, .stat-route-reveal, .stat-globe-reveal, .stat-vector-reveal { animation: none; }
   .stat-map-viewport, .stat-ocean-dot, .stat-land-dot, .stat-heat-scale { transition: none !important; }
 }
 .stat-canvas { display: flex; flex-direction: column; height: 100%; }

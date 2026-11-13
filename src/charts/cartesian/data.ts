@@ -6,6 +6,47 @@ export interface CartesianData {
   rows?: ChartData["rows"];
 }
 
+export type Candle = [open: number, close: number, low: number, high: number];
+
+export function candleRows(data: CartesianData): Candle[] {
+  return data.categories.map((_, index) => {
+    const row = data.rows?.[index];
+    if (row && [row.open, row.close, row.low, row.high].every(value => typeof value === "number" && Number.isFinite(value))) {
+      return [Number(row.open), Number(row.close), Number(row.low), Number(row.high)];
+    }
+    const close = data.series[0]?.values[index] ?? 0;
+    const open = data.series[0]?.values[index - 1] ?? close;
+    return [open, close, Math.min(open, close) - 1, Math.max(open, close) + 1];
+  });
+}
+
+interface LivePreset {
+  name: string;
+  period: number;
+  window: number;
+  base: number;
+  swing: number;
+  digits: number;
+  unit: "number" | "usd" | "ms";
+}
+
+const livePrice: LivePreset = { name: "Price", period: 600, window: 30_000, base: 141.45, swing: 2.8, digits: 2, unit: "usd" };
+const livePresets: Partial<Record<string, LivePreset>> = {
+  "live-line-momentum": { name: "Index", period: 600, window: 30_000, base: 4820, swing: 27, digits: 2, unit: "number" },
+  "live-line-paused": { name: "Viewers", period: 1000, window: 60_000, base: 1280, swing: 44, digits: 0, unit: "number" },
+  "live-line-right-axis": { name: "p95 latency", period: 800, window: 40_000, base: 140, swing: 21, digits: 0, unit: "ms" },
+};
+
+export function livePreset(id: string) {
+  return livePresets[id] ?? livePrice;
+}
+
+export function liveValue(index: number, preset: LivePreset) {
+  const scale = 10 ** preset.digits;
+  const wave = Math.sin(index * .17) * .65 + Math.cos(index * .72) * .25 + Math.sin(index * 1.32) * .1;
+  return Math.round((preset.base + wave * preset.swing) * scale) / scale;
+}
+
 export const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const channels = ["Desktop", "Mobile", "Tablet", "Referral", "Organic", "Direct"];
 const services = ["API", "Search", "Billing", "Auth", "Queue", "Media"];
@@ -95,22 +136,43 @@ function makeFixture(example: ChartExample): CartesianData {
     if (id === "line-threshold") series = points(count, ["P95 latency", "Median latency"]);
     return { categories, series };
   }
-  if (family === "area" || family === "composed") {
-    const count = family === "area" ? 30 : 24;
+  if (family === "area") {
+    const count = 30;
     const categories = id === "area-custom-labels" ? Array.from({ length: 12 }, (_, index) => `Sprint ${index + 1}`)
       : ["area-forecast", "area-trend"].includes(id) ? months.slice(0, 10) : dates(count);
-    let series = points(categories.length, id === "area-small-multiples" ? regions : family === "composed" ? ["Revenue", "Orders", "Target"] : ["Revenue", "Costs"]);
+    let series = points(categories.length, id === "area-small-multiples" ? regions : ["Revenue", "Costs"]);
     if (["area-fill", "area-gradient-fill", "area-pattern", "area-steps", "area-reference-band", "area-pattern-fade", "area-fade-bottom", "area-selection", "area-trend"].includes(id)) series = series.slice(0, 1);
     if (id === "area-reference-band") series = [{ name: "Signups", values: curve(categories.length, 2, 187, 38, 2) }];
     if (id === "area-dual-axis") series = [{ name: "Sessions", values: curve(count, 1, 870, 160, 17) }, { name: "Conversion", values: curve(count, 4, 42, 12, 0.18).map(value => value / 10) }];
     if (id === "area-steps") series = [{ name: "Pages", values: [4,4,4,7,7,9,9,9,5,5,4,4,4,2,2,6,6,6,8,8,8,7,7,5,5,5,9,9,6,6] }];
-    if (id === "composed-profit-loss") series = [{ name: "Net profit", values: curve(count, 2, -5, 32, 0.5) }, series[1]];
     return { categories, series };
   }
+  if (family === "composed") {
+    const october = dates(30, Date.UTC(2026, 9, 1));
+    const series = (name: string, count: number, seed: number, base: number, swing: number, growth = 0) => ({ name, values: curve(count, seed, base, swing, growth) });
+    if (id === "composed-stacked") return { categories: october.slice(11, 25), series: [series("Organic", 14, 4, 400, 125, 4), series("Paid", 14, 9, 205, 72, 2)] };
+    if (id === "composed-target" || id === "composed-grouped") {
+      const target = id === "composed-target";
+      const categories = dates(78, Date.UTC(2026, 7, target ? 3 : 17)).filter((_, index) => index % 7 === 0);
+      const n = categories.length;
+      if (target) return { categories, series: [series("Revenue", n, 2, 112, 13, 4), { name: "Target", values: categories.map((_, index) => 117 + 4 * index) }] };
+      return { categories, series: [series("Signups", n, 2, 1760, 320, 40), series("Activations", n, 7, 1320, 210, 34), { name: "Goal", values: categories.map(() => 1900) }] };
+    }
+    if (id === "composed-signal") return { categories: october, series: [series("Signups", 30, 2, 129, 36, 1.5)] };
+    if (id === "composed-profit-loss") return { categories: october, series: [series("P&L", 30, 2, -2100, 1800, 211), series("Trades", 30, 7, 39, 19, 0.8)] };
+    if (id === "composed-price-volume") {
+      const close = curve(30, 1, 17_200, 1_740, 133).map(value => value / 100);
+      return { categories: october, series: [{ name: "Close", values: close }, series("Volume (M)", 30, 6, 59, 27, .55)], rows: close.map((value, index) => {
+        const open = close[index - 1] ?? value - 2.1;
+        return { open, close: value, low: Math.min(open, value) - 1.12 - index % 3, high: Math.max(open, value) + 1.23 + index % 4 };
+      }) };
+    }
+    return { categories: october, series: [series("Revenue", 30, 4, 72, 29, 1.26), series("Units", 30, 9, 38, 13, .48)] };
+  }
   if (family === "live-line") {
-    const categories = Array.from({ length: 30 }, (_, index) => `10:${String(index).padStart(2, "0")}`);
-    const values = curve(categories.length, 4, 1430, 18, 0.11).map(value => value / 10);
-    return { categories, series: [{ name: id === "live-line-right-axis" ? "P95 latency" : "Index", values }] };
+    const preset = livePreset(id);
+    const count = Math.round(preset.window / preset.period) + 1;
+    return { categories: Array.from({ length: count }, (_, index) => String(index + 1)), series: [{ name: preset.name, values: Array.from({ length: count }, (_, index) => liveValue(index, preset)) }] };
   }
   if (family === "sparkline") {
     const count = id === "sparkline-range" ? 90 : id === "sparkline-stat-card" ? 7 : 24;
@@ -129,12 +191,15 @@ function makeFixture(example: ChartExample): CartesianData {
     return { categories, series };
   }
   if (family === "candlestick") {
-    const count = id === "candlestick-range" ? 90 : 30;
-    const categories = dates(count);
-    const prices = curve(count, 2, 99, 11, 0.48);
+    const weekly = id === "candlestick-colors";
+    const count = id === "candlestick-range" ? 92 : id === "candlestick-minimal" ? 20 : weekly ? 16 : id === "candlestick-pattern" ? 24 : 31;
+    const start = id === "candlestick-range" ? Date.UTC(2026, 7, 1) : id === "candlestick-minimal" ? Date.UTC(2026, 8, 1) : weekly ? Date.UTC(2026, 6, 6) : Date.UTC(2026, 9, id === "candlestick-pattern" ? 8 : 1);
+    const categories = weekly ? dates((count - 1) * 7 + 1, start).filter((_, index) => index % 7 === 0) : dates(count, start);
+    const base = weekly ? 408 : id === "candlestick-minimal" ? 60 : id === "candlestick-default" ? 194 : 154;
+    const prices = curve(count, 2, base * 100, base * 5, base * 0.26).map(value => value / 100);
     const rows = prices.map((value, index) => {
-      const open = index ? prices[index - 1] : value - 2;
-      return { open, close: value, low: Math.min(open, value) - 2 - index % 3, high: Math.max(open, value) + 3 + index % 4, volume: 25 + (index * 7) % 31 };
+      const open = index ? prices[index - 1] : value - 1.38;
+      return { open, close: value, low: Math.min(open, value) - 1.26 - index % 3 * 0.31, high: Math.max(open, value) + 1.64 + index % 4 * 0.39, volume: 25 + (index * 7) % 31 };
     });
     return { categories, series: [], rows };
   }
@@ -195,15 +260,32 @@ function makeFixture(example: ChartExample): CartesianData {
       series: [{ name: "ARR", values: [72, 28, 19, -13, -8, 98] }], rows: [{ total: true }, {}, {}, {}, {}, { total: true }] };
   }
   if (family === "gantt") {
-    const categories = id === "gantt-roadmap" ? ["Research", "Design", "Platform", "Integrations", "Launch"]
-      : ["Discovery", "UX design", "Implementation", "QA", "Rollout"];
-    return { categories, series: [], rows: [
-      { start: 0, end: 5, progress: 1, owner: "Product" },
-      { start: 4, end: 10, progress: 0.85, owner: "Design", dependsOn: 0 },
-      { start: 8, end: 17, progress: 0.48, owner: "Engineering", dependsOn: 1 },
-      { start: 15, end: 20, progress: 0.15, owner: "QA", dependsOn: 2 },
-      { start: 20, end: 22, progress: 0, owner: "Product", dependsOn: 3 },
-    ] };
+    const task = (name: string, start: number, end: number, progress: number, extra: Record<string, unknown> = {}) => ({ name, start, end, progress, ...extra });
+    const rows = id === "gantt-roadmap" ? [
+      task("SAML single sign-on", 4, 34, 1, { team: "Platform", owner: "Mina Shah" }),
+      task("Audit log export", 34, 63, .84, { team: "Platform", owner: "Nora Lee", dependsOn: 0 }),
+      task("EU data residency", 74, 143, .38, { team: "Platform", owner: "Lena Weber" }),
+      task("Guided onboarding", 28, 76, .75, { team: "Growth", owner: "Sofia Alvarez" }),
+      task("Reverse trials", 75, 109, .5, { team: "Growth", owner: "David Park", dependsOn: 3 }),
+      task("Usage-based pricing", 108, 160, 0, { team: "Growth", owner: "Kareem Ali", dependsOn: 4 }),
+      task("Offline mode", 8, 92, .63, { team: "Mobile", owner: "Emma Moreau" }),
+      task("Home screen widgets", 92, 152, .25, { team: "Mobile", owner: "Paul Jensen", dependsOn: 6 }),
+      task("App Store feature", 165, 165, 0, { team: "Mobile", milestone: true, dependsOn: 7 }),
+    ] : id === "gantt-milestones" ? [
+      task("Feature freeze", 0, 7, 1), task("Public beta", 9, 9, 1, { milestone: true, dependsOn: 0 }),
+      task("Bug bash", 16, 26, 1, { dependsOn: 1 }), task("Release candidate", 26, 34, 1, { dependsOn: 2 }),
+      task("Docs and changelog", 30, 40, 1, { dependsOn: 3 }), task("General availability", 43, 43, 1, { milestone: true, dependsOn: 4 }),
+    ] : id === "gantt-loading" ? [
+      task("Content audit", 0, 9, 1, { phase: "Discovery" }), task("Sitemap and wireframes", 9, 23, 1, { dependsOn: 0 }),
+      task("Design system", 23, 44, 1, { phase: "Build", dependsOn: 1 }), task("Marketing pages", 39, 59, .64, { dependsOn: 2 }),
+      task("CMS migration", 44, 68, .55, { dependsOn: 2 }), task("Launch", 73, 73, 0, { milestone: true, dependsOn: 4 }),
+    ] : [
+      task("User research", 1, 13, 1, { phase: "Discovery" }), task("Scope and pricing", 13, 22, 1, { dependsOn: 0 }),
+      task("Checkout flows", 22, 33, 1, { phase: "Design", dependsOn: 1 }), task("Visual design", 32, 41, .9, { dependsOn: 2 }),
+      task("Payments API", 22, 50, .75, { phase: "Build", dependsOn: 1 }), task("Web checkout", 43, 61, .58, { dependsOn: 4 }),
+      task("QA and load tests", 57, 68, .22, { dependsOn: 5 }), task("Launch", 71, 71, 0, { milestone: true, dependsOn: 6 }),
+    ];
+    return { categories: rows.map(row => row.name), series: [], rows };
   }
   return { categories: months, series: points(months.length, ["Value"]) };
 }

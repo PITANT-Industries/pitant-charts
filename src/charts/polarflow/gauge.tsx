@@ -1,3 +1,4 @@
+import { Button } from "@ui-sdk/react/button";
 import { useEffect, useId, useRef, useState } from "react";
 import { useChartTheme } from "../theme";
 import { arc, Controls, number, numeric, Pattern, point, sector, tone, type Props, type Theme } from "./shared";
@@ -201,7 +202,7 @@ export function Gauge({ example, compact, data }: Props) {
     </svg>)}
   </div>;
   return <div className={styles.frame}>
-    {!compact && interactive && <Controls items={["Q1", "Q2", "Q3", "Q4"]} value={selected} onChange={setSelected} />}
+    {!compact && interactive && <Controls label="Revenue quarter" items={["Q1", "Q2", "Q3", "Q4"]} value={selected} onChange={setSelected} />}
     <svg className={styles.native} viewBox="0 0 420 220" role="img" aria-roledescription="chart" aria-label={`${example.title}: ${value}%`}>
       {linear ? <g>
         <defs><linearGradient id={`${id}-linear`} gradientUnits="userSpaceOnUse" x1="40" x2="380">
@@ -219,7 +220,7 @@ export function Gauge({ example, compact, data }: Props) {
         labelValue={interactive && useFixture ? `$${(Math.round(1.5 * position) / 100).toFixed(2)}M` : `${number.format(Math.round(fixed ? fixedValue(index) : position))}${item.unit ?? "%"}`} />)}
     </svg>
     {!compact && interactive && <p className={styles.hint}>{value}% of quota in Q{selected + 1}</p>}
-    {!compact && dial && <div className={styles.controls}><button className={styles.control} type="button" onClick={() => setSelected((previous) => (previous + 1) % dialValues.length)}>Next reading</button>
+    {!compact && dial && <div className={styles.controls}><Button className={styles.control} type="button" onClick={() => setSelected((previous) => (previous + 1) % dialValues.length)}>Next reading</Button>
       <span className={styles.hint}>Reading {selected + 1} of {dialValues.length}</span></div>}
     {!compact && live && <dl className={styles.gaugeSummary} aria-label="CPU sample summary">
       {[["Now", value], ["Average", useFixture ? Math.round(sample.sum / sample.count) : value], ["Peak", useFixture ? sample.peak : value]].map(([label, reading]) =>

@@ -1,0 +1,42 @@
+.verticalFunnel { max-width: 310px; align-self: center; }
+.legendFrame { container-type: inline-size; justify-content: flex-start; }
+.legendFunnel { flex: 1 0 0; min-height: min(17rem, 45cqw); }
+.funnelStage { transition: opacity 180ms ease-out; }
+.funnelStage[data-dimmed="true"], .funnelLegend button[data-dimmed="true"] { opacity: .36; }
+.funnelLayer { animation: flow-in 420ms ease-out var(--flow-delay, 0ms) both; }
+@keyframes flow-in { from { opacity: 0; } }
+.flowFooter { display: flex; flex-direction: column; gap: .15rem; margin: .45rem .65rem .15rem; min-height: 2rem; color: var(--muted-foreground); font-size: .75rem; }
+.flowFooter strong { color: var(--foreground); font-weight: 600; }
+.funnelLegend { display: grid; flex: none; gap: .15rem; width: min(100%, 25rem); margin: .2rem auto; }
+.funnelLegend button { display: grid; grid-template-columns: 1fr auto; gap: .15rem .6rem; border: 1px solid transparent; border-radius: .35rem; padding: .2rem .4rem; color: var(--muted-foreground); background: transparent; font: inherit; font-size: .72rem; cursor: pointer; text-align: left; transition: opacity 180ms ease-out; }
+.funnelLegend button[data-active="true"] { border-color: var(--border); background: var(--muted, var(--border)); }
+.funnelLegend button > span:first-child { color: var(--foreground); display: flex; gap: .4rem; align-items: center; }
+.funnelLegend i { width: .5rem; height: .5rem; border-radius: 50%; }
+.funnelLegend .progress { height: .28rem; grid-column: 1 / -1; border-radius: 999px; background: var(--border); }
+.progress > span { display: block; height: 100%; border-radius: inherit; }
+.funnelLegend small { grid-column: 2; text-align: right; }
+@media (prefers-reduced-motion: reduce) {
+  .funnelLayer { animation: none; }
+  .funnelStage, .funnelLegend button { transition: none; }
+}
+
+.radarSeries { transition: opacity 180ms ease-out, scale 180ms ease-out; transform-origin: 210px 119px; }
+.radarSeries[data-dimmed="true"], .radarLegend button[data-dimmed="true"] { opacity: .31; }
+.radarSeries[data-active="true"] .radarShape { scale: 1.055; }
+.radarShape { transform-origin: 210px 119px; transition: scale 180ms ease-out, fill-opacity 180ms ease-out; }
+.radarEntrance { animation: radar-enter 500ms ease-out both; }
+@keyframes radar-enter { from { scale: .05; } }
+.radarLegend { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .3rem; color: var(--muted-foreground); font-size: .72rem; }
+.radarLegend button { display: flex; align-items: center; gap: .25rem; padding: .22rem .36rem; border: 1px solid transparent; border-radius: .35rem; font: inherit; color: var(--foreground); background: transparent; cursor: pointer; }
+.radarLegend button[data-active="true"] { border-color: var(--border); background: var(--muted); }
+.radarLegend i { width: .45rem; height: .45rem; border-radius: 50%; }
+@media (prefers-reduced-motion: reduce) { .radarEntrance { animation: none; } .radarSeries, .radarShape { transition: none; } }
+
+.sankeyMark { transition: opacity 180ms ease-out; }
+.sankeyTooltip { position: absolute; left: clamp(4.5rem, var(--flow-x), calc(100% - 4.5rem)); top: var(--flow-y); translate: -50% calc(-100% - .4rem); pointer-events: none; display: flex; flex-direction: column; gap: .2rem; z-index: 2; padding: .45rem .6rem; min-width: 6rem; max-width: 15rem; border: 1px solid var(--border); border-radius: .55rem; background: var(--background); color: var(--foreground); box-shadow: 0 .4rem 1rem #0002; font-size: .72rem; }
+.sankeyTooltip span { color: var(--muted-foreground); }
+.sankeyLegend { display: flex; flex-wrap: wrap; justify-content: center; gap: .3rem; padding: .3rem; }
+.sankeyLegend button { display: inline-flex; gap: .35rem; align-items: center; padding: .25rem .55rem; border: 1px solid var(--border); border-radius: .35rem; background: transparent; color: var(--foreground); font: inherit; font-size: .72rem; cursor: pointer; }
+.sankeyLegend button[data-active="true"], .sankeyLegend button[aria-pressed="true"] { background: var(--muted); }
+.sankeyLegend i { width: .45rem; height: .45rem; border-radius: 50%; }
+@media (prefers-reduced-motion: reduce) { .sankeyMark { transition: none; } }

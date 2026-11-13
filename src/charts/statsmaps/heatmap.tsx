@@ -1,4 +1,5 @@
 import { useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { Toggle } from "@ui-sdk/react/toggle";
 import {
   WIDTH, createRandom, format, markEvents, number, rows, useVariantLoading, type DemoProps, type HoverInfo,
 } from "./primitives";
@@ -147,10 +148,10 @@ export function Heatmap({ example, compact, data }: DemoProps) {
       <div className="stat-legend" aria-label="Contribution intensity">
         <span>Less</span>
         {continuous ? <i className="stat-heat-gradient" style={{ width: 110, background: `linear-gradient(90deg, ${color(0)}, ${color(4)})` }} /> : [0, 1, 2, 3, 4].map((i) => (
-          <button className="stat-heat-scale" key={i} type="button" aria-label={`Intensity ${i} of 4`} aria-pressed={level === null || level === i} onClick={() => setLevel(level === i ? null : i)} tabIndex={compact ? -1 : undefined} disabled={compact}
+          <Toggle className="stat-heat-scale" key={i} aria-label={`Intensity ${i} of 4`} pressed={level === null || level === i} onPressedChange={() => setLevel((current) => current === i ? null : i)} tabIndex={compact ? -1 : undefined} disabled={compact}
             style={{ transform: scaled && activeCell?.strength === i ? "scale(1.1)" : undefined, opacity: scaled && activeCell && activeCell.strength !== i ? .44 : undefined }}>
             <i style={{ "--legend-color": stripes && i === 2 ? `repeating-linear-gradient(135deg, ${color(2)} 0 2px, ${color(4)} 2px 3px)` : color(i) } as CSSProperties} />
-          </button>
+          </Toggle>
         ))}
         <span>More</span>
       </div>

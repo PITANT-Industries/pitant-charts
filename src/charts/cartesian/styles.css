@@ -7,6 +7,15 @@
   min-width: 0;
 }
 .cartesian-plot { position: relative; min-height: 0; flex: 1; }
+.cartesian-candles svg, .cartesian-live-plot svg { display: block; }
+.cartesian-candles svg:focus-visible, .cartesian-live-plot svg:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; border-radius: 6px; }
+.cartesian-candles--minimal { height: 320px; flex: none; }
+.cartesian-candle-tooltip { position: absolute; pointer-events: none; z-index: 1; }
+.cartesian-gantt-scroll { flex: 1; min-height: 0; min-width: 0; overflow-x: auto; overflow-y: hidden; }
+.cartesian-gantt-plot { height: 100%; }
+.cartesian-gantt-scroll:not(.cartesian-gantt-scroll--compact):not([data-gantt-layout="gantt-milestones"]) .cartesian-gantt-plot { min-width: 560px; }
+.cartesian-gantt-scroll[data-gantt-layout="gantt-roadmap"]:not(.cartesian-gantt-scroll--compact) .cartesian-gantt-plot { min-width: 720px; }
+.cartesian-gantt-plot--loading { animation: cartesian-pulse 1.5s ease-in-out infinite; }
 .cartesian-plot--selection { touch-action: none; cursor: crosshair; }
 .cartesian-selection { position: absolute; top: 10px; bottom: 25px; border-inline: 1px solid var(--chart-1); background: color-mix(in srgb, var(--chart-1) 17%, transparent); pointer-events: none; }
 .cartesian-point-crosshair { position: absolute; width: 2px; transform: translateX(-50%); background: linear-gradient(to bottom, var(--chart-1), var(--chart-3)); box-shadow: 0 0 10px var(--chart-2); pointer-events: none; }
@@ -25,6 +34,7 @@
 .cartesian-brush-result { position: absolute; height: 1px; width: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .cartesian-shadcn { width: 100%; height: 100%; min-height: 76px; }
 .cartesian-controls { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 1px 2px 9px; }
+.cartesian-choice-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .cartesian-controls button, .cartesian-controls select {
   color: var(--foreground);
   background: var(--card, var(--background));
@@ -41,12 +51,14 @@
   border-color: var(--chart-2);
 }
 .cartesian-controls label { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted-foreground); }
+.cartesian-format-menu { z-index: 8; min-width: var(--anchor-width, 4rem); padding: 4px; border: 1px solid var(--border); border-radius: 7px; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 8px 22px #18112730; font-size: 11px; }
+.cartesian-format-menu [role="option"] { padding: 5px 8px; border-radius: 4px; cursor: pointer; }
+.cartesian-format-menu [data-highlighted] { background: var(--muted); }
+.cartesian-format-menu [data-selected] { color: var(--primary); }
 .cartesian-muted { color: var(--muted-foreground); font-size: 11px; }
-.cartesian-swatch, .cartesian-live i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: 0 0 7px; }
-.cartesian-live { display: flex; align-items: center; gap: 6px; padding: 0 0 3px 8px; font-size: 10px; color: var(--muted-foreground); }
-.cartesian-live i { background: var(--chart-1); }
-.cartesian-live strong { font-size: 11px; color: var(--foreground); font-variant-numeric: tabular-nums; }
-.cartesian-live .cartesian-pulse { animation: cartesian-pulse 1.25s ease-in-out infinite; }
+.cartesian-swatch { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: 0 0 7px; }
+.cartesian-live-halo, .cartesian-live-skeleton { animation: cartesian-pulse 1.25s ease-in-out infinite; }
+.cartesian-live-halo { transform-box: fill-box; transform-origin: center; }
 .cartesian-bar-pulse { position: absolute; width: 14px; height: 14px; border-radius: 50%; margin: -7px 0 0 -7px; background: var(--chart-1); pointer-events: none; animation: cartesian-bar-pulse 1.7s ease-out infinite; }
 .cartesian-depth--paused .cartesian-bar-pulse { animation-play-state: paused; }
 @keyframes cartesian-bar-pulse { 0% { transform: scale(.75); opacity: .65; } 72%, 100% { transform: scale(2.4); opacity: 0; } }
@@ -98,6 +110,6 @@
 .cartesian-spark--stiff circle { transition-duration: 110ms; }
 .cartesian-spark--none circle, .cartesian-spark--none rect { transition: none; }
 @media (prefers-reduced-motion: reduce) {
-  .cartesian-live .cartesian-pulse, .cartesian-skeleton::after, .cartesian-skeleton--pulse svg, .cartesian-bar-pulse { animation: none; }
+  .cartesian-live-halo, .cartesian-live-skeleton, .cartesian-gantt-plot--loading, .cartesian-skeleton::after, .cartesian-skeleton--pulse svg, .cartesian-bar-pulse { animation: none; }
   .cartesian-spark circle, .cartesian-spark rect { transition: none; }
 }

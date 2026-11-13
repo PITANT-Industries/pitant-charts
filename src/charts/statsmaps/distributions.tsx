@@ -1,4 +1,5 @@
-import { useState, type PointerEvent } from "react";
+import { useState, type CSSProperties, type PointerEvent } from "react";
+import { Toggle } from "@ui-sdk/react/toggle";
 import {
   Grid, Legend, NoData, PLOT, SvgPlot, createRandom, domain, format, linePath, linear,
   markEvents, minMax, normal, percent, quantile, sampleSeries, ticks, useVariantLoading,
@@ -7,9 +8,43 @@ import {
 import { distributionStatistics, estimate } from "./simplify-statistics";
 
 const themeColor = (index: number) => `var(--chart-${index % 8 + 1})`;
-const regionNames = ["North", "South", "East", "West"];
-const monthNames = ["January", "February", "March", "April", "May", "June"];
+const regionNames = ["US East", "EU West", "Asia Pacific", "South America"];
+const deployTeams = ["Platform", "Mobile", "Search", "Payments"];
+const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
 const cumulativePercent = new Intl.NumberFormat("en", { style: "percent", maximumFractionDigits: 1 });
+const precise = new Intl.NumberFormat("en", { maximumFractionDigits: 2 });
+
+function positiveSamples(center: number, spread: number, count: number, seed: number, floor: number, ceiling: number) {
+  const random = createRandom(seed);
+  return Array.from({ length: count }, () => Math.round(Math.max(floor, Math.min(ceiling, center * Math.exp(normal(random) * spread))) * 10) / 10).sort((a, b) => a - b);
+}
+
+function deploySamples() {
+  return deployTeams.map((name, index) => ({ name, color: themeColor(1), values: positiveSamples([7.6, 14.7, 7.9, 11.6][index], [.38, .48, .32, .41][index], 32, 3733 + index, 2, 39) }));
+}
+
+function regionalSamples(grouped: boolean) {
+  return regionNames.flatMap((name, index) => (grouped ? ["Desktop", "Mobile"] : [name]).map((series, seriesIndex) => {
+    const center = grouped ? [725, 875, 1212, 1383][index] * (seriesIndex === 1 ? 1.55 : 1) : [851, 948, 1251, 1715][index];
+    const spread = [.26, .36, .39, .49][index] + (seriesIndex === 1 ? .11 : 0);
+    const values = positiveSamples(center, spread, grouped ? 60 : 90, 9157 + index * 71 + seriesIndex * 101, 250, grouped ? 5950 : 4970);
+    if (!grouped) values[values.length - 1] = Math.max(values[values.length - 1], Math.min(4950, center * 2.95));
+    values.sort((a, b) => a - b);
+    return { region: name, name: series, seriesIndex: grouped && seriesIndex === 1 ? 2 : 0, values };
+  }));
+}
+
+function sessionRidges() {
+  return monthNames.map((name, index) => {
+    const random = createRandom(6317 + index);
+    const values = Array.from({ length: 120 }, (_, i) => {
+      const briefVisit = i < 39;
+      const value = (briefVisit ? 6.6 + index * .43 : 18 + index * 1.8) + normal(random) * (briefVisit ? 1.8 : 4.1 + index * .33);
+      return Math.max(.3, Math.min(48, value));
+    }).sort((a, b) => a - b);
+    return { name, color: undefined, values };
+  });
+}
 
 function requestFixtures(names: readonly string[], sessions = false) {
   return names.map((name, index) => {
@@ -85,9 +120,9 @@ export function Histogram({ example, compact, data }: DemoProps) {
   const toggle = (name: string) => setHidden((prev) => prev.includes(name) ? prev.filter((entry) => entry !== name) : [...prev, name]);
   const legend = overlay && sets.length > 1 ? <div className="stat-legend" aria-label="Median response">
     <span>Median response</span>
-    {sets.map(({ name, color, values }, i) => <button key={name} type="button" aria-label={name} aria-pressed={visible[i]} disabled={compact} onPointerEnter={() => setHoveredSeries(name)} onPointerLeave={() => setHoveredSeries(null)} onFocus={() => setHoveredSeries(name)} onBlur={() => setHoveredSeries(null)} onClick={() => toggle(name)}>
+    {sets.map(({ name, color, values }, i) => <Toggle key={name} aria-label={name} pressed={visible[i]} disabled={compact} onPointerEnter={() => setHoveredSeries(name)} onPointerLeave={() => setHoveredSeries(null)} onFocus={() => setHoveredSeries(name)} onBlur={() => setHoveredSeries(null)} onPressedChange={() => toggle(name)}>
       <i style={{ background: color ?? themeColor(i) }} aria-hidden="true" /> {name} <strong>{axisLabel(quantile(values, .5))}</strong>
-    </button>)}
+    </Toggle>)}
   </div> : sets.length > 1 && (
     <Legend
       entries={sets.map(({ name, color }, i) => ({ name, color: color ?? themeColor(i) }))}
@@ -220,14 +255,17 @@ export function Ecdf({ example, compact, data }: DemoProps) {
 export function Ridgeline({ example, compact, data }: DemoProps) {
   const { loading, button } = useVariantLoading(example.id);
   const colored = example.id === "ridgeline-colors";
-  const sets = sampleSeries(data, colored ? regionNames : monthNames, 84);
+  const sets = data ? sampleSeries(data, []) : colored ? regionalSamples(false).map(({ name, values }) => ({ name, values, color: undefined })) : sessionRidges();
   if (!sets.length) return <NoData example={example} compact={compact} />;
-  const d = domain(sets.flatMap(({ values }) => values), .12);
-  const x = linear(d, [PLOT.left + 24, PLOT.right]);
+  const d: [number, number] = data ? domain(sets.flatMap(({ values }) => values), .12) : colored ? [0, 4500] : [0, 50];
+  const left = colored ? 120 : PLOT.left + 24;
+  const x = linear(d, [left, PLOT.right]);
   const coordinates = ticks(d, 65);
   const step = (PLOT.bottom - PLOT.top - 28) / sets.length;
-  const density = sets.map(({ values }) => estimate(values, coordinates, (d[1] - d[0]) / 16));
-  const maximum = Math.max(...density.flat());
+  const density = sets.map(({ values }) => estimate(values, coordinates, (d[1] - d[0]) / (colored ? 17 : 23)));
+  const maximum = Math.max(Number.EPSILON, ...density.flat());
+  const unit = data ? "" : colored ? " ms" : " min";
+  const valueLabel = (value: number) => `${format.format(value)}${unit}`;
   const lines = sets.map(({ name, color, values }, i) => {
     const base = PLOT.top + 33 + (i + 1) * step;
     const ys = loading ? coordinates.map((_, j) => Math.sin(j / 64 * Math.PI) ** 3 * maximum) : density[i];
@@ -235,21 +273,21 @@ export function Ridgeline({ example, compact, data }: DemoProps) {
     const middle = quantile(values, .5);
     const nearest = Math.max(0, Math.min(64, Math.round((middle - d[0]) / (d[1] - d[0]) * 64)));
     return { name, color: color ?? themeColor(colored ? i : 0), base, path: linePath(points),
-      hint: { x: x(middle), y: points[nearest][1], lines: [name, `Median: ${format.format(middle)}`, `${values.length} samples`] },
+      hint: { x: x(middle), y: points[nearest][1], lines: [name, `Median: ${valueLabel(middle)}`, `Middle half: ${valueLabel(quantile(values, .25))} – ${valueLabel(quantile(values, .75))}`, `Observations: ${values.length}`] },
     };
   });
-  const xTicks = ticks(d, 5);
+  const xTicks = data ? ticks(d, 5) : colored ? [0, 1000, 2000, 3000, 4000] : [0, 10, 20, 30, 40, 50];
   return (
-    <SvgPlot example={example} compact={compact} hints={lines.map(({ hint }) => hint)} loading={loading} controls={button}>
+    <SvgPlot example={example} compact={compact} hints={lines.map(({ hint }) => hint)} loading={loading} controls={button} loadingLabel="Loading sessions">
       {(show, active) => (
         <>
-          {lines.map((line) => (
+          <Grid x={xTicks.map(x)} xLabels={xTicks.map(valueLabel)} xTitle={data ? "Sample value" : undefined} />
+          {lines.map((line, index) => (
             <g key={line.name} {...markEvents(line.hint, show, !loading)}>
-              <text className="stat-axis" x={PLOT.left + 14} y={line.base - 3} textAnchor="end">{line.name}</text>
-              <path d={`${line.path}L${PLOT.right} ${line.base}H${PLOT.left + 24}Z`} className={loading ? "stat-load" : undefined} fill={line.color} fillOpacity={active && active !== line.hint ? .2 : .37} stroke={line.color} strokeWidth="1.4" />
+              <text className="stat-axis" x={left - 10} y={line.base - 3} textAnchor="end">{line.name}</text>
+              <path d={`${line.path}L${PLOT.right} ${line.base}H${left}Z`} data-ridge={line.name} className={loading ? "stat-load" : example.id.endsWith("-loading") ? "stat-ridge-reveal" : undefined} style={{ "--stat-delay": `${index * 45}ms`, "--ridge-baseline": `${line.base}px` } as CSSProperties} fill={line.color} fillOpacity={active && active !== line.hint ? .15 : .3} stroke={line.color} strokeWidth="1.4" />
             </g>
           ))}
-          <Grid x={xTicks.map(x)} xLabels={xTicks.map((value) => format.format(value))} xTitle="Sample value" hideVertical />
         </>
       )}
     </SvgPlot>
@@ -286,14 +324,7 @@ function distributions(data: DemoProps["data"], grouped: boolean, horizontal: bo
     }
     return sampleSeries(data, []).map((series, index) => ({ ...series, region: series.name, seriesIndex: index }));
   }
-  const names = horizontal ? ["Platform", "Growth", "Core", "Mobile"] : regionNames;
-  const sets = sampleSeries(undefined, names.flatMap((name) => grouped ? [`${name} Desktop`, `${name} Mobile`] : [name]), 65);
-  return sets.map((series, index) => ({
-    ...series,
-    region: names[grouped ? Math.floor(index / 2) : index],
-    name: grouped ? index % 2 ? "Mobile" : "Desktop" : series.name,
-    seriesIndex: grouped ? index % 2 : index,
-  }));
+  return horizontal ? deploySamples().map((series) => ({ ...series, region: series.name, seriesIndex: 1 })) : regionalSamples(grouped);
 }
 
 export function QuantilePlot({ example, compact, data }: DemoProps) {
@@ -304,67 +335,83 @@ export function QuantilePlot({ example, compact, data }: DemoProps) {
   const sets = distributions(data, grouped, horizontal);
   if (!sets.length) return <NoData example={example} compact={compact} />;
   const names = [...new Set(sets.map(({ region }) => region))];
-  const d = domain(sets.flatMap(({ values }) => values), .12);
+  const d: [number, number] = data ? domain(sets.flatMap(({ values }) => values), .12) : [0, horizontal ? 40 : grouped ? 6000 : 5000];
   const coordinates = ticks(d, 58);
   const gap = (horizontal ? PLOT.bottom - PLOT.top : PLOT.right - PLOT.left) / names.length;
   const v = linear(d, horizontal ? [PLOT.left, PLOT.right] : [PLOT.bottom, PLOT.top]);
-  const category = (name: string) => (horizontal ? PLOT.top : PLOT.left) + (names.indexOf(name) + .5) * gap;
+  const category = (name: string) => horizontal ? PLOT.bottom - (names.indexOf(name) + .5) * gap : PLOT.left + (names.indexOf(name) + .5) * gap;
+  const unit = data ? "" : horizontal ? " min" : " ms";
+  const labelValue = (value: number) => `${precise.format(value)}${unit}`;
   const drawables = sets.map(({ name, region, color, values, seriesIndex }) => {
     const regionSets = sets.filter((entry) => entry.region === region);
     const position = regionSets.findIndex((entry) => entry.name === name);
-    const bandWidth = gap * (horizontal && violin ? .92 : .67) / regionSets.length;
+    const bandWidth = gap * (horizontal && violin ? .95 : .69) / regionSets.length;
     const center = category(region) + (position - (regionSets.length - 1) / 2) * bandWidth;
     const { q1, median, q3, whiskerLow, whiskerHigh, outliers, bandwidth } = distributionStatistics(values, (d[1] - d[0]) / 35);
     const at = (value: number, offset = 0): [number, number] => horizontal ? [v(value), center + offset] : [center + offset, v(value)];
     const [hx, hy] = at(median);
-    const hint = { x: hx, y: hy, lines: [region === name ? region : `${region} · ${name}`, `Median: ${format.format(median)}`, `Middle half: ${format.format(q1)}–${format.format(q3)}`, `Samples: ${values.length}`] };
+    const hint = { x: hx, y: hy, lines: [region === name ? region : `${region} · ${name}`, ...(violin || horizontal ? [
+      `Median: ${labelValue(median)}`, `Middle half: ${labelValue(q1)} – ${labelValue(q3)}`,
+      ...(violin ? [`Range: ${labelValue(values[0])} – ${labelValue(values[values.length - 1])}`, `Observations: ${values.length}`] : [`${data ? "Observations" : "Deploys"}: ${values.length}`]),
+    ] : [`High: ${labelValue(whiskerHigh)}`, `Q3: ${labelValue(q3)}`, `Median: ${labelValue(median)}`, `Q1: ${labelValue(q1)}`, `Low: ${labelValue(whiskerLow)}`, `Outliers: ${outliers.length}`])] };
     const kde = violin ? estimate(values, coordinates, bandwidth) : [];
-    const peak = Math.max(...kde);
+    const peak = Math.max(Number.EPSILON, ...kde);
     const shape = violin ? `${linePath(coordinates.map((coordinate, i) => at(coordinate, kde[i] / peak * bandWidth * .45)))} ${linePath(coordinates.map((coordinate, i) => at(coordinate, -kde[i] / peak * bandWidth * .45)).reverse()).replace("M", "L")}Z` : "";
     const rect = (first: number, last: number, radius: number) => horizontal
       ? { x: v(first), y: center - radius, width: Math.max(2, v(last) - v(first)), height: 2 * radius }
       : { x: center - radius, y: v(last), width: 2 * radius, height: Math.max(2, v(first) - v(last)) };
-    return { at, rect, q1, median, q3, whiskerLow, whiskerHigh, outliers, shape, hint, center, bandWidth, color: color ?? themeColor(seriesIndex) };
+    return { name, region, at, rect, q1, median, q3, minimum: values[0], maximum: values[values.length - 1], whiskerLow, whiskerHigh, outliers, shape, hint, bandWidth, color: color ?? themeColor(seriesIndex) };
   });
-  const labels = ticks(d, 5);
+  const groupedHints = new Map(names.map((name) => {
+    const marks = drawables.filter((plot) => plot.region === name);
+    return [name, { x: category(name), y: Math.min(...marks.map(({ hint }) => hint.y)), lines: [name, ...marks.map((plot) => `${plot.name} median: ${labelValue(plot.median)}`)] }];
+  }));
+  const hints = grouped ? [...groupedHints.values()] : drawables.map(({ hint }) => hint);
+  const labels = ticks(d, data ? 5 : horizontal ? 5 : grouped ? 7 : 6);
   const seriesNames = [...new Set(sets.map(({ name }) => name))];
-  const legend = grouped && <Legend entries={seriesNames.map((name, index) => ({ name, color: themeColor(index) }))} />;
+  const legend = grouped && <Legend entries={seriesNames.map((name) => ({ name, color: drawables.find((plot) => plot.name === name)?.color ?? themeColor(0) }))} />;
   return (
-    <SvgPlot example={example} compact={compact} hints={drawables.map(({ hint }) => hint)} loading={loading} controls={button} legend={legend}>
+    <SvgPlot example={example} compact={compact} hints={hints} loading={loading} controls={button} legend={legend} loadingLabel="Loading page loads">
       {(show, active) => (
         <>
           <Grid
             x={horizontal ? labels.map(v) : names.map(category)}
-            xLabels={horizontal ? labels.map((value) => format.format(value)) : names}
+            xLabels={horizontal ? labels.map(labelValue) : names}
             y={horizontal ? names.map(category) : labels.map(v)}
-            yLabels={horizontal ? names : labels.map((value) => format.format(value))}
-            hideVertical={!horizontal}
+            yLabels={horizontal ? names : labels.map(labelValue)}
+            hideVertical={!horizontal} hideHorizontal={horizontal} horizontalLabelsAtTop={horizontal}
           />
           {drawables.map((plot, index) => {
-            const { at, rect, q1, median, q3, whiskerLow, whiskerHigh, outliers, shape, hint, bandWidth, color } = plot;
+            const { at, rect, q1, median, q3, minimum, maximum, whiskerLow, whiskerHigh, outliers, shape, bandWidth, color } = plot;
+            const hint = grouped ? groupedHints.get(plot.region)! : plot.hint;
             const thickness = Math.min(25, bandWidth * .33);
             const [mx, my] = at(median);
+            const animation = !loading && example.id.endsWith("-loading") ? `stat-quantile-reveal stat-quantile-${horizontal ? "horizontal" : "vertical"}` : undefined;
             return (
-              <g key={index} opacity={active && active !== hint ? .42 : 1} {...markEvents(hint, show, !loading)}>
-                {violin && <path className={loading ? "stat-load" : undefined} d={shape} fill={color} fillOpacity=".27" stroke={color} strokeWidth="1.75" />}
+              <g key={index} data-region={plot.region} data-series={plot.name} opacity={active && active !== hint ? .42 : 1} {...markEvents(hint, show, !loading)}>
+                <g className={animation} style={{ "--quantile-origin": `${mx}px ${my}px`, "--stat-delay": `${index * 40}ms` } as CSSProperties}>
+                {violin && <path className={loading ? "stat-load" : undefined} data-violin="" d={shape} fill={color} fillOpacity=".57" stroke={color} strokeWidth="1.15" />}
+                {loading && violin && <rect {...rect(q1, q3, 2.4)} fill="var(--background)" opacity=".5" />}
                 {(!loading || !violin) && <>
-                  <path className={loading ? "stat-load" : undefined} d={linePath([at(whiskerLow), at(whiskerHigh)])} fill="none" stroke={color} strokeWidth={2} />
+                  <path className={loading ? "stat-load" : undefined} d={linePath([at(violin ? minimum : whiskerLow), at(violin ? maximum : whiskerHigh)])} fill="none" stroke={violin ? "var(--background)" : color} strokeWidth={violin ? 1 : 2} />
                   {!violin && [whiskerLow, whiskerHigh].map((value, i) => (
                     <path key={i} className={loading ? "stat-load" : undefined} d={linePath([at(value, -thickness * .63), at(value, thickness * .63)])} fill="none" stroke={color} strokeWidth={2} />
                   ))}
-                  <rect className={loading ? "stat-load" : undefined} {...rect(q1, q3, violin ? 3 : thickness)} fill={color} fillOpacity={violin ? 1 : .22} stroke={color} strokeWidth={1.5} rx={3} />
+                  <rect data-quartiles="" className={loading ? "stat-load" : undefined} {...rect(q1, q3, violin ? 3 : thickness)} fill={violin ? "var(--background)" : color} fillOpacity={violin ? 1 : .62} stroke={violin ? "none" : color} strokeWidth={1.5} rx={3} />
                   {violin
-                    ? <circle cx={mx} cy={my} r={4} fill="var(--background)" stroke={color} strokeWidth={1.8} />
-                    : <path className={loading ? "stat-load" : undefined} d={linePath([at(median, -thickness), at(median, thickness)])} fill="none" stroke={color} strokeWidth={2} />}
+                    ? <circle data-median="" cx={mx} cy={my} r={horizontal || grouped ? 2.5 : 4} fill={color} />
+                    : <path data-median="" d={linePath([at(median, -thickness), at(median, thickness)])} fill="none" stroke="var(--background)" strokeWidth={2} />}
                   {!loading && !violin && outliers.map((outlier, i) => {
                     const [cx, cy] = at(outlier);
-                    return <circle key={i} cx={cx} cy={cy} r={2.5} fill={color} opacity=".7" />;
+                    return <circle key={i} data-outlier="" cx={cx} cy={cy} r={3} fill={color} opacity=".55" />;
                   })}
                 </>}
-                <rect {...rect(d[0], d[1], bandWidth * .48)} fill="transparent" />
+                </g>
+                {!loading && !grouped && <rect {...rect(d[0], d[1], bandWidth * .48)} fill="transparent" />}
               </g>
             );
           })}
+          {!loading && grouped && names.map((name) => <rect key={name} x={category(name) - gap / 2} y={PLOT.top} width={gap} height={PLOT.bottom - PLOT.top} fill="transparent" {...markEvents(groupedHints.get(name)!, show)} />)}
         </>
       )}
     </SvgPlot>
@@ -375,18 +422,24 @@ export function Beeswarm({ example, compact, data }: DemoProps) {
   const { loading, button } = useVariantLoading(example.id);
   const vertical = example.id === "beeswarm-vertical";
   const shared = example.id === "beeswarm-series";
-  const sets = sampleSeries(data, shared ? ["Before", "After"] : ["Core", "Web", "Data", "Platform"], shared ? 44 : 32);
+  const sets = data ? sampleSeries(data, []) : shared ? [
+    { name: "Before", color: themeColor(2), values: positiveSamples(326, .48, 90, 819, 35, 999) },
+    { name: "After", color: themeColor(0), values: positiveSamples(216, .44, 90, 820, 30, 999) },
+  ] : vertical ? regionalSamples(false).map(({ name, values }) => ({ name, color: themeColor(1), values })) : deploySamples().map((set) => ({ ...set, color: themeColor(0) }));
   if (!sets.length) return <NoData example={example} compact={compact} />;
-  const d = domain(sets.flatMap(({ values }) => values), .1);
+  const d: [number, number] = data ? domain(sets.flatMap(({ values }) => values), .1) : [0, shared ? 1000 : vertical ? 5000 : 40];
   const v = linear(d, vertical ? [PLOT.bottom, PLOT.top] : [PLOT.left, PLOT.right]);
   const names = sets.map(({ name }) => name);
   const gap = (vertical ? PLOT.right - PLOT.left : PLOT.bottom - PLOT.top) / (shared ? 1 : sets.length);
-  const category = (i: number) => (vertical ? PLOT.left : PLOT.top) + ((shared ? 0 : i) + .5) * gap;
-  const radius = vertical ? 3 : 4;
+  const category = (i: number) => vertical ? PLOT.left + (i + .5) * gap : PLOT.bottom - ((shared ? 0 : i) + .5) * gap;
+  const radius = vertical ? 3 : shared ? 4.5 : 4;
   const diameter = radius * 2.35;
   const packed: { along: number; cross: number; lane: number }[] = [];
-  const dots = sets.flatMap(({ name, color, values }, index) => {
-    return values.map((value) => {
+  const layoutSets = loading && !data ? sets.map((set, i) => ({ ...set, values: positiveSamples(7.5 + i * 2, .43, 48, 4009 + i, 2, 32) })) : sets;
+  const unit = data ? "" : shared || vertical ? " ms" : " min";
+  const formatValue = (value: number) => `${format.format(value)}${unit}`;
+  const dots = layoutSets.flatMap(({ name, color, values }, index) => values.map((value) => ({ name, color, value, index })))
+    .sort((a, b) => (shared ? 0 : a.index - b.index) || a.value - b.value).map(({ name, color, value, index }) => {
       const along = v(value);
       const neighbors = packed.filter((point) => (shared || point.lane === index) && Math.abs(point.along - along) < diameter);
       const center = category(index);
@@ -397,23 +450,30 @@ export function Beeswarm({ example, compact, data }: DemoProps) {
       const cross = alternatives.find((c) => neighbors.every((p) => Math.hypot(p.along - along, p.cross - c) >= diameter - .001)) ?? center;
       packed.push({ along, cross, lane: index });
       const [x, y] = vertical ? [cross, along] : [along, cross];
-      return { x, y, color: color ?? themeColor(index), hint: { x, y, lines: [name, `Value: ${format.format(value)}`] } };
+      return { x, y, name, color: color ?? themeColor(index), hint: { x, y, lines: [name, `${shared ? name : vertical ? "Page load" : data ? "Value" : "Deploy"}: ${formatValue(value)}`] } };
     });
-  });
-  const valueTicks = ticks(d, 5);
+  const valueTicks = ticks(d, shared || vertical ? 6 : 5);
   const legend = shared && <Legend entries={sets.map(({ name, color }, i) => ({ name, color: color ?? themeColor(i) }))} />;
+  function nearest(event: PointerEvent<SVGRectElement>) {
+    const matrix = event.currentTarget.getScreenCTM();
+    if (!matrix) return null;
+    const position = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+    const distance = ({ x, y }: { x: number; y: number }) => (x - position.x) ** 2 + (y - position.y) ** 2;
+    return dots.reduce((previous, dot) => distance(dot) < distance(previous) ? dot : previous).hint;
+  }
   return (
-    <SvgPlot example={example} compact={compact} hints={dots.map(({ hint }) => hint)} loading={loading} controls={button} legend={legend}>
+    <SvgPlot example={example} compact={compact} hints={dots.map(({ hint }) => hint)} loading={loading} controls={button} legend={legend} loadingLabel="Loading deploys">
       {(show, active) => (
         <>
           <Grid
             x={vertical ? names.map((_, i) => category(i)) : valueTicks.map(v)}
-            xLabels={vertical ? names : valueTicks.map((value) => format.format(value))}
+            xLabels={vertical ? names : valueTicks.map(formatValue)}
             y={vertical ? valueTicks.map(v) : shared ? [category(0)] : names.map((_, i) => category(i))}
-            yLabels={vertical ? valueTicks.map((value) => format.format(value)) : shared ? [""] : names}
-            hideVertical={!vertical}
+            yLabels={vertical ? valueTicks.map(formatValue) : shared ? [""] : names}
+            hideVertical={vertical} hideHorizontal={!vertical} horizontalLabelsAtTop={!vertical}
           />
-          {dots.map(({ x, y, color, hint }, i) => <circle key={i} className={loading ? "stat-load" : undefined} cx={x} cy={y} r={active === hint ? radius + 2 : radius} fill={color} opacity={active && active !== hint ? .28 : .8} {...markEvents(hint, show, !loading)} />)}
+          {dots.map(({ x, y, name, color, hint }, i) => <circle key={i} data-swarm={name} className={loading ? "stat-load" : example.id.endsWith("-loading") ? "stat-swarm-reveal" : undefined} style={{ "--stat-delay": `${(x - PLOT.left) * .61}ms` } as CSSProperties} cx={x} cy={y} r={active === hint ? radius + 2 : radius} fill={color} opacity={active && active !== hint ? .28 : .8} />)}
+          {!compact && !loading && <rect x={PLOT.left} y={PLOT.top} width={PLOT.right - PLOT.left} height={PLOT.bottom - PLOT.top} fill="transparent" onPointerMove={(event) => show(nearest(event))} onPointerLeave={() => show(null)} />}
         </>
       )}
     </SvgPlot>

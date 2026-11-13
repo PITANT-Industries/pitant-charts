@@ -1,4 +1,5 @@
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
+import { Button } from "@ui-sdk/react/button";
 import {
   geoBounds, geoContains, geoGraticule, geoInterpolate, geoMercator,
   geoNaturalEarth1, geoOrthographic, geoPath, type GeoProjection,
@@ -7,12 +8,12 @@ import { feature, merge } from "topojson-client";
 import type { GeometryCollection, Topology, Polygon as TopoPolygon, MultiPolygon as TopoMultiPolygon } from "topojson-specification";
 import type { Feature, FeatureCollection, LineString, MultiPolygon, Polygon } from "geojson";
 import countries from "world-atlas/countries-110m.json";
+import { mapFixtures, routeFixtures, type Coordinate, type Marker, type Route } from "./geo-fixtures";
 import {
-  HEIGHT, Legend, WIDTH, createRandom, format, number, rows, string, useVariantLoading,
+  Grid, HEIGHT, Legend, PLOT, WIDTH, createRandom, format, linear, number, rows, string, useVariantLoading,
   type DemoProps, type HoverInfo,
 } from "./primitives";
 
-type Coordinate = [number, number];
 type CountryProperties = { name?: string };
 type World = Topology<{ countries: GeometryCollection<CountryProperties> }>;
 type Country = Feature<Polygon | MultiPolygon, CountryProperties>;
@@ -24,6 +25,7 @@ const mapHeight = HEIGHT;
 const center: Coordinate = [WIDTH / 2, mapHeight / 2];
 const graticuleLines = geoGraticule().step([10, 10])();
 const worldProjection = () => geoNaturalEarth1().fitExtent([[18, 10], [WIDTH - 18, mapHeight - 8]], { type: "Sphere" }).clipExtent([[0, 0], [WIDTH, mapHeight]]);
+const compactMetric = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
 
 function screenToMap(svg: SVGSVGElement, clientX: number, clientY: number): Coordinate {
   const matrix = svg.getScreenCTM();
@@ -35,21 +37,6 @@ function screenToMap(svg: SVGSVGElement, clientX: number, clientY: number): Coor
   return [(clientX - box.left) * WIDTH / Math.max(1, box.width), (clientY - box.top) * mapHeight / Math.max(1, box.height)];
 }
 const continents = ["Europe", "Asia-Pacific", "Americas", "Africa", "Middle East"];
-
-interface Marker {
-  at: Coordinate;
-  label: string;
-  value: number;
-  category: string;
-}
-
-interface Route {
-  from: Coordinate;
-  to: Coordinate;
-  label: string;
-  value: number;
-  category: string;
-}
 
 const cities: readonly [name: string, lon: number, lat: number, region: number][] = [
   ["Berlin", 13.4, 52.5, 0], ["London", -.13, 51.5, 0], ["Paris", 2.35, 48.85, 0], ["Oslo", 10.75, 59.91, 0],
@@ -68,34 +55,29 @@ function coord(lon: unknown, lat: unknown): Coordinate | undefined {
   return x === undefined || y === undefined || Math.abs(x) > 180 || Math.abs(y) > 90 ? undefined : [x, y];
 }
 
-function getMarkers(data: DemoProps["data"], region: boolean, kind: string): Marker[] {
+function getMarkers(data: DemoProps["data"], id: string, forChoropleth: boolean): Marker[] {
   if (data?.rows) return rows(data).flatMap((row, i) => {
     const at = coord(row.lon, row.lat);
     if (!at) return [];
     return [{ at, label: string(row.label) ?? `Location ${i + 1}`, value: Math.max(0, number(row.value) ?? 1), category: string(row.category) ?? "Locations" }];
   });
+  if (!forChoropleth) return mapFixtures(id);
   const mapSites = ["Berlin", "Tokyo", "Sydney", "New York", "São Paulo"];
-  const globeSites = ["Berlin", "Dublin", "Tokyo", "Singapore", "Sydney", "New York", "Los Angeles", "São Paulo", "Cape Town", "Dubai"];
-  const filtered = region ? cities.filter((city) => city[3] === 0) : kind === "globe" ? cities.filter(([name]) => globeSites.includes(name)) : kind === "markers" ? cities.filter(([name]) => mapSites.includes(name)) : cities;
+  const filtered = cities.filter(([name]) => mapSites.includes(name));
   return filtered.map(([label, lon, lat, region], index) => ({ at: [lon, lat], label, value: 20 + (31 * index) % 109, category: continents[region] }));
 }
 
-function getRoutes(data: DemoProps["data"], regional: boolean): Route[] {
+function getRoutes(data: DemoProps["data"], id: string): Route[] {
   if (data?.rows) return rows(data).flatMap((row, index) => {
     const from = coord(row.fromLon, row.fromLat);
     const to = coord(row.toLon, row.toLat);
     if (!from || !to) return [];
-    return [{ from, to, label: string(row.label) ?? `Route ${index + 1}`, value: Math.max(0, number(row.value) ?? 1), category: string(row.category) ?? "Routes" }];
+    const label = string(row.label) ?? `Route ${index + 1}`;
+    const [departure, arrival] = label.split(/\s*(?:→|\bto\b)\s*/);
+    return [{ from, to, label, value: Math.max(0, number(row.value) ?? 1), category: string(row.category) ?? "Routes",
+      fromName: string(row.fromName) ?? (arrival ? departure : undefined), toName: string(row.toName) ?? arrival }];
   });
-  const city = (name: string) => cities.find(([n]) => n === name)!;
-  const connections = regional
-    ? [["Los Angeles", "New York"], ["Los Angeles", "Chicago"], ["Seattle", "Dallas"], ["Seattle", "New York"], ["Dallas", "New York"], ["Dallas", "Miami"], ["Chicago", "Miami"], ["Chicago", "New York"], ["Chicago", "Seattle"]]
-    : [["New York", "London"], ["New York", "São Paulo"], ["New York", "Los Angeles"], ["London", "Cape Town"], ["London", "Berlin"], ["London", "Dubai"], ["Tokyo", "Seattle"], ["Tokyo", "Sydney"], ["Tokyo", "Singapore"], ["Dubai", "Tokyo"], ["Dubai", "Mumbai"], ["Dubai", "Nairobi"]];
-  return connections.map(([fromName, toName], index) => {
-    const [, a, b] = city(fromName);
-    const [, c, d] = city(toName);
-    return { from: [a, b], to: [c, d], label: `${fromName} → ${toName}`, value: 80 + index * 97 % 510, category: regional ? ["Pacific Air", "NorthStar", "Continental"][Math.floor(index / 3)] : fromName };
-  });
+  return routeFixtures(id);
 }
 
 function fitToSites(project: GeoProjection, sites: readonly Coordinate[]) {
@@ -183,6 +165,9 @@ export function GeoMap({ example, compact, data }: DemoProps) {
   const { loading, button } = useVariantLoading(example.id);
   const chart = example.family;
   const isGlobe = chart === "globe";
+  const isBubble = chart === "bubble-map";
+  const isRoute = chart === "route-map";
+  const loadingExample = example.id.endsWith("-loading");
   const dotGrid = example.id === "choropleth-dot-grid";
   const pointerCamera = example.id === "choropleth-pointer-camera";
   const clickZoom = example.id === "choropleth-click-to-zoom";
@@ -192,8 +177,10 @@ export function GeoMap({ example, compact, data }: DemoProps) {
   const graticule = example.id === "choropleth-graticule";
   const markersMode = example.id === "choropleth-markers" || camera;
   const categoryMode = example.id === "bubble-map-categories" || example.id === "route-map-region";
-  const sized = example.id === "globe-sized" || chart === "bubble-map";
+  const sized = example.id === "globe-sized" || isBubble;
   const region = example.id.endsWith("-region");
+  const mapGrid = graticule || isGlobe && !sized || clickZoom || !region && (isRoute || isBubble && !categoryMode);
+  const markerMetric = isGlobe ? "Customers" : region ? "Orders" : categoryMode ? "Engineers" : "Active users";
   const [pan, setPan] = useState(initialPan);
   const [rotation, setRotation] = useState<Rotation>(() => isGlobe && sized ? [92, -23] : [-13, -23]);
   const [hover, setHover] = useState<HoverInfo | null>(null);
@@ -206,10 +193,8 @@ export function GeoMap({ example, compact, data }: DemoProps) {
   const drag = useRef<{ pointerId: number; x: number; y: number; initialX: number; initialY: number; active: boolean } | null>(null);
   const pinch = useRef<{ distance: number; at: Coordinate; pan: Pan } | null>(null);
   const moved = useRef(false);
-  const markers = useMemo(() => chart === "bubble-map" || isGlobe || markersMode
-    ? getMarkers(data, region, markersMode ? "markers" : chart)
-    : [], [chart, isGlobe, markersMode, data, region]);
-  const routes = useMemo(() => chart === "route-map" ? getRoutes(data, region) : [], [chart, data, region]);
+  const markers = useMemo(() => isBubble || isGlobe || markersMode ? getMarkers(data, example.id, markersMode) : [], [isBubble, isGlobe, markersMode, data, example.id]);
+  const routes = useMemo(() => isRoute ? getRoutes(data, example.id) : [], [isRoute, data, example.id]);
   const countriesValues = useMemo(() => {
     if (chart !== "choropleth" || !data?.rows) return new Map(Object.entries(countryNames));
     const matched = new Map<string, number>();
@@ -247,7 +232,7 @@ export function GeoMap({ example, compact, data }: DemoProps) {
   };
   const routeColors = [...new Set(routes.map(({ category }) => category))];
   const markerColors = [...new Set(markers.map(({ category }) => category))];
-  const groups = chart === "route-map" ? routeColors : markerColors;
+  const groups = isRoute ? routeColors : markerColors;
   const showMarker = (marker: Marker) => !isGlobe || visibleOnGlobe(projection, marker.at);
   const markerMaximum = Math.max(1, ...markers.map(({ value }) => value));
   const routeMaximum = Math.max(1, ...routes.map(({ value }) => value));
@@ -255,14 +240,26 @@ export function GeoMap({ example, compact, data }: DemoProps) {
     const position = projection(marker.at);
     if (!position || !showMarker(marker) || hidden.includes(marker.category)) return [];
     const [x, y] = position;
-    const radius = sized ? Math.max(2.7, Math.sqrt(marker.value / markerMaximum) * (chart === "bubble-map" ? 14 : 10)) : 4.8;
-    return [{ ...marker, index, x, y, radius, key: `marker:${index}`, hint: { x, y, lines: [marker.label, categoryMode ? marker.category : "", sized ? `Value: ${format.format(marker.value)}` : ""].filter(Boolean) } }];
+    const radius = sized ? Math.sqrt(marker.value / markerMaximum) * (isBubble ? 19 : 14) : 4.8;
+    return [{ ...marker, index, x, y, radius, key: `marker:${index}`, hint: { x, y, lines: [marker.label, sized ? `${data ? "Value" : markerMetric}: ${format.format(marker.value)}` : ""].filter(Boolean) } }];
   });
   const visibleRoutes = routes.filter(({ category }) => !hidden.includes(category)).flatMap((route) => {
     const d = routePath(route);
     if (!d) return [];
     const [x, y] = projection(geoInterpolate(route.from, route.to)(.5)) ?? center;
-    return [{ route, d, key: `route:${route.label}:${routes.indexOf(route)}`, hint: { x, y, lines: [route.label, categoryMode ? route.category : "", `Passengers: ${format.format(route.value)}`].filter(Boolean) } }];
+    return [{ route, d, key: `route:${route.label}:${routes.indexOf(route)}`, hint: { x, y, lines: [route.label,
+      data ? `Passengers: ${format.format(route.value)}` : region ? `Schedule: ${format.format(route.value)} flights a week` : `Passengers: ${format.format(route.value)} a day`] } }];
+  });
+  const airportMap = new Map<string, { key: string; at: Coordinate; label: string; routes: number }>();
+  visibleRoutes.forEach(({ route }) => ([[route.from, route.fromName], [route.to, route.toName]] as const).forEach(([at, name]) => {
+    const key = at.join(",");
+    const airport = airportMap.get(key);
+    if (airport) airport.routes++;
+    else airportMap.set(key, { key: `airport:${key}`, at, label: name ?? `${format.format(at[1])}°, ${format.format(at[0])}°`, routes: 1 });
+  }));
+  const screenAirports = [...airportMap.values()].flatMap(({ key, at, label, routes }) => {
+    const point = projection(at);
+    return point ? [{ key, at: point, hint: { x: point[0], y: point[1], lines: [label, `Routes: ${routes}`] } }] : [];
   });
   const valueExtent = Math.max(1, ...countriesValues.values());
   const countryValueMode = example.id === "choropleth-values" || backgrounds || clickZoom || dotGrid;
@@ -273,6 +270,7 @@ export function GeoMap({ example, compact, data }: DemoProps) {
   };
   const targets = [
     ...screenMarkers.map(({ key, hint, x, y }) => ({ key, hint, at: [x, y] as Coordinate })),
+    ...screenAirports,
     ...visibleRoutes.map(({ key, hint }) => ({ key, hint, at: [hint.x, hint.y] as Coordinate })),
     ...(countryInteractive ? geography.filter(({ point }) => point.every(Number.isFinite)).map(({ shape, point, key }) => ({ key, at: point, hint: countryHint(shape, ...point) })) : []),
   ];
@@ -406,7 +404,7 @@ export function GeoMap({ example, compact, data }: DemoProps) {
   }, [compact, isGlobe, loading]);
   const controls = <>
     {button}
-    {!loading && <button className="stat-control" type="button" onClick={reset}>Reset view</button>}
+    {!loading && <Button className="stat-control" onClick={reset}>Reset view</Button>}
   </>;
   const displayHint = active && transformHint(active);
   const categoryColor = (name: string) => `var(--chart-${groups.indexOf(name) % 8 + 1})`;
@@ -425,9 +423,12 @@ export function GeoMap({ example, compact, data }: DemoProps) {
       const value = [...label].reduce((sum, n) => sum + n.charCodeAt(0), 0) % 4;
       return `color-mix(in srgb, var(--chart-1) ${17 + value * 9}%, var(--muted))`;
     }
+    if (isBubble || isRoute) return "var(--muted)";
     return "color-mix(in srgb, var(--chart-1) 17%, var(--muted))";
   };
   const viewport = isGlobe ? undefined : `translate(${pan.x}px,${pan.y}px) scale(${pan.scale}) ${matrix}`;
+  const showBubbleScale = !loading && isBubble && !region && (!loadingExample || Boolean(data)) && markers.some(({ value }) => value > 0);
+  const sizeKeys = data ? [markerMaximum, markerMaximum / 4, markerMaximum / 16] : categoryMode ? [420, 110, 26] : [180000, 46000, 12000];
   return (
     <div className={`stat-demo stat-map ${compact ? "stat-compact" : ""}`}>
       {!compact && <div className="stat-controls">{controls}</div>}
@@ -456,15 +457,15 @@ export function GeoMap({ example, compact, data }: DemoProps) {
           </defs>
           {backgrounds && <rect width={WIDTH} height={mapHeight} fill={`url(#${id}-backdrop)`} />}
           {pointerCamera && <rect className="stat-map-backdrop" width={WIDTH} height={mapHeight} fill={`url(#${id}-dots)`} />}
-          {isGlobe && <circle className={loading ? "stat-load" : undefined} cx={center[0]} cy={center[1]} r={projection.scale()} fill={`url(#${id}-ocean)`} stroke="var(--border)" />}
+          {isGlobe && <circle className={loading ? "stat-load" : loadingExample ? "stat-globe-reveal" : undefined} data-globe-disc="" cx={center[0]} cy={center[1]} r={projection.scale()} fill={`url(#${id}-ocean)`} stroke="var(--border)" />}
           <g clipPath={`url(#${id}-bounds)`}>
             <g className={!isGlobe ? "stat-map-viewport" : undefined} style={viewport ? { transform: viewport, transitionDuration: camera && !drag.current?.active && !pinch.current ? selected || !pointerCamera ? undefined : ".16s" : "0s" } : undefined}>
-              {(graticule || isGlobe || clickZoom) && <path d={path(graticuleLines) ?? undefined} fill="none" stroke="var(--border)" strokeWidth=".7" opacity={clickZoom && selected ? .25 : .9} pointerEvents="none" />}
+              {mapGrid && <path d={path(graticuleLines) ?? undefined} fill="none" stroke="var(--border)" strokeWidth=".7" opacity={clickZoom && selected ? .25 : .9} pointerEvents="none" />}
               {!dotGrid && geography.map(({ shape, d, point, key }, index) => {
                 const hint = countryHint(shape, ...point);
                 const current = hover?.lines[0] === hint.lines[0] || !hover && focus === key;
                 const fill = current ? "var(--chart-2)" : countryFill(shape);
-                return <path key={shape.id ?? index} data-map-location={countryInteractive ? key : undefined} className={loading ? "stat-load" : undefined} d={d} fill={fill} fillOpacity={pointerCamera && !current ? .68 : 1} stroke="var(--background)" strokeWidth={isGlobe ? .47 : .57}
+                return <path key={shape.id ?? index} data-map-location={countryInteractive ? key : undefined} className={isGlobe && loading ? "stat-load" : isGlobe && loadingExample ? "stat-globe-reveal" : undefined} d={d} fill={fill} fillOpacity={pointerCamera && !current ? .68 : 1} stroke="var(--background)" strokeWidth={isGlobe ? .47 : .57}
                   onPointerEnter={countryInteractive ? () => !drag.current?.active && point.every(Number.isFinite) && setHover(hint) : undefined}
                   onPointerLeave={countryInteractive ? () => setHover(null) : undefined}
                   onClick={countryInteractive && camera && point.every(Number.isFinite) ? (event) => clickTarget(event, key, point) : undefined}
@@ -481,21 +482,22 @@ export function GeoMap({ example, compact, data }: DemoProps) {
               {dotGrid && countryInteractive && geography.map(({ shape, d, point, key }, index) => <path key={shape.id ?? index} data-map-location={key} d={d} fill="transparent"
                 onPointerEnter={() => !drag.current?.active && point.every(Number.isFinite) && setHover(countryHint(shape, ...point))} onPointerLeave={() => setHover(null)}
                 onClick={point.every(Number.isFinite) ? (event) => clickTarget(event, key, point) : undefined} />)}
-              {visibleRoutes.map(({ route, d, hint }, index) => (
-                <g key={index}>
-                  <path className={loading ? "stat-load" : undefined} d={d} fill="none" fillOpacity={0} stroke={categoryColor(route.category)} strokeWidth={1 + 2.3 * route.value / routeMaximum} opacity={active && active !== hint ? .24 : .82} />
+              {(loading ? visibleRoutes.slice(0, 8) : visibleRoutes).map(({ route, d, hint, key }, index) => (
+                <g key={key}>
+                  <path data-route={route.label} className={loading ? "stat-load" : loadingExample ? "stat-route-reveal" : undefined} style={{ "--stat-delay": `${index * 41}ms` } as CSSProperties} pathLength={loadingExample && !loading ? 1 : undefined} d={d} fill="none" fillOpacity={0} stroke={categoryColor(route.category)} strokeWidth={1 + 2.3 * route.value / routeMaximum} opacity={active && active !== hint ? .24 : .82} />
                   {!compact && !loading && <path d={d} fill="none" stroke="transparent" strokeWidth="12" onPointerEnter={() => setHover(hint)} onPointerLeave={() => setHover(null)} />}
-                  {[route.from, route.to].map((at, end) => {
-                    const [x, y] = projection(at) ?? [-10, -10];
-                    return <circle className={loading ? "stat-load" : undefined} key={end} cx={x} cy={y} r="2.4" fill={categoryColor(route.category)} />;
-                  })}
                 </g>
               ))}
+              {(loading ? screenAirports.slice(0, 8) : screenAirports).map(({ key, at: [x, y], hint }) => <g key={key}
+                onPointerEnter={!compact && !loading ? () => setHover(hint) : undefined} onPointerLeave={!compact ? () => setHover(null) : undefined}>
+                <circle data-airport={hint.lines[0]} className={loading ? "stat-load" : undefined} cx={x} cy={y} r={active === hint ? 5 : 3.5} fill="var(--foreground)" stroke="var(--background)" strokeWidth=".8" />
+                {!compact && !loading && <circle cx={x} cy={y} r="9" fill="transparent" />}
+              </g>)}
               {screenMarkers.map((marker) => {
                 const { x, y, radius, hint, key, index, category, label } = marker;
-                const color = categoryMode ? categoryColor(category) : `var(--chart-${chart === "bubble-map" ? 1 : 2})`;
+                const color = categoryMode ? categoryColor(category) : `var(--chart-${sized && isGlobe || region || markersMode ? 2 : 1})`;
                 const current = active?.lines[0] === label || selected === key;
-                return <g key={key} data-map-location={key} transform={`translate(${x} ${y})`} className={loading ? "stat-load" : undefined}
+                return <g key={key} data-map-location={key} data-marker-value={marker.value} transform={`translate(${x} ${y})`}
                   opacity={active && !current && chart !== "choropleth" ? .48 : 1}
                   onPointerEnter={!compact && !loading ? () => !drag.current?.active && setHover(hint) : undefined} onPointerLeave={!compact ? () => setHover(null) : undefined}
                   onClick={!compact && camera ? (event) => clickTarget(event, key, [x, y]) : undefined}
@@ -504,20 +506,22 @@ export function GeoMap({ example, compact, data }: DemoProps) {
                   {markersMode ? pointerCamera
                     ? <><path d="M0 6C-2 3-5 0-5-3a5 5 0 0 1 10 0C5 0 2 3 0 6Z" fill={color} stroke="var(--background)" strokeWidth=".85" /><circle cy="-3" r="1.6" fill="var(--background)" /></>
                     : <g fill={color} stroke="var(--chart-2)">{drawMarker(camera ? 0 : index, radius)}</g>
-                    : <circle className={loading ? "stat-load" : undefined} r={current && !sized ? radius + 2 : radius} fill={color} fillOpacity={sized ? .5 : .75} stroke={color} strokeWidth={current ? 2 : 1.2} />}
+                    : <circle className={loading ? "stat-load" : loadingExample ? "stat-bubble-reveal" : undefined} style={{ "--stat-delay": `${index * 31}ms` } as CSSProperties} r={current && !sized ? radius + 2 : radius} fill={color} fillOpacity={sized ? .52 : .82} stroke="var(--background)" strokeWidth={current ? 2 : 1.1} />}
                   {markersMode && !pointerCamera && !dotGrid && <text className="stat-axis" y={-radius - 6} textAnchor="middle" paintOrder="stroke" stroke="var(--background)" strokeWidth="2">{label}</text>}
                 </g>;
               })}
             </g>
           </g>
         </svg>
+        {!compact && loading && <div className="stat-loading-label" role="status">Loading {isBubble ? "cities" : isRoute ? "routes" : "regions"}</div>}
         {!compact && displayHint && <div className="stat-hint" role="status" style={{ left: `${Math.min(83, Math.max(17, displayHint.x * 100 / WIDTH))}%`, top: `${Math.min(89, Math.max(22, displayHint.y * 100 / mapHeight))}%` }}>
           {displayHint.lines.map((line, index) => <div key={index}>{line}</div>)}
         </div>}
       </div>
       {categoryMode && groups.length > 0 && <Legend entries={groups.map((name) => ({ name, color: categoryColor(name) }))} active={groups.filter((name) => !hidden.includes(name))} onToggle={compact ? undefined : (name) => setHidden((current) => current.includes(name) ? current.filter((n) => n !== name) : [...current, name])} />}
-      {categoryMode && sized && markers.length > 0 && <div className="stat-legend" aria-label="Bubble size scale">
-        {[.25, .5, 1].map((fraction) => <span key={fraction}><i style={{ width: Math.sqrt(fraction) * 12, height: Math.sqrt(fraction) * 12, borderRadius: "50%", background: "var(--chart-1)", opacity: .6 }} />{format.format(markerMaximum * fraction)}</span>)}
+      {showBubbleScale && <div className="stat-legend" aria-label="Bubble size scale">
+        <strong>{data ? "Value" : markerMetric}</strong>
+        {sizeKeys.map((value) => <span key={value}><i style={{ width: Math.sqrt(value / markerMaximum) * 14, height: Math.sqrt(value / markerMaximum) * 14, borderRadius: "50%", background: "var(--chart-1)", opacity: .6 }} />{value >= 1000 ? compactMetric.format(value).toLowerCase() : format.format(value)}</span>)}
       </div>}
       {countryValueMode && !camera && <Legend entries={[{ name: "No data", color: "var(--muted)" }, { name: "Low", color: "color-mix(in srgb, var(--chart-1) 24%, var(--muted))" }, { name: "High", color: "var(--chart-1)" }]} />}
     </div>
@@ -531,6 +535,11 @@ interface Vector {
   label: string;
 }
 
+const compass = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+const windThresholds = [1, 4.2, 9.4];
+const windColors = ["25%", "44%", "66%", "100%"].map((intensity) => `color-mix(in srgb, var(--chart-1) ${intensity}, var(--muted-foreground))`);
+const degrees = (value: number, minus: string, plus: string) => `${format.format(Math.abs(value))}°${value < 0 ? minus : plus}`;
+
 function getVectors(data: DemoProps["data"], stations: boolean): Vector[] {
   if (data?.rows) return rows(data).flatMap((row, index) => {
     const at = coord(row.lon, row.lat);
@@ -538,13 +547,24 @@ function getVectors(data: DemoProps["data"], stations: boolean): Vector[] {
     const speed = number(row.speed);
     return at && direction !== undefined && speed !== undefined ? [{ at, direction, speed: Math.max(0, speed), label: string(row.label) ?? `Station ${index + 1}` }] : [];
   });
+  if (stations) return [
+    [4, 9, "Marina"], [8, 12, "Harbor"], [8, 19, "Pier"], [10, 24, "West Park"], [12, 7, "Depot"], [12, 32, "University"],
+    [15, 16, "Stadium"], [16, 22, "Library"], [17, 33, "Northgate"], [19, 40, "Lake"], [21, 9, "Terminal"], [22, 17, "Orchard"],
+    [23, 27, "Meadow"], [24, 42, "Reservoir"], [26, 13, "Museum"], [27, 22, "Canyon"], [28, 36, "Ridge"], [30, 27, "Summit"],
+    [32, 12, "Quarry"], [33, 40, "Valley"], [35, 18, "Airport"], [37, 31, "Bridge"], [40, 23, "Foothills"], [42, 41, "East Hill"],
+  ].map(([x, y, label], index) => ({ at: [Number(x), Number(y)], direction: label === "Summit" ? 275 : label === "Harbor" ? 245 : label === "Stadium" ? 270 : 218 + index * 3,
+    speed: label === "Summit" ? 21 : label === "Harbor" ? 9 : label === "Stadium" ? 11 : 6 + (index * 7 % 14), label: String(label) }));
   const random = createRandom(82421);
   const out: Vector[] = [];
-  for (let row = 0; row < (stations ? 4 : 10); row++) {
-    for (let col = 0; col < (stations ? 6 : 15); col++) {
-      const lon = -15 + col * (stations ? 6 : 2.5) + (stations ? (random() - .5) * 6 : 0);
-      const lat = 36 + row * (stations ? 6 : 2.5) + (stations ? (random() - .5) * 4 : 0);
-      out.push({ at: [lon, lat], direction: 31 + 30 * Math.sin(lon / 8) + 82 * Math.cos(lat / 10), speed: 3 + 14 * random(), label: stations ? `Station ${String(row * 6 + col + 1).padStart(2, "0")}` : `${format.format(lat)}° N, ${format.format(lon)}° E` });
+  for (let col = 0; col < 17; col++) {
+    for (let row = 0; row < 11; row++) {
+      const lon = -15 + col * 2.5;
+      const lat = 60 - row * 2.5;
+      const low = Math.hypot((lon - 2.5) * .71, lat - 52.5);
+      const strongest = lon === 2.5 && lat === 52.5;
+      const bearing = (Math.atan2(lat - 55, lon - 5) * 180 / Math.PI + 122 + 360) % 360;
+      out.push({ at: [lon, lat], direction: strongest ? 124 : bearing, speed: strongest ? 16.64 : Math.max(1.04, Math.min(16.2, 4.1 + 9 * Math.exp(-low / 8.3) + random() * 3.9)),
+        label: `${degrees(lon, "W", "E")}, ${degrees(lat, "S", "N")}` });
     }
   }
   return out;
@@ -556,25 +576,37 @@ export function VectorField({ example, compact, data }: DemoProps) {
   const [active, setActive] = useState<number | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   const stations = example.id === "vector-field-stations";
+  const loadingExample = example.id === "vector-field-loading";
   const vectors = useMemo(() => getVectors(data, stations), [data, stations]);
   const model = useMemo(() => {
     const projection = geoMercator().translate(center).scale(110).clipExtent([[0, 0], [WIDTH, mapHeight]]);
     fitToSites(projection, vectors.map(({ at }) => at));
     const path = geoPath(projection);
-    const d = path(land);
-    const graticule = path(geoGraticule().step([10, 10])());
+    const d = data ? path(land) : undefined;
+    const x = linear(stations ? [0, 48] : [-16.5, 26.5], [PLOT.left, PLOT.right]);
+    const y = linear(stations ? [0, 53] : [33.5, 61.5], [PLOT.bottom, PLOT.top]);
     const max = Math.max(1, ...vectors.map(({ speed }) => speed));
     const marks = vectors.map((vector) => {
-      const [x, y] = projection(vector.at) ?? center;
+      const [px, py] = data ? projection(vector.at) ?? center : [x(vector.at[0]), y(vector.at[1])];
       const length = 4 + vector.speed / max * 21;
-      const bearing = (vector.direction - 90) * Math.PI / 180;
+      const direction = ((vector.direction % 360) + 360) % 360;
+      const bearing = (direction - 90) * Math.PI / 180;
       const dx = Math.cos(bearing) * length;
       const dy = Math.sin(bearing) * length;
-      const hint = { x, y, lines: [vector.label, `${format.format(vector.speed)} m/s`, `Direction ${format.format(((vector.direction % 360) + 360) % 360)}°`] };
-      return { x, y, dx, dy, hint, opacity: .28 + .68 * vector.speed / max };
+      const speed = `${format.format(vector.speed)} ${!data && stations ? "km/h" : "m/s"}`;
+      const hint = { x: px, y: py, lines: stations && !data ? [vector.label, `${speed} toward ${format.format(direction)}°`] : [vector.label, `Speed: ${speed}`, `Direction: ${compass[Math.round(direction / 45) % 8]} ${Math.round(direction)}°`] };
+      const bucket = windThresholds.findIndex((threshold) => vector.speed < threshold);
+      return { x: px, y: py, dx, dy, hint, color: stations ? "var(--chart-2)" : windColors[bucket < 0 ? 3 : bucket] };
     });
-    return { d, graticule, marks };
-  }, [vectors]);
+    return { d, x, y, marks };
+  }, [data, stations, vectors]);
+  const placeholders = loading && !data ? Array.from({ length: 325 }, (_, i) => {
+    const x = PLOT.left + (i % 25 + .5) * (PLOT.right - PLOT.left) / 25;
+    const y = PLOT.top + (Math.floor(i / 25) + .5) * (PLOT.bottom - PLOT.top) / 13;
+    return { x, y, dx: 0, dy: 0, color: "var(--muted-foreground)", hint: { x, y, lines: [] } };
+  }) : model.marks;
+  const xTicks = stations ? [0, 10, 20, 30, 40] : [-10, 0, 10, 20];
+  const yTicks = stations ? [0, 10, 20, 30, 40, 50] : [35, 40, 45, 50, 55, 60];
   const index = hover ?? active;
   const hint = index === null || loading ? undefined : model.marks[index]?.hint;
   return (
@@ -594,29 +626,30 @@ export function VectorField({ example, compact, data }: DemoProps) {
           }}>
           <defs>
             <clipPath id={`${id}-vector-clip`}><rect width={WIDTH} height={mapHeight} rx="9" /></clipPath>
-            <marker id={`${id}-arrow`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5 0 10Z" fill={loading ? "var(--muted-foreground)" : "var(--chart-1)"} /></marker>
+            <marker id={`${id}-arrow`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 1L9 5 0 9" fill="none" stroke="context-stroke" strokeWidth="1.6" /></marker>
           </defs>
+          {!data && <Grid x={xTicks.map(model.x)} xLabels={xTicks.map((value) => stations ? `${value} km` : degrees(value, "W", "E"))} y={yTicks.map(model.y)} yLabels={yTicks.map((value) => stations ? `${value} km` : degrees(value, "S", "N"))} hideVertical={!stations} />}
           <g clipPath={`url(#${id}-vector-clip)`}>
-            <path d={model.graticule ?? undefined} fill="none" stroke="var(--border)" strokeWidth=".7" />
-            <path d={model.d ?? undefined} fill="color-mix(in srgb, var(--chart-1) 13%, var(--muted))" stroke="var(--background)" strokeWidth="1" />
+            {model.d && <path d={model.d} fill="color-mix(in srgb, var(--chart-1) 13%, var(--muted))" stroke="var(--background)" strokeWidth="1" />}
             {!vectors.length && <text className="stat-axis" x={center[0]} y={center[1]} textAnchor="middle">No data to display</text>}
-            {model.marks.map(({ x, y, dx, dy, opacity }, i) => {
+            {placeholders.map(({ x, y, dx, dy, color, hint: pointHint }, i) => {
               const a = Math.atan2(y - center[1], x - center[0]) + Math.PI / 2;
               const endX = x + (loading ? 10 * Math.cos(a) : dx);
               const endY = y + (loading ? 10 * Math.sin(a) : dy);
               const line = `M${x} ${y}L${endX} ${endY}`;
-              return <g key={i} opacity={index === i ? 1 : hint ? .38 : opacity}>
-                <path className={loading ? "stat-load" : undefined} d={line} fill="none" fillOpacity={0} stroke="var(--chart-1)" strokeWidth={index === i ? 2.3 : 1.45} markerEnd={`url(#${id}-arrow)`} />
-                {stations && <circle cx={x} cy={y} r="2.2" fill="var(--chart-2)" />}
+              return <g key={i} opacity={index === i ? 1 : hint ? .38 : .88}>
+                <path data-vector={pointHint.lines[0] ?? "placeholder"} className={loading ? "stat-load" : loadingExample ? "stat-vector-reveal" : undefined} style={{ "--stat-delay": `${Math.max(0, x - PLOT.left) * .63}ms` } as CSSProperties} d={line} fill="none" fillOpacity={0} stroke={color} strokeWidth={index === i ? 2.3 : 1.45} markerEnd={`url(#${id}-arrow)`} />
                 {!compact && !loading && <path d={line} fill="none" stroke="transparent" strokeWidth="13" onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)} />}
               </g>;
             })}
           </g>
         </svg>
+        {!compact && loading && <div className="stat-loading-label" role="status">Loading wind</div>}
         {!compact && hint && <div className="stat-hint" role="status" style={{ left: `${Math.min(83, Math.max(17, hint.x * 100 / WIDTH))}%`, top: `${Math.min(89, Math.max(22, hint.y * 100 / mapHeight))}%` }}>
           {hint.lines.map((line, index) => <div key={index}>{line}</div>)}
         </div>}
       </div>
+      {!data && !stations && !loading && <Legend entries={["0.0 m/s–1.0 m/s", "1.0 m/s–4.2 m/s", "4.2 m/s–9.4 m/s", "9.4 m/s+"].map((name, i) => ({ name, color: windColors[i] }))} />}
     </div>
   );
 }

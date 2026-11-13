@@ -1,50 +1,35 @@
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
+import type { CSSProperties, KeyboardEvent } from "react";
+import { Toggle, ToggleGroup } from "@ui-sdk/react/toggle";
 import { useChartTheme } from "../theme";
-import { Legend, number, numeric, Pattern, percent, tone, type Props } from "./shared";
+import { nextChartFocus, number, numeric, percent, tone, type Props } from "./shared";
+import { sankeyFixtures, type FlowLink } from "./sankey-fixtures";
 import styles from "./styles.module.css";
+import flow from "./flow.module.css";
 
-type Link = { source: string; target: string; value: number };
-type Node = { name: string; depth: number; in: number; out: number; x: number; y: number; height: number; index: number };
+type Node = { name: string; depth: number; input: number; output: number; x: number; y: number; height: number; index: number };
+type Ribbon = ReturnType<typeof layout>["ribbons"][number];
+type FocusItem = { type: "node"; node: Node } | { type: "ribbon"; ribbon: Ribbon; index: number };
 
-const site: Link[] = [
-  { source: "Organic", target: "Home", value: 120 }, { source: "Organic", target: "Pricing", value: 69 },
-  { source: "Direct", target: "Home", value: 83 }, { source: "Email", target: "Product", value: 54 },
-  { source: "Partner", target: "Docs", value: 55 }, { source: "Social", target: "Blog", value: 45 },
-  { source: "Ads", target: "Pricing", value: 50 }, { source: "Home", target: "Subscribed", value: 63 },
-  { source: "Home", target: "Bounced", value: 88 }, { source: "Home", target: "Signed up", value: 52 },
-  { source: "Pricing", target: "Subscribed", value: 77 }, { source: "Pricing", target: "Signed up", value: 42 },
-  { source: "Product", target: "Signed up", value: 35 }, { source: "Product", target: "Bounced", value: 19 },
-  { source: "Docs", target: "Subscribed", value: 35 }, { source: "Docs", target: "Signed up", value: 20 },
-  { source: "Blog", target: "Bounced", value: 32 }, { source: "Blog", target: "Signed up", value: 13 },
-];
-const conversion: Link[] = [
-  { source: "Organic", target: "Starter", value: 132 }, { source: "Organic", target: "Team", value: 85 },
-  { source: "Email", target: "Starter", value: 52 }, { source: "Email", target: "Team", value: 39 },
-  { source: "Partner", target: "Enterprise", value: 56 }, { source: "Partner", target: "Team", value: 33 },
-  { source: "Starter", target: "Upgraded", value: 116 }, { source: "Starter", target: "Churned", value: 68 },
-  { source: "Team", target: "Upgraded", value: 102 }, { source: "Team", target: "Churned", value: 55 },
-  { source: "Enterprise", target: "Upgraded", value: 43 }, { source: "Enterprise", target: "Churned", value: 13 },
-];
-const support: Link[] = [
-  { source: "Chat", target: "Resolved", value: 124 }, { source: "Chat", target: "Escalated", value: 32 },
-  { source: "Email", target: "Resolved", value: 78 }, { source: "Email", target: "Escalated", value: 44 },
-  { source: "Phone", target: "Resolved", value: 45 }, { source: "Phone", target: "Closed", value: 23 },
-];
+const width = 600;
+const height = 322;
+const nodeWidth = 11;
+const nodeValue = (node: Node) => Math.max(node.input, node.output);
 
-function layout(links: Link[], margin: number) {
+function layout(links: FlowLink[], margin: number) {
   const nodes = new Map<string, Node>();
   const get = (name: string) => {
     const existing = nodes.get(name);
     if (existing) return existing;
-    const node = { name, depth: 0, in: 0, out: 0, x: 0, y: 0, height: 0, index: nodes.size };
+    const node = { name, depth: 0, input: 0, output: 0, x: 0, y: 0, height: 0, index: nodes.size };
     nodes.set(name, node);
     return node;
   };
   for (const link of links) {
-    get(link.source).out += link.value;
-    get(link.target).in += link.value;
+    get(link.source).output += link.value;
+    get(link.target).input += link.value;
   }
-  // Cap depth at the number of nodes so cycles in consumer data do not create an unbounded traversal.
+  // Bound relaxation so caller-supplied cycles cannot loop indefinitely.
   for (let pass = 0; pass < nodes.size; pass++) {
     let changed = false;
     for (const link of links) {
@@ -57,96 +42,189 @@ function layout(links: Link[], margin: number) {
     if (!changed) break;
   }
   const maxDepth = Math.max(1, ...Array.from(nodes.values(), node => node.depth));
-  const layers = Array.from({ length: maxDepth + 1 }, (_, depth) => Array.from(nodes.values()).filter(node => node.depth === depth));
-  const gap = Math.min(12, 155 / Math.max(1, ...layers.map(layer => layer.length)));
-  const totalHeight = 199;
-  const value = (node: Node) => Math.max(node.in, node.out);
-  const unit = Math.min(...layers.filter(layer => layer.length).map(layer =>
-    (totalHeight - gap * (layer.length - 1)) / Math.max(1, layer.reduce((sum, node) => sum + value(node), 0))));
+  const layers = Array.from({ length: maxDepth + 1 }, () => [] as Node[]);
+  for (const node of nodes.values()) layers[node.depth].push(node);
+  const gap = Math.min(15.5, 140 / Math.max(1, ...layers.map(layer => layer.length)));
+  const plotHeight = height - 37;
+  const unit = nodes.size ? Math.min(...layers.filter(layer => layer.length).map(layer =>
+    (plotHeight - gap * (layer.length - 1)) / layer.reduce((sum, node) => sum + nodeValue(node), 0))) : 0;
   layers.forEach((layer, depth) => {
-    const height = layer.reduce((total, node) => total + value(node) * unit, 0) + gap * (layer.length - 1);
-    let y = (240 - height) / 2;
+    const used = layer.reduce((total, node) => total + nodeValue(node) * unit, 0) + gap * (layer.length - 1);
+    let y = (height - used) / 2;
     for (const node of layer) {
-      node.x = margin + depth / maxDepth * (420 - 2 * margin - 11);
+      node.x = margin + depth / maxDepth * (width - 2 * margin - nodeWidth);
       node.y = y;
-      node.height = value(node) * unit;
+      node.height = nodeValue(node) * unit;
       y += node.height + gap;
     }
   });
   const sourceOffsets = new Map<string, number>();
   const targetOffsets = new Map<string, number>();
+  const sources = links.slice().sort((a, b) => get(a.target).y - get(b.target).y);
+  const targets = links.slice().sort((a, b) => get(a.source).y - get(b.source).y);
+  const sourceY = new Map<FlowLink, number>();
+  const targetY = new Map<FlowLink, number>();
+  for (const link of sources) {
+    const source = get(link.source);
+    const offset = sourceOffsets.get(link.source) ?? 0;
+    sourceY.set(link, source.y + offset);
+    sourceOffsets.set(link.source, offset + link.value * unit);
+  }
+  for (const link of targets) {
+    const target = get(link.target);
+    const offset = targetOffsets.get(link.target) ?? 0;
+    targetY.set(link, target.y + offset);
+    targetOffsets.set(link.target, offset + link.value * unit);
+  }
   const ribbons = links.map((link) => {
     const source = get(link.source);
     const target = get(link.target);
-    const x0 = source.x + 11;
+    const x0 = source.x + nodeWidth;
     const x1 = target.x;
-    const middle = (x0 + x1) / 2;
-    const sy = source.y + (sourceOffsets.get(source.name) ?? 0);
-    const ty = target.y + (targetOffsets.get(target.name) ?? 0);
+    const sx = x0 + (x1 - x0) * .46;
+    const tx = x1 + (x0 - x1) * .46;
+    const sy = sourceY.get(link)!;
+    const ty = targetY.get(link)!;
     const h = link.value * unit;
-    sourceOffsets.set(source.name, sy + h - source.y);
-    targetOffsets.set(target.name, ty + h - target.y);
-    const path = `M ${x0} ${sy} C ${middle} ${sy},${middle} ${ty},${x1} ${ty} L ${x1} ${ty + h} C ${middle} ${ty + h},${middle} ${sy + h},${x0} ${sy + h} Z`;
-    return { ...link, source, target, path, x0, x1 };
+    const path = `M ${x0} ${sy} C ${sx} ${sy},${tx} ${ty},${x1} ${ty} L ${x1} ${ty + h} C ${tx} ${ty + h},${sx} ${sy + h},${x0} ${sy + h} Z`;
+    return { ...link, source, target, path, x0, x1, y: (sy + ty + h) / 2 };
   });
-  return { nodes: [...nodes.values()], ribbons, maxDepth };
+  return { nodes: layers.flat(), ribbons, maxDepth };
+}
+
+function FlowStripe({ id, color, width = 6 }: { id: string; color: string; width?: number }) {
+  return <pattern id={id} patternUnits="userSpaceOnUse" width={width} height={width} patternTransform="rotate(43)">
+    <rect width={width} height={width} fill={color} fillOpacity=".2" />
+    <path d={`M0 0V${width}`} stroke={color} strokeWidth={width * .65} />
+  </pattern>;
 }
 
 export function Sankey({ example, compact, data }: Props) {
   const theme = useChartTheme();
   const uid = useId();
   const [hover, setHover] = useState<number | null>(null);
-  const [pinned, setPinned] = useState<number | null>(null);
-  const active = hover ?? pinned;
+  const [focus, setFocus] = useState<number | null>(null);
+  const [pinned, setPinned] = useState<string | null>(null);
   const id = example.id;
   const withoutLabels = id === "sankey-no-labels";
   const verticalLabels = id === "sankey-vertical-labels";
-  const pattern = id === "sankey-patterns" || id === "sankey-pattern-lines";
-  const supplied = data?.rows?.flatMap((row) => {
+  const byCategory = id === "sankey-category-colors";
+  const isSingle = id === "sankey-single-color";
+  const solid = id === "sankey-solid-links" || isSingle;
+  const legendMode = !compact && id === "sankey-legend";
+  const fixture = sankeyFixtures[id] ?? sankeyFixtures["sankey-default"];
+  const links = useMemo(() => data?.rows?.flatMap((row) => {
     const value = numeric(row.value);
-    return typeof row.source === "string" && typeof row.target === "string" && row.source !== row.target && Number.isFinite(value) && value > 0 ?
+    return typeof row.source === "string" && typeof row.target === "string" && row.source !== row.target && value > 0 ?
       [{ source: row.source, target: row.target, value }] : [];
-  });
-  const links = supplied ?? (withoutLabels ? support : pattern || id === "sankey-category-colors" ? conversion : site);
-  const { nodes, ribbons, maxDepth } = layout(links, withoutLabels ? 22 : verticalLabels ? 28 : 72);
-  const color = (node: Node) => tone(theme, id === "sankey-single-color" ? 0 : id === "sankey-category-colors" ? node.depth : node.index);
+  }) ?? fixture.links, [data?.rows, fixture]);
+  const margin = withoutLabels ? 18 : verticalLabels ? 53 : 91;
+  const { nodes, ribbons, maxDepth } = useMemo(() => layout(links, margin), [links, margin]);
   const legend = nodes.filter(node => node.depth === 0);
+  const total = legend.reduce((sum, node) => sum + node.output, 0);
+  const unit = data?.rows ? "units" : fixture.unit;
+  const marks: FocusItem[] = [
+    ...nodes.map(node => ({ type: "node" as const, node })),
+    ...ribbons.map((ribbon, index) => ({ type: "ribbon" as const, ribbon, index })),
+  ];
+  const active = marks[hover ?? focus ?? nodes.findIndex(node => node.name === pinned)];
+  const activeNode = active?.type === "node" ? active.node : undefined;
+  const activeRibbon = active?.type === "ribbon" ? active.ribbon : undefined;
+  const color = (node: Node) => tone(theme, isSingle ? 0 : byCategory ? node.depth : fixture.palette?.[node.name] ?? node.index % 5);
+  const header = activeNode?.name ?? (activeRibbon ? `${activeRibbon.source.name} → ${activeRibbon.target.name}` : "");
+  const description = activeNode ? `${number.format(nodeValue(activeNode))} ${unit}${byCategory ? ` · ${percent(nodeValue(activeNode), total).toFixed(0)}%` : ""}` : activeRibbon ?
+    `${number.format(activeRibbon.value)} ${unit}${byCategory ? ` · ${percent(activeRibbon.value, activeRibbon.source.output).toFixed(0)}% of ${activeRibbon.source.name}` : ""}` : "";
+  const px = activeNode ? activeNode.x + nodeWidth / 2 : activeRibbon ? (activeRibbon.x0 + activeRibbon.x1) / 2 : width / 2;
+  const py = activeNode ? activeNode.y + activeNode.height / 2 : activeRibbon?.y ?? height / 2;
+  const reachable = new Set<Node>();
+  const downstream = new Set<Ribbon>();
+  if (legendMode && activeNode?.depth === 0) {
+    const pending = [activeNode];
+    while (pending.length) {
+      const node = pending.pop()!;
+      if (reachable.has(node)) continue;
+      reachable.add(node);
+      for (const ribbon of ribbons) if (ribbon.source === node) {
+        downstream.add(ribbon);
+        pending.push(ribbon.target);
+      }
+    }
+  }
+  const stripeColor = (link: Ribbon) => {
+    if (id === "sankey-patterns" && link.target.depth === maxDepth) return color(link.target);
+    if (id !== "sankey-pattern-lines") return undefined;
+    if (link.target.name === "Upgraded") return "#22a67c";
+    if (link.target.name === "Churned") return "#dc5870";
+    return undefined;
+  };
+  function key(event: KeyboardEvent<SVGSVGElement>) {
+    if (event.key === "Escape" && active) {
+      event.preventDefault();
+      setHover(null); setFocus(null); setPinned(null); return;
+    }
+    if ((event.key === "Enter" || event.key === " ") && legendMode && activeNode?.depth === 0) {
+      event.preventDefault(); setPinned(pinned === activeNode.name ? null : activeNode.name); return;
+    }
+    const next = nextChartFocus(event.key, focus, marks.length);
+    if (next !== undefined) {
+      event.preventDefault();
+      setHover(null);
+      setFocus(next);
+    }
+  }
   return <div className={styles.frame}>
-    <svg className={styles.native} viewBox="0 0 420 240" role="img" aria-label={example.title}>
-      <defs>{ribbons.map((link, index) => <g key={index}>
-        <linearGradient id={`${uid}-link-${index}`} gradientUnits="userSpaceOnUse" x1={link.x0} x2={link.x1}>
-          <stop offset="0" stopColor={color(link.source)} /><stop offset="1" stopColor={color(link.target)} />
-        </linearGradient>
-        <Pattern id={`${uid}-pattern-${index}`} color={id === "sankey-pattern-lines" ? link.target.name === "Upgraded" ? "#23a47d" : "#df657b" : color(link.target)} variant={id === "sankey-pattern-lines" ? 1 : link.target.index % 5} />
-      </g>)}</defs>
-      {ribbons.map((link, index) => {
-        const selected = active === link.source.index || active === link.target.index;
-        const fill = pattern ? `url(#${uid}-pattern-${index})` :
-          id === "sankey-solid-links" || id === "sankey-single-color" ? color(link.source) : `url(#${uid}-link-${index})`;
-        return <path key={index} d={link.path} fill={fill} opacity={active === null ? id === "sankey-single-color" ? .3 : .55 : selected ? .83 : .15}
-          tabIndex={compact ? undefined : 0} aria-label={`${link.source.name} to ${link.target.name}: ${link.value}`}
-          onMouseEnter={() => setHover(link.source.index)} onMouseLeave={() => setHover(null)}
-          onFocus={() => setHover(link.source.index)} onBlur={() => setHover(null)}>
-          <title>{`${link.source.name} → ${link.target.name}: ${number.format(link.value)} (${percent(link.value, link.source.out).toFixed(0)}% of source)`}</title>
-        </path>;
-      })}
-      {nodes.map(node => {
-        const outgoing = node.depth < maxDepth;
-        return <g key={node.name} tabIndex={compact ? undefined : 0}
-          onMouseEnter={() => setHover(node.index)} onMouseLeave={() => setHover(null)} onFocus={() => setHover(node.index)} onBlur={() => setHover(null)}>
-          <title>{`${node.name} · ${number.format(Math.max(node.in, node.out))}`}</title>
-          <rect x={node.x} y={node.y} width="11" height={node.height} rx="2" fill={color(node)} />
-          {!withoutLabels && <text x={node.x + (outgoing ? -4 : 15)} y={node.y + node.height / 2 + 3}
-            textAnchor={outgoing ? "end" : "start"} fontSize="8.5" fontWeight={active === node.index ? 700 : 400} fill={theme.text}
-            transform={verticalLabels ? `rotate(-90 ${node.x + (outgoing ? -4 : 15)} ${node.y + node.height / 2 + 3})` : undefined}>
-            {node.name}{verticalLabels ? ` ${Math.max(node.in, node.out)}` : ""}
-          </text>}
-        </g>;
-      })}
-    </svg>
-    {!compact && id === "sankey-legend" && <Legend theme={theme} items={legend.map(node => ({ name: node.name, value: node.out, color: color(node) }))}
-      active={active === null ? null : legend.findIndex(node => node.index === active)}
-      onActive={(index) => setHover(index === null ? null : legend[index]?.index ?? null)}
-      onClick={(index) => setPinned(pinned === legend[index]?.index ? null : legend[index]?.index ?? null)} />}
+    {legendMode && <ToggleGroup className={flow.sankeyLegend} aria-label="Campaigns" value={pinned ? [pinned] : []}
+      onValueChange={(value) => setPinned(value[0] ?? null)}>
+      {legend.map(node => <Toggle key={node.name} value={node.name}
+        data-active={activeNode === node} onPointerEnter={() => setHover(nodes.indexOf(node))} onPointerLeave={() => setHover(null)}
+        onFocus={() => setFocus(nodes.indexOf(node))} onBlur={() => setFocus(null)}>
+        <i style={{ backgroundColor: color(node) }} />{node.name}
+      </Toggle>)}
+    </ToggleGroup>}
+    <div className={styles.graph}>
+      <svg className={styles.native} viewBox={`0 0 ${width} ${height}`} role="img" aria-roledescription="chart" aria-label={example.title}
+        tabIndex={compact ? undefined : 0} onKeyDown={key} onFocus={() => { if (marks.length) setFocus(0); }} onBlur={() => setFocus(null)} onPointerLeave={() => setHover(null)}>
+        <defs>{ribbons.map((link, index) => {
+          const stripe = stripeColor(link);
+          return <g key={index}>
+            {!solid && !stripe && <linearGradient id={`${uid}-link-${index}`} gradientUnits="userSpaceOnUse" x1={link.x0} x2={link.x1}>
+              <stop offset="0" stopColor={color(link.source)} /><stop offset="1" stopColor={color(link.target)} />
+            </linearGradient>}
+            {stripe && <FlowStripe id={`${uid}-stripe-${index}`} color={stripe} width={id === "sankey-pattern-lines" ? 5 : 7} />}
+          </g>;
+        })}</defs>
+        {ribbons.map((link, index) => {
+          const highlighted = activeRibbon === link || (activeNode && (activeNode === link.source || activeNode === link.target || downstream.has(link)));
+          const stripe = stripeColor(link);
+          const fill = stripe ? `url(#${uid}-stripe-${index})` : solid ? color(link.source) : `url(#${uid}-link-${index})`;
+          return <path key={index} d={link.path} fill={fill}
+            data-flow-source={link.source.name} data-flow-target={link.target.name} data-flow-kind={stripe ? "hatch" : solid ? "solid" : "gradient"}
+            data-active={Boolean(highlighted)} opacity={!active ? isSingle ? .3 : .51 : highlighted ? .82 : .13} className={flow.sankeyMark}
+            onPointerEnter={() => setHover(nodes.length + index)} onPointerLeave={() => setHover(null)} onPointerDown={() => setFocus(nodes.length + index)} />;
+        })}
+        {nodes.map((node, index) => {
+          const outgoing = node.depth < maxDepth;
+          const value = nodeValue(node);
+          const labelX = node.x + (outgoing ? -7 : nodeWidth + 7);
+          const labelY = node.y + node.height / 2;
+          const selected = activeNode === node || activeRibbon?.source === node || activeRibbon?.target === node || reachable.has(node);
+          const rotation = verticalLabels ? `rotate(-90 ${labelX} ${labelY})` : undefined;
+          return <g key={node.name} className={flow.sankeyMark} data-flow-node={node.name} data-active={selected} opacity={!active || selected ? 1 : .43}
+            onPointerEnter={() => setHover(index)} onPointerLeave={() => setHover(null)} onPointerDown={() => setFocus(index)}
+            onClick={legendMode && node.depth === 0 ? () => setPinned(pinned === node.name ? null : node.name) : undefined}>
+            <rect x={node.x} y={node.y} width={nodeWidth} height={node.height} rx="2.7" fill={color(node)} />
+            {!withoutLabels && <g data-flow-label="" transform={rotation} fill={theme.text} textAnchor={verticalLabels ? "middle" : outgoing ? "end" : "start"}>
+              <text x={labelX} y={labelY - 1} fontSize="8.5" fontWeight={selected ? 700 : 510}>{node.name}</text>
+              <text x={labelX} y={labelY + 9} fontSize="7.3" fill={theme.muted}>{number.format(value)} {unit}</text>
+            </g>}
+          </g>;
+        })}
+      </svg>
+      {!compact && active && <div className={flow.sankeyTooltip} style={{
+        "--flow-x": `${Math.min(87, Math.max(13, px / width * 100))}%`,
+        "--flow-y": `${Math.min(89, Math.max(11, py / height * 100))}%`,
+      } as CSSProperties} role="tooltip"><strong>{header}</strong><span>{description}</span></div>}
+      {!compact && <div className={styles.screenReader} role="status" aria-atomic="true">{active && `${header}, ${description}`}</div>}
+    </div>
   </div>;
 }

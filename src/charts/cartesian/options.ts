@@ -132,7 +132,7 @@ export function signedStroke(item: ChartSeries, activeLegend?: number): CustomSe
   };
 }
 
-function strokeFade(color: string) {
+export function strokeFade(color: string) {
   return {
     ...gradient(tint(color, 0.09), tint(color, 0.09), true),
     colorStops: [
@@ -171,7 +171,7 @@ function releaseEvents(values: readonly (number | null)[], active: number | unde
   });
 }
 
-function trendValues(values: readonly (number | null)[]) {
+export function trendValues(values: readonly (number | null)[]) {
   const points = values.flatMap((value, index) => typeof value === "number" ? [[index, value]] : []);
   if (points.length < 2) return values.map(value => value);
   const meanX = points.reduce((sum, [x]) => sum + x, 0) / points.length;
@@ -312,11 +312,9 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
   const { id, family } = example;
   const option = baseOption(data, theme, compact);
   const area = family === "area";
-  const live = family === "live-line";
   const xAxis = categoryAxis(data.categories, theme);
   const fixed = id === "line-fixed-scale";
   const twoAxes = id.includes("dual-axis") && data.series.length > 1;
-  const rightAxis = id === "live-line-right-axis";
   const points = id === "line-points";
   const bars = id === "line-weekends" || id === "area-date-highlights";
   const interval = id === "area-reference-range";
@@ -324,18 +322,17 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
   const group = id === "line-date-highlights-brush";
   const loss = id === "line-profit-loss" || id === "line-profit-loss-legend";
   const dashed = id === "line-dashed" || id === "area-forecast";
-  const rangeBand = id === "area-reference-band" || id === "live-line-reference-band" || id === "live-line-pattern-band";
-  const background = id === "area-background" || id === "live-line-background" || id === "live-line-dots";
+  const rangeBand = id === "area-reference-band";
+  const background = id === "area-background";
   const timeAxis = { ...xAxis, axisLabel: { ...xAxis.axisLabel, formatter: (value: string) => value },
-    splitLine: id === "line-grid" || id === "live-line-dots" ? { show: true, lineStyle: { color: theme.grid, type: "dotted" as const } } : undefined };
-  const yAxis = { ...numericAxis(theme, !background), min: fixed ? 0 : live ? "dataMin" as const : undefined,
-    max: fixed ? 100 : live ? "dataMax" as const : undefined, position: rightAxis ? "right" as const : undefined };
+    splitLine: id === "line-grid" ? { show: true, lineStyle: { color: theme.grid, type: "dotted" as const } } : undefined };
+  const yAxis = { ...numericAxis(theme, !background), min: fixed ? 0 : undefined, max: fixed ? 100 : undefined };
   option.xAxis = timeAxis;
   option.yAxis = twoAxes ? [
     { ...yAxis, axisLabel: { ...yAxis.axisLabel, formatter: id === "line-dual-axis" ? "${value}" : "{value}" } },
     { ...numericAxis(theme, false), position: "right", axisLabel: { ...yAxis.axisLabel, formatter: "{value}%" } },
   ] : yAxis;
-  if (twoAxes || rightAxis) option.grid = { top: 12, bottom: 25, left: compact ? 32 : 52, right: compact ? 32 : 46 };
+  if (twoAxes) option.grid = { top: 12, bottom: 25, left: compact ? 32 : 52, right: compact ? 32 : 46 };
   if (id === "line-crosshair-point") {
     option.tooltip = { ...option.tooltip, axisPointer: { type: "none" } };
   }
@@ -363,11 +360,11 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
     markAreas.push(markRange(start, end, tint(theme.colors[0], 0.16)));
     for (const value of [start, end]) markLines.push({ xAxis: value, lineStyle: { color: theme.colors[0], type: "solid" }, label: { show: false } });
   }
-  if (background) markAreas.push(markRange(0, lastIndex, transparent, pattern(tint(theme.muted, 0.17), id === "live-line-dots" ? "dots" : "hatch")));
+  if (background) markAreas.push(markRange(0, lastIndex, transparent, pattern(tint(theme.muted, 0.17))));
   if (rangeBand) {
-    const low = live ? 141 : 180;
-    const high = live ? 144 : 240;
-    markAreas.push([{ yAxis: low, itemStyle: { color: tint(theme.colors[1], 0.15), decal: id === "live-line-pattern-band" ? pattern(tint(theme.colors[1], 0.55)) : undefined } }, { yAxis: high }]);
+    const low = 180;
+    const high = 240;
+    markAreas.push([{ yAxis: low, itemStyle: { color: tint(theme.colors[1], 0.15) } }, { yAxis: high }]);
     for (const value of [low, high]) markLines.push({ yAxis: value, lineStyle: { color: theme.colors[1], type: "dashed" }, label: { show: false } });
   }
   if (id === "line-threshold") markLines.push({ yAxis: 82, name: "Target", lineStyle: { color: down, type: "solid" }, label: { formatter: "Target" } });
@@ -395,12 +392,8 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
   data.series.forEach((item, index) => {
     addBand(item, index);
     if (id === "line-band-range") return;
-    const baseColor = colorFor(item, index, theme);
-    const last = item.values.at(-1), prior = item.values.at(-2);
-    const color = id === "live-line-momentum" && typeof last === "number" && typeof prior === "number"
-      ? last > prior ? up : last < prior ? down : theme.colors[0] : baseColor;
+    const color = colorFor(item, index, theme);
     const solidFill = id === "area-fill";
-    const fillArea = area || live && !rightAxis;
     const patterned = (id === "area-pattern" || id === "area-pattern-fade" || id === "area-mixed" && index === 1);
     const fill = id === "area-gradient-fill"
       ? { ...gradient(tint(theme.colors[0], 0.58), tint(theme.colors[2], 0.04)), colorStops: [
@@ -408,10 +401,9 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
         { offset: 0.47, color: tint(theme.colors[1], 0.42) },
         { offset: 1, color: tint(theme.colors[2], 0.05) },
       ] }
-      : solidFill ? tint(color, 0.53) : gradient(tint(color, live ? 0.3 : 0.35), tint(color, 0.02));
+      : solidFill ? tint(color, 0.53) : gradient(tint(color, 0.35), tint(color, 0.02));
     const lineStyle = id === "line-glow" ? { color, width: 3, shadowBlur: 17, shadowColor: tint(color, 0.8) }
       : { color, width: solidFill || loss ? 0 : id === "line-threshold" && index === 0 ? 3 : 2.3 };
-    const endMarker = live && typeof last === "number" ? [{ name: "Latest", coord: [lastIndex, last], value: last, itemStyle: { color, borderWidth: 3, borderColor: tint(color, 0.26) } }] : [];
     const eventMarkers = id === "line-markers" ? releaseEvents(item.values, controls.activeMarker) : [];
     const regular = lineFor(item, index, theme, {
       data: [...item.values], lineStyle, itemStyle: { color, borderColor: color, borderWidth: points ? 1.4 : 0 },
@@ -419,11 +411,10 @@ export function buildLine(example: ChartExample, data: CartesianData, theme: Cha
       showSymbol: points, symbol: points ? "emptyCircle" : "circle", symbolSize: points ? 7 : 6,
       yAxisIndex: twoAxes ? Math.min(index, 1) : 0,
       step: id === "area-steps" ? "end" : false,
-      areaStyle: fillArea ? { color: fill, opacity: 1 } : undefined,
+      areaStyle: area ? { color: fill, opacity: 1 } : undefined,
       markArea: index === 0 && markAreas.length ? { silent: true, data: markAreas } : undefined,
       markLine: index === 0 && markLines.length ? { symbol: ["none", "none"], silent: true, label: { color: theme.muted, fontSize: 9 }, data: markLines } : undefined,
-      markPoint: endMarker.length ? { symbol: "circle", symbolSize: 8, label: { show: false }, data: endMarker } : eventMarkers.length
-        ? { symbol: "pin", symbolSize: 24, label: { show: false }, tooltip: { formatter: "{b}: {c}" }, data: eventMarkers } : undefined,
+      markPoint: eventMarkers.length ? { symbol: "pin", symbolSize: 24, label: { show: false }, tooltip: { formatter: "{b}: {c}" }, data: eventMarkers } : undefined,
       sampling: id === "line-large-data" ? "lttb" : undefined,
       z: 3 + index,
     });

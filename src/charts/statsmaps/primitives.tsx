@@ -1,4 +1,6 @@
 import { useId, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { Button } from "@ui-sdk/react/button";
+import { Toggle } from "@ui-sdk/react/toggle";
 import type { ChartData, ChartExample } from "../../types";
 
 export interface DemoProps {
@@ -147,7 +149,7 @@ export function linePath(points: readonly (readonly [number, number])[]) {
   return points.map(([x, y], index) => `${index ? "L" : "M"}${x.toFixed(2)} ${y.toFixed(2)}`).join(" ");
 }
 
-export function Grid({ x, y, xLabels, yLabels, xTitle, yTitle, hideVertical, className }: {
+export function Grid({ x, y, xLabels, yLabels, xTitle, yTitle, hideVertical, hideHorizontal, horizontalLabelsAtTop, className }: {
   x?: readonly number[];
   y?: readonly number[];
   xLabels?: readonly string[];
@@ -155,20 +157,22 @@ export function Grid({ x, y, xLabels, yLabels, xTitle, yTitle, hideVertical, cla
   xTitle?: string;
   yTitle?: string;
   hideVertical?: boolean;
+  hideHorizontal?: boolean;
+  horizontalLabelsAtTop?: boolean;
   className?: string;
 }) {
   return (
     <g aria-hidden="true" className={className}>
       {y?.map((value, index) => (
         <g key={index}>
-          <path d={`M${PLOT.left} ${value}H${PLOT.right}`} stroke="var(--border)" strokeDasharray="4 5" />
+          {!hideHorizontal && <path d={`M${PLOT.left} ${value}H${PLOT.right}`} stroke="var(--border)" strokeDasharray="4 5" />}
           {yLabels?.[index] && <text className="stat-axis" x={PLOT.left - 10} y={value + 4} textAnchor="end">{yLabels[index]}</text>}
         </g>
       ))}
       {x?.map((value, index) => (
         <g key={index}>
           {!hideVertical && <path d={`M${value} ${PLOT.top}V${PLOT.bottom}`} stroke="var(--border)" strokeDasharray="4 5" />}
-          {xLabels?.[index] && <text className="stat-axis" x={value} y={PLOT.bottom + 19} textAnchor="middle">{xLabels[index]}</text>}
+          {xLabels?.[index] && <text className="stat-axis" x={value} y={horizontalLabelsAtTop ? PLOT.top - 9 : PLOT.bottom + 19} textAnchor="middle">{xLabels[index]}</text>}
         </g>
       ))}
       {xTitle && <text className="stat-axis" x={(PLOT.right + PLOT.left) / 2} y={HEIGHT - 4} textAnchor="middle">{xTitle}</text>}
@@ -187,7 +191,7 @@ export function Legend({ entries, active, onToggle }: {
       {entries.map(({ name, color }) => {
         const content = <><i aria-hidden="true" style={{ "--legend-color": color } as CSSProperties} />{name}</>;
         return onToggle
-          ? <button key={name} type="button" aria-pressed={!active || active.includes(name)} onClick={() => onToggle(name)}>{content}</button>
+          ? <Toggle key={name} pressed={!active || active.includes(name)} onPressedChange={() => onToggle(name)}>{content}</Toggle>
           : <span key={name}>{content}</span>;
       })}
     </div>
@@ -199,7 +203,7 @@ export function useVariantLoading(id: string) {
   const [loading, setLoading] = useState(available);
   return {
     loading,
-    button: available ? <button className="stat-control" type="button" onClick={() => setLoading(!loading)}>{loading ? "Show data" : "Show loading"}</button> : undefined,
+    button: available ? <Button className="stat-control" onClick={() => setLoading((previous) => !previous)}>{loading ? "Show data" : "Show loading"}</Button> : undefined,
   };
 }
 
@@ -211,12 +215,13 @@ export function markEvents(hint: HoverInfo, show: ShowHint, interactive = true) 
   };
 }
 
-export function SvgPlot({ example, compact, hints = [], className = "", loading = false, controls, legend, height = HEIGHT, children }: {
+export function SvgPlot({ example, compact, hints = [], className = "", loading = false, loadingLabel, controls, legend, height = HEIGHT, children }: {
   example: ChartExample;
   compact?: boolean;
   hints?: readonly HoverInfo[];
   className?: string;
   loading?: boolean;
+  loadingLabel?: string;
   controls?: ReactNode;
   legend?: ReactNode;
   height?: number;
@@ -274,6 +279,7 @@ export function SvgPlot({ example, compact, hints = [], className = "", loading 
         >
           {children(compact ? () => {} : setHover, current, id)}
         </svg>
+        {!compact && loading && loadingLabel && <div className="stat-loading-label" role="status">{loadingLabel}</div>}
         {!compact && current && (
           <div className="stat-hint" role="status" style={{
             left: `${Math.min(82, Math.max(18, current.x * 100 / WIDTH))}%`,

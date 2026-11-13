@@ -1,21 +1,32 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import type { EChartsOption, EChartsType } from "echarts";
+import { Button } from "@ui-sdk/react/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ui-sdk/react/select";
+import { Toggle } from "@ui-sdk/react/toggle";
 import type { ChartPreviewProps } from "../../types";
+import { Choices } from "../../ui/Choices";
 import { EChart } from "../EChart";
 import { useChartTheme } from "../theme";
 import { ShadcnBasics } from "./ShadcnBasics";
 import { SparklineExamples } from "./Sparkline";
-import { buildBar, buildCandlestick, buildComposed, buildDiverging, buildDumbbell, buildGantt, buildLollipop, buildRanking, buildStream, buildWaterfall } from "./comparisons";
+import { Candles } from "./Candles";
+import { LiveLine } from "./LiveLine";
+import { buildBar, buildComposed, buildDiverging, buildDumbbell, buildGantt, buildLollipop, buildRanking, buildStream, buildWaterfall } from "./comparisons";
 import { initialLargeCount, minuteLatency, resolveData, type CartesianData } from "./data";
-import { buildLine, categoryAxis, colorFor, down, initialControls, up, valueFormat, type ChartTheme, type Controls } from "./options";
+import { buildLine, categoryAxis, colorFor, initialControls, up, down, valueFormat, type ChartTheme, type Controls } from "./options";
 import { clampBrush, RangeBrush, type BrushRange } from "./Brush";
 import "./styles.css";
 
 const basics = new Set(["area-default", "bar-default", "line-default"]);
-const selectedRange = new Set(["line-time-range", "candlestick-range"]);
 const connected = new Set(["line-synced", "bar-synced", "area-small-multiples"]);
 const brushExamples = new Set(["line-segment", "area-selection"]);
 const overviewExamples = new Set(["line-brush", "line-linked-brush", "line-date-highlights-brush"]);
+const rangeChoices = [7, 30, 90].map(days => ({ value: String(days), label: `${days} days` }));
+const countChoices = [10000, 50000, 100000].map(count => ({ value: String(count), label: `${count / 1000}k points` }));
+const fillChoices = ["Solid", "Gradient", "Hatched"].map(value => ({ value, label: value }));
+const trendChoices = ["Dashed", "Solid", "Gradient"].map(value => ({ value, label: value }));
+const loadChoices = ["Pulse", "Sweep", "Loaded"].map(value => ({ value, label: value }));
+const exportFormats: { value: "svg" | "png"; label: string }[] = [{ value: "svg", label: "SVG" }, { value: "png", label: "PNG" }];
 
 function sliceRange(data: CartesianData, [start, end]: BrushRange): CartesianData {
   return {
@@ -25,14 +36,13 @@ function sliceRange(data: CartesianData, [start, end]: BrushRange): CartesianDat
   };
 }
 
-function getOption(example: ChartPreviewProps["example"], data: CartesianData, theme: ChartTheme, compact: boolean, controls: Controls): EChartsOption {
+function getOption(example: ChartPreviewProps["example"], data: CartesianData, theme: ChartTheme, compact: boolean, controls: Controls, loading = false): EChartsOption {
   switch (example.family) {
     case "bar": return buildBar(example, data, theme, compact);
-    case "candlestick": return buildCandlestick(example, data, theme, compact);
     case "composed": return buildComposed(example, data, theme, compact);
     case "diverging": return buildDiverging(example, data, theme, compact);
     case "dumbbell": return buildDumbbell(example, data, theme, compact, controls);
-    case "gantt": return buildGantt(example, data, theme, compact);
+    case "gantt": return buildGantt(example, data, theme, compact, loading);
     case "lollipop": return buildLollipop(example, data, theme, compact);
     case "slope":
     case "bump": return buildRanking(example, data, theme, compact);
@@ -43,24 +53,23 @@ function getOption(example: ChartPreviewProps["example"], data: CartesianData, t
 }
 
 export default function Cartesian(props: ChartPreviewProps) {
-  return <CartesianExample key={props.example.id} {...props} />;
+  const theme = useChartTheme();
+  const { example, compact = false } = props;
+  const source = useMemo(() => resolveData(example, props.data), [example, props.data]);
+  if (example.family === "candlestick") return <Candles key={example.id} example={example} data={source} compact={compact} theme={theme} />;
+  if (example.family === "live-line") return <LiveLine key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
+  return <CartesianExample key={example.id} example={example} compact={compact} data={props.data} source={source} theme={theme} />;
 }
 
-function CartesianExample({ example, compact = false, data }: ChartPreviewProps) {
-  const theme = useChartTheme();
-  const source = useMemo(() => resolveData(example, data), [example, data]);
+function CartesianExample({ example, compact = false, data, theme, source }: ChartPreviewProps & { theme: ChartTheme; source: CartesianData }) {
   const [controls, setControls] = useState<Controls>(initialControls);
   const [isLoading, setLoading] = useState(example.id.endsWith("-loading") || example.id === "line-loading-placeholder");
   const [placeholder, setPlaceholder] = useState("Sweep");
   const [pulsePaused, setPulsePaused] = useState(false);
   const [viewTable, setViewTable] = useState(false);
   const [focusedRow, setFocusedRow] = useState(-1);
-  const [paused, setPaused] = useState(false);
-  const [ticks, setTicks] = useState(0);
-  const [frozenTick, setFrozenTick] = useState(0);
   const [exportFormat, setExportFormat] = useState<"png" | "svg">("svg");
   const chartRef = useRef<EChartsType>(null);
-  const candleDirection = useRef<boolean | undefined>(undefined);
   const [pointCrosshair, setPointCrosshair] = useState<{ x: number; y: number } | null>(null);
   const [dragRange, setDragRange] = useState<{ left: number; right: number } | null>(null);
   const selectionDrag = useRef<{ pointer: number; position: number; index: number } | null>(null);
@@ -72,14 +81,12 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
   const [pulsePosition, setPulsePosition] = useState<[number, number] | null>(null);
   const connection = useId();
   const { id, family } = example;
-  const live = family === "live-line";
   const startLoading = id.endsWith("-loading") || id === "line-loading-placeholder";
   const split = connected.has(id) || id === "line-linked-brush";
   const linked = id === "line-table";
   const tableToggle = id === "chart-data-table";
-  const range = selectedRange.has(id);
+  const range = id === "line-time-range";
   const brushes = brushExamples.has(id);
-  const candleCrosshair = id === "candlestick-crosshair";
   const pointOnly = id === "line-crosshair-point";
   const powerUser = id === "line-large-data";
   const zoom = id === "line-zoom";
@@ -120,18 +127,6 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
     return () => observer.disconnect();
   }, [compact, id, split]);
 
-  useEffect(() => {
-    if (!live || compact || isLoading || data) return;
-    const timer = window.setInterval(() => setTicks(value => value + 1), 600);
-    return () => window.clearInterval(timer);
-  }, [compact, data, isLoading, live]);
-
-  useEffect(() => {
-    if (id !== "live-line-loading" || compact || !isLoading) return;
-    const timer = window.setTimeout(() => setLoading(false), 2500);
-    return () => window.clearTimeout(timer);
-  }, [compact, id, isLoading]);
-
   const optionsData = useMemo((): CartesianData => {
     if (range) {
       return {
@@ -140,30 +135,14 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
         rows: source.rows?.slice(-controls.range),
       };
     }
-    const activeTick = paused ? frozenTick : ticks;
-    if (live && activeTick > 0 && !data) {
-      const count = source.categories.length;
-      return {
-        categories: Array.from({ length: count }, (_, index) => {
-          const clock = 10 * 60 + activeTick + index;
-          return `${Math.floor(clock / 60) % 24}:${String(clock % 60).padStart(2, "0")}`;
-        }),
-        series: source.series.map((item, index) => ({
-          ...item, values: Array.from({ length: count }, (_, position) => {
-            const sample = activeTick + position;
-            return Math.round((143 + Math.sin(sample * 0.3 + index) * 1.03 + Math.sin(sample * 1.34) * 0.46) * 100) / 100;
-          }),
-        })),
-      };
-    }
     if (overview && !compact) return sliceRange(source, [brushStart, brushEnd]);
     if (powerUser && !data) return controls.count === initialLargeCount ? source : minuteLatency(controls.count);
     return source;
-  }, [brushEnd, brushStart, compact, controls.count, controls.range, data, frozenTick, live, overview, paused, powerUser, range, source, ticks]);
+  }, [brushEnd, brushStart, compact, controls.count, controls.range, data, overview, powerUser, range, source]);
 
   const view = useMemo(() => overview ? { ...controls, brushOffset: compact ? 0 : brushStart, brushLength: source.categories.length, chartWidth }
     : controls, [overview, controls, compact, brushStart, source.categories.length, chartWidth]);
-  const option = useMemo(() => getOption(example, optionsData, theme, compact, view), [example, optionsData, theme, compact, view]);
+  const option = useMemo(() => getOption(example, optionsData, theme, compact, view, isLoading), [example, optionsData, theme, compact, view, isLoading]);
 
   useEffect(() => {
     if (!barPulse) return;
@@ -295,23 +274,6 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
       if (typeof value === "number") setFocusedRow(value);
     },
     globalout() { setFocusedRow(-1); },
-  } : candleCrosshair ? {
-    updateAxisPointer(event: { axesInfo?: { value: number; axisDim?: string }[] }) {
-      const index = event.axesInfo?.find(axis => axis.axisDim === "x")?.value;
-      const row = typeof index === "number" ? optionsData.rows?.[index] : undefined;
-      if (row && typeof row.close === "number" && typeof row.open === "number") {
-        const direction = row.close >= row.open;
-        if (direction !== candleDirection.current) {
-          candleDirection.current = direction;
-          const chart = chartRef.current;
-          if (chart && !chart.isDisposed()) {
-            requestAnimationFrame(() => {
-              if (!chart.isDisposed()) chart.setOption({ tooltip: { axisPointer: { crossStyle: { color: direction ? up : down } } } });
-            });
-          }
-        }
-      }
-    },
   } : id === "line-markers" ? {
     updateAxisPointer(event: { axesInfo?: { value: number; axisDim?: string }[] }) {
       const position = event.axesInfo?.find(axis => axis.axisDim === "x")?.value;
@@ -326,41 +288,46 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
 
   const legends = id === "line-profit-loss-legend" ? [{ name: "Profit", color: up }, { name: "Loss", color: down }]
     : id === "dumbbell-legend" ? source.series.slice(0, 2).map((item, index) => ({ name: item.name, color: colorFor(item, index, theme) })) : [];
-  const rangeValues = family === "candlestick" ? [14, 30, 90] : [7, 30, 90];
-  const latest = optionsData.series[0]?.values.at(-1);
   const selectionText = controls.selection ? controls.selection.map(index => optionsData.categories[index]).join(" – ") : "";
-  const skeleton = isLoading && startLoading;
+  const skeleton = isLoading && startLoading && family !== "gantt";
   const showControls = !compact && (range || brushes || startLoading || tableToggle || id === "line-band-fill" || id === "line-trend"
-    || id === "line-export" || powerUser || id === "live-line-paused" || id === "bar-depth" || legends.length > 0);
+    || id === "line-export" || powerUser || id === "bar-depth" || legends.length > 0);
 
   return (
     <div className={`cartesian-example${id === "bar-depth" ? ` cartesian-depth${pulsePaused ? " cartesian-depth--paused" : ""}` : ""}`}>
       {showControls && <div className="cartesian-controls">
-        {range && rangeValues.map(days => <button type="button" aria-pressed={controls.range === days} key={days} onClick={() => update("range", days)}>{days} days</button>)}
+        {range && <Choices label="Time range" className="cartesian-choice-group" options={rangeChoices} value={String(controls.range)} onChange={days => update("range", Number(days))} />}
         {brushes && <>
           <span className="cartesian-muted">Drag across the chart to select a range</span>
-          <button type="button" disabled={!controls.selection} onClick={() => update("selection", null)}>Clear</button>
+          <Button disabled={!controls.selection} onClick={() => update("selection", null)}>Clear</Button>
           {selectionText && <output className="cartesian-muted" aria-live="polite">{selectionText}</output>}
         </>}
-        {startLoading && !["line-loading-placeholder", "area-loading", "live-line-loading"].includes(id) && <button type="button" aria-pressed={isLoading} onClick={() => setLoading(value => !value)}>{isLoading ? "Show data" : "Show loading"}</button>}
-        {id === "area-loading" && ["Pulse", "Sweep", "Loaded"].map(mode => <button key={mode} type="button" aria-pressed={mode === (isLoading ? placeholder : "Loaded")} onClick={() => { setLoading(mode !== "Loaded"); if (mode !== "Loaded") setPlaceholder(mode); }}>{mode}</button>)}
-        {id === "live-line-loading" && <button type="button" disabled={isLoading} onClick={() => { setTicks(0); setLoading(true); }}>Reconnect</button>}
-        {id === "bar-depth" && <button type="button" aria-pressed={pulsePaused} onClick={() => setPulsePaused(value => !value)}>{pulsePaused ? "Resume pulse" : "Pause pulse"}</button>}
-        {id === "line-band-fill" && ["Solid", "Gradient", "Hatched"].map(fill => <button key={fill} type="button" aria-pressed={fill === controls.fill} onClick={() => update("fill", fill)}>{fill}</button>)}
-        {id === "line-trend" && ["Dashed", "Solid", "Gradient"].map(trend => <button key={trend} type="button" aria-pressed={trend === controls.trend} onClick={() => update("trend", trend)}>{trend}</button>)}
+        {startLoading && !["line-loading-placeholder", "area-loading"].includes(id) && <Toggle pressed={isLoading} onPressedChange={setLoading}>{id === "gantt-loading" ? "Loading" : isLoading ? "Show data" : "Show loading"}</Toggle>}
+        {id === "area-loading" && <Choices label="Chart state" className="cartesian-choice-group" options={loadChoices} value={isLoading ? placeholder : "Loaded"} onChange={mode => { setLoading(mode !== "Loaded"); if (mode !== "Loaded") setPlaceholder(mode); }} />}
+        {id === "bar-depth" && <Toggle pressed={pulsePaused} onPressedChange={setPulsePaused}>{pulsePaused ? "Resume pulse" : "Pause pulse"}</Toggle>}
+        {id === "line-band-fill" && <Choices label="Band fill" className="cartesian-choice-group" options={fillChoices} value={controls.fill} onChange={fill => update("fill", fill)} />}
+        {id === "line-trend" && <Choices label="Trend stroke" className="cartesian-choice-group" options={trendChoices} value={controls.trend} onChange={trend => update("trend", trend)} />}
         {id === "line-export" && <>
-          <label>Format <select value={exportFormat} onChange={event => setExportFormat(event.target.value === "png" ? "png" : "svg")}><option value="svg">SVG</option><option value="png">PNG</option></select></label>
-          <button type="button" onClick={exportFile}>Download chart</button>
+          <span className="cartesian-muted">Format</span>
+          <Select value={exportFormat} items={exportFormats} onValueChange={(next) => { if (next !== null) setExportFormat(next); }}>
+            <SelectTrigger aria-label="Format"><SelectValue /><span aria-hidden="true">▾</span></SelectTrigger>
+            <SelectContent className="cartesian-format-menu">
+              {exportFormats.map(({ value, label }) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button onClick={exportFile}>Download chart</Button>
         </>}
-        {powerUser && !data && [10000, 50000, 100000].map(count => <button key={count} type="button" aria-pressed={count === controls.count} onClick={() => update("count", count)}>{count / 1000}k points</button>)}
-        {tableToggle && <button type="button" aria-pressed={viewTable} onClick={() => setViewTable(value => !value)}>{viewTable ? "View chart" : "View as table"}</button>}
-        {id === "live-line-paused" && <button type="button" aria-pressed={paused} onClick={() => { if (!paused) setFrozenTick(ticks); setPaused(value => !value); }}>{paused ? "Resume" : "Pause"}</button>}
-        {legends.map((item, index) => <button key={index} type="button" aria-pressed={index === controls.activeLegend} onMouseEnter={() => update("activeLegend", index)} onMouseLeave={() => update("activeLegend", undefined)} onFocus={() => update("activeLegend", index)} onBlur={() => update("activeLegend", undefined)} onClick={() => update("activeLegend", index === controls.activeLegend ? undefined : index)}><i className="cartesian-swatch" style={{ backgroundColor: item.color }} />{item.name}</button>)}
+        {powerUser && !data && <Choices label="Points per series" className="cartesian-choice-group" options={countChoices} value={String(controls.count)} onChange={count => update("count", Number(count))} />}
+        {tableToggle && <Toggle pressed={viewTable} onPressedChange={setViewTable}>{viewTable ? "View chart" : "View as table"}</Toggle>}
+        {legends.map((item, index) => <Toggle key={index} pressed={index === controls.activeLegend} onMouseEnter={() => update("activeLegend", index)} onMouseLeave={() => update("activeLegend", undefined)} onFocus={() => update("activeLegend", index)} onBlur={() => update("activeLegend", undefined)} onPressedChange={pressed => update("activeLegend", pressed ? index : undefined)}><i className="cartesian-swatch" style={{ backgroundColor: item.color }} />{item.name}</Toggle>)}
       </div>}
-      {live && !skeleton && <div className="cartesian-live" aria-label={paused ? "Stream paused" : "Live stream"}><i className={paused ? "" : "cartesian-pulse"} />{paused ? "Paused" : "Live"} {typeof latest === "number" && <strong>{valueFormat.format(latest)}</strong>}</div>}
       {skeleton ? <ChartSkeleton family={family} label={example.title} effect={placeholder} /> : (
         <>
-          {!viewTable && (split ? <div className={`cartesian-panels ${id === "area-small-multiples" ? "cartesian-panels--multiples" : ""}`} ref={panelsRef}>
+          {!viewTable && (family === "gantt" ? <div className={`cartesian-gantt-scroll${compact ? " cartesian-gantt-scroll--compact" : ""}`} data-gantt-layout={id} aria-busy={isLoading}>
+            <div className={`cartesian-gantt-plot${isLoading ? " cartesian-gantt-plot--loading" : ""}`}>
+              <EChart key={isLoading ? "loading" : "ready"} option={option} label={example.title} compact={compact} />
+            </div>
+          </div> : split ? <div className={`cartesian-panels ${id === "area-small-multiples" ? "cartesian-panels--multiples" : ""}`} ref={panelsRef}>
             {(compact && id === "area-small-multiples" ? splitOptions.slice(0, 4) : splitOptions).map(({ item, panel }, index) => (
               <div className="cartesian-panel" key={index}>
                 <span>{item.name}</span>
@@ -383,6 +350,7 @@ function CartesianExample({ example, compact = false, data }: ChartPreviewProps)
           {overview && !compact && <RangeBrush data={source} range={[brushStart, brushEnd]} change={setRangeOverride} theme={theme} showLaunch={id === "line-date-highlights-brush"} />}
           {powerUser && !compact && <div className="cartesian-status">{valueFormat.format(optionsData.categories.length)} points per series{!data ? ` · ${Math.ceil(optionsData.categories.length / 1440)} days at one sample per minute` : ""}</div>}
           {zoom && !compact && <div className="cartesian-status">Ctrl or ⌘ and scroll to zoom · Drag to pan · Double-click to reset</div>}
+          {id === "gantt-loading" && isLoading && !compact && <div className="cartesian-status" role="status">Loading schedule</div>}
           {!compact && (viewTable || linked) && <DataTable data={optionsData} active={focusedRow} onActive={linked ? showRow : undefined} />}
         </>
       )}

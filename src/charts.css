@@ -1,3 +1,5 @@
+@layer ui-sdk;
+
 :root {
   --background: #f9f9fc;
   --foreground: #201d31;

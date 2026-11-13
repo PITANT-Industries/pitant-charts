@@ -1,0 +1,5 @@
+.panel { background: var(--popover); color: var(--popover-foreground); }
+.panel .header { border-bottom: 1px solid var(--border); padding: 0 0 .3rem; margin: 0 0 .35rem; }
+.panel .revenue { font-size: 1rem; }
+.panel .change { color: var(--muted-foreground); }
+@media (prefers-reduced-motion: reduce) { .panel { transition: none !important; } }

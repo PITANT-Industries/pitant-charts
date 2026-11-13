@@ -1,3 +1,4 @@
+import { Button } from "@ui-sdk/react/button";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import type { EChartsOption } from "echarts";
@@ -151,7 +152,7 @@ export function Sunburst({ example, compact, data }: Props) {
   }
   return <div className={sunburstStyles.frame}>
     {hasBreadcrumb && !compact && <nav className={sunburstStyles.breadcrumb} aria-label="Drill-down path">{ancestors.map((name, index) =>
-      <span key={index}>{index > 0 && <span aria-hidden="true">›</span>}<button type="button" aria-current={index === ancestors.length - 1 ? "location" : undefined} onClick={() => go(ancestors.slice(0, index + 1).join(" / "))}>{name}</button></span>
+      <span key={index}>{index > 0 && <span aria-hidden="true">›</span>}<Button type="button" aria-current={index === ancestors.length - 1 ? "location" : undefined} onClick={() => go(ancestors.slice(0, index + 1).join(" / "))}>{name}</Button></span>
     )}</nav>}
     <div className={`${sunburstStyles.body}${showLegend ? ` ${sunburstStyles.withLegend}` : ""}`}>
     <svg ref={chart} className={sunburstStyles.plot} viewBox="0 0 280 264" role="img" aria-label={example.title} aria-roledescription="chart"
@@ -205,12 +206,12 @@ export function Sunburst({ example, compact, data }: Props) {
       </g>}
     </svg>
     {showLegend && <ul className={sunburstStyles.legend} aria-label="Visible branches">
-      {labels.map(item => <li key={item.id}><button type="button" data-active={active === item.id || !!active?.startsWith(`${item.id} / `)}
+      {labels.map(item => <li key={item.id}><Button type="button" data-active={active === item.id || !!active?.startsWith(`${item.id} / `)}
         onPointerEnter={() => setActive(item.id)} onPointerLeave={() => setActive(null)} onFocus={() => setActive(item.id)} onBlur={() => setActive(null)}
         onClick={() => { if (item.hasChildren) go(item.id); else setActive(item.id); }}>
         <span className={sunburstStyles.swatch} style={{ background: tone(theme, item.categoryIndex, item.color) }} />
         <span>{item.name}</span><strong>{number.format(item.value)}</strong><span>{Math.round(percent(item.value, total))}%</span>
-      </button></li>)}
+      </Button></li>)}
     </ul>}
     </div>
     {!compact && <div className={sunburstStyles.hint}>{activeArc && active !== focus.id ? <><strong>{activeArc.name}</strong> · {customHint && !data ? dollars.format(activeArc.value * 1000) : number.format(activeArc.value)} · {percent(activeArc.value, total).toFixed(1)}%</> : focus.parentId ? "Select the center to go back" : customHint ? "Focus a segment to inspect its cost" : "Select a branch to zoom in"}</div>}
@@ -282,10 +283,10 @@ export function Treemap({ example, compact, data }: Props) {
         } } : undefined} />
     </div>
     {!compact && navigation && <div className={styles.controls} aria-label="Treemap path">{breadcrumbs.map((name, index) =>
-      <button key={index} className={styles.control} type="button" onClick={() => setPath(breadcrumbs.slice(1, index + 1))}>{name}</button>
+      <Button key={index} className={styles.control} type="button" onClick={() => setPath(breadcrumbs.slice(1, index + 1))}>{name}</Button>
     )}</div>}
     {!compact && navigation && visibleRows.some(row => row.children?.length) && <div className={styles.controls} aria-label="Treemap groups">
-      {visibleRows.filter(row => row.children?.length).map(row => <button key={row.name} className={styles.control} type="button" onClick={() => drill(row.name)}>{row.name}</button>)}
+      {visibleRows.filter(row => row.children?.length).map(row => <Button key={row.name} className={styles.control} type="button" onClick={() => drill(row.name)}>{row.name}</Button>)}
     </div>}
     {control}
   </div>;

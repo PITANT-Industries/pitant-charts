@@ -1,5 +1,7 @@
+import { Button } from "@ui-sdk/react/button";
 import { useState } from "react";
 import type { ChartData, ChartPreviewProps } from "../../types";
+import { Choices } from '../../ui/Choices';
 import { useChartTheme } from "../theme";
 import styles from "./styles.module.css";
 
@@ -51,6 +53,14 @@ export function percent(part: number, total: number) {
   return total > 0 ? (100 * part / total) : 0;
 }
 
+export function nextChartFocus(key: string, current: number | null, count: number): number | undefined {
+  if (!count) return undefined;
+  if (key === "Home") return 0;
+  if (key === "End") return count - 1;
+  if (key === "ArrowLeft" || key === "ArrowUp") return current === null ? count - 1 : (current - 1 + count) % count;
+  if (key === "ArrowRight" || key === "ArrowDown") return current === null ? 0 : (current + 1) % count;
+}
+
 export const number = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 export const dollars = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 export const short = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
@@ -71,7 +81,7 @@ export function Legend({ items, active, onActive, onClick, progress, percentageT
   return (
     <div className={styles.legend}>
       {items.map((item, index) => (
-        <button key={index} type="button" className={styles.legendItem} data-active={active === index}
+        <Button key={index} type="button" className={styles.legendItem} data-active={active === index}
           onMouseEnter={() => onActive(index)} onMouseLeave={() => onActive(null)}
           onFocus={() => onActive(index)} onBlur={() => onActive(null)}
           onClick={() => onClick?.(index)}>
@@ -80,7 +90,7 @@ export function Legend({ items, active, onActive, onClick, progress, percentageT
           <strong>{number.format(item.value)}</strong>
           {percentageTotal !== undefined && <span>{Math.round(percent(item.value, percentageTotal))}%</span>}
           {progress !== undefined && <meter value={Math.max(0, Math.min(100, percent(item.value, progress)))} min={0} max={100} aria-label={`${item.name} progress`} />}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -92,19 +102,17 @@ export function useLoading(id: string, compact: boolean | undefined) {
   return {
     loading,
     control: !compact && id.endsWith("-loading") ? (
-      <button className={styles.control} type="button" onClick={() => setOverride(!loading)}>
+      <Button className={styles.control} type="button" onClick={() => setOverride(!loading)}>
         {loading ? "Show chart" : "Show loading state"}
-      </button>
+      </Button>
     ) : null,
   };
 }
 
-export function Controls({ items, value, onChange }: {
-  items: readonly string[]; value: number; onChange: (index: number) => void;
+export function Controls({ items, value, onChange, label }: {
+  items: readonly string[]; value: number; onChange: (index: number) => void; label: string;
 }) {
-  return <div className={styles.controls}>{items.map((item, index) => (
-    <button key={item} className={styles.control} type="button" aria-pressed={value === index} onClick={() => onChange(index)}>{item}</button>
-  ))}</div>;
+  return <Choices label={label} className={styles.controls} itemClassName={styles.control} options={items.map((item) => ({ value: item, label: item }))} value={items[value] ?? items[0]} onChange={(item) => onChange(items.indexOf(item))} />;
 }
 
 export function point(cx: number, cy: number, radius: number, angle: number) {
