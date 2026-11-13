@@ -1,17 +1,31 @@
 # Caller-data coverage
 
-The gallery fixtures and supplied `ChartData` have separate verification scopes. The 16 basic Area variants now retain their detailed renderer with caller data, including adaptive scales, row dates, missing samples, names and explicit colors. Line Markers retains event objects and legacy event strings. Their public API checks are recorded in [PARITY.md](PARITY.md).
+The gallery fixtures and supplied `ChartData` have separate verification scopes. Omitting `data` selects the demo. Supplying a data object selects caller input; the adapted routes below do not inherit missing demo values, locations or leaf nodes.
 
-A source audit found 135 other variants that switch implementation when data is supplied. This is a routing count, not a count of broken charts: many compatibility renderers retain their core controls and modes. The following table records concrete behavior or data-model differences. These are source findings; they do not constitute runtime qualification of every caller dataset.
+An earlier source audit found 135 variants that switched implementation when data was supplied. That was a routing count, not a count of broken charts. The adapters below address the 20 concrete behavior/model gaps identified by that audit, and cover related variants that share those models. Other compatibility routes still need independent caller-data qualification; these results do not establish arbitrary-data parity for all 331 examples.
 
-| Group | Affected examples | Remaining caller-data difference |
+| Group | Adapted examples | Supplied-data behavior |
 | --- | --- | --- |
-| Choropleth | `choropleth-default`, `choropleth-background`, `choropleth-click-to-zoom`, `choropleth-pointer-camera`, `choropleth-dot-grid`, `choropleth-patterns` | supplied data uses the compatibility map renderer, with older manual zoom/camera behavior or missing status/marker controls depending on the variant. [Source](src/charts/statsmaps/maps.tsx#L144). |
-| Treemap | `treemap-default`, `treemap-drilldown`, `treemap-loading`, `treemap-portfolio` | the compatibility renderer lacks leaf-to-visible-ancestor drill behavior and the separate keyboard/pointer focus restoration. [Source](src/charts/polarflow/treemap-tree.tsx#L87). |
-| Stream default/loading | `stream-default`, `stream-loading` | the compatibility renderer uses a centered stack instead of the measured inside-out wiggle layout. [Source](src/charts/cartesian/ReferenceStreamDiverging.tsx#L35). |
-| Quantity legend pinning | `waffle-default`, `marimekko-legend` | compatibility legend selection does not retain the measured pinned selection behavior. [Source](src/charts/polarflow/ReferenceQuantity.tsx#L29). |
-| Density groups | `density-groups` | the compatibility legend hides the clicked group instead of isolating it. [Source](src/charts/statsmaps/SpatialDensityDetail.tsx#L34). |
-| Gantt grouped/multiple dependencies | `gantt-default`, `gantt-roadmap`, `gantt-milestones`, `gantt-loading` | the compatibility row schema supports one dependency and does not represent the measured phase headers/multiple incoming dependencies. [Source](src/charts/cartesian/GanttDetail.tsx#L12). |
-| Vector stations | `vector-field-stations` | the compatibility renderer uses geographic coordinates and m/s instead of the station example's Cartesian kilometre grid and km/h. [Source](src/charts/statsmaps/maps.tsx#L561). |
+| Choropleth | All nine variants | Detailed projection, manual wheel/drag, visible-country inspection, marker buttons and camera controls use caller country/marker rows. Pattern states come from explicit caller statuses. |
+| Treemap | All four variants | Detailed hierarchy layout, leaf-to-visible-ancestor drill, separate pointer/keyboard focus, loading and back navigation. Duplicate sibling labels have independent identities. |
+| Stream | All three variants | Default/loading use D3 inside-out ordering and wiggle stacking. Expand retains its 100% model. Names, colors, categories and missing-sample readouts come from caller input. |
+| Waffle and Marimekko | All four Waffle and all three Marimekko variants | Detailed quantity layouts, loading controls, caller colors and values, and the applicable pinned legend selection. |
+| Density groups | `density-groups` | Legend activation isolates a group; activating it again restores all groups. Numeric axes adapt to caller coordinates. |
+| Gantt | All four variants | Phase rows and bands, multiple incoming dependencies, legacy fractional progress, explicit percentage progress and ISO date rows. |
+| Vector stations | `vector-field-stations` | Cartesian `x`/`y` stations use the detailed kilometre grid and km/h readings. Existing `lon`/`lat` rows retain the geographic compatibility format and m/s semantics. |
 
-Do not remove the guards without adapting inputs. Several detailed renderers still assume fixture date rows, fixed domains, preset series names or fixed hierarchy roots. The existing compatibility renderers remain available while these adapters are completed. Each affected example also records its caller-data gap in the gallery's Parity review.
+The 16 basic Area variants also retain their detailed renderer with caller data, including adaptive scales, aligned ISO row dates, missing samples, names and explicit colors. Line Markers accepts event objects and legacy emoji/title strings. [Verification scope](PARITY.md) distinguishes these API checks from the reference fixture comparisons.
+
+## Input formats
+
+- **Choropleth:** `rows: [{ country: 'Germany', value: 120 }]`. `label` can replace `country`; country names match the atlas exactly. Duplicate country values use the last valid value. Pattern rows can add `status: 'live' | 'beta' | 'not yet'`. Marker variants accept finite `lon` and `lat` within geographic bounds, optional `label`, `category` and `value`. Marker values default to 1 and are clamped to zero or above. Duplicate marker labels remain independently inspectable. Mercator marker positions cap projected latitude at ±85.051129 degrees while readouts retain the supplied geographic coordinates. Caller readouts use raw values without demo metric suffixes.
+- **Treemap:** nested `rows: [{ name: 'Platform', children: [{ name: 'Compute', value: 72 }] }]`. `label` aliases `name`; node colors are optional. Numeric values retain the existing hierarchy parser's accepted formats. Duplicate sibling names are supported.
+- **Waffle:** `rows: [{ name: 'North', value: 30, color: '#2563eb' }]`, with `label` as an alias. Alternatively use categories and the first numeric series. Values are nonnegative; missing/invalid numeric values contribute zero.
+- **Marimekko and Stream:** categories plus numeric series with optional colors. Omitted categories use numbered positions. Marimekko treats missing values as zero; Stream uses zero for stacking and a dash in inspection. Expand normalizes the nonnegative column totals to 100%.
+- **Density groups:** `rows: [{ x: 1.2, y: 15, group: 'North', label: 'Sample 1' }]`, or categories plus numeric series. Non-finite/missing coordinates are skipped. Matching series entries can supply group colors. Caller axes/readouts use numeric values without demo units.
+- **Gantt:** rows with `name`, numeric day-offset `start`/`end`, optional `owner`/`team`, `color` and `milestone`. Existing `dependsOn` indices and fractional `progress` from 0 to 1 remain supported. Add `dependencies: [0, 1]`, or string references to rows' explicit `id` fields, for multiple dependencies. Use `progressPercent` for percentages from 0 to 100. A row with `kind: 'phase'` or `taskCount` represents a phase header; `phase` labels its band. ISO `YYYY-MM-DD` start/end strings use the earliest supplied date as the origin; malformed dates are marked unavailable. Numeric-only schedules retain their previous variant origin.
+- **Vector stations:** `rows: [{ x: 4, y: 6, label: 'Harbor', speed: 9, direction: 245 }]`. Coordinates are kilometres and speed is km/h. `speedKmh`, `bearing` and `name` are aliases. Bearings normalize modulo 360. Existing geographic rows use `lon`/`lat` and m/s. Use one coordinate format per dataset.
+
+## Verification limits
+
+Public-API cases exercise supplied names/colors/values, empty and partial data, keyboard/pointer inspection, the applicable drill/pin/phase/dependency controls, and same-instance data replacement and resizing. Gallery notes record the remaining reference paint, motion and input comparisons separately. Finite fixture-as-data comparisons do not qualify every possible dataset.

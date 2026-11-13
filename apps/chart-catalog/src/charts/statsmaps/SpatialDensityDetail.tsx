@@ -1,10 +1,11 @@
-import { useId, useMemo, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useId, useMemo, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { Toggle } from "@ui-sdk/react/toggle";
 import { LoaderCircle } from "lucide-react";
 import { usePlotSize } from "../usePlotSize";
 import { CartesianReadout } from "../cartesian/CartesianFocus";
-import { contourPaths, densitySkeleton, designs, hexBins, hexPath, hexSkeleton, spatialFixture, type Bounds } from "./spatial-density-data";
-import type { DemoProps } from "./primitives";
+import { contourPaths, densitySkeleton, designs, hexBins, hexPath, hexSkeleton, spatialFixture, type Bounds, type Sample } from "./spatial-density-data";
+import { NoData, seriesColors, xyData, type DemoProps } from "./primitives";
+import { callerDomain, callerPosition, callerTicks } from "./caller-spatial-scale";
 import "./spatial-density-detail.css";
 
 export function isSpatialDensityVariant(id: string) {
@@ -12,8 +13,9 @@ export function isSpatialDensityVariant(id: string) {
 }
 
 const decimal = new Intl.NumberFormat("en", { maximumFractionDigits: 2 });
+const callerDecimal = new Intl.NumberFormat("en", { maximumSignificantDigits: 5 });
 const palette = [2, 3, 4, 5].map(level => `var(--spatial-scale-${level})`);
-const groupColor = (group: string) => `var(--chart-${group === "Gaming" ? 2 : group === "Workstation" ? 3 : 1})`;
+const fixtureGroupColor = (group: string) => `var(--chart-${group === "Gaming" ? 2 : group === "Workstation" ? 3 : 1})`;
 
 type Readout = { title: string; entries: { name: string; value: string | number; color: string }[]; detail?: string };
 type Mark = { x: number; y: number; index: number; color: string; value?: number; count?: number; group?: string };
@@ -31,10 +33,33 @@ function axisEntries(axis: { values: number[]; format: (value: number) => string
   return axis?.values.map(value => ({ value, position: scale(value), text: axis.format(value) })) ?? [];
 }
 
-export function SpatialDensityDetail({ example, compact = false }: DemoProps) {
+export function SpatialDensityDetail(props: DemoProps) {
+  const source = useMemo(() => props.data ? xyData(props.data) ?? [] : spatialFixture(props.example.id), [props.data, props.example.id]);
+  if (props.data && !source.length) return <NoData example={props.example} compact={props.compact} />;
+  return <SpatialDensityChart {...props} source={source} />;
+}
+
+function SpatialDensityChart({ example, compact = false, data, source }: DemoProps & { source: readonly (Sample & { label?: string })[] }) {
   const id = useId();
   const variant = example.id;
-  const design = designs[variant];
+  const design = useMemo(() => {
+    const base = designs[variant];
+    if (!data) return base;
+    const x = callerDomain(source.map(point => point.x));
+    const y = callerDomain(source.map(point => point.y));
+    const groups = new Set(source.map(point => point.group ?? "")).size;
+    return { ...base, x, y, xTitle: undefined,
+      xAxis: { values: callerTicks(x, 6), format: callerDecimal.format },
+      yAxis: { values: callerTicks(y, 5), format: callerDecimal.format },
+      summary: [`${source.length} ${source.length === 1 ? "observation" : "observations"}`,
+        `${groups} ${groups === 1 ? "group" : "groups"}`] as [string, string] };
+  }, [data, source, variant]);
+  const colors = useMemo(() => {
+    const names = [...new Set(source.map(point => point.group ?? ""))];
+    const palette = seriesColors(names, Array.from({ length: 8 }, (_, index) => `var(--chart-${index + 1})`), data);
+    return new Map(names.map((name, index) => [name, data ? palette[index] : fixtureGroupColor(name)]));
+  }, [data, source]);
+  const groupColor = (group: string) => colors.get(group) ?? "var(--chart-1)";
   const isHex = variant.startsWith("hexbin");
   const average = variant === "hexbin-average";
   const ticket = variant === "hexbin-custom-tooltip";
@@ -45,12 +70,11 @@ export function SpatialDensityDetail({ example, compact = false }: DemoProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const [isolated, setIsolated] = useState<string | null>(null);
   const { plot, width, height } = usePlotSize<HTMLDivElement>(728, 409.5);
-  const source = useMemo(() => spatialFixture(variant), [variant]);
   const bounds = useMemo(() => chartBounds(width, height, design.margins, compact), [compact, design, height, width]);
   const { left, right, top, bottom } = bounds;
   const model = useMemo(() => {
-    const x = (value: number) => left + (value - design.x[0]) / (design.x[1] - design.x[0]) * (right - left);
-    const y = (value: number) => bottom - (value - design.y[0]) / (design.y[1] - design.y[0]) * (bottom - top);
+    const x = (value: number) => data ? callerPosition(value, design.x, left, right) : left + (value - design.x[0]) / (design.x[1] - design.x[0]) * (right - left);
+    const y = (value: number) => data ? callerPosition(value, design.y, bottom, top) : bottom - (value - design.y[0]) / (design.y[1] - design.y[0]) * (bottom - top);
     const names = [...new Set(source.map(p => p.group ?? ""))];
     const points = isHex ? [] : source.map((p, index) => ({ ...p, x: x(p.x), y: y(p.y), index, color: groupColor(p.group ?? "") }));
     const hexWidth = design.binWidth ?? 22;
@@ -64,12 +88,14 @@ export function SpatialDensityDetail({ example, compact = false }: DemoProps) {
     const skeleton = loading && !isHex ? densitySkeleton(bounds) : undefined;
     const placeholders = loading && isHex ? hexSkeleton(bounds, hexWidth) : [];
     return { x, y, points, cells, contours, skeleton, placeholders, radius, names };
-  }, [average, bottom, bounds, design, isHex, left, loading, right, source, top]);
+  }, [average, bottom, bounds, colors, data, design, isHex, left, loading, right, source, top]);
   const { x, y, points, cells, contours, skeleton, placeholders, radius, names } = model;
+  useEffect(() => { if (isolated !== null && !names.includes(isolated)) setIsolated(null); }, [isolated, names]);
   const marks: Mark[] = isHex ? cells : points;
-  const visible = useMemo(() => (isolated ? marks.filter(mark => mark.group === isolated) : [...marks])
-    .sort((a, b) => a.x - b.x || a.y - b.y), [isolated, marks]);
-  const active = selected === null || loading ? undefined : marks[selected];
+  const isolatedGroup = isolated !== null && names.includes(isolated) ? isolated : null;
+  const visible = useMemo(() => (isolatedGroup !== null ? marks.filter(mark => mark.group === isolatedGroup) : [...marks])
+    .sort((a, b) => a.x - b.x || a.y - b.y), [isolatedGroup, marks]);
+  const active = selected === null || loading ? undefined : visible.find(mark => mark.index === selected);
   const xTicks = axisEntries(design.xAxis, x);
   const yTicks = axisEntries(design.yAxis, y);
   const interactive = !loading && !compact && !contoursOnly;
@@ -92,6 +118,10 @@ export function SpatialDensityDetail({ example, compact = false }: DemoProps) {
       };
     }
     const point = source[mark.index];
+    if (data) return { title: "label" in point && typeof point.label === "string" ? point.label : point.group || "Unnamed group", entries: [
+      { name: "X", value: callerDecimal.format(point.x), color: mark.color },
+      { name: "Y", value: callerDecimal.format(point.y), color: mark.color },
+    ] };
     return { title: point.group ?? "", entries: [
       { name: groupVariant ? "Weight" : "Booked ahead", value: groupVariant ? `${point.x} kg` : `${point.x}d`, color: mark.color },
       { name: groupVariant ? "Battery" : "Fare", value: groupVariant ? `${point.y}h` : `$${point.y}`, color: mark.color },
@@ -156,7 +186,7 @@ export function SpatialDensityDetail({ example, compact = false }: DemoProps) {
         <g aria-hidden="true" transform={`translate(${left} ${top})`} clipPath={`url(#${id}-contours)`}>
           {contours.map(({ group, value, path }, index) => <path key={`${group}:${value}`} d={path} data-spatial-contour={group}
             fill={groupColor(group)} fillOpacity={contoursOnly ? .1 : .14} stroke={groupColor(group)} strokeOpacity={contoursOnly ? .4 : .55}
-            opacity={isolated && group !== isolated ? .13 : active && groupVariant && group !== active.group ? .5 : 1}
+            opacity={isolatedGroup !== null && group !== isolatedGroup ? .13 : active && groupVariant && group !== active.group ? .5 : 1}
             className={canLoad ? "spatial-reveal" : undefined} style={{ "--spatial-delay": `${index * 48}ms` } as CSSProperties} />)}
         </g>
         <g aria-hidden="true">
@@ -171,7 +201,7 @@ export function SpatialDensityDetail({ example, compact = false }: DemoProps) {
             fill="var(--spatial-skeleton)" fillOpacity=".7" className="spatial-skeleton" style={{ "--spatial-delay": `${(index % 15) * 50}ms` } as CSSProperties} />)}
           {!isHex && !contoursOnly && !loading && points.map(mark => <circle key={mark.index} data-spatial-point={mark.group ?? ""}
             cx={mark.x} cy={mark.y} r={design.pointRadius} fill={mark.color} fillOpacity=".7"
-            opacity={isolated && mark.group !== isolated ? .12 : active && groupVariant && mark !== active ? .35 : 1} />)}
+            opacity={isolatedGroup !== null && mark.group !== isolatedGroup ? .12 : active && groupVariant && mark !== active ? .35 : 1} />)}
           {active && (isHex ? <path d={hexPath(active.x, active.y, radius * 1.18)} fill={active.color} stroke="var(--muted-foreground)" strokeWidth="1.5" strokeLinejoin="round" />
             : <circle cx={active.x} cy={active.y} r={(design.pointRadius ?? 2.5) * 1.9} fill={active.color} stroke="var(--background)" strokeWidth="2" />)}
         </g>
@@ -193,9 +223,9 @@ export function SpatialDensityDetail({ example, compact = false }: DemoProps) {
     {!compact && showSteps && <div className="spatial-legend"><strong>{average ? "Average fare" : "Sessions"}</strong>
       {steps.map((step, index) => <span key={step}><i style={{ background: palette[index] }} />{step}</span>)}
     </div>}
-    {!compact && showGroups && <div className="spatial-legend" aria-label="Laptop segments">
-      {names.map(group => <Toggle key={group} pressed={isolated === group} onPressedChange={pressed => { setSelected(null); setIsolated(pressed ? group : null); }}>
-        <i style={{ background: groupColor(group) }} />{group}
+    {!compact && showGroups && <div className="spatial-legend" aria-label={data ? "Groups" : "Laptop segments"}>
+      {names.map(group => <Toggle key={group} pressed={isolatedGroup === group} onPressedChange={pressed => { setSelected(null); setIsolated(pressed ? group : null); }}>
+        <i style={{ background: groupColor(group) }} />{data ? group || "Unnamed group" : group}
       </Toggle>)}
     </div>}
     {!compact && <div className="spatial-summary"><strong>{summary[0]}</strong><span>{summary[1]}</span></div>}

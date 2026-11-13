@@ -6,16 +6,17 @@ import { useChoroplethCameraMotion } from "./choropleth-camera-motion";
 import { manualMapRest as rest, mapCountryIsVisible, mapFragmentBounds } from "./choropleth-manual-zoom";
 import { useChoroplethManualZoom } from "./use-choropleth-manual-zoom";
 import { ChoroplethTooltip } from "./ChoroplethTooltip";
+import { adaptChoroplethData, callerCountryLevel, callerMercatorCoordinates, type ChoroplethCallerData, type ChoroplethCallerMarker } from "./choropleth-caller-data";
 import { countryKeyboardOrder, infrastructureMarkers, signupCounts, visitorCounts } from "./choropleth-fixtures";
 import {
   countryLevel, countryStatus, detailCountries, detailProjection, dotLattice, mapCaptions, mapScale,
   officeLocations, officeVisitorCounts, type ChoroplethVariant,
 } from "./choropleth-detail-data";
 import type { Coordinate } from "./geo-fixtures";
-import type { DemoProps } from "./primitives";
+import { format, NoData, type DemoProps } from "./primitives";
 import "./choropleth-detail.css";
 
-type Target = { name: string; at: Coordinate; marker?: number };
+type Target = { key: string; name: string; at: Coordinate; marker?: number };
 const graticule = geoGraticule()();
 const coordinates = new Intl.NumberFormat("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const pinPath = (radius: number) => `M0 0L${-.82 * radius} ${-1.33 * radius}A${radius} ${radius} 0 1 1 ${.82 * radius} ${-1.33 * radius}Z`;
@@ -26,7 +27,16 @@ featureNames.splice(featureNames.indexOf("Nepal"), 0, "Antarctica");
 const mainShapes = [undefined, undefined, "M0 -6L6 0 0 6 -6 0Z", "M-4.4 -4.4H4.4V4.4H-4.4Z", "M0 -5.75L5.25 3.5H-5.25Z"];
 const dotFadeStops = [[0, 0], [20, 1], [80, 1], [100, 0]];
 
-export function ChoroplethDetail({ example, compact = false }: DemoProps) {
+export function ChoroplethDetail(props: DemoProps) {
+  const caller = useMemo(() => adaptChoroplethData(props.data), [props.data]);
+  const markerVariant = ["choropleth-markers", "choropleth-click-to-zoom", "choropleth-dot-grid", "choropleth-pointer-camera"].includes(props.example.id);
+  if (caller && !caller.values.size && !caller.statuses.size && !(markerVariant && caller.markers.length)) {
+    return <NoData example={props.example} compact={props.compact} />;
+  }
+  return <ChoroplethMap {...props} caller={caller} />;
+}
+
+function ChoroplethMap({ example, compact = false, caller }: DemoProps & { caller?: ChoroplethCallerData }) {
   const variant = example.id as ChoroplethVariant;
   const id = useId().replaceAll(":", "");
   const clickable = variant === "choropleth-click-to-zoom";
@@ -50,7 +60,7 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
   const keyboardCountry = useRef<Target | undefined>(undefined);
   const keyboardMarker = useRef<Target | undefined>(undefined);
   const markerUnderlay = useRef<Target | undefined>(undefined);
-  const [selection, setSelection] = useState<Target>();
+  const [selectionState, setSelection] = useState<Target>();
   const [tooltipGrace, setTooltipGrace] = useState(false);
   const selectionSize = useRef<{ width: number; height: number } | null>(null);
   const projection = useMemo(() => detailProjection(width, height), [width, height]);
@@ -65,11 +75,16 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
       const view = { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2,
         k: Math.min(dots ? 2 : 6, Math.max(1, .7 * Math.min(width / (x1 - x0 || 1), height / (y1 - y0 || 1)))) };
       const d = path(country) ?? "";
-      return { name, d, at: projection(geoCentroid(country)) as Coordinate, view,
-        level: countryLevel(variant, name, index), fragments: mapFragmentBounds(d) };
+      const status = caller?.statuses.get(name);
+      const level = caller ? patterns && status ? status === "live" ? 4 : 0
+        : caller.values.size ? callerCountryLevel(caller, name)
+          : clickable || dots || background || patterns || variant === "choropleth-values" ? 0 : countryLevel(variant, name, index)
+        : countryLevel(variant, name, index);
+      return { key: `country:${name}`, name, marker: undefined, d, at: projection(geoCentroid(country)) as Coordinate, view,
+        level, fragments: mapFragmentBounds(d) };
     });
     return { areas, grid: showGraticule ? path(graticule) : null, lattice: dots ? dotLattice(width, height, projection, areas) : null };
-  }, [compact, dots, height, projection, showGraticule, variant, width]);
+  }, [compact, dots, height, projection, showGraticule, variant, width, caller, patterns, clickable, background]);
   const targets = useMemo(() => {
     const byName = new Map(model.areas.map(area => [area.name, area]));
     return featureNames.flatMap(name => {
@@ -78,14 +93,19 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
     });
   }, [model, camera, compact, width, height]);
   const markerData = useMemo(() => {
-    const locations = infrastructure ? infrastructureMarkers.map(({ label, at }) => [label, ...at] as const)
-      : flyable ? officeLocations : [];
-    return locations.map(([name, lon, lat], marker) => ({
-      name, at: projection([lon, lat]) as Coordinate, marker,
-      location: `${coordinates.format(lat)}°, ${coordinates.format(lon)}°`,
+    const locations: readonly ChoroplethCallerMarker[] = !(infrastructure || flyable) ? [] : caller ? caller.markers
+      : infrastructure ? infrastructureMarkers.map(({ label, at, value }, index) => ({ key: `marker:${index}`, name: label, at, value, hasValue: false }))
+        : officeLocations.map(([name, lon, lat], index) => ({ key: `marker:${index}`, name, at: [lon, lat] as Coordinate, value: 1, hasValue: false }));
+    return locations.map((location, marker) => ({
+      ...location, at: projection(caller ? callerMercatorCoordinates(location.at) : location.at) as Coordinate, marker,
+      location: `${coordinates.format(location.at[1])}°, ${coordinates.format(location.at[0])}°`,
     }));
-  }, [flyable, infrastructure, projection]);
-  const active = hover?.target ?? focus;
+  }, [flyable, infrastructure, projection, caller]);
+  const resolveTarget = (target?: Target) => target?.marker === undefined
+    ? model.areas.find(area => area.key === target?.key) : markerData.find(marker => marker.key === target.key);
+  const inspection = hover?.target ?? focus;
+  const active = resolveTarget(inspection);
+  const selection = selectionSize.current?.width === width && selectionSize.current.height === height ? resolveTarget(selectionState) : undefined;
   const tooltipRequest = useMemo(() => {
     if (!active) return null;
     const point: Coordinate = [...active.at];
@@ -97,10 +117,8 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
     point[1] = point[1] * camera.scale + camera.y;
     return { target: active, point };
   }, [active, camera, width, height]);
-  const tooltip = useDelayedTooltipData(tooltipRequest, 0, tooltipGrace ? 120 : 0);
-  const selectedTarget = selection && selectionSize.current?.width === width && selectionSize.current?.height === height
-    ? selection.marker === undefined ? model.areas.find(target => target.name === selection.name) : markerData[selection.marker]
-    : undefined;
+  const tooltip = useDelayedTooltipData(tooltipRequest, 0, inspection && !active ? 0 : tooltipGrace ? 120 : 0);
+  const selectedTarget = selection;
   const view = selectedTarget ? "view" in selectedTarget ? selectedTarget.view
     : { cx: selectedTarget.at[0], cy: selectedTarget.at[1], k: dots ? 2 : 4 }
     : { cx: width / 2, cy: height / 2, k: 1 };
@@ -115,6 +133,10 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
   const angle = rotateX || rotateY
     ? `perspective(1600px) translateY(10%) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-10%)`
     : undefined;
+
+  useEffect(() => {
+    if (selectionState && !selection) setSelection(undefined);
+  }, [selectionState, selection]);
 
   useEffect(() => {
     selectionSize.current = null;
@@ -153,11 +175,11 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
 
   function fly(target: Target) {
     if (!flyable || compact || didDrag.current) return;
-    if (selection?.name === target.name) { reset(false); return; }
+    if (selection?.key === target.key) { reset(false); return; }
     selectionSize.current = { width, height };
     setSelection(target);
-    setHover(current => current?.target.name === target.name ? current : undefined);
-    setFocus(current => current?.name === target.name ? current : undefined);
+    setHover(current => current?.target.key === target.key ? current : undefined);
+    setFocus(current => current?.key === target.key ? current : undefined);
   }
 
   function key(event: KeyboardEvent<SVGSVGElement>) {
@@ -178,7 +200,7 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
     const arrow = arrows[event.key];
     if (!arrow && event.key !== "Home" && event.key !== "End") return;
     event.preventDefault();
-    const current = targets.findIndex(target => target.name === focus?.name);
+    const current = targets.findIndex(target => target.key === focus?.key);
     const end = targets.length - 1;
     const index = event.key === "Home" ? 0 : event.key === "End" ? end :
       Math.min(end, Math.max(0, current + (arrow[0] || arrow[1])));
@@ -198,7 +220,7 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
   }
 
   function highlight(target: Target, event: PointerEvent<SVGElement>) {
-    if (compact || manual.isInteracting() || selection && selection.name !== target.name) return;
+    if (compact || manual.isInteracting() || selection && selection.key !== target.key) return;
     if (keyboardCountry.current && document.activeElement === motion.svg.current) {
       // The chart retains its first inspected marker as keyboard context.
       if (target.marker !== undefined) {
@@ -214,17 +236,39 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
   }
 
   const tooltipTarget = tooltip?.target;
-  const dataValue = tooltipTarget && (variant === "choropleth-values" ? visitorCounts.get(tooltipTarget.name)
+  const dataValue = tooltipTarget && (caller ? caller.values.get(tooltipTarget.name) : variant === "choropleth-values" ? visitorCounts.get(tooltipTarget.name)
     : background ? signupCounts.get(tooltipTarget.name) : clickable || dots ? officeVisitorCounts.get(tooltipTarget.name) : undefined);
   const marker = tooltipTarget?.marker === undefined ? undefined : markerData[tooltipTarget.marker];
   const activeArea = active?.marker === undefined ? model.areas.find(area => area.name === active?.name) : undefined;
   const activeDotPath = activeArea && model.lattice?.byCountry.get(activeArea.name);
-  const entries = useMemo(() => marker ? [{ name: "Location", value: marker.location, color: "var(--choropleth-marker-muted)" }]
-    : dataValue === undefined ? [] : [{ name: background ? "Sign-ups" : "Visitors", value: clickable || dots ? `${dataValue}k` : dataValue, color: "var(--chart-1)" }], [marker, dataValue, background, clickable, dots]);
-  const readoutTitle = tooltipTarget && (patterns && !marker ? `${tooltipTarget.name}: ${countryStatus(tooltipTarget.name)}` : tooltipTarget.name);
+  const status = tooltipTarget && (caller ? caller.statuses.get(tooltipTarget.name) : countryStatus(tooltipTarget.name));
+  const entries = useMemo(() => {
+    const result: { name: string; value: string | number; color: string }[] = [];
+    if (marker) {
+      result.push({ name: "Location", value: marker.location, color: "var(--choropleth-marker-muted)" });
+      if (caller && marker.hasValue) result.push({ name: "Value", value: marker.value, color: "var(--chart-1)" });
+      if (caller && marker.category) result.push({ name: "Category", value: marker.category, color: "var(--choropleth-marker-muted)" });
+    } else {
+      if (dataValue !== undefined) result.push({ name: background ? "Sign-ups" : caller && variant !== "choropleth-values" ? "Value" : "Visitors",
+        value: !caller && (clickable || dots) ? `${dataValue}k` : dataValue, color: "var(--chart-1)" });
+      if (caller && !patterns && status) result.push({ name: "Status", value: status, color: "var(--choropleth-marker-muted)" });
+    }
+    return result;
+  }, [marker, dataValue, background, clickable, dots, caller, variant, patterns, status]);
+  const readoutTitle = tooltipTarget && (patterns && !marker && status ? `${tooltipTarget.name}: ${status}` : tooltipTarget.name);
   const stroke = "var(--choropleth-border)";
-  const fillArea = (name: string, level: number) => patterns && countryStatus(name) === "beta" ? `url(#${id}-beta)` : mapScale(level);
-  const [summary, description] = mapCaptions[variant];
+  const fillArea = (name: string, level: number) => patterns && (caller ? caller.statuses.get(name) : countryStatus(name)) === "beta" ? `url(#${id}-beta)` : mapScale(level);
+  let [summary, description]: [string, string] = [...mapCaptions[variant]];
+  if (caller) {
+    if (variant === "choropleth-values") summary = `${format.format(caller.total)} visitors from ${caller.values.size} countries`;
+    if (patterns) {
+      const states = [...caller.statuses.values()];
+      summary = states.length ? `Live in ${states.filter(value => value === "live").length} countries, in beta in ${states.filter(value => value === "beta").length} more` : `${caller.values.size} countries`;
+      if (!states.length) description = "Darker countries have higher values; grey countries have none";
+    }
+    if (infrastructure) summary = `${markerData.length} locations`;
+    if (clickable) summary = "Click a country or a location to zoom in";
+  }
   return <div className="choropleth-detail" data-choropleth={variant} data-compact={compact}>
     <div ref={plot} className="choropleth-stage" data-pannable={pannable} data-dragging={manual.isDragging} data-flying={flyable}
       data-selected={selectedTarget?.name} onPointerMove={move}
@@ -291,7 +335,7 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
               {activeArea && activeDotPath && <path data-map-dot-focus={activeArea.name} d={activeDotPath} stroke={mapScale(activeArea.level)} />}
             </g>
           </g>}
-          {model.areas.map(area => <path key={area.name} data-map-location={`country:${area.name}`} data-map-level={area.level} data-market-status={patterns ? countryStatus(area.name) : undefined}
+          {model.areas.map(area => <path key={area.name} data-map-location={area.key} data-map-level={area.level} data-market-status={patterns ? caller ? caller.statuses.get(area.name) : countryStatus(area.name) : undefined}
             d={area.d} fill={dots ? "transparent" : fillArea(area.name, area.level)} stroke={dots ? "none" : stroke} strokeWidth=".5" strokeLinejoin="round"
             vectorEffect="non-scaling-stroke" opacity={activeArea && activeArea.name !== area.name && !dots ? .4 : 1}
             onPointerMove={compact ? undefined : event => highlight(area, event)}
@@ -302,16 +346,18 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
         </g>
         {markerData.map(target => {
           const index = target.marker;
-          const radius = infrastructure ? markerRadii[index] : pointerCamera ? 5 : dots ? 6 : 4.5;
-          const pin = pointerCamera || infrastructure && index === 0;
-          const shape = pin ? pinPath(radius) : infrastructure ? mainShapes[index] : undefined;
-          const fill = infrastructure ? `var(--chart-${index + 1})` : pointerCamera ? "var(--chart-1)" : dots ? "var(--chart-2)" : "var(--foreground)";
-          const pulse = !compact && (pointerCamera || infrastructure && index === 0 || active?.name === target.name);
-          return <g key={target.name} ref={motion.markerRef(target.name, target.at)} className="choropleth-marker" data-map-marker={target.name}
+          const slot = index % markerRadii.length;
+          const radius = infrastructure ? markerRadii[slot] : pointerCamera ? 5 : dots ? 6 : 4.5;
+          const pin = pointerCamera || infrastructure && slot === 0;
+          const shape = pin ? pinPath(radius) : infrastructure ? mainShapes[slot] : undefined;
+          const fill = infrastructure ? `var(--chart-${slot + 1})` : pointerCamera ? "var(--chart-1)" : dots ? "var(--chart-2)" : "var(--foreground)";
+          const pulse = !compact && (pointerCamera || infrastructure && index === 0 || active?.key === target.key);
+          const inspectable = !compact && (flyable || infrastructure && !!caller);
+          return <g key={target.key} ref={motion.markerRef(target.key, target.at)} className="choropleth-marker" data-map-marker={target.name} data-map-marker-key={target.key} data-marker-value={caller ? target.value : undefined}
             style={flyable && !compact ? undefined : { transform: `translate(${target.at[0] * scale + x}px,${target.at[1] * scale + y}px)` }}
-            role={flyable && !compact ? "button" : undefined} tabIndex={flyable && !compact ? 0 : undefined}
-            aria-label={flyable && !compact ? `Zoom to ${target.name}` : undefined}
-            onFocus={compact ? undefined : () => { if (!selection || selection.name === target.name) { setFocus(target); setHover(undefined); } }}
+            role={inspectable ? flyable ? "button" : "img" : undefined} tabIndex={inspectable ? 0 : undefined}
+            aria-label={inspectable ? flyable ? `Zoom to ${target.name}` : `${target.name}: map location` : undefined}
+            onFocus={compact ? undefined : () => { if (!selection || selection.key === target.key) { setFocus(target); setHover(undefined); } }}
             onKeyDown={!flyable || compact ? undefined : event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); fly(target); } }}
             onPointerMove={compact ? undefined : event => highlight(target, event)}
             onPointerLeave={event => {
@@ -334,7 +380,7 @@ export function ChoroplethDetail({ example, compact = false }: DemoProps) {
         })}
       </svg>
       {!compact && <ChoroplethTooltip host={plot} scene={motion.svg} width={width} height={height} label={readoutTitle} entries={entries} point={tooltip?.point}
-        identity={tooltipTarget?.marker === undefined ? "country" : `marker:${tooltipTarget.name}`} />}
+        identity={tooltipTarget?.marker === undefined ? "country" : tooltipTarget.key} />}
     </div>
     {!compact && <div className="choropleth-summary"><strong>{summary}</strong><span>{description}</span></div>}
   </div>;
