@@ -42,6 +42,7 @@ jobs:
         run: bun run bench
         env:
           PITANT_BENCH_PROFILE: ci
+          PITANT_BENCH_DIAGNOSTICS: '1'
 
       - name: Registry validate
         run: bun run registry:validate
