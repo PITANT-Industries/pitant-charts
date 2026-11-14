@@ -7,7 +7,7 @@ import { usePlotSize } from "../usePlotSize";
 import { CartesianFocusPoint, CartesianReadout } from "./CartesianFocus";
 import type { CartesianData } from "./data";
 import { colorFor, valueFormat, type ChartTheme } from "./options";
-import { barValueDomain, finiteBarValue as finite, formatBarQuantity, formatBarTotal, formatBarValue, roundedBarPath } from "./bar-geometry";
+import { barValueDomain, barValueLabelLayout, finiteBarValue as finite, formatBarQuantity, formatBarTotal, formatBarValue, roundedBarPath } from "./bar-geometry";
 import { useBarEntrance } from "./bar-motion";
 import { BarCategoryPill } from "./BarCategoryPill";
 import "./reference-bar.css";
@@ -354,16 +354,15 @@ function BarPanel({ label, variant, series, panel, categories, compact, demo, th
               <rect x={x} y={faces.y} width={width} height={faces.height} fill={`url(#${uid}-glass)`} />
             </g>;
           }
-          const labelX = x + width / 2;
-          const labelY = y + height / 2;
           const valueLabel = values ? demo ? valueFormat.format(mark.value) : formatBarValue(mark.value) : "";
-          const rotate = width < valueLabel.length * 8 + 6;
+          const labelFontSize = compact ? 9 : 12;
+          const valueLayout = barValueLabelLayout(finalMark, valueLabel, labelFontSize);
           return <g key={key} data-bar-column={key} data-category={mark.category} data-series={mark.series} opacity={selection}>
             <rect data-bar-mark={key} data-value={mark.value} x={x} y={y} width={width} height={height} rx={signed ? 4 : 8} fill={color}
               />
-            {values && width >= 18 && height >= (rotate ? valueLabel.length * 7 + 4 : 15) && <text data-bar-value={key} x={labelX} y={labelY}
-              transform={rotate ? `rotate(-90 ${labelX} ${labelY})` : undefined} fill="white" textAnchor="middle"
-              dominantBaseline="middle" fontSize={compact ? 9 : 12} fontWeight={600}>{valueLabel}</text>}
+            {values && valueLayout.fits && <text data-bar-value={key} x={valueLayout.x} y={valueLayout.y}
+              transform={valueLayout.rotated ? `rotate(-90 ${valueLayout.x} ${valueLayout.y})` : undefined} fill="white" textAnchor="middle"
+              dominantBaseline="middle" fontSize={labelFontSize} fontWeight={600}>{valueLabel}</text>}
           </g>;
         })}
         {pulse && pulseFront && !compact && <g clipPath={`url(#${uid}-clip)`} opacity={opacity(pulse)}>
