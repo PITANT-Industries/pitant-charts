@@ -25,17 +25,19 @@
   z-index: 1;
   pointer-events: none;
   inline-size: max-content;
-  min-inline-size: min(140px, calc(100% - 8px));
-  max-inline-size: calc(100% - 8px);
+  min-inline-size: 140px;
+  max-inline-size: none;
 }
 .cartesian-area-detail-panel > .cartesian-focus-readout {
   min-inline-size: 100%;
-  max-inline-size: 100%;
+  max-inline-size: none;
+  overflow: hidden;
 }
 .cartesian-area-detail-panel .cartesian-focus-readout-title {
   line-height: 16px;
   margin-block-end: 8px;
 }
+.cartesian-area-detail-panel .cartesian-focus-readout-row { align-items: center; }
 .cartesian-area-detail-panel .cartesian-focus-readout-row:last-child { min-height: 20px; }
 .cartesian-area-detail [data-area-forecast-marker][data-dimmed] { filter: blur(2px); }
 

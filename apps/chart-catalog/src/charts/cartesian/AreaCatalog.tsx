@@ -43,7 +43,7 @@ interface AreaSpec {
 }
 type Variant = keyof typeof variants;
 type LoadingState = "Pulse" | "Sweep" | "Loaded";
-type Range = [first: number, last: number];
+type Range = [firstX: number, lastX: number];
 type Position = { x: number; y: number; value: number };
 type DatePillModel = { columns: readonly [readonly string[], readonly string[]]; monthOf: readonly number[] };
 type PillAxis = ChartSpringState & { start: number };
@@ -260,9 +260,9 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   const keyboardDate = useRef<number | null>(null);
   const pointerDate = useRef<number | null>(null);
   const releasedTouch = useRef(false);
-  const drag = useRef<{ pointer: number; anchor: number } | null>(null);
+  const rangeInspection = useRef<number | null>(null);
+  const drag = useRef<{ pointer: number; anchor: number; start: number; moved: boolean } | null>(null);
   const [selection, setSelection] = useState<Range | null>(null);
-  const [rangeAnchor, setRangeAnchor] = useState<number | null>(null);
   const [entranceDone, setEntranceDone] = useState(false);
   const spec: AreaSpec = variants[variant];
   const isMultiple = variant === "area-small-multiples";
@@ -293,12 +293,15 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
     return { columns: [months, columns[1] ?? []], monthOf };
   }, [count, dateValues, isMultiple, times, variant]);
   useLayoutEffect(() => {
+    drag.current = null;
+    rangeInspection.current = null;
+    setSelection(null);
     releasedTouch.current = false;
     keyboardDate.current = !datePillModel || !count || keyboardDate.current === null
       ? null : Math.min(count - 1, keyboardDate.current);
     pointerDate.current = !datePillModel || !count || pointerDate.current === null
       ? null : Math.min(count - 1, pointerDate.current);
-  }, [count, Boolean(datePillModel)]);
+  }, [canSelect, count, Boolean(datePillModel)]);
   const timeRange = times.every(Number.isFinite) ? (times.at(-1) ?? 0) - (times[0] ?? 0) : 0;
   const xAt = (index: number) => left + (timeRange > 0 ? (times[index] - times[0]) / timeRange : index / Math.max(1, count - 1)) * available;
   const mainExtent = sharedExtent ?? recordExtents(data.series.filter((_, index) => !dual || index === 0).flatMap(item => item.values), demo ? spec.maximum : 0);
@@ -354,9 +357,9 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   }, [data.categories, datePillModel, tickSignature, theme.fontFamily, plot]);
   const pillWidth = cartesianPillWidth(labelText ?? "");
   const pillX = Math.max(pillWidth / 2, Math.min(width - pillWidth / 2, Math.round(xAt(selected))));
-  const tipWidth = measuredTipWidth || Math.min(145, width - 8);
+  const tipWidth = measuredTipWidth || 140;
   const focusX = xAt(selected);
-  const tipX = Math.max(4, Math.min(width - tipWidth - 4, focusX + tipWidth + 16 > width ? focusX - tipWidth - 16 : focusX + 16));
+  const tipX = focusX + tipWidth + 16 > width ? focusX - tipWidth - 16 : focusX + 16;
   const focusEntries = data.series.flatMap((item, index) => {
     const point = points[index][selected];
     return point ? [{ name: item.name, value: demo ? point.value : callerNumber.format(point.value), color: colors[index] }] : [];
@@ -371,10 +374,8 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
     observer.observe(panel);
     return () => observer.disconnect();
   }, [visible, focusEntries.length]);
-  const from = selection ? Math.min(...selection) : null;
-  const to = selection ? Math.max(...selection) : null;
-  const rangeStart = from !== null && from < count ? xAt(from) : left;
-  const rangeEnd = to !== null && to < count ? xAt(to) : right;
+  const rangeStart = selection ? Math.min(...selection) : left;
+  const rangeEnd = selection ? Math.max(...selection) : right;
   const deadline = calendar ? data.rows?.findIndex(row => row.date === "2026-10-15" || row.deadline === true) ?? -1 : -1;
   const negative = `url(#${id}-deadline)`;
 
@@ -392,21 +393,27 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
     if (compact || load) return;
     if (event.pointerType !== "touch") releasedTouch.current = false;
     const current = drag.current?.pointer === event.pointerId ? drag.current : null;
-    const index = findPoint(event, current !== null);
-    if (datePillModel) pointerDate.current = index;
-    setEntranceDone(true);
-    if (current && index !== null) {
-      setSelection([current.anchor, index]);
-      if (datePillModel && event.pointerType === "touch") setActive(index);
+    const index = findPoint(event);
+    if (current) {
+      if (index === null) return;
+      current.moved = true;
+      const x = event.clientX - event.currentTarget.getBoundingClientRect().left;
+      setSelection([current.start, x]);
+      pointerDate.current = current.anchor;
+      setActive(current.anchor);
       return;
     }
+    rangeInspection.current = null;
+    if (datePillModel) pointerDate.current = index;
+    setEntranceDone(true);
     setActive(index);
   }
 
   function onDown(event: PointerEvent<SVGSVGElement>) {
     if (compact || load || event.button !== 0) return;
+    rangeInspection.current = null;
     releasedTouch.current = false;
-    if (datePillModel) {
+    if (datePillModel || canSelect) {
       if (event.pointerType !== "touch") event.preventDefault();
     }
     const index = findPoint(event);
@@ -416,12 +423,16 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
     }
     if (index === null) return;
     setEntranceDone(true);
+    if (canSelect && event.pointerType !== "touch") {
+      const x = event.clientX - event.currentTarget.getBoundingClientRect().left;
+      drag.current = { pointer: event.pointerId, anchor: index, start: x, moved: false };
+      setSelection([x, x]);
+      keyboardDate.current = null;
+      pointerDate.current = null;
+      setActive(null);
+      return;
+    }
     setActive(index);
-    if (!canSelect) return;
-    drag.current = { pointer: event.pointerId, anchor: index };
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setRangeAnchor(index);
-    setSelection([index, index]);
   }
 
   function onKey(event: KeyboardEvent<SVGSVGElement>) {
@@ -430,7 +441,8 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
       event.preventDefault();
       event.stopPropagation();
       setSelection(null);
-      setRangeAnchor(null);
+      rangeInspection.current = null;
+      drag.current = null;
       keyboardDate.current = null;
       setActive(null);
       return;
@@ -442,15 +454,11 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
     const index = { Home: 0, End: last, ArrowLeft: previous, ArrowUp: previous, ArrowRight: next, ArrowDown: next }[event.key];
     if (index === undefined) return;
     event.preventDefault();
+    rangeInspection.current = null;
     releasedTouch.current = false;
     setEntranceDone(true);
     if (datePillModel) keyboardDate.current = index;
     setActive(index);
-    if (canSelect && event.shiftKey) {
-      const anchor = rangeAnchor ?? active ?? index;
-      setRangeAnchor(anchor);
-      setSelection([anchor, index]);
-    } else setRangeAnchor(null);
   }
 
   function fillStops(color: string, index: number) {
@@ -467,10 +475,11 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   const diagonalTexture = spec.texture === "diagonal";
   const strokeWidth = spec.strokeWidth ?? 2;
   const background = variant === "area-background";
-  const visibleRange = canSelect && selection !== null && rangeEnd > rangeStart;
+  const draggingRange = canSelect && drag.current?.moved && selection !== null;
+  const visibleRange = draggingRange && rangeEnd - rangeStart > 5;
   const loadingStroke = `url(#${id}-loading)`;
-  const focusClipStart = xAt(Math.max(0, selected - 1));
-  const focusClipEnd = xAt(Math.min(count - 1, selected + 1));
+  const focusClipStart = draggingRange ? rangeStart : xAt(Math.max(0, selected - 1));
+  const focusClipEnd = draggingRange ? rangeEnd : xAt(Math.min(count - 1, selected + 1));
   const focusBottom = Math.round(bottom);
   const focusY = (point: Position, seriesIndex: number) => {
     const minimum = dual && seriesIndex === 1 ? conversionExtent.minimum : mainExtent.minimum;
@@ -479,21 +488,29 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   };
 
   return <div className="catalog-area-plot" ref={plot} data-area-load={load ? loading : undefined}
-    style={{ "--area-plot-inset": `${left}px` } as CSSProperties} aria-busy={load || undefined}>
+    style={{ "--area-plot-inset": `${left}px`, ...(canSelect ? {
+      "--area-selection-start": rounded(rangeStart), "--area-selection-end": rounded(rangeEnd), "--area-selection-left": left,
+    } : {}) } as CSSProperties} aria-busy={load || undefined}>
     <svg className="cartesian-focus-surface" viewBox={`0 0 ${width} ${height}`} role="img" aria-roledescription="chart"
       aria-label={label} aria-describedby={compact ? undefined : `${id}-keys`} tabIndex={compact || load ? undefined : 0}
-      onMouseDown={event => { if (datePillModel) event.preventDefault(); }}
+      onMouseDown={event => { if (datePillModel || canSelect) event.preventDefault(); }}
       onPointerDown={onDown} onPointerMove={onMove} onPointerUp={event => {
+        const current = drag.current?.pointer === event.pointerId ? drag.current : null;
+        if (current) {
+          drag.current = null;
+          rangeInspection.current = current.moved ? current.anchor : null;
+          pointerDate.current = rangeInspection.current;
+          setSelection(range => range ? [range[0], range[1]] : null);
+          setActive(rangeInspection.current);
+          return;
+        }
         if (datePillModel) pointerDate.current = null;
         if (datePillModel && event.pointerType === "touch") {
           if (document.activeElement !== event.currentTarget) keyboardDate.current = null;
           releasedTouch.current = true;
         }
-        if (drag.current?.pointer === event.pointerId) {
-          drag.current = null;
-          setActive(null);
-        } else if (datePillModel) setActive(null);
-      }} onLostPointerCapture={() => { drag.current = null; }}
+        if (datePillModel || canSelect) setActive(null);
+      }}
       onClick={event => {
         const afterTouch = releasedTouch.current;
         releasedTouch.current = false;
@@ -516,16 +533,22 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
           setActive(index);
         }
       }}
-      onPointerCancel={() => { drag.current = null; keyboardDate.current = null; pointerDate.current = null; releasedTouch.current = false; setActive(null); }}
+      onPointerCancel={() => { drag.current = null; rangeInspection.current = null; setSelection(null); keyboardDate.current = null; pointerDate.current = null; releasedTouch.current = false; setActive(null); }}
       onPointerLeave={event => {
         if (datePillModel) pointerDate.current = null;
-        if (!drag.current && event.pointerType !== "touch") {
-          setActive(datePillModel && document.activeElement === event.currentTarget ? keyboardDate.current : null);
+        if (drag.current?.pointer === event.pointerId) {
+          drag.current = null;
+          rangeInspection.current = null;
+          setSelection(range => range ? [range[0], range[1]] : null);
+          setActive(null);
+        } else if (event.pointerType !== "touch") {
+          setActive(canSelect && rangeInspection.current !== null ? rangeInspection.current
+            : datePillModel && document.activeElement === event.currentTarget ? keyboardDate.current : null);
         }
       }}
-      onBlur={() => { keyboardDate.current = null; setActive(datePillModel ? pointerDate.current : null); }}
+      onBlur={() => { keyboardDate.current = null; setActive(canSelect && rangeInspection.current !== null ? rangeInspection.current : datePillModel ? pointerDate.current : null); }}
       onFocus={() => { setEntranceDone(true); if (datePillModel && active === null) setActive(0); }} onKeyDown={onKey}>
-      {!compact && <desc id={`${id}-keys`}>Use the arrow keys to inspect dates. Home and End jump to the first and last dates. {canSelect && "Hold Shift to extend the selected range. "}{!datePillModel && "Escape clears the selection."}</desc>}
+      {!compact && <desc id={`${id}-keys`}>Use the arrow keys to inspect dates. Home and End jump to the first and last dates. {!datePillModel && "Escape clears the selection."}</desc>}
       <defs>
         {colors.map((color, index) => <linearGradient key={index} id={`${id}-fill-${index}`} x2="0%" y2="100%">
           {fillStops(color, index).map(([offset, stopColor, stopOpacity]) => <stop key={offset} offset={offset} stopColor={stopColor} stopOpacity={stopOpacity} />)}
@@ -553,7 +576,7 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
           <stop stopColor={theme.muted} stopOpacity=".3" /><stop offset=".5" stopColor={theme.muted} stopOpacity=".75" /><stop offset="1" stopColor={theme.muted} stopOpacity=".3" />
         </linearGradient>}
         <clipPath id={`${id}-focus`}><rect x={focusClipStart} y={top} width={Math.max(0, focusClipEnd - focusClipStart)} height={bottom - top} /></clipPath>
-        {visibleRange && <clipPath id={`${id}-range`}><rect x={rangeStart} y={top} width={rangeEnd - rangeStart} height={bottom - top} /></clipPath>}
+        {canSelect && <clipPath id={`${id}-range`}><rect x={rangeStart} y={top} width={rangeEnd - rangeStart} height={bottom - top} /></clipPath>}
       </defs>
       <g aria-hidden="true">
         {background && <rect data-catalog-area-background="" x={left} y={top} width={available} height={bottom - top} fill={`url(#${id}-tile)`} className="catalog-area-fade" />}
@@ -582,11 +605,15 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
           </g>)}
           {variant === "area-value-labels" && !compact && <AreaValueLabels points={points} colors={colors} left={left} right={right} top={top} bottom={bottom} demo={Boolean(demo)} />}
         </g>
-        {visibleRange && <g>
-          <rect data-catalog-area-range="" x={rangeStart + .75} y={top + .75} width={Math.max(0, rangeEnd - rangeStart - 1.5)} height={bottom - top - 1.5}
-            fill={`color-mix(in srgb, ${colors[0]} 13%, transparent)`} />
-          <path d={strokes[0]} fill="none" stroke={colors[0]} strokeWidth="2.8" clipPath={`url(#${id}-range)`} />
-          {[rangeStart, rangeEnd].map((x, index) => <line key={index} x1={x} x2={x} y1={top} y2={bottom} stroke={theme.muted} strokeOpacity=".5" strokeDasharray="4 4" />)}
+        {canSelect && <g>
+          <g className="catalog-area-selection-band" opacity={visibleRange ? 1 : 0}>
+            <rect data-catalog-area-range="" x={left + .75} y={top + .75} width={Math.max(0, available - 1.5)} height={bottom - top - 1.5}
+              fill={`var(--chart-segment-background, color-mix(in oklab, var(--muted-foreground, ${theme.muted}) 8%, transparent))`} clipPath={`url(#${id}-range)`} />
+          </g>
+          <g className="catalog-area-selection-edges" opacity={visibleRange ? 1 : 0}>
+            {[rangeStart, rangeEnd].map((_, index) => <line key={index} x1={left} x2={left} y1={top} y2={bottom}
+              stroke={`var(--chart-segment-line, color-mix(in oklab, var(--foreground, ${theme.text}) 25%, transparent))`} strokeOpacity=".5" strokeDasharray="4 4" />)}
+          </g>
         </g>}
         <g fill={theme.muted} fontSize={compact ? 9 : 12}>
           {indices.filter(index => index >= 0 && index < count).map(index => {
@@ -614,9 +641,6 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
     {!compact && visible && focusEntries.length > 0 && <div className="cartesian-area-detail-panel" ref={tip} role={announce ? "status" : undefined}
       style={{ left: tipX, top }}><CartesianReadout label={lineDateLabel(date)} entries={focusEntries} live={false} /></div>}
     {load && <span className="catalog-area-loading" aria-hidden="true">Loading orders</span>}
-    {!compact && visibleRange && <output className="catalog-area-range" aria-live="polite">
-      {data.categories[from!]} – {data.categories[to!]}
-    </output>}
   </div>;
 }
 

@@ -20,7 +20,8 @@
 .catalog-area-fade { mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
 .catalog-area-fill-fade { mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); }
 .catalog-area-values text { paint-order: stroke; stroke: var(--card); stroke-width: 2px; stroke-linejoin: round; }
-.catalog-area-range { position: absolute; inset-block-start: 8px; inset-inline-end: 12px; padding: 3px 8px; border-radius: 6px; background: var(--muted); color: var(--foreground); font-size: 12px; }
+.catalog-area-selection-edges > line:first-child { transform: translateX(calc((var(--area-selection-start, 0) - var(--area-selection-left, 0)) * 1px)); }
+.catalog-area-selection-edges > line:last-child { transform: translateX(calc((var(--area-selection-end, 0) - var(--area-selection-left, 0)) * 1px)); }
 .catalog-area-loading { position: absolute; inset: 50% auto auto 50%; translate: -50% -50%; color: var(--muted-foreground); font-size: 12px; pointer-events: none; }
 .catalog-area-hidden { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .catalog-area-plot[data-area-load='Sweep'] { overflow: hidden; }
@@ -46,10 +47,12 @@
     transition: opacity 120ms var(--area-hover-ease);
   }
   .catalog-area .cartesian-area-detail-panel { transition: none; }
+  .catalog-area-selection-band { transition: opacity 120ms var(--area-hover-ease); }
   .catalog-area-plot[data-area-load='Pulse'] .catalog-area-placeholder { animation: cartesian-pulse 1.25s ease-in-out infinite; }
   .catalog-area-plot[data-area-load='Sweep']::after { animation: catalog-area-sweep 1.9s ease-in-out infinite; }
 }
 @media (prefers-reduced-motion: reduce) {
   .catalog-area [data-catalog-area-date-tick] { transition: none; }
+  .catalog-area-selection-band { transition: none; }
 }
 @keyframes catalog-area-sweep { to { translate: 100% 0; } }

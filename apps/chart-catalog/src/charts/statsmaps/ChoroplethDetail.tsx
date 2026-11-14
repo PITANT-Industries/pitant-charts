@@ -139,6 +139,17 @@ function ChoroplethMap({ example, compact = false, caller }: DemoProps & { calle
   }, [selectionState, selection]);
 
   useEffect(() => {
+    if (!flyable || compact || !selection) return;
+    // The camera's Escape shortcut also works when pointer activation retained
+    // focus outside the chart. Inspection and event propagation stay intact.
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") reset(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [compact, flyable, selection]);
+
+  useEffect(() => {
     selectionSize.current = null;
     setPitch(0);
     setSelection(undefined);
@@ -183,7 +194,7 @@ function ChoroplethMap({ example, compact = false, caller }: DemoProps & { calle
   }
 
   function key(event: KeyboardEvent<SVGSVGElement>) {
-    if (!pannable && event.key === "Escape" && (selection || active || camera !== rest || pitch)) {
+    if (!pannable && !flyable && event.key === "Escape" && (selection || active || camera !== rest || pitch)) {
       const onMarker = (event.target as Element).hasAttribute("data-map-marker");
       if (onMarker && !selection && camera === rest && !pitch) return;
       event.preventDefault();
@@ -193,7 +204,7 @@ function ChoroplethMap({ example, compact = false, caller }: DemoProps & { calle
     }
     if ((event.key === "Enter" || event.key === " ") && focus && flyable) {
       event.preventDefault();
-      fly(focus);
+      // Country keyboard focus only inspects. Location buttons own activation.
       return;
     }
     const arrows: Record<string, Coordinate> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -301,7 +312,7 @@ function ChoroplethMap({ example, compact = false, caller }: DemoProps & { calle
         }}
         onBlur={() => { keyboardCountry.current = undefined; keyboardMarker.current = undefined; markerUnderlay.current = undefined; setTooltipGrace(false); setFocus(undefined); }} onKeyDown={compact ? undefined : key}
         onClick={flyable && !compact ? () => { if (!didDrag.current) reset(); } : undefined}>
-        {!compact && <desc id={`${id}-keys`}>Use arrow keys to inspect visible countries and locations. {pannable ? "Drag to pan, scroll or pinch to zoom. " : ""}{flyable ? "Press Enter to zoom to the selected place. Escape resets the view." : ""}</desc>}
+        {!compact && <desc id={`${id}-keys`}>Use arrow keys to inspect visible countries and locations. {pannable ? "Drag to pan, scroll or pinch to zoom. " : ""}{flyable && markerData.length ? "Focus a location marker and press Enter or Space to zoom. " : ""}{flyable ? "Escape resets the view." : ""}</desc>}
         <defs>
           {patterns && <pattern id={`${id}-beta`} width="6" height="6" patternUnits="userSpaceOnUse">
             <rect width="6" height="6" fill="var(--choropleth-scale-2)" />
@@ -358,7 +369,15 @@ function ChoroplethMap({ example, compact = false, caller }: DemoProps & { calle
             role={inspectable ? flyable ? "button" : "img" : undefined} tabIndex={inspectable ? 0 : undefined}
             aria-label={inspectable ? flyable ? `Zoom to ${target.name}` : `${target.name}: map location` : undefined}
             onFocus={compact ? undefined : () => { if (!selection || selection.key === target.key) { setFocus(target); setHover(undefined); } }}
-            onKeyDown={!flyable || compact ? undefined : event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); fly(target); } }}
+            onMouseDown={!flyable || compact ? undefined : event => {
+              event.preventDefault();
+              keyboardCountry.current = undefined;
+              keyboardMarker.current = undefined;
+              markerUnderlay.current = undefined;
+              setFocus(undefined);
+            }}
+            onKeyDown={!flyable || compact ? undefined : event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fly(target); } }}
+            onPointerEnter={!flyable || compact ? undefined : event => highlight(target, event)}
             onPointerMove={compact ? undefined : event => highlight(target, event)}
             onPointerLeave={event => {
               if (event.pointerType === "touch") return;
