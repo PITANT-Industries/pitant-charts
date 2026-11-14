@@ -357,6 +357,11 @@ export function ReferenceTreemap({ example, compact = false, data }: Props) {
         tabIndex={compact || loading ? undefined : 0} onKeyDown={handleKeys}
         onPointerMove={handlePlotPointer} onClick={handlePlotClick}
         onPointerDown={event => { if (event.pointerType === "touch") handlePlotPointer(event); }}
+        onFocus={() => {
+          if (!compact && !loading && marks.length && !focus) {
+            setFocus({ index: 0 });
+          }
+        }}
         onBlur={() => { setKeyboardFocus(null); setFocus(null); }}
         onPointerLeave={() => setFocus(document.activeElement === plot.current && keyboardFocus !== null ? { index: keyboardFocus } : null)}>
         {loading && <g className={styles.skeleton} style={{ animationDelay: `${loadingDelay}ms` }}>
@@ -372,7 +377,7 @@ export function ReferenceTreemap({ example, compact = false, data }: Props) {
           data-active={backActive || undefined} data-dimmed={!!active || undefined}>
           <path d={`M0 0H${width}V${breadcrumbHeight}H0Z`} fill="transparent" />
           <rect x="0" y="0" width={crumbWidth} height={breadcrumbHeight} rx="6" fill="color-mix(in oklab, var(--muted-foreground) 8%, transparent)" />
-          <text x="8" y="13" dominantBaseline="middle" fill="var(--muted-foreground)" fontSize="12" fontWeight="500" xmlSpace="preserve">
+          <text x="8" y="13" dominantBaseline="middle" fill="var(--muted-foreground)" fontSize="12" fontWeight="500" style={{ whiteSpace: "nowrap" }}>
             {crumb}
           </text>
         </g>}

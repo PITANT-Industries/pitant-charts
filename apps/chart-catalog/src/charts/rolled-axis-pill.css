@@ -29,3 +29,7 @@
     }
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-axis-pill-stack { transition: none; }
+}

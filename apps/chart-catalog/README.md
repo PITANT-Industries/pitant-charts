@@ -45,7 +45,7 @@ Use a sized container and load the stylesheet before applying your shadcn theme.
 
 Sparkline charts accept nullable sample values and leave a gap at missing samples. The stat card can compare each value with a prior period supplied as `rows: [{ previous: 100 }, ...]`, aligned with the series.
 
-Basic Area examples accept ISO dates in `categories`, or aligned `rows: [{ date: '2026-06-01' }, ...]` when categories are display labels. Omit row dates for undated categories. Caller series retain their names and colors and use a scale based on their values.
+Area examples accept ISO dates in `categories`, or aligned `rows: [{ date: '2026-06-01' }, ...]` when categories are display labels. Omit row dates for undated categories. Caller series retain their names and colors and use a scale based on their values. The four overlay variants also accept ISO datetime rows and nullable gaps. Use `rows.forecast` for the forecast boundary, `referenceLow`/`referenceHigh` for a target band, and `rows.highlight` for a highlighted span. The trend fits each series’ finite samples. See the caller-data guide for fallback and date-axis rules.
 
 For `line-markers`, align `rows` with the categories and put each date's annotations in `events`, for example `rows: [{ events: [{ icon: '🚀', title: 'Release', description: 'New editor available' }] }]`. Event readouts show the first two annotations and a count of any others. Marker clusters fan out for individual inspection. Emoji/title strings such as `'🚀 Release'` are also accepted.
 

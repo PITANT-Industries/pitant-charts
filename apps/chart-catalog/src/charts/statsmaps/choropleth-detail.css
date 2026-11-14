@@ -36,6 +36,9 @@
 .choropleth-summary { display: grid; gap: 4px; margin-block-start: 12px; font-size: 14px; line-height: 1.4; }
 .choropleth-summary strong { font-weight: 600; }
 .choropleth-summary span { color: var(--muted-foreground); }
+@media (prefers-reduced-motion: reduce) {
+  .choropleth-stage[data-pannable='true'] .choropleth-viewport { transition: none; }
+}
 @media (prefers-reduced-motion: no-preference) {
   .choropleth-stage[data-pannable='true'] .choropleth-viewport { transition: transform .18s ease-out; }
   .choropleth-stage[data-pannable='true'][data-dragging='true'] .choropleth-viewport { transition: none; }

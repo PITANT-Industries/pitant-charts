@@ -257,6 +257,9 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   const tip = useRef<HTMLDivElement>(null);
   const [measuredTipWidth, setMeasuredTipWidth] = useState(0);
   const [tickFadeRadius, setTickFadeRadius] = useState(50);
+  const keyboardDate = useRef<number | null>(null);
+  const pointerDate = useRef<number | null>(null);
+  const releasedTouch = useRef(false);
   const drag = useRef<{ pointer: number; anchor: number } | null>(null);
   const [selection, setSelection] = useState<Range | null>(null);
   const [rangeAnchor, setRangeAnchor] = useState<number | null>(null);
@@ -289,6 +292,13 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
     });
     return { columns: [months, columns[1] ?? []], monthOf };
   }, [count, dateValues, isMultiple, times, variant]);
+  useLayoutEffect(() => {
+    releasedTouch.current = false;
+    keyboardDate.current = !datePillModel || !count || keyboardDate.current === null
+      ? null : Math.min(count - 1, keyboardDate.current);
+    pointerDate.current = !datePillModel || !count || pointerDate.current === null
+      ? null : Math.min(count - 1, pointerDate.current);
+  }, [count, Boolean(datePillModel)]);
   const timeRange = times.every(Number.isFinite) ? (times.at(-1) ?? 0) - (times[0] ?? 0) : 0;
   const xAt = (index: number) => left + (timeRange > 0 ? (times[index] - times[0]) / timeRange : index / Math.max(1, count - 1)) * available;
   const mainExtent = sharedExtent ?? recordExtents(data.series.filter((_, index) => !dual || index === 0).flatMap(item => item.values), demo ? spec.maximum : 0);
@@ -368,7 +378,7 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
   const deadline = calendar ? data.rows?.findIndex(row => row.date === "2026-10-15" || row.deadline === true) ?? -1 : -1;
   const negative = `url(#${id}-deadline)`;
 
-  function findPoint(event: PointerEvent<SVGSVGElement>, allowOutside = false) {
+  function findPoint(event: Pick<PointerEvent<SVGSVGElement>, "currentTarget" | "clientX" | "clientY">, allowOutside = false) {
     const bounds = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - bounds.left;
     const y = event.clientY - bounds.top;
@@ -380,11 +390,14 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
 
   function onMove(event: PointerEvent<SVGSVGElement>) {
     if (compact || load) return;
+    if (event.pointerType !== "touch") releasedTouch.current = false;
     const current = drag.current?.pointer === event.pointerId ? drag.current : null;
     const index = findPoint(event, current !== null);
+    if (datePillModel) pointerDate.current = index;
     setEntranceDone(true);
     if (current && index !== null) {
       setSelection([current.anchor, index]);
+      if (datePillModel && event.pointerType === "touch") setActive(index);
       return;
     }
     setActive(index);
@@ -392,7 +405,15 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
 
   function onDown(event: PointerEvent<SVGSVGElement>) {
     if (compact || load || event.button !== 0) return;
+    releasedTouch.current = false;
+    if (datePillModel) {
+      if (event.pointerType !== "touch") event.preventDefault();
+    }
     const index = findPoint(event);
+    if (datePillModel) {
+      keyboardDate.current = event.pointerType === "touch" && document.activeElement === event.currentTarget ? index : null;
+      pointerDate.current = index;
+    }
     if (index === null) return;
     setEntranceDone(true);
     setActive(index);
@@ -405,21 +426,25 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
 
   function onKey(event: KeyboardEvent<SVGSVGElement>) {
     if (compact || load || !count) return;
-    if (event.key === "Escape" && (active !== null || selection !== null)) {
+    if (!datePillModel && event.key === "Escape" && (active !== null || selection !== null)) {
       event.preventDefault();
       event.stopPropagation();
       setSelection(null);
       setRangeAnchor(null);
+      keyboardDate.current = null;
       setActive(null);
       return;
     }
     const last = count - 1;
-    const previous = Math.max(0, (active ?? last + 1) - 1);
-    const next = Math.min(last, (active ?? -1) + 1);
+    const current = active === null ? null : Math.min(last, active);
+    const previous = Math.max(0, (current ?? last + 1) - 1);
+    const next = Math.min(last, (current ?? -1) + 1);
     const index = { Home: 0, End: last, ArrowLeft: previous, ArrowUp: previous, ArrowRight: next, ArrowDown: next }[event.key];
     if (index === undefined) return;
     event.preventDefault();
+    releasedTouch.current = false;
     setEntranceDone(true);
+    if (datePillModel) keyboardDate.current = index;
     setActive(index);
     if (canSelect && event.shiftKey) {
       const anchor = rangeAnchor ?? active ?? index;
@@ -457,16 +482,50 @@ function AreaPlot({ variant, label, data, compact, theme, demo, active, setActiv
     style={{ "--area-plot-inset": `${left}px` } as CSSProperties} aria-busy={load || undefined}>
     <svg className="cartesian-focus-surface" viewBox={`0 0 ${width} ${height}`} role="img" aria-roledescription="chart"
       aria-label={label} aria-describedby={compact ? undefined : `${id}-keys`} tabIndex={compact || load ? undefined : 0}
+      onMouseDown={event => { if (datePillModel) event.preventDefault(); }}
       onPointerDown={onDown} onPointerMove={onMove} onPointerUp={event => {
+        if (datePillModel) pointerDate.current = null;
+        if (datePillModel && event.pointerType === "touch") {
+          if (document.activeElement !== event.currentTarget) keyboardDate.current = null;
+          releasedTouch.current = true;
+        }
         if (drag.current?.pointer === event.pointerId) {
           drag.current = null;
           setActive(null);
-        }
+        } else if (datePillModel) setActive(null);
       }} onLostPointerCapture={() => { drag.current = null; }}
-      onPointerCancel={() => { drag.current = null; setActive(null); }}
-      onPointerLeave={event => { if (!drag.current && event.pointerType !== "touch") setActive(null); }}
-      onBlur={() => setActive(null)} onFocus={() => setEntranceDone(true)} onKeyDown={onKey}>
-      {!compact && <desc id={`${id}-keys`}>Use the arrow keys to inspect dates. Home and End jump to the first and last dates. {canSelect && "Hold Shift to extend the selected range. "}Escape clears the selection.</desc>}
+      onClick={event => {
+        const afterTouch = releasedTouch.current;
+        releasedTouch.current = false;
+        if (!datePillModel || compact || load) return;
+        const kind = "pointerType" in event.nativeEvent ? event.nativeEvent.pointerType : undefined;
+        // A released touch can be followed by a compatibility mouse click.
+        if (afterTouch && document.activeElement === event.currentTarget) {
+          pointerDate.current = keyboardDate.current;
+          setActive(keyboardDate.current);
+          if (kind === "touch") event.stopPropagation();
+          return;
+        }
+        if (kind === "touch") {
+          event.stopPropagation();
+          return;
+        }
+        if (afterTouch) {
+          const index = findPoint(event);
+          pointerDate.current = index;
+          setActive(index);
+        }
+      }}
+      onPointerCancel={() => { drag.current = null; keyboardDate.current = null; pointerDate.current = null; releasedTouch.current = false; setActive(null); }}
+      onPointerLeave={event => {
+        if (datePillModel) pointerDate.current = null;
+        if (!drag.current && event.pointerType !== "touch") {
+          setActive(datePillModel && document.activeElement === event.currentTarget ? keyboardDate.current : null);
+        }
+      }}
+      onBlur={() => { keyboardDate.current = null; setActive(datePillModel ? pointerDate.current : null); }}
+      onFocus={() => { setEntranceDone(true); if (datePillModel && active === null) setActive(0); }} onKeyDown={onKey}>
+      {!compact && <desc id={`${id}-keys`}>Use the arrow keys to inspect dates. Home and End jump to the first and last dates. {canSelect && "Hold Shift to extend the selected range. "}{!datePillModel && "Escape clears the selection."}</desc>}
       <defs>
         {colors.map((color, index) => <linearGradient key={index} id={`${id}-fill-${index}`} x2="0%" y2="100%">
           {fillStops(color, index).map(([offset, stopColor, stopOpacity]) => <stop key={offset} offset={offset} stopColor={stopColor} stopOpacity={stopOpacity} />)}

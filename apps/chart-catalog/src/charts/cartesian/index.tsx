@@ -90,7 +90,7 @@ export default function Cartesian(props: ChartPreviewProps) {
   if (!props.data && isLineBrushVariant(example.id)) return <LineBrushDetail key={example.id} variant={example.id} label={example.title} compact={compact} theme={theme} />;
   if (Object.hasOwn(detailedLines, example.id) && (!props.data || example.id === "line-markers")) return <LineDetail key={example.id} variant={example.id as keyof typeof detailedLines} label={example.title} data={source} compact={compact} theme={theme} fixture={!props.data} />;
   const area = example.id as keyof typeof detailedAreas;
-  if (!props.data && Object.hasOwn(detailedAreas, area)) return <AreaDetail key={area} variant={area} label={example.title} data={source} compact={compact} theme={theme} />;
+  if (Object.hasOwn(detailedAreas, area)) return <AreaDetail key={area} variant={area} label={example.title} data={source} compact={compact} theme={theme} input={props.data} />;
   if (isCatalogArea(example.id)) return <AreaCatalog key={example.id} variant={example.id} label={example.title} data={source} compact={compact} theme={theme} demo={!props.data} />;
   return <CartesianExample key={example.id} example={example} compact={compact} data={props.data} source={source} theme={theme} />;
 }
