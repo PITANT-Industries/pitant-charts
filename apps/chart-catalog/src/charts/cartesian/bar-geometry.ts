@@ -11,6 +11,23 @@ export function formatBarValue(value: number) {
   return (absolute !== 0 && (absolute < .001 || absolute >= 1e21) ? scientificNumber : ordinaryNumber).format(value);
 }
 
+// Center/auto adaptation of Bklit UI's MIT-licensed getBarValueLabelLayout.
+// https://github.com/bklit/bklit-ui/blob/a02b9496b0ea4b665bd12f234d75ec2aa87baa5a/packages/ui/src/charts/bar-value-label-layout.ts
+export function barValueLabelLayout({ x, y, width, height }: {
+  x: number; y: number; width: number; height: number;
+}, label: string, fontSize = 12) {
+  const labelWidth = label.length * (fontSize / 12) * 7.2;
+  const minimumCrossSize = fontSize + 6;
+  const normalFits = width >= labelWidth + 10 && height >= minimumCrossSize;
+  const rotatedFits = height >= labelWidth + 10 && width >= minimumCrossSize;
+  return {
+    fits: normalFits || rotatedFits,
+    rotated: !normalFits && rotatedFits,
+    x: Math.round((x + width / 2) * 100) / 100,
+    y: Math.round((y + height / 2) * 100) / 100,
+  };
+}
+
 /** Keep aggregate labels useful even when their mathematical sum exceeds a double. */
 export function formatBarQuantity(unit: number, magnitude: number) {
   if (unit === 0) return "0";

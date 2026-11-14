@@ -117,6 +117,18 @@
 @container (min-width: 608px) {
   .reference-bar-layout[data-bar-layout='legend'] { grid-template-columns: minmax(0, 1fr) 176px; }
 }
+@media (hover: hover) {
+  .reference-bar-panel:not(:hover):not(:focus-within) > .reference-bar-tooltip {
+    opacity: 0 !important;
+    transition: opacity 120ms var(--bar-hover-ease);
+  }
+  @supports selector(:has(:focus-visible)) {
+    .reference-bar-panel:not(:hover):not(:has(:focus-visible)) > .reference-bar-tooltip {
+      opacity: 0 !important;
+      transition: opacity 120ms var(--bar-hover-ease);
+    }
+  }
+}
 @media (prefers-reduced-motion: no-preference) {
   .reference-bar :is([data-bar-column], [data-bar-square], [data-bar-track], .reference-bar-legend-item) { transition: opacity 120ms var(--bar-hover-ease); }
   .reference-bar [data-bar-axis-label] { transition: opacity 120ms var(--bar-hover-ease); }
@@ -125,6 +137,9 @@
   .reference-bar-shimmer { opacity: 1; animation: bar-shimmer 2s linear infinite; }
   .reference-bar-pulse { opacity: 1; animation: bar-depth-pulse 2.4s ease-in-out infinite; }
   .reference-bar-pulse[data-paused='true'] { animation-play-state: paused; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reference-bar-readout { animation: none; transition: none !important; }
 }
 @keyframes bar-shimmer {
   from { transform: translateX(calc(-1 * var(--bar-shimmer-travel))); }

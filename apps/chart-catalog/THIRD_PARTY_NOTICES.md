@@ -3,7 +3,7 @@
 | Source | Adaptations | License |
 | --- | --- | --- |
 | [shadcn/ui registry](https://github.com/shadcn-ui/ui) | Card slots and Recharts line, area and bar examples | [MIT](licenses/shadcn-ui-MIT.md) |
-| [Bklit UI](https://github.com/bklit/bklit-ui/tree/a02b9496b0ea4b665bd12f234d75ec2aa87baa5a/packages/ui/src/charts) | Gauge notch geometry, sunburst layout, sign-sensitive line segments, sparkline fixtures and path builders, radial climate, age-band, device, and hourly-energy examples, line event tooltip content and marker fan geometry, and choropleth camera/manual zoom math and delayed tooltip state | [MIT](licenses/Bklit-UI-MIT.md) |
+| [Bklit UI](https://github.com/bklit/bklit-ui/tree/a02b9496b0ea4b665bd12f234d75ec2aa87baa5a/packages/ui/src/charts) | Gauge notch geometry, sunburst layout, sign-sensitive line segments, sparkline fixtures and path builders, radial climate, age-band, device, and hourly-energy examples, line event tooltip content and marker fan geometry, Bar value-label fitting and layout, and choropleth camera/manual zoom math and delayed tooltip state | [MIT](licenses/Bklit-UI-MIT.md) |
 | [TanStack Charts 1.5.0](https://github.com/TanStack/charts/tree/b236dae2d57f1921b9e0296b6ecf023bf012bb5f/packages/charts-core/src) | Analytic spring sampler for chart motion and tooltip placement | [MIT](licenses/TanStack-Charts-MIT.txt) |
 | [Simplify Charts](https://github.com/simplifyingai/ui.simplifyingai.com) | Density estimation, box plot statistics, and waterfall accumulation | [MIT](licenses/Simplify-Charts-MIT.md) |
 | [EvilCharts registry](https://evilcharts.com/r/echarts-tooltip.json) | Shared chart tooltip and color treatment | [MIT](licenses/EvilCharts-MIT.txt) |
