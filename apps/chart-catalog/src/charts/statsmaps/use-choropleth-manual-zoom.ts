@@ -3,7 +3,7 @@ import type { Coordinate } from "./geo-fixtures";
 import { choroplethWheelDelta, defaultPinchDelta, manualMapRest, scaleManualMap, type ManualMapView } from "./choropleth-manual-zoom";
 
 type Drag = { start: Coordinate; origin: ManualMapView; started: boolean; distance: number; rebaseFirstMove: boolean };
-type Pinch = { initialDistance: number; offset: number; lastOffset: number; origin: Coordinate; firstMove: boolean };
+type Pinch = { initialDistance: number; offset: number; lastOffset: number; origin: Coordinate; moves: number };
 
 /** Manual gestures stay independent of the click-to-focus camera and its flights. */
 export function useChoroplethManualZoom({ host, active }: {
@@ -81,7 +81,7 @@ export function useChoroplethManualZoom({ host, active }: {
         drag.current = null;
         setIsDragging(false);
         const gesture = { initialDistance: pair.distance, origin: pair.origin, offset: pinchOffset.current,
-          lastOffset: pinchOffset.current, firstMove: true };
+          lastOffset: pinchOffset.current, moves: 0 };
         pinch.current = gesture;
         emitPinch(gesture);
       } else if (!pair && event.touches.length === 1) {
@@ -94,13 +94,12 @@ export function useChoroplethManualZoom({ host, active }: {
       if (gesture && pair) {
         gesture.origin = pair.origin;
         gesture.offset = pair.distance / (gesture.initialDistance || 1) * gesture.lastOffset;
-        // Starting the pinch recognizer on the first move also emits its initial
-        // zero-movement step before the actual distance update.
-        if (gesture.firstMove) {
-          gesture.firstMove = false;
-          const offset = gesture.offset;
-          gesture.offset = gesture.lastOffset; emitPinch(gesture); gesture.offset = offset;
-        }
+        // Count browser-delivered touchmove events, not changed fingers or their
+        // targets. The reference repeats the second move's distance step once.
+        // A native update can deliver one event for a shared target or separate
+        // events for different targets, so the repeat may occur in either update.
+        gesture.moves += 1;
+        if (gesture.moves === 2) emitPinch(gesture);
         emitPinch(gesture);
       } else if (!gesture && event.touches.length === 1) {
         moveDrag([event.touches[0].clientX, event.touches[0].clientY]);

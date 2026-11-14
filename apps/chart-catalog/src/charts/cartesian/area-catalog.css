@@ -49,4 +49,7 @@
   .catalog-area-plot[data-area-load='Pulse'] .catalog-area-placeholder { animation: cartesian-pulse 1.25s ease-in-out infinite; }
   .catalog-area-plot[data-area-load='Sweep']::after { animation: catalog-area-sweep 1.9s ease-in-out infinite; }
 }
+@media (prefers-reduced-motion: reduce) {
+  .catalog-area [data-catalog-area-date-tick] { transition: none; }
+}
 @keyframes catalog-area-sweep { to { translate: 100% 0; } }
