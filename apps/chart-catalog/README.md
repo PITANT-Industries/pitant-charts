@@ -49,6 +49,8 @@ Area examples accept ISO dates in `categories`, or aligned `rows: [{ date: '2026
 
 Tooltip examples accept supplied categories/series or numeric `rows.value`. Omitted categories use caller row labels or numbered positions. Explicit empty input shows a no-data state; restored input resumes measuring the container. Nullable samples and raw custom-tooltip callback values remain available without inheriting demo dates or labels. Panel width follows its content and can extend beyond the plot, matching the reference placement rule.
 
+Bar examples accept categories and nullable numeric series, or numeric `rows.value`. All eleven variants retain their detailed renderer with supplied data. Missing labels use caller row labels or numbered positions; explicit empty input shows a no-data state. Caller scales and readouts preserve tiny and large finite values, and stacked bars accumulate positive and negative values separately. No demo labels or footer statistics are inherited.
+
 For `line-markers`, align `rows` with the categories and put each date's annotations in `events`, for example `rows: [{ events: [{ icon: '🚀', title: 'Release', description: 'New editor available' }] }]`. Event readouts show the first two annotations and a count of any others. Marker clusters fan out for individual inspection. Emoji/title strings such as `'🚀 Release'` are also accepted.
 
 For `density-groups`, supply `rows: [{ x: 1.2, y: 15, group: 'North', label: 'Sample 1' }]`, or categories and numeric series. The legend isolates a group; activating it again restores every group. Caller values use numeric axes and readouts, with an adaptive scale and no demo units. Matching `series` entries can provide group colors.

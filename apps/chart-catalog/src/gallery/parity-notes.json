@@ -80,48 +80,48 @@
     "remaining": "Compare shimmer timing and the reference’s transition from placeholder geometry to the loaded curve. Entrance/reveal and raster comparisons remain open."
   },
   "bar-default": {
-    "checked": "Six rounded monthly revenue marks, responsive month labels, and focus readout. Bounds matched the live reference in desktop light and mobile dark Compare.",
-    "remaining": "Recharts rounds the desktop canvas height to 289px for a 288.5px reference, and the entrance choreography uses local timing."
+    "checked": "Six Revenue bars now use the fractional-size SVG renderer and native category growth. The previous Recharts half-pixel height rounding is removed. Controlled growth bounds and mark identities pass at 577 px/light and 286 px/dark within 0.02 px. The installed public API passes caller-data, precision, replacement, resize and compact-restoration checks in Chrome, Firefox and WebKit. Caller-data adapter verified through ChartPreview.",
+    "remaining": "Exact path/raster paint, additional display densities and cross-browser normal-motion frames remain open."
   },
   "bar-grouped": {
-    "checked": "Six Revenue and Profit pairs, abbreviated value ticks, rounded bar positions, focus markers, and keyboard inspection.",
-    "remaining": "Entrance and hover transitions use local timing."
+    "checked": "Revenue and Profit retain grouped spacing, numeric ticks, keyboard inspection and the rolling category pill. Controlled growth bounds and mark identities pass at 577 px/light and 286 px/dark within 0.02 px. The installed public API passes caller-data, precision, replacement, resize and compact-restoration checks in Chrome, Firefox and WebKit. Caller-data adapter verified through ChartPreview.",
+    "remaining": "Exact path/raster paint, additional display densities and cross-browser normal-motion frames remain open. Numeric-axis opacity remains outside the category-label opacity corpus."
   },
   "bar-stacked": {
-    "checked": "Eighteen segments with rounded tops, two-pixel gaps, and corrected mobile insets. Bar bounds are within 0.02px in the measured Compare layouts.",
-    "remaining": "The reference animates the stack on entrance."
+    "checked": "Eighteen segments use cumulative signed baselines, measured stack gaps and native category growth. Controlled growth bounds and mark identities pass at 577 px/light and 286 px/dark within 0.02 px. The installed public API passes caller-data, precision, replacement, resize and compact-restoration checks in Chrome, Firefox and WebKit. Caller-data adapter verified through ChartPreview.",
+    "remaining": "Exact path/raster paint, additional display densities and cross-browser normal-motion frames remain open."
   },
   "bar-values": {
-    "checked": "Twelve Orders bars, with centered in-bar values, rotation for narrow bars, and responsive suppression when values cannot fit. Labels and mark bounds matched on desktop and mobile.",
-    "remaining": "Label visibility for arbitrary caller text uses local fitting rules."
+    "checked": "Twelve Orders bars retain value labels, narrow-layout rotation and fitting. Caller readouts preserve tiny nonzero values. Controlled growth bounds and mark identities pass at 577 px/light and 286 px/dark within 0.02 px. The installed public API passes caller-data, precision, replacement, resize and compact-restoration checks in Chrome, Firefox and WebKit. Caller-data adapter verified through ChartPreview.",
+    "remaining": "Exact path/raster paint, additional display densities and cross-browser normal-motion frames remain open. Arbitrary value-label fitting and introduction opacity need further comparison."
   },
   "bar-profit-loss": {
-    "checked": "Eight signed bars, continuous zero line, abbreviated ticks, mobile label culling, and correct negative hover and keyboard values.",
-    "remaining": "Entrance and hover transitions use local timing."
+    "checked": "Eight signed bars grow away from zero; normalized caller scales avoid overflow and preserve very small values. Controlled growth bounds and mark identities pass at 577 px/light and 286 px/dark within 0.02 px. The installed public API passes caller-data, precision, replacement, resize and compact-restoration checks in Chrome, Firefox and WebKit. Caller-data adapter verified through ChartPreview.",
+    "remaining": "Exact path/raster paint, additional display densities and cross-browser normal-motion frames remain open. Numeric-axis opacity remains outside the category-label opacity corpus."
   },
   "bar-sources": {
-    "checked": "Six descending horizontal bars and category labels, with no numeric grid. Selection dims the other sources and places the readout beside the selected bar.",
-    "remaining": "Entrance and hover transitions use local timing."
+    "checked": "Horizontal growth retains full opacity for the inspected category label and 0.7 for the other labels. This variant has no category pill or focus dot. Controlled growth bounds and mark identities pass at 577 px/light and 286 px/dark within 0.02 px. The installed public API passes caller-data, precision, replacement, resize and compact-restoration checks in Chrome, Firefox and WebKit. Caller-data adapter verified through ChartPreview.",
+    "remaining": "Exact path/raster paint, additional display densities and cross-browser normal-motion frames remain open."
   },
   "bar-squares": {
-    "checked": "Twelve rounded square columns, three-pixel gaps, muted tracks, and per-square blended fills. Segment bounds and counts matched on desktop and mobile.",
-    "remaining": "Entrance and hover transitions use local timing."
+    "checked": "Cells grow from their lower edges with the category/cell cascade. Empty-track duration follows each column: 1100 ms for at most one cell, otherwise 1540 ms. Controlled growth bounds and mark identities pass at 577 px/light and 286 px/dark within 0.02 px. The installed public API passes caller-data, precision, replacement, resize and compact-restoration checks in Chrome, Firefox and WebKit. Caller-data adapter verified through ChartPreview.",
+    "remaining": "Exact path/raster paint, additional display densities and cross-browser normal-motion frames remain open."
   },
   "bar-squares-legend": {
-    "checked": "Grouped square columns, gradient Revenue and solid Profit, totals of $95,000 and $34,800, responsive legend, and focus and press interactions.",
-    "remaining": "The local legend also supports keyboard and touch pinning."
+    "checked": "Square cells share the measured cascade. Legend buttons provide transient hover/focus emphasis; leaving clears it, and Enter/Space do not pin a series. Controlled growth bounds and mark identities pass at 577 px/light and 286 px/dark within 0.02 px. The installed public API passes caller-data, precision, replacement, resize and compact-restoration checks in Chrome, Firefox and WebKit. Caller-data adapter verified through ChartPreview.",
+    "remaining": "Exact path/raster paint, additional display densities and cross-browser normal-motion frames remain open."
   },
   "bar-depth": {
-    "checked": "Six layered columns with responsive top and side faces, glass shading, a clipped June pulse, and a pause/resume control. Face bounds matched within 0.02px.",
-    "remaining": "The CSS pulse and the reference wave use different animation timing."
+    "checked": "Fronts grow with constant extrusion pitch. The pulse uses the measured readiness gate, 2400 ms fill-box cycle and pause/resume control. Controlled growth bounds and mark identities pass at 577 px/light and 286 px/dark within 0.02 px. The installed public API passes caller-data, precision, replacement, resize and compact-restoration checks in Chrome, Firefox and WebKit. Caller-data adapter verified through ChartPreview.",
+    "remaining": "Exact path/raster paint, additional display densities and cross-browser normal-motion frames remain open. The tested touch-end-after-blur state retains a native-hidden/local-visible tooltip difference at both profiles."
   },
   "bar-synced": {
-    "checked": "Two matching-height plots share a month axis and highlight, with a readout in the active panel and a synchronized revenue-per-order footer.",
-    "remaining": "The local keyboard selection also works at narrow widths where the pointer target is small."
+    "checked": "Both panes share inspection and rolling pills, including the upper pane without axis labels. Tooltip ownership stays with the inspected pane. Controlled growth bounds and mark identities pass at 577 px/light and 286 px/dark within 0.02 px. The installed public API passes caller-data, precision, replacement, resize and compact-restoration checks in Chrome, Firefox and WebKit. Caller-data adapter verified through ChartPreview.",
+    "remaining": "Exact path/raster paint, additional display densities and cross-browser normal-motion frames remain open. Panel-2 focus retains a native-hidden/local-visible tooltip difference at both profiles."
   },
   "bar-loading": {
-    "checked": "Eight deterministic placeholders with a masked sweep, reduced-motion support, and a toggle that reveals the Orders bars and updates the status without remounting the chart.",
-    "remaining": "Bar reveal uses local CSS timing."
+    "checked": "The skeleton, shimmer and ready-state growth/replay retain the measured geometry and timing. Empty caller input has no demo fallback. Controlled growth bounds and mark identities pass at 577 px/light and 286 px/dark within 0.02 px. The installed public API passes caller-data, precision, replacement, resize and compact-restoration checks in Chrome, Firefox and WebKit. Caller-data adapter verified through ChartPreview.",
+    "remaining": "Exact path/raster paint, additional display densities and cross-browser normal-motion frames remain open. Focus-only inspection retains a native-hidden/local-visible tooltip difference at both profiles."
   },
   "line-default": {
     "checked": "All 30 October dates match for Users and Pageviews. At a 728 × 364 px plot, trace bounds and grid match within 0.5 px. Keyboard inspection shows the active date pill and both values.",
