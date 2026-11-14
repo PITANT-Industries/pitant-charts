@@ -1,9 +1,12 @@
 .panel[data-tooltip-style] {
+  box-sizing: border-box;
+  inline-size: max-content;
   --tooltip-bg: var(--chart-tooltip-background, oklch(1 0 0));
   --tooltip-text: var(--chart-tooltip-foreground, oklch(0 0 0));
   --tooltip-muted: var(--chart-tooltip-muted, oklch(.556 0 0));
-  min-inline-size: min(140px, calc(100% - 8px));
-  max-inline-size: calc(100% - 8px);
+  min-inline-size: 140px;
+  max-inline-size: none;
+  overflow: hidden;
   border: 0;
   background: var(--tooltip-bg);
   color: var(--tooltip-text);
@@ -19,9 +22,9 @@
   --tooltip-text: var(--chart-tooltip-foreground, oklch(.985 0 0));
   --tooltip-muted: var(--chart-tooltip-muted, oklch(.708 0 0));
 }
-.panel[data-tooltip-style='header'] { min-inline-size: min(176px, calc(100% - 8px)); padding: 0 14px 12px; }
-.panel[data-tooltip-style='content'] { min-inline-size: 0; }
-.panel[data-tooltip-style='pin'] { inline-size: min(240px, calc(100% - 8px)); padding: 0; }
+.panel[data-tooltip-style='header'] { min-inline-size: 176px; padding: 0 14px 12px; }
+.panel[data-tooltip-style='content'] { min-inline-size: 140px; }
+.panel[data-tooltip-style='pin'] { inline-size: 240px; padding: 0; }
 .panel p { margin: 0; }
 .panel p[data-row] { gap: 16px; margin-top: 6px; }
 .panel[data-tooltip-variant='tooltip-rows'] p[data-row]:last-child { gap: 34px; }

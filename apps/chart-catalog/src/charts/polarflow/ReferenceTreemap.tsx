@@ -201,6 +201,54 @@ export function ReferenceTreemap({ example, compact = false, data }: Props) {
     };
   }, []);
 
+  useLayoutEffect(() => {
+    const svg = plot.current;
+    if (!svg) return;
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const hinted = new Set<SVGGElement>();
+    let frame = 0;
+    function active(group: SVGGElement) {
+      return !media.matches && group.getAnimations().some(animation =>
+        animation.constructor.name === "CSSTransition" &&
+        (animation as CSSTransition).transitionProperty === "--treemap-focus-opacity" &&
+        animation.playState !== "finished" && animation.playState !== "idle" &&
+        animation.effect?.getComputedTiming().progress !== 1);
+    }
+    function release(group: SVGGElement) {
+      group.style.removeProperty("will-change");
+      hinted.delete(group);
+    }
+    function tick() {
+      frame = 0;
+      for (const group of hinted) if (!group.isConnected || !active(group)) release(group);
+      if (hinted.size) frame = requestAnimationFrame(tick);
+    }
+    function update(event: TransitionEvent) {
+      if (event.propertyName !== "--treemap-focus-opacity" || !(event.target instanceof SVGGElement)) return;
+      const group = event.target;
+      // Match native opacity-transition paint while inspection and layout fades compose.
+      if (active(group)) {
+        group.style.willChange = "opacity";
+        hinted.add(group);
+        if (!frame) frame = requestAnimationFrame(tick);
+      } else release(group);
+    }
+    function clear() {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      for (const group of hinted) release(group);
+    }
+    const onPreference = () => { if (media.matches) clear(); };
+    const events = ["transitionrun", "transitionend", "transitioncancel"] as const;
+    for (const event of events) svg.addEventListener(event, update);
+    media.addEventListener("change", onPreference);
+    return () => {
+      clear();
+      for (const event of events) svg.removeEventListener(event, update);
+      media.removeEventListener("change", onPreference);
+    };
+  }, [plot]);
+
   const previousRoot = useRef(root);
   useLayoutEffect(() => {
     if (previousRoot.current === root) return;
@@ -224,6 +272,7 @@ export function ReferenceTreemap({ example, compact = false, data }: Props) {
   function go(next: number[], glide = true, point?: Point) {
     const svg = plot.current;
     pendingLayout.current = svg && glide && canAnimate() ? captureTreemapLayout(svg) : null;
+    pendingLayout.current?.forEach(mark => mark.group.style.removeProperty("will-change"));
     finishLayout.current?.();
     finishLayout.current = null;
     setEntering(!glide);
@@ -244,6 +293,7 @@ export function ReferenceTreemap({ example, compact = false, data }: Props) {
       }
       overlay.setAttribute("aria-hidden", "true");
       overlay.setAttribute("class", styles.loadingExit);
+      overlay.querySelectorAll("g").forEach(group => group.style.removeProperty("will-change"));
       overlay.querySelectorAll("[data-mark], [data-treemap-exit-key]").forEach(element => {
         element.removeAttribute("data-mark");
         element.removeAttribute("data-path");

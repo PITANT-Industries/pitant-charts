@@ -112,7 +112,7 @@ function AreaDetailChart({ variant, label, compact, theme, input, model }: Props
   const refRight = launchWeek && model.range ? points[model.range[1]].x : right;
   const refTop = targetBand ? yAt(model.band[1]) : top;
   const refBottom = targetBand ? yAt(model.band[0]) : bottom;
-  const panelX = active ? Math.max(4, active.x + tipWidth + 16 > width ? active.x - tipWidth - 16 : active.x + 16) : undefined;
+  const panelX = active ? (active.x + tipWidth + 16 > width ? active.x - tipWidth - 16 : active.x + 16) : undefined;
   useEffect(() => {
     if (pointerIndex.current !== null && pointerIndex.current >= count) pointerIndex.current = null;
     if (keyboardIndex.current !== null && keyboardIndex.current >= count) keyboardIndex.current = null;
