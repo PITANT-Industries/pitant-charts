@@ -16,6 +16,7 @@ import { Candles } from "./Candles";
 import { LiveLine } from "./LiveLine";
 import { ComposedDetail } from "./ComposedDetail";
 import { ReferenceBar } from "./ReferenceBar";
+import { resolveBarInput } from "./bar-input";
 import { detailedLines, LineDetail } from "./LineDetail";
 import { isLineTable, LineTableDetail } from "./LineTableDetail";
 import { LineSyncExportDetail } from "./LineSyncExportDetail";
@@ -35,7 +36,7 @@ import { clampBrush, RangeBrush, type BrushRange } from "./Brush";
 import "./styles.css";
 import "./area-styles.css";
 
-const basics = new Set(["area-default", "bar-default", "line-default"]);
+const basics = new Set(["area-default", "line-default"]);
 const connected = new Set(["line-synced", "area-small-multiples"]);
 const brushExamples = new Set(["line-segment", "area-selection"]);
 const overviewExamples = new Set(["line-brush", "line-linked-brush", "line-date-highlights-brush"]);
@@ -73,6 +74,7 @@ export default function Cartesian(props: ChartPreviewProps) {
   const { example, compact = false } = props;
   const streaming = example.family === "live-line" && Boolean(props.liveStream);
   const source = useMemo(() => streaming && !props.data ? { categories: [], series: [] }
+    : example.family === "bar" ? resolveBarInput(example, props.data)
     : resolveData(example, props.data), [streaming, example, props.data]);
   if (Object.hasOwn(schedules, example.id)) return <GanttDetail key={example.id} variant={example.id as ScheduleVariant} label={example.title} compact={compact} data={props.data} />;
   if (!props.data && isComparisonMarksVariant(example.id)) return <ComparisonMarksDetail key={example.id} variant={example.id} label={example.title} compact={compact} theme={theme} />;
@@ -82,8 +84,8 @@ export default function Cartesian(props: ChartPreviewProps) {
   if (example.family === "candlestick") return <Candles key={example.id} example={example} data={source} compact={compact} theme={theme} />;
   if (example.family === "live-line") return <LiveLine key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data && !props.liveStream} stream={props.liveStream} />;
   if (example.family === "composed") return <ComposedDetail key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
-  if (example.id === "bar-stacked" || example.id === "line-threshold") return <AdvancedCartesian key={example.id} variant={example.id} label={example.title} data={source} compact={compact} theme={theme} />;
-  if (example.family === "bar" && example.id !== "bar-default") return <ReferenceBar key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
+  if (example.id === "line-threshold") return <AdvancedCartesian key={example.id} variant={example.id} label={example.title} data={source} compact={compact} theme={theme} />;
+  if (example.family === "bar") return <ReferenceBar key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
   if (!props.data && isLineTable(example.id)) return <LineTableDetail key={example.id} variant={example.id} label={example.title} data={source} compact={compact} theme={theme} />;
   if (example.id === "line-synced" || example.id === "line-export") return <LineSyncExportDetail key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
   if (!props.data && example.id === "line-zoom") return <LineZoomDetail key={example.id} label={example.title} compact={compact} theme={theme} />;
