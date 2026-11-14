@@ -8,6 +8,8 @@ import { CartesianDatePill, CartesianFocusPoint, CartesianReadout, cartesianPill
 import { brushDates, brushDomain, brushLast, brushSignups, brushTicks, brushVisitors, firstSaturday, launchDay, moveBrushWindow, signupTicks, visitorTicks } from "./line-brush-data";
 import { lineDateLabel } from "./line-format";
 import type { ChartTheme } from "./options";
+import type { CartesianData } from "./data";
+import { LineCallerBrush } from "./LineCallerBrush";
 import "./line-brush-detail.css";
 
 const variants = ["line-brush", "line-linked-brush", "line-date-highlights-brush"] as const;
@@ -302,7 +304,7 @@ function BrushOverview({ linked, highlights, range, theme, setRange }: {
   </div>;
 }
 
-export function LineBrushDetail({ variant, label, compact, theme }: { variant: Variant; label: string; compact: boolean; theme: ChartTheme }) {
+function DemoLineBrushDetail({ variant, label, compact, theme }: { variant: Variant; label: string; compact: boolean; theme: ChartTheme }) {
   const linked = variant === "line-linked-brush";
   const highlights = variant === "line-date-highlights-brush";
   const [range, setRange] = useState<BrushRange>(() => linked ? [linkedStart, brushLast] : allDates);
@@ -320,4 +322,8 @@ export function LineBrushDetail({ variant, label, compact, theme }: { variant: V
     </>}
     {!compact && <BrushOverview linked={linked} highlights={highlights} range={range} theme={theme} setRange={setRange} />}
   </div>;
+}
+
+export function LineBrushDetail({ data, demo = true, ...props }: { variant: Variant; label: string; compact: boolean; theme: ChartTheme; data?: CartesianData; demo?: boolean }) {
+  return demo ? <DemoLineBrushDetail {...props} /> : <LineCallerBrush {...props} data={data ?? { categories: [], series: [] }} />;
 }

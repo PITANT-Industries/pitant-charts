@@ -4,6 +4,7 @@ import { CartesianDatePill, CartesianFocusPoint, CartesianReadout, cartesianPill
 import type { CartesianData } from "./data";
 import { lineDate, lineDateLabel } from "./line-format";
 import { colorFor, valueFormat, type ChartTheme } from "./options";
+import { finiteLineValue, lineCalendar, lineFormatValue, lineValueScale } from "./line-input";
 import "./advanced-cartesian.css";
 
 type Variant = "bar-stacked" | "line-threshold";
@@ -53,13 +54,14 @@ function calendarOffsets(categories: string[]) {
   return times.map(time => range ? (time - first) / range : .5);
 }
 
-export function AdvancedCartesian({ variant, label, data, compact, theme }: {
-  variant: Variant; label: string; data: CartesianData; compact: boolean; theme: ChartTheme;
+export function AdvancedCartesian({ variant, label, data, compact, theme, demo = true }: {
+  variant: Variant; label: string; data: CartesianData; compact: boolean; theme: ChartTheme; demo?: boolean;
 }) {
   const uid = useId();
   const host = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [selection, setSelection] = useState<number | null>(null);
+  useEffect(() => { if (!demo) setSelection(null); }, [data, demo]);
   useEffect(() => {
     const element = host.current;
     if (!element) return;
@@ -85,7 +87,9 @@ export function AdvancedCartesian({ variant, label, data, compact, theme }: {
   const plotHeight = bottom - top;
   const count = data.categories.length;
   const span = plotWidth / Math.max(1, isBar ? count + .2 : count - 1);
-  const offsets = isBar ? null : calendarOffsets(data.categories);
+  const callerCalendar = !demo && !isBar ? lineCalendar(data) : undefined;
+  const offsets = isBar ? null : demo ? calendarOffsets(data.categories)
+    : callerCalendar?.times && count > 1 ? callerCalendar.times.map(time => (time - callerCalendar.times![0]) / (callerCalendar.times!.at(-1)! - callerCalendar.times![0])) : null;
   const xAt = (index: number) => {
     if (offsets) return left + offsets[index] * plotWidth;
     return !count || !isBar && count === 1 ? (left + right) / 2 : left + (isBar ? .6 + index : index) * span;
@@ -99,8 +103,11 @@ export function AdvancedCartesian({ variant, label, data, compact, theme }: {
     minimum = Math.min(minimum, Math.floor(value / increment) * increment);
     maximum = Math.max(maximum, Math.ceil(value / increment) * increment);
   }
-  const yAt = (value: number) => bottom - (value - minimum) / (maximum - minimum) * plotHeight;
-  const ticks = Array.from({ length: 8 }, (_, index) => Math.round(minimum + (maximum - minimum) * index / 7));
+  const threshold = demo ? 250 : data.rows?.map(row => row.threshold).find(finiteLineValue);
+  const callerScale = !demo && !isBar ? lineValueScale([...data.series.map(item => item.values), threshold === undefined ? [] : [threshold]]) : undefined;
+  const yAt = (value: number) => callerScale ? callerScale.position(value, bottom, top) : bottom - (value - minimum) / (maximum - minimum) * plotHeight;
+  const ticks = callerScale?.ticks ?? Array.from({ length: 8 }, (_, index) => Math.round(minimum + (maximum - minimum) * index / 7));
+  const tickY = (value: number) => callerScale ? callerScale.positionUnit(value, bottom, top) : yAt(value);
   const points = line<number | null>().defined(value => value != null && Number.isFinite(value))
     .x((_, index) => xAt(index)).y(value => yAt(value!)).curve(curveNatural);
   const paths = isBar ? [] : data.series.map((item, index) => ({
@@ -113,11 +120,11 @@ export function AdvancedCartesian({ variant, label, data, compact, theme }: {
   const readoutRight = width - activeX >= readoutMinWidth + 16 || activeX < width / 2;
   const readoutRoom = (readoutRight ? width - activeX : activeX) - 16;
   const activeCategory = active === null ? "" : data.categories[active];
-  const activeTitle = isBar ? activeCategory : lineDateLabel(activeCategory);
+  const activeTitle = isBar || !demo ? activeCategory : lineDateLabel(activeCategory);
   const activeEntries = active === null ? [] : data.series.flatMap((item, index) => {
     const value = item.values[active];
-    if (value == null || !Number.isFinite(value)) return [];
-    return [{ name: item.name, color: colorFor(item, index, theme), value: isBar ? value : `${valueFormat.format(value)} ms` }];
+    if (value == null || !Number.isFinite(value)) return demo ? [] : [{ name: item.name, color: colorFor(item, index, theme), value: "—" }];
+    return [{ name: item.name, color: colorFor(item, index, theme), value: !demo ? lineFormatValue(value) : isBar ? value : `${valueFormat.format(value)} ms` }];
   });
   const pillWidth = cartesianPillWidth(activeCategory);
   const pillX = Math.min(width - pillWidth / 2, Math.max(pillWidth / 2, activeX));
@@ -180,8 +187,8 @@ export function AdvancedCartesian({ variant, label, data, compact, theme }: {
         {active !== null && !isBar && <clipPath id={`${uid}-active`}><rect x={activeX - highlightSpan} y={top} width={2 * highlightSpan} height={plotHeight} /></clipPath>}
       </defs>
       <g aria-hidden="true" data-advanced-grid="" className="cartesian-advanced-grid">
-        {ticks.map(value => <line key={value} x1={left} x2={right} y1={yAt(value)} y2={yAt(value)} stroke={theme.grid} strokeDasharray="4 4" />)}
-        {!isBar && <line data-advanced-threshold="250" x1={left} x2={right} y1={yAt(250)} y2={yAt(250)} stroke={theme.muted} strokeOpacity=".45" />}
+        {ticks.map((value, index) => <line key={index} x1={left} x2={right} y1={tickY(value)} y2={tickY(value)} stroke={theme.grid} strokeDasharray="4 4" />)}
+        {!isBar && threshold !== undefined && <line data-advanced-threshold={threshold} x1={left} x2={right} y1={yAt(threshold)} y2={yAt(threshold)} stroke={theme.muted} strokeOpacity=".45" />}
       </g>
       <g aria-hidden="true" clipPath={isBar ? undefined : `url(#${uid}-plot)`}>
         {stacks.map((stack, category) => stack.map(({ from, to, offset, color, index, value }) => {
@@ -197,12 +204,14 @@ export function AdvancedCartesian({ variant, label, data, compact, theme }: {
         {paths.map(({ index, path, color, strokeWidth }) => <g key={index}>
           <path data-advanced-line={index} d={path ?? undefined} fill="none" stroke={`url(#${uid}-fade-${index})`} strokeWidth={strokeWidth}
             strokeLinecap="round" strokeLinejoin="round" opacity={active === null ? 1 : .3} />
+          {!demo && data.series[index].values.map((value, at, values) => finiteLineValue(value) && !finiteLineValue(values[at - 1]) && !finiteLineValue(values[at + 1])
+            ? <circle key={at} data-line-isolated-point={`${index}-${at}`} cx={xAt(at)} cy={yAt(value)} r={compact ? 2 : 3} fill={color} pointerEvents="none" /> : null)}
           {active !== null && <path d={path ?? undefined} fill="none" stroke={color} strokeWidth={strokeWidth}
             strokeLinecap="round" strokeLinejoin="round" clipPath={`url(#${uid}-active)`} />}
         </g>)}
       </g>
       <g aria-hidden="true" fill={theme.muted} fontSize={compact ? 10 : 12}>
-        {!isBar && !compact && ticks.map(value => <text key={value} x={left - 4} y={yAt(value)} dominantBaseline="middle" textAnchor="end">{valueFormat.format(value)} ms</text>)}
+        {!isBar && !compact && ticks.map((value, index) => <text key={index} x={left - 4} y={tickY(value)} dominantBaseline="middle" textAnchor="end">{callerScale ? callerScale.format(value) : `${valueFormat.format(value)} ms`}</text>)}
         {axisLabels.map(({ category, x }) => <text key={category} x={x} y={bottom + (compact ? 13 : 24)} textAnchor="middle"
           opacity={active !== null && Math.abs(x - pillX) < pillWidth / 2 + Math.min(24, 3.3 * data.categories[category].length) ? 0 : 1}>{data.categories[category]}</text>)}
       </g>

@@ -12,7 +12,9 @@ The gallery uses Hanken Grotesk, neutral surfaces, and a blue accent in both the
 
 Search within **Parity review** to find checked behavior and remaining gaps by keyword. Copy the URL while **Compare** or **Code** is selected to share that view of the variant.
 
-The header’s **Component index** opens the gallery’s built-in Parity review. It works without a connected workspace account. [Source index and verification progress](https://github.com/PITANT-Industries/pitant-charts/blob/main/apps/chart-catalog/PARITY.md)
+The header’s **Component index** opens the gallery’s built-in Parity review. It works without a connected workspace account. [Source index and verification progress](PARITY.md) · [Detailed remaining work for all 331 examples](REMAINING_WORK.md).
+
+The agreed project closeout finishes the current Line caller-data batch and records the remaining work. Catalogue coverage is complete; exact reference parity remains open in the backlog. Further parity implementation is outside this closeout.
 
 ## Use the React library
 
@@ -52,6 +54,8 @@ Tooltip examples accept supplied categories/series or numeric `rows.value`. Omit
 Bar examples accept categories and nullable numeric series, or numeric `rows.value`. All eleven variants retain their detailed renderer with supplied data. Missing labels use caller row labels or numbered positions; explicit empty input shows a no-data state. Caller scales and readouts preserve tiny and large finite values, and stacked bars accumulate positive and negative values separately. No demo labels or footer statistics are inherited.
 
 For `line-markers`, align `rows` with the categories and put each date's annotations in `events`, for example `rows: [{ events: [{ icon: '🚀', title: 'Release', description: 'New editor available' }] }]`. Event readouts show the first two annotations and a count of any others. Marker clusters fan out for individual inspection. Emoji/title strings such as `'🚀 Release'` are also accepted.
+
+All 41 Line examples accept supplied data without demo fallback, including their detailed band, projection, range, brush, zoom, table and loading models. ISO categories or aligned `rows.date` provide dates; incomplete calendars retain category positions. Large Data keeps its sample-index axis even when labels are ISO strings. See [Line input formats and overlay fields](CALLER_DATA.md) for these contracts and their limits.
 
 For `density-groups`, supply `rows: [{ x: 1.2, y: 15, group: 'North', label: 'Sample 1' }]`, or categories and numeric series. The legend isolates a group; activating it again restores every group. Caller values use numeric axes and readouts, with an adaptive scale and no demo units. Matching `series` entries can provide group colors.
 

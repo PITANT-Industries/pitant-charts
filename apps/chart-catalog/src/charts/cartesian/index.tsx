@@ -17,6 +17,7 @@ import { LiveLine } from "./LiveLine";
 import { ComposedDetail } from "./ComposedDetail";
 import { ReferenceBar } from "./ReferenceBar";
 import { resolveBarInput } from "./bar-input";
+import { resolveLineInput } from "./line-input";
 import { detailedLines, LineDetail } from "./LineDetail";
 import { isLineTable, LineTableDetail } from "./LineTableDetail";
 import { LineSyncExportDetail } from "./LineSyncExportDetail";
@@ -75,7 +76,11 @@ export default function Cartesian(props: ChartPreviewProps) {
   const streaming = example.family === "live-line" && Boolean(props.liveStream);
   const source = useMemo(() => streaming && !props.data ? { categories: [], series: [] }
     : example.family === "bar" ? resolveBarInput(example, props.data)
+    : example.family === "line" ? resolveLineInput(example, props.data)
     : resolveData(example, props.data), [streaming, example, props.data]);
+  if (example.family === "line" && props.data !== undefined && (!source.categories.length || !source.series.length)) {
+    return <div className="chart-render-message" role="status">No data available.</div>;
+  }
   if (Object.hasOwn(schedules, example.id)) return <GanttDetail key={example.id} variant={example.id as ScheduleVariant} label={example.title} compact={compact} data={props.data} />;
   if (!props.data && isComparisonMarksVariant(example.id)) return <ComparisonMarksDetail key={example.id} variant={example.id} label={example.title} compact={compact} theme={theme} />;
   if (!props.data && (example.family === "bump" || example.family === "slope") && isRankingDetail(example.id)) return <RankingDetail key={example.id} example={example} source={source} compact={compact} theme={theme} />;
@@ -84,13 +89,13 @@ export default function Cartesian(props: ChartPreviewProps) {
   if (example.family === "candlestick") return <Candles key={example.id} example={example} data={source} compact={compact} theme={theme} />;
   if (example.family === "live-line") return <LiveLine key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data && !props.liveStream} stream={props.liveStream} />;
   if (example.family === "composed") return <ComposedDetail key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
-  if (example.id === "line-threshold") return <AdvancedCartesian key={example.id} variant={example.id} label={example.title} data={source} compact={compact} theme={theme} />;
+  if (example.id === "line-threshold") return <AdvancedCartesian key={example.id} variant={example.id} label={example.title} data={source} compact={compact} theme={theme} demo={props.data === undefined} />;
   if (example.family === "bar") return <ReferenceBar key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
-  if (!props.data && isLineTable(example.id)) return <LineTableDetail key={example.id} variant={example.id} label={example.title} data={source} compact={compact} theme={theme} />;
+  if (isLineTable(example.id)) return <LineTableDetail key={example.id} variant={example.id} label={example.title} data={source} compact={compact} theme={theme} demo={props.data === undefined} />;
   if (example.id === "line-synced" || example.id === "line-export") return <LineSyncExportDetail key={example.id} example={example} data={source} compact={compact} theme={theme} demo={!props.data} />;
-  if (!props.data && example.id === "line-zoom") return <LineZoomDetail key={example.id} label={example.title} compact={compact} theme={theme} />;
-  if (!props.data && isLineBrushVariant(example.id)) return <LineBrushDetail key={example.id} variant={example.id} label={example.title} compact={compact} theme={theme} />;
-  if (Object.hasOwn(detailedLines, example.id) && (!props.data || example.id === "line-markers")) return <LineDetail key={example.id} variant={example.id as keyof typeof detailedLines} label={example.title} data={source} compact={compact} theme={theme} fixture={!props.data} />;
+  if (example.id === "line-zoom") return <LineZoomDetail key={example.id} label={example.title} data={source} demo={props.data === undefined} compact={compact} theme={theme} />;
+  if (isLineBrushVariant(example.id)) return <LineBrushDetail key={example.id} variant={example.id} label={example.title} data={source} demo={props.data === undefined} compact={compact} theme={theme} />;
+  if (Object.hasOwn(detailedLines, example.id) && (example.id !== "line-default" || props.data !== undefined)) return <LineDetail key={example.id} variant={example.id as keyof typeof detailedLines} label={example.title} data={source} compact={compact} theme={theme} fixture={props.data === undefined} />;
   const area = example.id as keyof typeof detailedAreas;
   if (Object.hasOwn(detailedAreas, area)) return <AreaDetail key={area} variant={area} label={example.title} data={source} compact={compact} theme={theme} input={props.data} />;
   if (isCatalogArea(example.id)) return <AreaCatalog key={example.id} variant={example.id} label={example.title} data={source} compact={compact} theme={theme} demo={!props.data} />;

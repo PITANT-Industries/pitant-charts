@@ -1,4 +1,5 @@
 import type { ChartData } from "../../../types";
+import { lineCallerInput } from "../line-caller-input";
 
 export const initialLargeCount = 50_000;
 export const minutesPerDay = 1440;
@@ -21,11 +22,13 @@ export interface DenseLineData {
 
 export function makeDenseLineData(count: number, data?: ChartData): DenseLineData {
   let series: DenseLineData["series"];
-  if (data?.series) {
-    series = data.series;
-    count = data.categories?.length ?? series.reduce((max, item) => Math.max(max, item.values.length), 0);
+  let categories: readonly string[] | undefined;
+  if (data !== undefined) {
+    const caller = lineCallerInput(data);
+    series = caller.series;
+    categories = caller.categories;
+    count = categories.length;
   } else {
-    count = data?.categories?.length ?? count;
     const p50 = new Float64Array(count);
     const p95 = new Float64Array(count);
     function noise(index: number) {
@@ -46,8 +49,8 @@ export function makeDenseLineData(count: number, data?: ChartData): DenseLineDat
     series,
     label(sample, detailed = false) {
       const index = Math.min(count - 1, Math.max(0, Math.round(sample)));
-      const category = data?.categories?.[index] ?? (data?.series ? String(index + 1) : undefined);
-      if (category !== undefined) return detailed ? category : category.split(",")[0];
+      const category = categories?.[index];
+      if (category !== undefined) return category;
       return (detailed ? dateTime : date).format(start + index * minute);
     },
   };

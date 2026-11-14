@@ -89,3 +89,5 @@
 @media (prefers-reduced-motion: no-preference) {
   .line-table-weekly tbody tr { transition: background-color 150ms ease; }
 }
+.line-table-weekly-scroll { max-inline-size: 100%; overflow: auto; }
+.line-table-weekly-scroll:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
