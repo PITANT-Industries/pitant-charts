@@ -1,12 +1,13 @@
 import { area, curveMonotoneX, curveNatural, line } from "d3-shape";
 import { Button } from "@ui-sdk/react/button";
 import { Download } from "lucide-react";
-import { useId, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from "react";
 import type { ChartExample, ChartSeries } from "../../types";
 import { usePlotSize } from "../usePlotSize";
 import { CartesianDatePill, CartesianFocusPoint, CartesianReadout, cartesianPillWidth } from "./CartesianFocus";
 import type { CartesianData } from "./data";
-import { lineDynamicDomain, toLocalTime } from "./line-detail-data";
+import { toLocalTime } from "./line-detail-data";
+import { lineCalendar, lineFormatTotal, lineFormatValue, lineValueScale } from "./line-input";
 import { lineDateLabel } from "./line-format";
 import { exportFixture, syncedFixture } from "./line-sync-export-fixtures";
 import { downloadRevenueChart, type ExportFormat } from "./line-svg-download";
@@ -25,6 +26,7 @@ type PlotProps = {
   label: string;
   categories: string[];
   series: ChartSeries[];
+  rows?: CartesianData["rows"];
   theme: ChartTheme;
   compact: boolean;
   demo: boolean;
@@ -36,7 +38,7 @@ type PlotProps = {
   svgRef?: RefObject<SVGSVGElement | null>;
 };
 
-function MetricPlot({ label, categories, series, theme, compact, demo, panel, bottomPanel, focus, onFocusChange, activeSeries, svgRef }: PlotProps) {
+function MetricPlot({ label, categories, series, rows, theme, compact, demo, panel, bottomPanel, focus, onFocusChange, activeSeries, svgRef }: PlotProps) {
   const id = useId();
   const synced = panel !== undefined;
   const panelIndex = panel ?? 0;
@@ -50,16 +52,18 @@ function MetricPlot({ label, categories, series, theme, compact, demo, panel, bo
   const top = Math.min(compact ? 12 : synced ? 12 : 40, height * .36);
   const bottom = height - Math.min(compact ? 20 : synced ? bottomPanel ? 36 : 8 : 40, height * .51);
   const limits = synced ? syncedDomains[panelIndex] ?? [1, .25] : [40000, 10000];
-  const { domain, tick } = demo ? { domain: [0, limits[0]], tick: limits[1] } : lineDynamicDomain(series, [], limits[1]);
+  const domain = [0, limits[0]], tick = limits[1];
+  const callerScale = useMemo(() => demo ? undefined : lineValueScale(series.map(item => item.values)), [demo, series]);
   const count = categories.length;
   const last = count - 1;
-  const times = categories.map(toLocalTime);
+  const times = demo ? categories.map(toLocalTime) : lineCalendar({ categories, series, rows }).times ?? categories.map(() => undefined);
   const chronological = times.every((value, index) => value !== undefined && (index === 0 || value > times[index - 1]!));
   const start = chronological ? times[0] ?? 0 : 0;
   const end = chronological ? times[last] ?? start : Math.max(0, last);
   const x = (index: number) => start === end ? (left + right) / 2
     : left + ((chronological ? times[index]! : index) - start) / (end - start) * (right - left);
-  const y = (value: number) => bottom - (value - domain[0]) / (domain[1] - domain[0]) * (bottom - top);
+  const y = (value: number) => callerScale ? callerScale.position(value, bottom, top) : bottom - (value - domain[0]) / (domain[1] - domain[0]) * (bottom - top);
+  const tickY = (value: number) => callerScale ? callerScale.positionUnit(value, bottom, top) : y(value);
   const coordinates = series.map(item => categories.map((_, index) => {
     const value = item.values[index];
     return { x: x(index), y: isFiniteValue(value) ? y(value) : NaN, value: isFiniteValue(value) ? value : null };
@@ -68,7 +72,7 @@ function MetricPlot({ label, categories, series, theme, compact, demo, panel, bo
   const curve = errors ? curveMonotoneX : curveNatural;
   const trace = line<Point>().defined(point => point.value !== null).x(point => point.x).y(point => point.y).curve(curve);
   const fill = area<Point>().defined(point => point.value !== null).x(point => point.x).y0(y(0)).y1(point => point.y).curve(curve);
-  const ticks = Array.from({ length: Math.floor((domain[1] - domain[0]) / tick) + 1 }, (_, index) => domain[0] + index * tick);
+  const ticks = callerScale?.ticks ?? Array.from({ length: Math.floor((domain[1] - domain[0]) / tick) + 1 }, (_, index) => domain[0] + index * tick);
   const sparse = compact || width < 324;
   const dateCount = Math.min(count, sparse ? 3 : 5);
   const dates = showDates ? demo ? synced ? sparse ? [0, 22, 44] : [0, 11, 22, 33, 44]
@@ -82,11 +86,15 @@ function MetricPlot({ label, categories, series, theme, compact, demo, panel, bo
   const entries = selection ? coordinates.flatMap((points, index) => {
     const point = points[selection.index];
     if (point.value === null) return [];
-    const value = demo && errors ? `${number.format(point.value)}%` : point.value;
+    const value = !demo ? lineFormatValue(point.value) : errors ? `${number.format(point.value)}%` : point.value;
     return [{ name: demo && synced ? focusNames[panelIndex] : series[index].name, value, color: colors[index], y: point.y }];
   }) : [];
+  const readoutEntries = !demo && selection ? series.map((item, index) => {
+    const value = item.values[selection.index];
+    return { name: item.name, value: isFiniteValue(value) ? lineFormatValue(value) : "—", color: colors[index] };
+  }) : entries;
   const tickLabel = (value: number) => {
-    if (!demo) return number.format(value);
+    if (!demo) return callerScale!.format(value);
     if (!synced) return `$${number.format(value / 1000)}k`;
     if (panel === 0) return value === 0 ? "0" : `${number.format(value / 1000)}k`;
     return panel === 1 ? `${number.format(value)} ms` : `${number.format(value)}%`;
@@ -154,17 +162,19 @@ function MetricPlot({ label, categories, series, theme, compact, demo, panel, bo
         </linearGradient>)}
       </defs>
       <g aria-hidden="true">
-        {ticks.map(value => <line key={value} data-line-grid="" x1={left} x2={right} y1={y(value)} y2={y(value)}
+        {ticks.map((value, index) => <line key={index} data-line-grid="" x1={left} x2={right} y1={tickY(value)} y2={tickY(value)}
           stroke={`url(#${id}-grid)`} strokeDasharray="4 4" />)}
         {coordinates.map((points, index) => <g key={index} data-line-metric={index}
           opacity={activeSeries !== undefined && activeSeries !== index ? .3 : 1}>
           {errors && <path data-line-error-fill="" d={fill(points) ?? undefined} fill={`url(#${id}-area)`} />}
           <path data-line-sync-export-trace="" d={trace(points) ?? undefined} fill="none" vectorEffect="non-scaling-stroke"
             stroke={errors ? colors[index] : `url(#${id}-line-${index})`} strokeWidth={errors ? 2 : 2.5} strokeLinecap="round" strokeLinejoin="round" />
+          {!demo && points.map((point, at) => point.value !== null && points[at - 1]?.value == null && points[at + 1]?.value == null
+            ? <circle key={at} data-line-isolated-point={`${index}-${at}`} cx={point.x} cy={point.y} r={compact ? 2 : 3} fill={colors[index]} pointerEvents="none" /> : null)}
         </g>)}
         <g fontSize={compact ? 10 : 12} fill={theme.muted}>
           {dates.map(index => <text key={index} x={x(index)} y={bottom + (compact ? 13 : 24)} textAnchor="middle">{categories[index]}</text>)}
-          {!compact && ticks.map(value => <text key={value} x={left - 4} y={y(value)} textAnchor="end" dominantBaseline="middle">{tickLabel(value)}</text>)}
+          {!compact && ticks.map((value, index) => <text key={index} x={left - 4} y={tickY(value)} textAnchor="end" dominantBaseline="middle">{tickLabel(value)}</text>)}
         </g>
       </g>
       {selection && <g data-line-sync-export-focus="" aria-hidden="true" pointerEvents="none">
@@ -174,7 +184,7 @@ function MetricPlot({ label, categories, series, theme, compact, demo, panel, bo
       </g>}
     </svg>
     {!compact && <div className="line-sync-export-readout" role="status" aria-atomic="true" style={readoutStyle}>
-      {ownFocus && entries.length > 0 && <CartesianReadout label={lineDateLabel(selectedCategory)} entries={entries} live={false} />}
+      {ownFocus && readoutEntries.length > 0 && <CartesianReadout label={demo ? lineDateLabel(selectedCategory) : selectedCategory} entries={readoutEntries} live={false} />}
     </div>}
   </div>;
 }
@@ -184,7 +194,7 @@ export function LineSyncExportDetail({ example, data, compact, theme, demo }: {
 }) {
   const synced = example.id === "line-synced";
   const source = demo ? synced ? syncedFixture : exportFixture : data;
-  const panels = synced && !compact && source.series.length ? source.series.map(item => [item]) : [source.series];
+  const panels = useMemo(() => synced && !compact && source.series.length ? source.series.map(item => [item]) : [source.series], [compact, source, synced]);
   const [focus, setFocus] = useState<Focus | null>(null);
   const [hovered, setHovered] = useState<number>();
   const [focused, setFocused] = useState<number>();
@@ -193,8 +203,11 @@ export function LineSyncExportDetail({ example, data, compact, theme, demo }: {
   const svg = useRef<SVGSVGElement>(null);
   const legend = useRef<HTMLDivElement>(null);
   const seriesFocus = hovered ?? focused;
-  const totals = synced ? [] : source.series.map(item => compactMoney.format(item.values.reduce<number>((total, value) =>
-    total + (isFiniteValue(value) ? value : 0), 0)).toLowerCase());
+  const totals = synced ? [] : source.series.map(item => demo ? compactMoney.format(item.values.reduce<number>((total, value) =>
+    total + (isFiniteValue(value) ? value : 0), 0)).toLowerCase() : lineFormatTotal(item.values));
+  useEffect(() => {
+    if (!demo) { setFocus(null); setHovered(undefined); setFocused(undefined); }
+  }, [demo, source]);
 
   async function save(next: ExportFormat) {
     if (format || !svg.current || !legend.current) return;
@@ -219,11 +232,11 @@ export function LineSyncExportDetail({ example, data, compact, theme, demo }: {
     {panels.map((series, index) => <div className="line-sync-export-panel" key={index}>
       {synced && !compact && panels.length > 1 && <div className="line-synced-title">{series[0]?.name}</div>}
       <MetricPlot label={synced && panels.length > 1 ? `${example.title}, ${series[0]?.name}` : example.title}
-        categories={source.categories} series={series} compact={compact} theme={theme} demo={demo}
+        categories={source.categories} series={series} rows={source.rows} compact={compact} theme={theme} demo={demo}
         panel={synced ? index : undefined} bottomPanel={synced && index === panels.length - 1}
         focus={focus} onFocusChange={setFocus} activeSeries={seriesFocus} svgRef={synced ? undefined : svg} />
     </div>)}
-    {!compact && !synced && <div className="line-export-legend" ref={legend} aria-label="Revenue by plan">
+    {!compact && !synced && <div className="line-export-legend" ref={legend} aria-label={demo ? "Revenue by plan" : "Series totals"}>
       {source.series.map((series, index) => <Button key={index} type="button" className="line-export-legend-item"
         data-dimmed={seriesFocus !== undefined && seriesFocus !== index} onPointerEnter={event => { if (event.pointerType !== "touch") setHovered(index); }}
         onPointerLeave={() => setHovered(undefined)} onFocus={() => setFocused(index)} onBlur={() => setFocused(undefined)}>

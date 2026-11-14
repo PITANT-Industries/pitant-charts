@@ -9,6 +9,7 @@ import { usePlotSize } from "../usePlotSize";
 import { CartesianDatePill, CartesianFocusPoint, CartesianReadout, cartesianPillWidth } from "./CartesianFocus";
 import { initialLargeCount, makeDenseLineData, minutesPerDay, sampleValue, type DenseLineData, type DenseLinePoint, type DenseLineRange } from "./dense-line/data";
 import { useDenseLineFrame } from "./dense-line/useDenseLineFrame";
+import { lineValueScale } from "./line-input";
 import "./line-large-detail.css";
 
 const emptyPoints: DenseLinePoint[][] = [];
@@ -16,7 +17,13 @@ const choices = [10, 50, 100, 250].map(count => ({ value: String(count * 1000), 
 const number = new Intl.NumberFormat("en");
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
-export default function LineLargeDetail({ example, compact = false, data }: ChartPreviewProps) {
+export default function LineLargeDetail(props: ChartPreviewProps) {
+  const caller = useMemo(() => props.data === undefined ? undefined : makeDenseLineData(0, props.data), [props.data]);
+  if (caller && (!caller.count || !caller.series.length)) return <div className="chart-render-message" role="status">No data available.</div>;
+  return <LineLargePlot {...props} caller={caller} />;
+}
+
+function LineLargePlot({ example, compact = false, data, caller }: ChartPreviewProps & { caller?: DenseLineData }) {
   const theme = useChartTheme();
   const uid = useId();
   const { plot, width, height } = usePlotSize<HTMLDivElement>(728, 364);
@@ -26,13 +33,14 @@ export default function LineLargeDetail({ example, compact = false, data }: Char
   const [count, setCount] = useState(initialLargeCount);
   const [selected, setSelected] = useState<number | null>(null);
   const [zoom, setZoom] = useState<{ data: DenseLineData; range: DenseLineRange }>();
-  const source = useMemo(() => makeDenseLineData(compact ? 10_000 : count, data), [compact, count, data]);
+  const source = useMemo(() => caller ?? makeDenseLineData(compact ? 10_000 : count), [compact, count, caller]);
   const fullRange = useMemo<DenseLineRange>(() => [0, Math.max(0, source.count - 1)], [source.count]);
   const range = zoom?.data === source ? zoom.range : fullRange;
   const inset = Math.min(compact ? 15 : 40, width * .2, height * .29);
   const left = inset, right = width - inset, bottom = height - inset;
   const plotWidth = right - left, plotHeight = bottom - inset;
-  const frame = useDenseLineFrame(source, range, Math.max(1, Math.floor(plotWidth)));
+  const sampledFrame = useDenseLineFrame(source, range, Math.max(1, Math.floor(plotWidth)));
+  const frame = data !== undefined && sampledFrame?.data !== source ? undefined : sampledFrame;
   const displayed = frame?.data ?? source;
   const visible = frame?.range ?? range;
   const [start, end] = visible;
@@ -48,12 +56,22 @@ export default function LineLargeDetail({ example, compact = false, data }: Char
     }
     return [min, max > min ? max : min + 1];
   }, [data, displayed.count, frame]);
-  const x = (index: number) => left + (index - start) / span * plotWidth;
-  const y = (value: number) => bottom - (value - minimum) / (maximum - minimum) * plotHeight;
+  const callerScale = useMemo(() => data === undefined ? undefined : lineValueScale((frame?.points ?? []).map(points => points.map(point => point[1]))), [data, frame]);
+  const x = (index: number) => data !== undefined && start === end ? (left + right) / 2 : left + (index - start) / span * plotWidth;
+  const y = (value: number) => callerScale ? callerScale.position(value, bottom, inset) : bottom - (value - minimum) / (maximum - minimum) * plotHeight;
   const active = !busy && selected !== null && selected >= first && selected <= last && displayed.count ? selected : null;
   const labelAt = displayed.label;
   const colors = useMemo(() => displayed.series.map((series, index) => series.color ??
     theme.colors[(data ? index : index ^ 1) % theme.colors.length]), [data, displayed, theme.colors]);
+  const isolated = data === undefined ? [] : (frame?.points ?? []).flatMap((points, series) => {
+    const seen = new Set<number>();
+    return points.flatMap(([index, value]) => {
+      if (value === null || seen.has(index) || sampleValue(displayed.series[series].values, index - 1) !== null
+        || sampleValue(displayed.series[series].values, index + 1) !== null) return [];
+      seen.add(index);
+      return [{ index, value, series }];
+    });
+  });
   let nTicks = compact ? 3 : 5;
   const tickPositions = () => [...new Set(Array.from({ length: nTicks }, (_, i) => Math.round(first + i * (last - first) / (nTicks - 1))))];
   while (nTicks > 2 && nTicks * (Math.max(...tickPositions().map(index => labelAt(index).length)) * 7.2 + 12) > plotWidth) nTicks--;
@@ -83,15 +101,15 @@ export default function LineLargeDetail({ example, compact = false, data }: Char
       context.clip();
       // d3-shape only uses path methods shared by Path2D and Canvas2D.
       const path = line<DenseLinePoint>().defined(point => point[1] !== null).curve(curveNatural)
-        .x(([index]) => left + (index - start) / span * plotWidth)
-        .y(([, value]) => bottom - ((value ?? 0) - minimum) / (maximum - minimum) * plotHeight);
+        .x(([index]) => data !== undefined && start === end ? (left + right) / 2 : left + (index - start) / span * plotWidth)
+        .y(([, value]) => callerScale ? callerScale.position(value ?? 0, bottom, inset) : bottom - ((value ?? 0) - minimum) / (maximum - minimum) * plotHeight);
       for (let i = points.length - 1; i >= 0; i--) {
         const shape = new Path2D();
         path.context(shape as unknown as CanvasRenderingContext2D)(points[i]);
         renderer.paintPath(shape, colors[i], "stroke", 1.5);
       }
     } finally { renderer.endFrame(); }
-  }, [bottom, colors, frame, height, inset, left, maximum, minimum, plotHeight, plotWidth, span, start, width]);
+  }, [bottom, callerScale, colors, data, end, frame, height, inset, left, maximum, minimum, plotHeight, plotWidth, right, span, start, width]);
 
   useEffect(() => {
     const element = plot.current;
@@ -172,6 +190,8 @@ export default function LineLargeDetail({ example, compact = false, data }: Char
         onLostPointerCapture={() => { drag.current = undefined; }} onPointerCancel={() => setSelected(null)} onBlur={() => setSelected(null)}
         onDoubleClick={compact ? undefined : () => { setZoom(undefined); setSelected(null); }}>
         {!compact && <desc id={`${uid}-keys`}>Use the arrow keys to inspect each sample. Home and End select the first and last visible samples. Escape clears the selection.</desc>}
+        {isolated.map(point => <circle key={`${point.series}-${point.index}`} data-line-large-isolated={`${point.series}-${point.index}`} data-line-isolated-point={`${point.series}-${point.index}`}
+          cx={x(point.index)} cy={y(point.value)} r={2} fill={colors[point.series]} />)}
         <g aria-hidden="true" fill={theme.muted} fontSize={compact ? 9 : 12} data-line-large-ticks="">
           {ticks.map(index => <text key={index} x={x(index)} y={bottom + (compact ? 12 : 24)} textAnchor="middle"
             opacity={active !== null && Math.abs(x(index) - pillX) < pillWidth / 2 + 20 ? 0 : 1}>{labelAt(index)}</text>)}

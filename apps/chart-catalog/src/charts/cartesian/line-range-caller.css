@@ -1,0 +1,9 @@
+.line-range-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; min-inline-size: 0; }
+.line-range-legend > button { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--muted-foreground); font: inherit; font-size: 12px; padding: 4px; min-block-size: 28px; }
+.line-range-legend > button > i { inline-size: 8px; block-size: 8px; border-radius: 50%; flex-shrink: 0; }
+.line-range-legend > button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 3px; }
+.line-caller-brush-panel { min-inline-size: 0; }
+.line-brush-detail[data-caller-range][data-compact='true'] .line-caller-brush-panel { block-size: 100%; min-block-size: 0; }
+.line-brush-detail[data-caller-range] .line-brush-tooltip { max-inline-size: min(240px, 60%); }
+.line-zoom-detail[data-caller-range] .line-zoom-tip { max-inline-size: min(260px, 60%); }
+.line-zoom-detail[data-caller-range] .line-zoom-tip > .cartesian-focus-readout { min-inline-size: 0; max-inline-size: 100%; }

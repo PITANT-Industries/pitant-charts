@@ -6,6 +6,8 @@ import { lineDateLabel } from "./line-format";
 import { dailyUsers } from "./line-zoom-fixture";
 import { selectLineSamples } from "./line-samples";
 import type { ChartTheme } from "./options";
+import type { CartesianData } from "./data";
+import { LineCallerZoom } from "./LineCallerZoom";
 import "./line-zoom-detail.css";
 
 type Domain = readonly [start: number, end: number];
@@ -32,7 +34,7 @@ function clampDomain(start: number, span: number): Domain {
   return [left, left + span];
 }
 
-export function LineZoomDetail({ label, compact, theme }: { label: string; compact: boolean; theme: ChartTheme }) {
+function DemoLineZoomDetail({ label, compact, theme }: { label: string; compact: boolean; theme: ChartTheme }) {
   const id = useId();
   const { plot, width, height } = usePlotSize<HTMLDivElement>(728, 364);
   const [domain, setDomain] = useState<Domain>(fullDomain);
@@ -185,4 +187,8 @@ export function LineZoomDetail({ label, compact, theme }: { label: string; compa
       <span id={`${id}-instructions`}>Ctrl or Cmd and scroll to zoom, drag to pan, double-click to reset<span className="line-zoom-keyboard">. Use plus and minus to zoom, arrow keys to read values, and Escape to clear or reset.</span></span>
     </div>}
   </div>;
+}
+
+export function LineZoomDetail({ data, demo = true, ...props }: { label: string; compact: boolean; theme: ChartTheme; data?: CartesianData; demo?: boolean }) {
+  return demo ? <DemoLineZoomDetail {...props} /> : <LineCallerZoom {...props} data={data ?? { categories: [], series: [] }} />;
 }

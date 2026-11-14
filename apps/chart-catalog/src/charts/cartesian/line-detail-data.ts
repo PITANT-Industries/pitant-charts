@@ -17,6 +17,7 @@ const issueDesign: LineDesign = { domain: [0, 60], step: 10, ticks: 4, colors: [
 const profitDesign: LineDesign = { domain: [-1500, 3000], step: 1000, curve: "linear" };
 
 export const detailedLines = {
+  "line-default": { domain: [0, 10000], step: 2000, ticks: 5, stroke: 2.5 },
   "line-grid": { domain: [0, 5000], step: 1000, axis: "number" },
   "line-dual-axis": { domain: [0, 26000], step: 5000, axis: "dual", narrowTicks: 4 },
   "line-points": { domain: [0, 350], step: 50 },
@@ -52,15 +53,15 @@ export const detailedLines = {
 export type LineVariant = keyof typeof detailedLines;
 export const designForLine = (variant: LineVariant): LineDesign => detailedLines[variant];
 
-export type LineBounds = { name: string; low: (number | null)[]; high: (number | null)[]; color: number };
+export type LineBounds = { name: string; low: (number | null)[]; high: (number | null)[]; color: number; series?: number; paint?: string };
 
-function boundsForRows(data: CartesianData, name: string, color: number, field?: string): LineBounds {
+function boundsForRows(data: CartesianData, name: string, color: number, field?: string, unit = (value: number) => value): LineBounds {
   const range = (index: number, side: "low" | "high") => {
     const row = data.rows?.[index];
     const source = field ? row?.[field] : row;
     if (!source || typeof source !== "object" || !(side in source)) return null;
     const value = (source as Record<string, unknown>)[side];
-    return typeof value === "number" && Number.isFinite(value) ? value : null;
+    return typeof value === "number" && Number.isFinite(value) ? unit(value) : null;
   };
   return { name, color, low: data.categories.map((_, i) => range(i, "low")), high: data.categories.map((_, i) => range(i, "high")) };
 }
@@ -85,18 +86,28 @@ function movingAverage(values: readonly (number | null)[]) {
   return { average, low, high };
 }
 
-export function lineOverlays(variant: LineVariant, data: CartesianData) {
-  const values = data.series[0]?.values ?? [];
+export function lineOverlays(variant: LineVariant, data: CartesianData, options: {
+  unit?: (value: number) => number;
+  caller?: boolean;
+} = {}) {
+  const unit = options.unit ?? ((value: number) => value);
+  const values = options.unit ? data.categories.map((_, index) => {
+    const value = data.series[0]?.values[index];
+    return typeof value === "number" && Number.isFinite(value) ? unit(value) : null;
+  }) : data.series[0]?.values ?? [];
+  const withPaint = (band: LineBounds, series = 0) => options.caller
+    ? { ...band, series, paint: data.series[series]?.color } : band;
   if (variant === "line-bollinger" || variant === "line-band-bollinger") {
     const { average, low, high } = movingAverage(values);
-    const band = { name: "Bollinger", low, high, color: 0 };
+    const band = withPaint({ name: "Bollinger", low, high, color: 0 });
     return { bands: [band], average };
   }
-  if (variant === "line-band-range") return { bands: [boundsForRows(data, "Temperature", 0)] };
+  if (variant === "line-band-range") return { bands: [withPaint(boundsForRows(data,
+    options.caller ? `${data.series[0]?.name ?? "Series"} range` : "Temperature", 0, undefined, unit))] };
   if (variant === "line-band-ranges") {
-    return { bands: data.series.map(({ name }, index) => boundsForRows(data, `${name} range`, index === 1 ? 2 : index, name)) };
+    return { bands: data.series.map(({ name }, index) => withPaint(boundsForRows(data, `${name} range`, index === 1 ? 2 : index, name, unit), index)) };
   }
-  if (variant.startsWith("line-band")) return { bands: [boundsForRows(data, "Forecast", variant === "line-band-fade" ? 2 : 0)] };
+  if (variant.startsWith("line-band")) return { bands: [withPaint(boundsForRows(data, "Forecast", variant === "line-band-fade" ? 2 : 0, undefined, unit))] };
   return { bands: [] };
 }
 

@@ -56,7 +56,8 @@ export function LineBand({ id, variant, band, fill, color, width, x, y }: {
   </g>;
 }
 
-export function LineDateRegions({ id, variant, fill, categories, top, bottom, right, x }: {
+export function LineDateRegions({ id, variant, fill, categories, top, bottom, right, x, demo = true, dates,
+  deadlinePoint, highlights = [], datePosition }: {
   id: string;
   variant: LineVariant;
   fill: Fill;
@@ -65,12 +66,20 @@ export function LineDateRegions({ id, variant, fill, categories, top, bottom, ri
   bottom: number;
   right: number;
   x: (index: number) => number;
+  demo?: boolean;
+  dates?: readonly (string | undefined)[];
+  deadlinePoint?: { x: number; label: string };
+  highlights?: readonly { x: number; label: string }[];
+  datePosition?: (time: number) => number;
 }) {
   const weekends = variant === "line-weekends";
   const deadline = variant === "line-deadline" || variant === "line-deadline-fills";
-  if (!weekends && !deadline) return null;
-  const due = categories.findIndex(category => lineDate(category)?.getUTCMonth() === 9 && lineDate(category)?.getUTCDate() === 15);
-  const dueX = x(due);
+  if (!weekends && !deadline && !highlights.length) return null;
+  const due = demo ? categories.findIndex(category => lineDate(category)?.getUTCMonth() === 9 && lineDate(category)?.getUTCDate() === 15) : -1;
+  const dueX = demo ? x(due) : deadlinePoint?.x ?? right;
+  const hasDue = demo ? due >= 0 : deadlinePoint !== undefined;
+  const dateAt = (index: number) => demo ? lineDate(categories[index])
+    : dates?.[index] ? new Date(`${dates[index]}T00:00:00Z`) : undefined;
   return <g data-line-date-regions="">
     <defs>
       <pattern id={id} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
@@ -84,15 +93,21 @@ export function LineDateRegions({ id, variant, fill, categories, top, bottom, ri
         <rect x={dueX} y={top} width={Math.max(0, right - dueX)} height={bottom - top} fill={`url(#${id}-alpha)`} />
       </mask>
     </defs>
-    {weekends && categories.map((category, index) => lineDate(category)?.getUTCDay() === 6 && index < categories.length - 1
-      ? <rect key={index} x={x(index)} y={top} width={x(Math.min(categories.length - 1, index + 2)) - x(index)} height={bottom - top} fill={`url(#${id})`} /> : null)}
-    {deadline && due >= 0 && <>
+    {weekends && categories.map((_, index) => dateAt(index)?.getUTCDay() === 6 && index < categories.length - 1
+      ? <rect key={index} x={x(index)} y={top} width={!demo && datePosition
+        ? Math.max(0, Math.min(right, datePosition(dateAt(index)!.valueOf() + 2 * 86_400_000)) - x(index))
+        : x(Math.min(categories.length - 1, index + 2)) - x(index)} height={bottom - top} fill={`url(#${id})`} /> : null)}
+    {highlights.map((point, index) => <line key={index} data-line-highlight="" x1={point.x} x2={point.x} y1={top} y2={bottom}
+      stroke="var(--chart-line-primary, currentColor)" strokeDasharray="4 4"><title>{point.label}</title></line>)}
+    {deadline && hasDue && <>
       <rect data-line-deadline-fill={fill} x={dueX} y={top} width={right - dueX} height={bottom - top}
         fill={fill === "solid" ? negative : fill === "gradient" ? `url(#${id}-gradient)` : `url(#${id})`}
         fillOpacity={fill === "solid" ? .17 : fill === "pattern" ? .6 : 1}
         mask={fill === "gradient" ? undefined : `url(#${id}-fade)`} />
       <line x1={dueX} x2={dueX} y1={top} y2={bottom} stroke={negative} />
-      {variant === "line-deadline" && <text x={dueX + 6} y={top + 6} dominantBaseline="hanging" fill={negative} fontSize={11}>Due Oct 15</text>}
+      {variant === "line-deadline" && <text x={dueX + 6} y={top + 6} dominantBaseline="hanging" fill={negative} fontSize={11}>
+        {demo ? "Due Oct 15" : `Due ${deadlinePoint?.label ?? ""}`}
+      </text>}
     </>}
   </g>;
 }

@@ -124,167 +124,167 @@
     "remaining": "Exact path/raster paint, additional display densities and cross-browser normal-motion frames remain open."
   },
   "line-default": {
-    "checked": "All 30 October dates match for Users and Pageviews. At a 728 × 364 px plot, trace bounds and grid match within 0.5 px. Keyboard inspection shows the active date pill and both values.",
+    "checked": "All 30 October dates match for Users and Pageviews. At a 728 × 364 px plot, trace bounds and grid match within 0.5 px. Keyboard inspection shows the active date pill and both values. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare exact edge fades, marker treatment, and entrance timing."
   },
   "line-dual-axis": {
-    "checked": "Both paths and the dollar and percentage axes match the live reference at both sizes.",
+    "checked": "Both paths and the dollar and percentage axes match the live reference at both sizes. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare cursor highlight fades and tooltip placement."
   },
   "line-grid": {
-    "checked": "The SVG has six horizontal and fourteen vertical grid lines, matching ticks and sampled tooltip values.",
+    "checked": "The SVG has six horizontal and fourteen vertical grid lines, matching ticks and sampled tooltip values. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare cursor highlight fade and exact tooltip positioning."
   },
   "line-points": {
-    "checked": "All fourteen sign-up values, path and tick coordinates match. Each point has a 4px dot and 8px ring.",
+    "checked": "All fourteen sign-up values, path and tick coordinates match. Each point has a 4px dot and 8px ring. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare active-marker animation and exact colors."
   },
   "line-dashed": {
-    "checked": "The solid line and five-point provisional tail share a join and match reference path coordinates.",
+    "checked": "The solid line and five-point provisional tail share a join and match reference path coordinates. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare tail gradient and cursor highlight fades."
   },
   "line-markers": {
-    "checked": "Three date marker positions and the two line paths match. All 360 captured date, value and event readouts match in Chrome, Firefox and WebKit, including event names and descriptions. Desktop readout panels differ by at most 0.00002 px. The September 23 cluster expands to its three events; 12 size/theme/browser fan profiles and 36 marker bounds agree within 0.017 px. Keyboard traversal, activation and clearing passed. Local Safari/WebKit button traversal used native Option+Tab. Supplied data reaches this same UI with the caller domain. Twelve local public-API profiles passed object events, legacy strings and absent rows at both widths/palettes, including 48 readouts, caller colors and fan keyboard/dismissal controls. The independently installed archive passed object/legacy event data, fan controls and annotation retention when every numeric value at a date is null.",
+    "checked": "Three date marker positions and the two line paths match. All 360 captured date, value and event readouts match in Chrome, Firefox and WebKit, including event names and descriptions. Desktop readout panels differ by at most 0.00002 px. The September 23 cluster expands to its three events; 12 size/theme/browser fan profiles and 36 marker bounds agree within 0.017 px. Keyboard traversal, activation and clearing passed. Local Safari/WebKit button traversal used native Option+Tab. Supplied data reaches this same UI with the caller domain. Twelve local public-API profiles passed object events, legacy strings and absent rows at both widths/palettes, including 48 readouts, caller colors and fan keyboard/dismissal controls. The independently installed archive passed object/legacy event data, fan controls and annotation retention when every numeric value at a date is null. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare cluster entrance/reversal motion and remaining marker paint. Narrow readouts retain the local plot clamp instead of reference overflow."
   },
   "line-legend": {
-    "checked": "The three exact daily series, totals and side/stacked layout match. Paid can be isolated through pointer hover and keyboard focus.",
+    "checked": "The three exact daily series, totals and side/stacked layout match. Paid can be isolated through pointer hover and keyboard focus. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare exact legend and inactive series paint."
   },
   "line-time-range": {
-    "checked": "90d path and values match at both sizes. The 7d, 30d and 90d choices show 7, 30 and 90 points with the measured ticks and grid counts.",
+    "checked": "90d path and values match at both sizes. The 7d, 30d and 90d choices show 7, 30 and 90 points with the measured ticks and grid counts. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare scale easing during range changes."
   },
   "line-segment": {
-    "checked": "The 45-day path and all chart ticks match. Drag updates a selected range and announces its dates. Escape clears the range.",
+    "checked": "The 45-day path and all chart ticks match. Drag updates a selected range and announces its dates. Escape clears the range. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare the selection surface, date-strip and drag treatment against the live reference."
   },
   "line-brush": {
-    "checked": "The 90-day fixture, 300px detail plot, 72px overview, date ticks and sampled readout match the live reference at desktop and mobile widths. Drag or use the keyboard to resize or pan. Escape restores the pre-drag range.",
+    "checked": "The 90-day fixture, 300px detail plot, 72px overview, date ticks and sampled readout match the live reference at desktop and mobile widths. Drag or use the keyboard to resize or pan. Escape restores the pre-drag range. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare scale easing and sub-day pointer motion during a drag."
   },
   "line-linked-brush": {
-    "checked": "Visitors, Signups and the overview match the live plot geometry. Both detail plots start at August 29, pan and zoom together, and share a crosshair date. Mouse, keyboard and touch controls work at both sizes.",
+    "checked": "Visitors, Signups and the overview match the live plot geometry. Both detail plots start at August 29, pan and zoom together, and share a crosshair date. Mouse, keyboard and touch controls work at both sizes. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare scale easing and hover fade during continuous drag."
   },
   "line-zoom": {
-    "checked": "All 365 daily user readouts match the reference. Desktop and mobile plots match the reference trace coordinates, grid, and date ticks. Ctrl-wheel zoom, drag to pan, double-click reset, keyboard controls, and touch selection and panning passed in Chrome.",
+    "checked": "All 365 daily user readouts match the reference. Desktop and mobile plots match the reference trace coordinates, grid, and date ticks. Ctrl-wheel zoom, drag to pan, double-click reset, keyboard controls, and touch selection and panning passed in Chrome. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "The date pill uses the library’s static text presentation."
   },
   "line-synced": {
-    "checked": "Requests, p95 latency, and Error rate share the same selected day. Pointer, touch, and keyboard moved all three guides and the active panel readout. October 2 shows 1,490 requests, 372 latency, and a 1.74% error rate. The three panel sizes, tick labels, and paths match the reference in desktop light and mobile dark Compare.",
+    "checked": "Requests, p95 latency, and Error rate share the same selected day. Pointer, touch, and keyboard moved all three guides and the active panel readout. October 2 shows 1,490 requests, 372 latency, and a 1.74% error rate. The three panel sizes, tick labels, and paths match the reference in desktop light and mobile dark Compare. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "The date pill uses the library’s static text presentation."
   },
   "line-table": {
-    "checked": "Both weekly curves, axes, all ten table rows and conversion percentages agree in the sampled desktop and mobile views. Hover or focus on a table row inspects its week. Plot hover and keyboard inspection highlight the corresponding row.",
+    "checked": "Both weekly curves, axes, all ten table rows and conversion percentages agree in the sampled desktop and mobile views. Hover or focus on a table row inspects its week. Plot hover and keyboard inspection highlight the corresponding row. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare hover transition timing and tooltip paint. Escape clears the local selection."
   },
   "line-projection": {
-    "checked": "Actual, goal and trend geometry match, with measured forecast endpoint positions and a ring at the last observed date.",
+    "checked": "Actual, goal and trend geometry match, with measured forecast endpoint positions and a ring at the last observed date. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare projection paint and interactive highlighting."
   },
   "line-projection-manual": {
-    "checked": "Actual and forecast geometry match, including three future booking checkpoints and time ticks.",
+    "checked": "Actual and forecast geometry match, including three future booking checkpoints and time ticks. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare forecast hover treatment and paint."
   },
   "line-threshold": {
-    "checked": "The 250 ms target and the p95 and Median line geometry match at three plot sizes. All 60 values match the live reference through keyboard inspection.",
+    "checked": "The 250 ms target and the p95 and Median line geometry match at three plot sizes. All 60 values match the live reference through keyboard inspection. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare the threshold highlight paint, transitions, and exact tooltip typography."
   },
   "line-profit-loss": {
-    "checked": "All sample net income values, crossings and axis coordinates match. Positive and negative stretches are split at zero.",
+    "checked": "All sample net income values, crossings and axis coordinates match. Positive and negative stretches are split at zero. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare exact line colors and focus paint."
   },
   "line-profit-loss-legend": {
-    "checked": "The weekly path, zero crossings, and desktop/mobile date ticks match. Profit and Loss legend focus isolates each sign color.",
+    "checked": "The weekly path, zero crossings, and desktop/mobile date ticks match. Profit and Loss legend focus isolates each sign color. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare sign isolation opacity and legend paint."
   },
   "line-band": {
-    "checked": "The exact signup and forecast bounds match in desktop/mobile paths and sampled tooltip.",
+    "checked": "The exact signup and forecast bounds match in desktop/mobile paths and sampled tooltip. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare cursor fades and exact tooltip placement."
   },
   "line-band-range": {
-    "checked": "The low/high temperature boundaries and scale match at both sizes. The readout gives the measured range.",
+    "checked": "The low/high temperature boundaries and scale match at both sizes. The readout gives the measured range. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare band paint and active boundary marks."
   },
   "line-band-ranges": {
-    "checked": "Both median paths and range envelopes match. The readout shows the two values and separate ranges.",
+    "checked": "Both median paths and range envelopes match. The readout shows the two values and separate ranges. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare legend and band paint."
   },
   "line-band-bollinger": {
-    "checked": "The exact Price fixture, Bollinger boundaries and ten-day average match at both sizes.",
+    "checked": "The exact Price fixture, Bollinger boundaries and ten-day average match at both sizes. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare the band and active marker paint."
   },
   "line-band-fill": {
-    "checked": "Solid, Gradient and Pattern switch the same forecast envelope. The fill opacities and measured outline paths match.",
+    "checked": "Solid, Gradient and Pattern switch the same forecast envelope. The fill opacities and measured outline paths match. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare stripe spacing and fill transition."
   },
   "line-band-fade": {
-    "checked": "Both dashed outlines and the bounds match. The band fades over its first and last fifth.",
+    "checked": "Both dashed outlines and the bounds match. The band fades over its first and last fifth. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare fade and cursor opacity."
   },
   "line-band-edges": {
-    "checked": "The upper outline uses the measured 1px/3px dash pattern and the tooltip retains both measured bounds.",
+    "checked": "The upper outline uses the measured 1px/3px dash pattern and the tooltip retains both measured bounds. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare exact gradient paint."
   },
   "line-weekends": {
-    "checked": "The three measured issue series and three weekend spans match.",
+    "checked": "The three measured issue series and three weekend spans match. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare hatch density and color."
   },
   "line-deadline": {
-    "checked": "The three issue paths match with the rule at October 15 and the overdue region beginning at that date.",
+    "checked": "The three issue paths match with the rule at October 15 and the overdue region beginning at that date. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare hatch paint, fade and deadline label."
   },
   "line-deadline-fills": {
-    "checked": "All three panels render the same measured Completed path. Desktop uses three columns and mobile stacks the panels.",
+    "checked": "All three panels render the same measured Completed path. Desktop uses three columns and mobile stacks the panels. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare clipping and fill paint. The PITANT panels also expose keyboard and pointer readouts."
   },
   "line-date-highlights-brush": {
-    "checked": "The September 1 Launch mark stays anchored across zoom and pan. The measured weekend strips show once they reach 4px, and the same 90-day fixture matches the reference detail and overview.",
+    "checked": "The September 1 Launch mark stays anchored across zoom and pan. The measured weekend strips show once they reach 4px, and the same 90-day fixture matches the reference detail and overview. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare exact hatch paint, fade and range-change easing."
   },
   "line-glow": {
-    "checked": "The full-bleed 28-point geometry and sampled tooltip match, with two radial backdrops clipped above the line.",
+    "checked": "The full-bleed 28-point geometry and sampled tooltip match, with two radial backdrops clipped above the line. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare radial gradient centers, blur strength and active glow paint."
   },
   "line-trend": {
-    "checked": "The measured weekly series and fitted trend path match. The guide switches between Dashed, Solid and Gradient.",
+    "checked": "The measured weekly series and fitted trend path match. The guide switches between Dashed, Solid and Gradient. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare trend style paint and transitions."
   },
   "line-bollinger": {
-    "checked": "All four floating Bollinger paths, the nonzero Y domain and sampled readout match.",
+    "checked": "All four floating Bollinger paths, the nonzero Y domain and sampled readout match. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare band color and active point paint."
   },
   "line-crosshair-point": {
-    "checked": "The Visitors path and sampled tooltip match. The guide starts at the active point and fades toward the axis.",
+    "checked": "The Visitors path and sampled tooltip match. The guide starts at the active point and fades toward the axis. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare the guide blur and active marker paint."
   },
   "line-fixed-scale": {
-    "checked": "The measured CPU path and fixed 0%–120% ticks match, including the live chart’s extra 120% tick.",
+    "checked": "The measured CPU path and fixed 0%–120% ticks match, including the live chart’s extra 120% tick. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare cursor highlights and tooltip placement."
   },
   "line-straight": {
-    "checked": "Both polylines and width-dependent date ticks match the live chart.",
+    "checked": "Both polylines and width-dependent date ticks match the live chart. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare cursor fades and exact tooltip placement."
   },
   "line-export": {
-    "checked": "SVG and PNG buttons download the rendered revenue plot and responsive plan legend. The SVG includes its font and themed background. The 2× PNG and SVG dimensions matched the reference in desktop light and mobile dark Compare. Path coordinates matched within 0.001px.",
+    "checked": "SVG and PNG buttons download the rendered revenue plot and responsive plan legend. The SVG includes its font and themed background. The 2× PNG and SVG dimensions matched the reference in desktop light and mobile dark Compare. Path coordinates matched within 0.001px. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Raster output can vary with browser font rendering."
   },
   "line-large-data": {
-    "checked": "The 10k, 50k, 100k and 250k selections use the reference minute fixture, PITANT Canvas2D, responsive date ticks and the p95 and p50 readout. The worker preserves extrema and gaps, and pointer and keyboard inspect the original samples, including minutes skipped for drawing.",
+    "checked": "The 10k, 50k, 100k and 250k selections use the reference minute fixture, PITANT Canvas2D, responsive date ticks and the p95 and p50 readout. The worker preserves extrema and gaps, and pointer and keyboard inspect the original samples, including minutes skipped for drawing. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity. Explicit data does not generate the dense demo. Its horizontal axis, zoom and min/max sampling retain sample-index positions, including for ISO labels.",
     "remaining": "Compare the exact Canvas gradients, focus dimming, and entry transitions across browsers."
   },
   "line-loading": {
-    "checked": "Loading and Ready states use the measured revenue path and grid. Ready exposes keyboard inspection.",
+    "checked": "Loading and Ready states use the measured revenue path and grid. Ready exposes keyboard inspection. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare the loading animation and Ready palette."
   },
   "chart-data-table": {
-    "checked": "The six monthly Revenue and Expenses values agree in the chart and table. The top-right toggle preserves the 2:1 plot box and keeps keyboard focus. The table stays available to screen readers in chart view and scrolls to June on mobile.",
+    "checked": "The six monthly Revenue and Expenses values agree in the chart and table. The top-right toggle preserves the 2:1 plot box and keeps keyboard focus. The table stays available to screen readers in chart view and scrolls to June on mobile. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare focus marker paint and tooltip transitions. Escape clears the local selection."
   },
   "line-loading-placeholder": {
-    "checked": "The placeholder uses the measured 2:1 plot and four dashed horizontal grid lines.",
+    "checked": "The placeholder uses the measured 2:1 plot and four dashed horizontal grid lines. Caller-data adapter verified through ChartPreview. Supplied input retains the detailed model without fixture fallback, with nullable/isolated samples, independent labels/colors, normalized finite scales and precise readouts. The finite source corpus passes 14 data families and seven replacement/restore/compact lifecycle states per Line route; this is caller-data qualification, not native paint or motion parity.",
     "remaining": "Compare the shimmer, loading-text animation and placeholder paint."
   },
   "scatter-default": {
