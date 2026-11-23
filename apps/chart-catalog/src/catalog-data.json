@@ -3380,6 +3380,22 @@
     ]
   },
   {
+    "id": "full-field-strain",
+    "name": "Full-Field Strain Viewer",
+    "url": "https://opensource.pitant.de/charts/#docs=full-field-strain",
+    "examples": [
+      {
+        "id": "full-field-strain-tensile",
+        "family": "full-field-strain",
+        "title": "Polyurethane Full-Field Strain",
+        "label": "Measured T-shaped specimen test",
+        "description": "Follow local surface strain in a T-shaped polyurethane specimen and link each field to the recorded load history.",
+        "url": "https://opensource.pitant.de/charts/#example=full-field-strain-tensile",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",

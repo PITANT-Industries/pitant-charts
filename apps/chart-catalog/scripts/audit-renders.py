@@ -221,7 +221,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
-        'stress-strain-comparison',
+        'stress-strain-comparison', 'full-field-strain',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -342,6 +342,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=stress-strain-comparison&variant=stress-strain-heat-treatment'
                 )
+            elif example['family'] == 'full-field-strain':
+                strain_map = card_plot.locator('svg[data-strain-map]')
+                await check_strain_map(strain_map)
+                await check_compact_figure_bounds(strain_map, 'rect[data-strain-map-frame]')
+                await expect(card_plot.locator('[data-strain-probe], [data-strain-force], [data-strain-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=full-field-strain&variant=full-field-strain-tensile'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -419,6 +427,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'stress-strain-comparison':
                 await check_stress_strain(plot)
                 code_import = 'StressStrainComparison'
+            elif example['family'] == 'full-field-strain':
+                await check_full_field_strain(plot, touch)
+                code_import = 'FullFieldStrain'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -1723,6 +1734,138 @@ async def check_stress_strain(plot):
         if previous_curve is not None:
             await expect(measured).not_to_have_attribute('d', previous_curve)
         previous_curve = await measured.get_attribute('d')
+
+
+async def check_strain_map(strain_map):
+    await expect(strain_map).to_be_visible()
+    await expect(strain_map.locator('rect[data-strain-map-frame]')).to_be_visible()
+    await expect(strain_map.locator('.scientific-tick').first).to_be_attached()
+    await expect(strain_map.get_by_text('X (mm)', exact=True)).to_be_visible()
+    await expect(strain_map.get_by_text('Y (mm)', exact=True)).to_be_visible()
+    raster = strain_map.locator('image[data-strain-raster]')
+    await expect(raster).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+    if await raster.evaluate('image => getComputedStyle(image).imageRendering') in ('crisp-edges', 'pixelated'):
+        raise RuntimeError('The strain raster should use smooth rendering')
+    raster_size = await raster.evaluate("""async raster => {
+      const image = new Image()
+      image.src = raster.getAttribute('href')
+      await image.decode()
+      return [image.naturalWidth, image.naturalHeight]
+    }""")
+    if min(raster_size) < 128:
+        raise RuntimeError(f'Expected a dense strain-map PNG, observed {raster_size}')
+    colorbar = strain_map.locator('[data-strain-colorbar]')
+    await expect(colorbar.locator('text').first).to_be_visible()
+    await expect(colorbar.locator('rect[fill^="url("]')).to_be_visible()
+
+
+async def check_full_field_strain(plot, touch):
+    chart = plot.locator('[data-full-field-strain]')
+    await expect(chart.locator('figcaption a').first).to_have_attribute(
+        'href', re.compile(r'^https://(?:doi\.org/10\.5281/zenodo\.|zenodo\.org/records/)18617429/?$')
+    )
+    strain_map = chart.locator('svg[data-strain-map]')
+    await check_strain_map(strain_map)
+    raster = strain_map.locator('image[data-strain-raster]')
+    colorbar = strain_map.locator('[data-strain-colorbar]')
+    probe = strain_map.locator('[data-strain-probe]')
+    await expect(probe).to_be_visible()
+    inspect = strain_map.get_by_role('button', name='Inspect strain map', exact=True)
+    await expect(inspect).to_be_visible()
+    force = chart.locator('svg[data-strain-force]')
+    await expect(force).to_be_visible()
+    await expect(force.get_by_text('Elapsed time (s)', exact=True)).to_be_visible()
+    await expect(force.get_by_text('Force (N)', exact=True)).to_be_visible()
+    force_cursor = force.locator('circle[data-strain-force-cursor]')
+    await expect(force_cursor).to_be_visible()
+    frame = chart.get_by_role('slider', name='Frame', exact=True)
+    readout = chart.locator('output[data-strain-readout]')
+    await expect(readout).to_be_visible()
+
+    async def selection():
+        data = await readout.evaluate(
+            "out => ['xMm', 'yMm', 'stage', 'force', 'strain'].map(key => out.dataset[key])"
+        )
+        x, y, stage, newtons = map(float, data[:4])
+        strain = float(data[4]) if data[4] not in ('', None) else None
+        if not all(map(math.isfinite, (x, y, stage, newtons))) or (strain is not None and not math.isfinite(strain)):
+            raise RuntimeError(f'Invalid strain-map or force state: {data}')
+        await expect(force_cursor).to_have_attribute('data-stage', data[2])
+        await expect(force_cursor).to_have_attribute('data-force', data[3])
+        return x, y, stage, newtons, strain
+
+    async def cursor_x():
+        return await force_cursor.evaluate('cursor => { const box = cursor.getBoundingClientRect(); return box.left + box.width / 2 }')
+
+    async def pick(target, x, y):
+        await expect(target).to_be_visible()
+        position = {'x': x, 'y': y}
+        if touch:
+            await target.tap(position=position)
+        else:
+            await target.click(position=position)
+
+    initial_scale = await colorbar.locator('text').all_text_contents()
+    labels = [value.strip().replace('−', '-').removesuffix('%') for value in initial_scale]
+    scale = [float(label) for label in labels if re.fullmatch(r'-?\d+(?:\.\d+)?', label)]
+    if not scale or (min(scale), max(scale)) != (-5, 70):
+        raise RuntimeError(f'Expected the declared −5% to 70% scale, observed {initial_scale}')
+    if (await selection())[2] != 60:
+        raise RuntimeError('The measured example should open at 60 s')
+    await frame.press('Home')
+    first_selection = await selection()
+    await expect(raster).to_have_attribute('data-stage', await readout.get_attribute('data-stage'))
+    first_raster = await raster.get_attribute('href')
+    left = await cursor_x()
+    await frame.press('End')
+    last_selection = await selection()
+    right = await cursor_x()
+    if (first_selection[2], last_selection[2]) != (1, 62.9) or not left < right or not (
+        math.isclose(first_selection[3], 1.109, abs_tol=0.002) and math.isclose(last_selection[3], 58.394, abs_tol=0.002)
+    ):
+        raise RuntimeError(f'Unexpected first/last measured force stages: {first_selection[2:4]}, {last_selection[2:4]}')
+    await expect(raster).to_have_attribute('data-stage', await readout.get_attribute('data-stage'))
+    await expect(raster).not_to_have_attribute('href', first_raster)
+    await expect(raster).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+    if await colorbar.locator('text').all_text_contents() != initial_scale:
+        raise RuntimeError('All strain frames should share the same color scale')
+
+    middle = int(await frame.get_attribute('max')) // 2
+    await frame.fill(str(middle))
+    selected_frame = (await selection())[2:4]
+    if selected_frame[0] != 30 or not math.isclose(selected_frame[1], 38.429, abs_tol=0.002):
+        raise RuntimeError(f'Expected the measured 30 s frame at 38.429 N, observed {selected_frame}')
+    target_x = await cursor_x()
+    await frame.press('Home')
+    target = force.locator('.strain-force-pick')
+    await expect(target).to_be_visible()
+    bounds = await target.bounding_box()
+    await pick(target, target_x - bounds['x'], bounds['height'] * 0.5)
+    if (await selection())[2:4] != selected_frame:
+        raise RuntimeError('The force plot should select the same frame and measured force as the slider')
+
+    bounds = await inspect.bounding_box()
+    hotspot_x, hotspot_y = 12.075, 23.1
+    await pick(inspect, bounds['width'] * hotspot_x / 19.95, bounds['height'] * (1 - hotspot_y / 29.925))
+    x, y, stage, newtons, measured_strain = await selection()
+    if (stage, newtons) != selected_frame or not (
+        math.isclose(x, hotspot_x) and math.isclose(y, hotspot_y) and measured_strain is not None
+        and math.isclose(measured_strain, 22.944, abs_tol=0.002)
+    ):
+        raise RuntimeError(f'Unexpected 30 s hotspot probe: ({x}, {y}) mm at {measured_strain}%')
+    await frame.press('End')
+    last_x, last_y, _, _, last_strain = await selection()
+    if (last_x, last_y) != (x, y) or last_strain is None or not math.isclose(last_strain, 67.033, abs_tol=0.002):
+        raise RuntimeError(f'Final map should retain the hotspot and report 67.033%, observed {last_strain}%')
+    await frame.fill(str(middle))
+    await inspect.press('ArrowRight')
+    right_x, same_y, stage, newtons, _ = await selection()
+    if not math.isclose(right_x - x, 0.525) or same_y != y or (stage, newtons) != selected_frame:
+        raise RuntimeError('ArrowRight should advance the spatial probe by one measured grid step along +X')
+    await inspect.press('ArrowUp')
+    same_x, upper_y, stage, newtons, _ = await selection()
+    if same_x != right_x or not math.isclose(upper_y - same_y, 0.525) or (stage, newtons) != selected_frame:
+        raise RuntimeError('ArrowUp should advance the spatial probe by one measured grid step along +Y')
 
 
 async def check_native_scientific(plot, slug, touch):

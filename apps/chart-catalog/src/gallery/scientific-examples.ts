@@ -6,6 +6,7 @@ import coherencePhase from './docs/examples/CoherencePhase.tsx?raw'
 import correlationMatrix from './docs/examples/CorrelationMatrix.tsx?raw'
 import eyeDiagram from './docs/examples/EyeDiagram.tsx?raw'
 import frequencyResponse from './docs/examples/FrequencyResponse.tsx?raw'
+import fullFieldStrain from './docs/examples/FullFieldStrain.tsx?raw'
 import individualsControlChart from './docs/examples/IndividualsControlChart.tsx?raw'
 import modeShapes from './docs/examples/ModeShapes.tsx?raw'
 import phasePlane from './docs/examples/PhasePlane.tsx?raw'
@@ -36,6 +37,7 @@ const scientificExamples = new Map([
   ['phase-plane-pendulum', withCatalogImports(phasePlane)],
   ['xrd-peak-tracker-dynic2', withCatalogImports(xrdPeakTracker)],
   ['stress-strain-heat-treatment', withCatalogImports(stressStrainComparison)],
+  ['full-field-strain-tensile', withCatalogImports(fullFieldStrain)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],
