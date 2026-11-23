@@ -1,6 +1,6 @@
 .mode-shapes {
   display: grid;
-  gap: .8rem;
+  gap: .85rem;
   min-inline-size: 0;
   margin: 0;
   container-type: inline-size;
@@ -18,16 +18,20 @@
   overflow: visible;
 }
 
+.mode-caption {
+  border-block-start: 1px solid var(--gallery-rule, var(--border));
+  padding-block-start: .6rem;
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
 .mode-caption strong {
-  font-size: .95rem;
   font-weight: 650;
 }
 
 .mode-caption p {
-  margin: .25rem 0 0;
+  margin: .2rem 0 0;
   color: var(--gallery-muted, var(--muted-foreground));
-  font-size: .875rem;
-  line-height: 1.5;
 }
 
 .mode-caption a {
@@ -39,16 +43,16 @@
 .mode-choices {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: .45rem;
+  gap: .25rem;
 }
 
 .mode-choices button,
 .mode-controls button {
   min-block-size: 2.6rem;
-  padding: .4rem .65rem;
+  padding: .4rem .6rem;
   color: inherit;
   border: 1px solid var(--gallery-rule, var(--border));
-  border-radius: .4rem;
+  border-radius: .3rem;
   background: var(--gallery-surface, var(--card));
   font: inherit;
   text-align: start;
@@ -58,12 +62,14 @@
 .mode-choices button {
   display: grid;
   gap: .13rem;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
 }
 
 .mode-choices button[aria-pressed='true'] {
   color: var(--gallery-accent, var(--primary));
-  border-color: currentColor;
-  background: color-mix(in srgb, currentColor 8%, var(--gallery-surface, var(--card)));
+  box-shadow: inset 0 -2px currentColor;
 }
 
 .mode-choices button span {
@@ -72,16 +78,12 @@
 
 .mode-choices button strong {
   font-variant-numeric: tabular-nums;
-  font-size: .9rem;
+  font-size: .875rem;
   white-space: nowrap;
 }
 
 .mode-beam {
-  min-inline-size: 0;
-  block-size: clamp(13rem, 43cqw, 19rem);
-  border-radius: .6rem;
-  background: #101c1b;
-  overflow: hidden;
+  block-size: clamp(14rem, 40cqw, 19rem);
 }
 
 .mode-shapes[data-compact='true'] .mode-beam {
@@ -89,70 +91,67 @@
   block-size: 100%;
 }
 
-.mode-beam svg {
-  display: block;
-  inline-size: 100%;
-  block-size: 100%;
-}
-
-.mode-grid line {
-  stroke: #263a36;
-}
-
-.mode-grid .mode-neutral {
-  stroke: #78948b;
-  stroke-dasharray: 4 4;
-}
-
 .mode-envelope {
   fill: none;
-  stroke: #82a39a;
-  stroke-width: 1.35;
-  stroke-dasharray: 3 5;
+  stroke: #626c76;
+  stroke-width: 1px;
+  stroke-dasharray: 4 4;
 }
 
 .mode-centerline {
   fill: none;
-  stroke: #57e6aa;
-  stroke-width: 4;
-  stroke-linecap: round;
+  stroke: #1f5b91;
+  stroke-width: 1.7px;
   stroke-linejoin: round;
 }
 
 .mode-tip {
-  fill: #b1f8d9;
+  fill: #1f5b91;
 }
 
 .mode-node {
-  fill: #101c1b;
-  stroke: #efe0ae;
-  stroke-width: 1.5;
+  fill: #fff;
+  stroke: #1d2329;
+  stroke-width: 1.3px;
 }
 
-.mode-restraint {
-  stroke: #d0e1db;
-  stroke-width: 2;
+.mode-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem .95rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: .75rem;
 }
 
-.mode-hatch {
-  stroke: #879b96;
+.mode-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
 }
 
-.mode-plot-label {
-  fill: #d0e1db;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 560;
-  font-variant-numeric: tabular-nums;
+.mode-legend li::before {
+  content: '';
+  inline-size: 1.25rem;
+  border-block-start: 2px solid #1f5b91;
+}
+
+.mode-legend li:nth-child(2)::before {
+  border-block-start: 1px dashed currentColor;
+}
+
+.mode-legend li:nth-child(3)::before {
+  inline-size: .42rem;
+  block-size: .42rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
 }
 
 .mode-inspector {
   display: grid;
-  gap: .8rem;
+  gap: .7rem;
   min-inline-size: 0;
-  padding: .75rem;
-  border: 1px solid var(--gallery-rule, var(--border));
-  border-radius: .55rem;
 }
 
 .mode-inspector output {

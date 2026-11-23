@@ -250,8 +250,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await check_campbell_figure(card_plot.locator('[data-campbell-heatmap]'), compact=True)
                 await expect(card_plot.locator('select, output[data-campbell-readout]')).to_have_count(0)
             elif example['family'] == 'mode-shapes':
-                await expect(card_plot.locator('[data-mode-shape-plot]')).to_be_visible()
+                await check_mode_shape_figure(card_plot.locator('[data-mode-shape-plot]'))
                 await expect(card_plot.locator('[data-mode-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=mode-shapes&variant=mode-shapes-cantilever'
+                )
             elif example['family'] == 'shaft-orbit':
                 await expect(card_plot.locator('svg[data-orbit-plot]')).to_be_visible()
                 await expect(card_plot.locator('select, [data-orbit-waveforms], [data-orbit-readout]')).to_have_count(0)
@@ -396,9 +399,18 @@ async def check_campbell_diagram(plot, touch):
     await expect(trace).not_to_have_attribute('d', initial_spectrum)
 
 
+async def check_mode_shape_figure(beam):
+    await expect(beam).to_be_visible()
+    await expect(beam.locator('rect[data-mode-axis-frame]')).to_be_visible()
+    await expect(beam.locator('.scientific-tick').first).to_be_attached()
+    await expect(beam.get_by_text('Normalized span, x/L', exact=True)).to_be_visible()
+    await expect(beam.get_by_text('Scaled deflection, u/A₀', exact=True)).to_be_visible()
+
+
 async def check_mode_shapes(plot, touch):
     chart = plot.locator('[data-mode-shapes]')
-    await expect(chart.locator('[data-mode-shape-plot]')).to_be_visible()
+    beam = chart.locator('[data-mode-shape-plot]')
+    await check_mode_shape_figure(beam)
     deflection = chart.locator('[data-mode-deflection]')
     await expect(deflection).to_have_attribute('d', re.compile(r'^M'))
     readout = chart.locator('[data-mode-readout]')
@@ -416,6 +428,26 @@ async def check_mode_shapes(plot, touch):
     initial_frequency = await readout.get_attribute('data-frequency')
     if initial_frequency is None or not abs(float(initial_frequency) - 119.2323) <= 0.001:
         raise RuntimeError(f'Mode 3 should have a frequency of 119.2323 Hz, observed {initial_frequency}')
+
+    tip = beam.locator('[data-mode-tip]')
+    await expect(tip).to_be_visible()
+    await expect(scale).to_have_value('100')
+    await expect(readout).to_have_attribute('data-phase', '0')
+    if not math.isclose(float(await tip.get_attribute('data-deflection')), 1, abs_tol=1e-6):
+        raise RuntimeError('At default scale and 0° the free tip should equal +1 normalized deflection')
+    positive_y = float(await tip.get_attribute('cy'))
+    await phase.fill('90')
+    await expect(readout).to_have_attribute('data-phase', '90')
+    if not math.isclose(float(await tip.get_attribute('data-deflection')), 0, abs_tol=1e-6):
+        raise RuntimeError('At 90° the free tip should have zero deflection')
+    frame = beam.locator('rect[data-mode-axis-frame]')
+    zero_y = float(await frame.get_attribute('y')) + float(await frame.get_attribute('height')) / 2
+    tip_y = float(await tip.get_attribute('cy'))
+    if not positive_y < tip_y or not math.isclose(tip_y, zero_y, abs_tol=0.1):
+        raise RuntimeError('The selected mode tip should move from positive deflection to the zero line')
+    await phase.press('Home')
+    await expect(readout).to_have_attribute('data-phase', '0')
+
     initial_deflection = await deflection.get_attribute('d')
     nodes = chart.locator('[data-mode-node]')
     initial_nodes = await nodes.count()

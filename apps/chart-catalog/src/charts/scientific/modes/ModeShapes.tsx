@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePlotSize } from '../../usePlotSize'
 import { cantileverModes } from './cantilever'
 import type { CantileverMode, ModeShapeBeam } from './cantilever'
+import '../scientific-figure.css'
 import './mode-shapes.css'
 
 export interface ModeShapesProps {
@@ -12,6 +13,7 @@ export interface ModeShapesProps {
 
 const displayCycleMs = 2400
 const spanFractions = [0, .25, .5, .75, 1]
+const deflectionTicks = [-1.5, -1, -.5, 0, .5, 1, 1.5]
 const frequencyFormat = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 4 })
 const spanFormat = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 3 })
 const methodsUrl = 'https://ntrs.nasa.gov/citations/20090021633'
@@ -25,20 +27,21 @@ function BeamPlot({ mode, phase, scale, length, compact, label }: {
   label: string
 }) {
   const { plot, width, height } = usePlotSize<HTMLDivElement>(compact ? 480 : 780, compact ? 210 : 290)
-  const left = 32
+  const left = 54
   const right = Math.max(left + 1, width - 23)
-  const top = 29
-  const bottom = Math.max(top + 1, height - 36)
-  const neutral = (top + bottom) / 2
-  const maxDisplacement = (bottom - top) * .45 * scale / 150
+  const top = 26
+  const bottom = Math.max(top + 1, height - 42)
   const x = (fraction: number) => left + (right - left) * fraction
+  const y = (displacement: number) => (top + bottom) / 2 - displacement * (bottom - top) / 3.3
+  const normalizedAmplitude = scale / 100
   const frequency = frequencyFormat.format(mode.frequencyHz)
   const phaseFactor = Math.cos(phase * Math.PI / 180)
+  const tipDisplacement = normalizedAmplitude * phaseFactor
   const maxIndex = mode.displacements.length - 1
 
   function deflectionPath(factor: number) {
     return mode.displacements.map((value, index) =>
-      `${index ? 'L' : 'M'}${x(index / maxIndex).toFixed(2)} ${(neutral - value * maxDisplacement * factor).toFixed(2)}`,
+      `${index ? 'L' : 'M'}${x(index / maxIndex).toFixed(2)} ${y(value * normalizedAmplitude * factor).toFixed(2)}`,
     ).join(' ')
   }
 
@@ -47,35 +50,38 @@ function BeamPlot({ mode, phase, scale, length, compact, label }: {
   const deformed = deflectionPath(phaseFactor)
 
   return (
-    <div className="mode-beam" ref={plot}>
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${label}, mode ${mode.number}, ${frequency} Hz`}
+    <div className="mode-beam scientific-plot" ref={plot}>
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${label}, mode ${mode.number}, ${frequency} Hz, scaled deflection versus normalized span`}
         data-mode-shape-plot="">
-        <g className="mode-grid" aria-hidden="true">
-          {spanFractions.map((fraction) => <line key={fraction} x1={x(fraction)} x2={x(fraction)} y1={top} y2={bottom} />)}
-          {spanFractions.map((fraction) => {
-            const height = top + (bottom - top) * fraction
-            return <line key={fraction} x1={left} x2={right} y1={height} y2={height} />
-          })}
-          <line className="mode-neutral" x1={left} x2={right} y1={neutral} y2={neutral} />
+        <g className="scientific-axis" aria-hidden="true">
+          <rect className="scientific-frame" data-mode-axis-frame="" x={left} y={top} width={right - left} height={bottom - top} />
+          <line className="scientific-reference" x1={left} x2={right} y1={y(0)} y2={y(0)} />
+          {spanFractions.map((fraction) => (
+            <g key={fraction}>
+              <line className="scientific-tick" x1={x(fraction)} x2={x(fraction)} y1={bottom} y2={bottom + 4} />
+              <text x={x(fraction)} y={bottom + 17} textAnchor="middle">{fraction}</text>
+            </g>
+          ))}
+          {deflectionTicks.map((value) => (
+            <g key={value}>
+              <line className="scientific-tick" x1={left - 4} x2={left} y1={y(value)} y2={y(value)} />
+              <text x={left - 8} y={y(value) + 4} textAnchor="end">{value}</text>
+            </g>
+          ))}
+          <text className="scientific-panel-title" x={left} y={16}>Mode {mode.number} · {frequency} Hz</text>
+          {width > 240 && <text x={right} y={16} textAnchor="end">L = {spanFormat.format(length)} m</text>}
+          <text className="scientific-axis-label" x={(left + right) / 2} y={height - 6} textAnchor="middle">Normalized span, x/L</text>
+          <text className="scientific-axis-label" transform={`translate(13 ${y(0)}) rotate(-90)`} textAnchor="middle">Scaled deflection, u/A₀</text>
         </g>
         <g aria-hidden="true">
           <path className="mode-envelope" d={upperEnvelope} />
           <path className="mode-envelope" d={lowerEnvelope} />
           <path className="mode-centerline" d={deformed} data-mode-deflection="" />
-          <circle className="mode-tip" cx={right} cy={neutral - maxDisplacement * phaseFactor} r={4} />
-          <line className="mode-restraint" x1={left} x2={left} y1={neutral - 19} y2={neutral + 19} />
-          {[-14, -7, 0, 7, 14].map((offset) => (
-            <line className="mode-hatch" key={offset} x1={left - 9} x2={left - 1}
-              y1={neutral + offset + 5} y2={neutral + offset - 3} />
-          ))}
+          <circle className="mode-tip" cx={right} cy={y(tipDisplacement)} r={2.8}
+            data-mode-tip="" data-deflection={tipDisplacement} />
           {mode.nodeFractions.map((fraction) => (
-            <circle key={fraction} className="mode-node" cx={x(fraction)} cy={neutral} r={4} data-mode-node="" />
+            <circle key={fraction} className="mode-node" cx={x(fraction)} cy={y(0)} r={3.2} data-mode-node="" />
           ))}
-        </g>
-        <g className="mode-plot-label" aria-hidden="true">
-          <text x={left} y={17}>Mode {mode.number} · {frequency} Hz</text>
-          <text x={left} y={height - 17}>Clamped</text>
-          <text x={right} y={height - 17} textAnchor="end">Free end · {spanFormat.format(length)} m</text>
         </g>
       </svg>
     </div>
@@ -117,10 +123,6 @@ function ModeShapeFigure({ beam, modes, label, compact }: Required<ModeShapesPro
     <figure className="mode-shapes" data-mode-shapes="" data-compact={compact}>
       {!compact && (
         <>
-          <figcaption className="mode-caption">
-            <strong>Simulated cantilever beam</strong>
-            <p>Computed bending modes for a uniform rectangular beam. The dotted lines show peak deflection in both directions. <a href={methodsUrl}>Model equations</a></p>
-          </figcaption>
           <div className="mode-choices" role="group" aria-label="Natural bending modes">
             {modes.map((candidate) => (
               <button type="button" key={candidate.number} aria-label={`Mode ${candidate.number}`}
@@ -136,30 +138,41 @@ function ModeShapeFigure({ beam, modes, label, compact }: Required<ModeShapesPro
       <BeamPlot mode={mode} phase={compact ? 0 : phase} scale={compact ? 100 : scale}
         length={beam.lengthM} label={label} compact={compact} />
       {!compact && (
-        <div className="mode-inspector">
-          <output data-mode-readout="" data-mode={mode.number} data-frequency={mode.frequencyHz}
-            data-phase={phaseDegrees} aria-live="off">
-            <strong>{mode.nodeFractions.length} interior {mode.nodeFractions.length === 1 ? 'node' : 'nodes'}</strong>
-            {mode.nodeFractions.length > 0 && (
-              <span>At {mode.nodeFractions.map((node) => `${(node * 100).toFixed(1)}%`).join(', ')} of span from the clamp</span>
-            )}
-          </output>
-          <div className="mode-controls">
-            <button type="button" onClick={() => setPlaying((current) => !current)}>
-              {playing ? 'Pause deformation' : 'Play deformation'}
-            </button>
-            <label>
-              <span>Oscillation phase <span>{phaseDegrees}°</span></span>
-              <input type="range" min={0} max={360} step={1} value={phaseDegrees} aria-label="Oscillation phase"
-                aria-valuetext={`${phaseDegrees} degrees`} onChange={(event) => scrubPhase(event.currentTarget.valueAsNumber)} />
-            </label>
-            <label>
-              <span>Deformation scale <span>{scale}%</span></span>
-              <input type="range" min={25} max={150} step={5} value={scale} aria-label="Deformation scale"
-                aria-valuetext={`${scale} percent`} onChange={(event) => setScale(event.currentTarget.valueAsNumber)} />
-            </label>
+        <>
+          <ul className="mode-legend" aria-label="Figure key">
+            <li>Selected phase</li>
+            <li>Phase limits</li>
+            <li>Interior node</li>
+          </ul>
+          <div className="mode-inspector">
+            <output data-mode-readout="" data-mode={mode.number} data-frequency={mode.frequencyHz}
+              data-phase={phaseDegrees} aria-live="off">
+              <strong>{mode.nodeFractions.length} interior {mode.nodeFractions.length === 1 ? 'node' : 'nodes'}</strong>
+              {mode.nodeFractions.length > 0 && (
+                <span>x/L = {mode.nodeFractions.map((node) => node.toFixed(3)).join(', ')}</span>
+              )}
+            </output>
+            <div className="mode-controls">
+              <button type="button" onClick={() => setPlaying((current) => !current)}>
+                {playing ? 'Pause deformation' : 'Play deformation'}
+              </button>
+              <label>
+                <span>Oscillation phase <span>{phaseDegrees}°</span></span>
+                <input type="range" min={0} max={360} step={1} value={phaseDegrees} aria-label="Oscillation phase"
+                  aria-valuetext={`${phaseDegrees} degrees`} onChange={(event) => scrubPhase(event.currentTarget.valueAsNumber)} />
+              </label>
+              <label>
+                <span>Deformation scale <span>{scale}%</span></span>
+                <input type="range" min={25} max={150} step={5} value={scale} aria-label="Deformation scale"
+                  aria-valuetext={`${scale} percent`} onChange={(event) => setScale(event.currentTarget.valueAsNumber)} />
+              </label>
+            </div>
           </div>
-        </div>
+          <figcaption className="mode-caption">
+            <strong>Simulated cantilever beam</strong>
+            <p>Computed Euler–Bernoulli bending modes. The normalized span runs from the clamp at 0 to the free tip at 1. Deflection is relative to the reference tip amplitude A₀. <a href={methodsUrl}>Model equations</a></p>
+          </figcaption>
+        </>
       )}
     </figure>
   )
