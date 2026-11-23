@@ -3396,6 +3396,22 @@
     ]
   },
   {
+    "id": "fatigue-sn",
+    "name": "Fatigue S–N Plot",
+    "url": "https://opensource.pitant.de/charts/#docs=fatigue-sn",
+    "examples": [
+      {
+        "id": "fatigue-sn-measured",
+        "family": "fatigue-sn",
+        "title": "42CrMo4+QT Steel Fatigue Tests",
+        "label": "Measured failures and run-outs",
+        "description": "Compare failures and run-outs in 22 fully reversed axial fatigue tests on 42CrMo4+QT steel from the FABEST benchmark.",
+        "url": "https://opensource.pitant.de/charts/#example=fatigue-sn-measured",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",

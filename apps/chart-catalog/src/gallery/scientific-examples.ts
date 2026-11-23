@@ -5,6 +5,7 @@ import capabilityHistogram from './docs/examples/CapabilityHistogram.tsx?raw'
 import coherencePhase from './docs/examples/CoherencePhase.tsx?raw'
 import correlationMatrix from './docs/examples/CorrelationMatrix.tsx?raw'
 import eyeDiagram from './docs/examples/EyeDiagram.tsx?raw'
+import fatigueSn from './docs/examples/FatigueSn.tsx?raw'
 import frequencyResponse from './docs/examples/FrequencyResponse.tsx?raw'
 import fullFieldStrain from './docs/examples/FullFieldStrain.tsx?raw'
 import individualsControlChart from './docs/examples/IndividualsControlChart.tsx?raw'
@@ -38,6 +39,7 @@ const scientificExamples = new Map([
   ['xrd-peak-tracker-dynic2', withCatalogImports(xrdPeakTracker)],
   ['stress-strain-heat-treatment', withCatalogImports(stressStrainComparison)],
   ['full-field-strain-tensile', withCatalogImports(fullFieldStrain)],
+  ['fatigue-sn-measured', withCatalogImports(fatigueSn)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

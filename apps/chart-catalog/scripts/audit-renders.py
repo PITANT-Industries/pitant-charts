@@ -221,7 +221,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
-        'stress-strain-comparison', 'full-field-strain',
+        'stress-strain-comparison', 'full-field-strain', 'fatigue-sn',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -350,6 +350,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=full-field-strain&variant=full-field-strain-tensile'
                 )
+            elif example['family'] == 'fatigue-sn':
+                fatigue = card_plot.locator('svg[data-fatigue-plot]')
+                await check_fatigue_figure(fatigue)
+                await check_compact_figure_bounds(fatigue, 'rect[data-fatigue-axis-frame]')
+                await expect(card_plot.locator('select, [data-fatigue-cursor], [data-fatigue-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=fatigue-sn&variant=fatigue-sn-measured'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -430,6 +438,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'full-field-strain':
                 await check_full_field_strain(plot, touch)
                 code_import = 'FullFieldStrain'
+            elif example['family'] == 'fatigue-sn':
+                await check_fatigue_sn(plot, touch)
+                code_import = 'FatigueSn'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -1866,6 +1877,134 @@ async def check_full_field_strain(plot, touch):
     same_x, upper_y, stage, newtons, _ = await selection()
     if same_x != right_x or not math.isclose(upper_y - same_y, 0.525) or (stage, newtons) != selected_frame:
         raise RuntimeError('ArrowUp should advance the spatial probe by one measured grid step along +Y')
+
+
+async def check_fatigue_figure(fatigue):
+    await expect(fatigue).to_be_visible()
+    await expect(fatigue.locator('rect[data-fatigue-axis-frame]')).to_be_visible()
+    await expect(fatigue.locator('.scientific-tick').first).to_be_attached()
+    await expect(fatigue.get_by_text('Cycles, N (log scale)', exact=True)).to_be_visible()
+    await expect(fatigue.get_by_text('Stress amplitude, σₐ (MPa)', exact=True)).to_be_visible()
+    await expect(fatigue.locator('circle[data-fatigue-failure]').first).to_be_visible()
+    runouts = fatigue.locator('path[data-fatigue-runout]')
+    await expect(runouts).to_have_count(2)
+    symbols = await runouts.evaluate_all("""arrows => arrows.map(arrow => {
+      const node = arrow.parentElement.querySelector('circle.fatigue-runout-node')
+      const markerRight = node.cx.baseVal.value + node.r.baseVal.value
+      const arrowBox = arrow.getBBox()
+      const frame = arrow.ownerSVGElement.querySelector('rect[data-fatigue-axis-frame]')
+      const right = frame.x.baseVal.value + frame.width.baseVal.value
+      return [getComputedStyle(node).fill, arrowBox.x - markerRight, arrowBox.x + arrowBox.width - markerRight,
+        right - arrowBox.x - arrowBox.width]
+    })""")
+    for fill, start, end, clearance in symbols:
+        if fill not in ('none', 'rgb(255, 255, 255)', 'rgba(0, 0, 0, 0)') or abs(start) > 0.5 or end < 2 or clearance < -0.5:
+            raise RuntimeError(f'Run-outs should be hollow points with an unclipped rightward censoring arrow: {symbols}')
+
+
+async def check_fatigue_sn(plot, touch):
+    chart = plot.locator('[data-fatigue-sn]')
+    await expect(chart.locator('figcaption a').first).to_have_attribute(
+        'href', re.compile(r'^https://(?:doi\.org/10\.5281/zenodo\.|zenodo\.org/records/)23603840/?$')
+    )
+    fatigue = chart.locator('svg[data-fatigue-plot]')
+    await check_fatigue_figure(fatigue)
+    marks = fatigue.locator('[data-fatigue-test]')
+    failure_marks = fatigue.locator('[data-fatigue-test][data-outcome="failure"]')
+    runout_marks = fatigue.locator('[data-fatigue-test][data-outcome="runout"]')
+    outcome = chart.get_by_role('combobox', name='Outcome', exact=True)
+    specimen = chart.get_by_role('combobox', name='Specimen', exact=True)
+    series = chart.get_by_role('combobox', name='Series', exact=True)
+    readout = chart.locator('output[data-fatigue-readout]')
+    cursor = fatigue.locator('[data-fatigue-cursor]')
+    await expect(outcome).to_have_value('all')
+    await expect(series).to_have_value('')
+    await expect(readout).to_be_visible()
+    await expect(cursor).to_be_visible()
+    failure_count = await failure_marks.count()
+    runout_count = await runout_marks.count()
+    total_count = await marks.count()
+    if (total_count, failure_count, runout_count) != (22, 20, 2):
+        raise RuntimeError(f'Unexpected FABEST test counts: {total_count} total, {failure_count} failures, {runout_count} run-outs')
+    await expect(readout).to_have_attribute('data-specimen', 'FAB060_A37-02B')
+    await expect(readout).to_have_attribute('data-stress', '800')
+    await expect(readout).to_have_attribute('data-cycles', '11893')
+    await expect(readout).to_contain_text(re.compile(r'Stress ratio, R\s*[-−]1'))
+
+    coordinates = sorted(await failure_marks.evaluate_all("""marks => marks.map(mark => [
+      Number(mark.dataset.cycles),
+      mark.querySelector('circle[data-fatigue-failure]').cx.baseVal.value
+    ])"""))
+    first_cycles, first_x = coordinates[0]
+    last_cycles, last_x = coordinates[-1]
+    if len({cycles for cycles, _ in coordinates}) < 3 or not (0 < first_cycles < last_cycles and first_x < last_x):
+        raise RuntimeError('Expected measured failures at distinct positive cycle counts')
+    for cycles, x in coordinates:
+        expected_x = first_x + (last_x - first_x) * math.log(cycles / first_cycles) / math.log(last_cycles / first_cycles)
+        if not math.isclose(x, expected_x, abs_tol=0.5):
+            raise RuntimeError(f'Fatigue failure at {cycles} cycles is misplaced on the logarithmic axis')
+
+    async def reported(mark):
+        fields = ['specimen', 'cycles', 'stress', 'outcome', 'series']
+        for field in fields:
+            value = await mark.get_attribute(f'data-{field}')
+            await expect(readout).to_have_attribute(f'data-{field}', value)
+        selected = json.loads(await specimen.input_value())
+        if selected != [await mark.get_attribute('data-series'), await mark.get_attribute('data-specimen')]:
+            raise RuntimeError(f'The specimen selector and plotted result should agree: {selected}')
+        await expect(cursor).to_have_attribute('data-series', selected[0])
+        await expect(cursor).to_have_attribute('data-specimen', selected[1])
+
+    await outcome.select_option('runout')
+    await expect(failure_marks).to_have_count(0)
+    await expect(runout_marks).to_have_count(runout_count)
+    await expect(readout).to_have_attribute('data-outcome', 'runout')
+    anchors = {'FAB060_A37-10': 2634775, 'FAB060_A37-02': 13149279}
+    for specimen_id, cycles in anchors.items():
+        mark = fatigue.locator(f'[data-fatigue-test][data-outcome="runout"][data-specimen="{specimen_id}"]')
+        await expect(mark).to_have_attribute('data-cycles', str(cycles))
+        await expect(mark).to_have_attribute('data-stress', '600')
+    initial_runout = await readout.get_attribute('data-specimen')
+    other_runout = next(value for value in anchors if value != initial_runout)
+    marker = fatigue.locator(f'[data-fatigue-test][data-outcome="runout"][data-specimen="{other_runout}"]')
+    await expect(marker).to_be_visible()
+    if touch:
+        await marker.tap()
+    else:
+        await marker.click()
+    await reported(marker)
+    await expect(readout).to_contain_text('Cycles survived')
+
+    await outcome.select_option('failure')
+    await expect(runout_marks).to_have_count(0)
+    await expect(failure_marks).to_have_count(failure_count)
+    await expect(readout).to_have_attribute('data-outcome', 'failure')
+    await expect(specimen.locator('option')).to_have_count(failure_count)
+    failure = fatigue.locator('[data-fatigue-test][data-specimen="FAB070_A35-02"]')
+    await specimen.select_option('["fab070","FAB070_A35-02"]')
+    await reported(failure)
+    await expect(readout).to_have_attribute('data-stress', '800')
+    await expect(readout).to_have_attribute('data-cycles', '4339')
+    await expect(readout).to_contain_text('Cycles to failure')
+    failure_dot = failure.locator('circle[data-fatigue-failure]')
+    failure_x = float(await failure_dot.get_attribute('cx'))
+
+    await series.select_option('fab070')
+    await expect(marks).to_have_count(10)
+    if not math.isclose(float(await failure_dot.get_attribute('cx')), failure_x, abs_tol=0.5):
+        raise RuntimeError('Filtering series should retain the full-range logarithmic cycle axis')
+    await outcome.select_option('runout')
+    await expect(marks).to_have_count(0)
+    await expect(specimen).to_be_disabled()
+    await expect(chart.get_by_role('status').filter(has_text='No tests match the selected filters.')).to_be_visible()
+    await series.select_option('fab060')
+    await expect(runout_marks).to_have_count(2)
+    await expect(specimen).to_be_enabled()
+
+    await series.select_option('')
+    await outcome.select_option('all')
+    await expect(marks).to_have_count(total_count)
+    await expect(specimen.locator('option')).to_have_count(total_count)
 
 
 async def check_native_scientific(plot, slug, touch):
