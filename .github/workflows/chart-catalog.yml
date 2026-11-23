@@ -70,8 +70,6 @@ jobs:
             if (-not $ready) { throw 'Chart catalog server did not become ready' }
             python apps/chart-catalog/scripts/audit-renders.py --browser edge --local http://127.0.0.1:4173/ --workers 3
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            python apps/chart-catalog/scripts/audit-renders.py --browser edge --local http://127.0.0.1:4173/ --compare --workers 3
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           } finally {
             Stop-Process -Id $site.Id -ErrorAction SilentlyContinue
           }

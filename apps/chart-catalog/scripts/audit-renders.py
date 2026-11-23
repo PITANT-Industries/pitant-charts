@@ -1,4 +1,4 @@
-"""Render every local example or reference preview at four profiles."""
+"""Render every catalog example in desktop and mobile light and dark profiles."""
 
 import argparse
 import asyncio
@@ -11,63 +11,38 @@ from playwright.async_api import async_playwright
 
 
 CATALOG = Path(__file__).resolve().parents[1] / 'src/catalog-data.json'
-REFERENCE = 'https://www.shadcn.io/charts-preview/react/index.html'
 PROFILES = [
     (f'{size}-{theme}', width, height, theme)
     for size, width, height in [('desktop', 1440, 900), ('mobile', 390, 844)]
     for theme in ['light', 'dark']
 ]
-COMPARE_PROFILES = [('desktop-light', 1320, 900, 'light'), ('mobile-dark', 390, 900, 'dark')]
-NARROW_CIRCLES = {
-    'ring-default', 'ring-arc', 'ring-grid', 'ring-semicircle', 'pie-half-donut',
-    'gauge-default', 'gauge-semicircle', 'gauge-interactive',
-}
-PLOT = 'svg.recharts-surface, svg[role=img], svg:has([data-mark]), svg:has([data-slice]), svg:has([data-live-line]), svg:has([data-live-skeleton]), .scatter-plot'
-REFERENCE_PLOT = '#chart svg.ts-chart, #chart svg[role=img]'
 
 
-async def compare_dimensions(page, slug):
-    dialog = page.get_by_role('dialog')
-    local = dialog.locator('.comparison-measured')
-    iframe = dialog.locator(f'iframe[src*="c={slug}&"]')
-    handle = await iframe.element_handle(timeout=15000)
-    frame = await handle.content_frame()
-    if frame is None:
-        raise RuntimeError('Reference iframe unavailable')
-    await frame.wait_for_url(await iframe.get_attribute('src'), wait_until='domcontentloaded', timeout=18000)
-    await frame.locator('html[data-chart-ready]').wait_for(state='attached', timeout=15000)
-    reference = frame.locator(REFERENCE_PLOT).first
-    left, right = local.locator(PLOT).first, reference
-    if slug.startswith('sparkline-'):
-        left = local.locator('[data-spark-kind]')
-        right = frame.locator('[data-bkm-spark] > svg')
-    elif slug == 'heatmap-scroll':
-        left = local.locator('.stat-heatmap-track')
-    elif slug.startswith('choropleth-'):
-        left = local.locator('.choropleth-stage')
-
-    await left.first.wait_for(state='visible', timeout=10000)
-    await right.first.wait_for(state='visible', timeout=10000)
-    await page.evaluate("""document.fonts.load('14px "Hanken Grotesk Variable"')""")
-    count = await left.count()
-    if count != await right.count():
-        raise RuntimeError('Plot counts differ')
-    for index in range(count):
-        actual = await left.nth(index).evaluate('e => [e.getBoundingClientRect().width, e.getBoundingClientRect().height]')
-        expected = await right.nth(index).evaluate('e => [e.getBoundingClientRect().width, e.getBoundingClientRect().height]')
-        if slug.startswith(('tree-', 'network-', 'choropleth-')):
-            view_box = await right.nth(index).get_attribute('viewBox')
-            if view_box:
-                expected = [float(value) for value in view_box.split()[2:4]]
-        if slug in NARROW_CIRCLES and expected[0] == 300 and actual[0] == 286:
-            expected = [286, expected[1] * 286 / 300]
-        if any(abs(a - b) > .61 for a, b in zip(actual, expected)):
-            raise RuntimeError(f'Plot dimensions differ, library {actual}, reference {expected}')
-    if not await dialog.evaluate('element => element.clientWidth === element.scrollWidth'):
-        raise RuntimeError('Comparison dialog overflows horizontally')
+async def check_public_preview(browser, local_url, example):
+    page = await browser.new_page()
+    try:
+        slug = example['id']
+        preview_url = f'{local_url}#{urlencode({"example": slug})}'
+        legacy_url = f'{preview_url}&view=compare&review=all'
+        await page.goto(legacy_url, wait_until='domcontentloaded', timeout=20000)
+        await page.wait_for_url(preview_url, timeout=8000)
+        dialog = page.get_by_role('dialog')
+        await dialog.get_by_role('heading', name=example['title'], exact=True).wait_for(timeout=8000)
+        await dialog.get_by_role('tab', name='Preview', selected=True).wait_for(timeout=8000)
+        if await dialog.locator('iframe').count() or await dialog.get_by_role('tab').count() != 2:
+            raise RuntimeError('Expected only the public Preview and Code tabs')
+        await page.keyboard.press('Escape')
+        await dialog.wait_for(state='hidden', timeout=8000)
+        await page.get_by_role('button', name='Open chart categories').click(timeout=8000)
+        menu = page.get_by_role('navigation', name='Chart categories')
+        await menu.wait_for(timeout=8000)
+        if await menu.get_by_text('Parity review', exact=True).count() or await menu.get_by_text('Reference gallery', exact=True).count():
+            raise RuntimeError('Internal controls appeared in the public catalog menu')
+    finally:
+        await page.close()
 
 
-async def run(browser, queue, results, local_url, compare):
+async def run(browser, queue, results, local_url):
     while not queue.empty():
         try:
             profile, examples = queue.get_nowait()
@@ -81,48 +56,32 @@ async def run(browser, queue, results, local_url, compare):
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.on('console', lambda message: diagnostics.append(message.text[:500]) if message.type == 'error' else None)
         page.on('requestfailed', lambda request: diagnostics.append(f'{request.url}: {request.failure}'))
-        if local_url:
-            parsed_url = urlsplit(local_url)
-            origin = json.dumps(f'{parsed_url.scheme}://{parsed_url.netloc}')
-            await page.add_init_script(f'''(() => {{
-                if (location.origin !== {origin}) return;
-                localStorage.setItem('chart-library:layout', '"list"');
-                localStorage.setItem('chart-library:theme', '"{theme}"');
-            }})()''')
-            response = await page.goto(local_url, wait_until='domcontentloaded')
-            if response is None or not response.ok:
-                raise RuntimeError(f'Local gallery returned HTTP {response.status if response else "unavailable"} at {local_url}')
+        parsed_url = urlsplit(local_url)
+        origin = json.dumps(f'{parsed_url.scheme}://{parsed_url.netloc}')
+        await page.add_init_script(f'''(() => {{
+            if (location.origin !== {origin}) return;
+            localStorage.setItem('chart-library:layout', '"list"');
+            localStorage.setItem('chart-library:theme', '"{theme}"');
+        }})()''')
+        response = await page.goto(local_url, wait_until='domcontentloaded')
+        if response is None or not response.ok:
+            raise RuntimeError(f'Local gallery returned HTTP {response.status if response else "unavailable"} at {local_url}')
         for example in examples:
             slug = example['id']
             errors.clear()
             try:
-                if local_url:
-                    params = {'example': slug}
-                    if compare:
-                        params['view'] = 'compare'
-                    await asyncio.wait_for(page.evaluate('(hash) => { location.hash = hash }', urlencode(params)), timeout=20)
-                    await page.get_by_role('heading', name=example['title'], exact=True).wait_for(timeout=8000)
-                    await page.locator(f'html[data-theme="{theme}"]').wait_for(state='attached', timeout=8000)
-                    plot = page.locator('.detail-plot')
-                else:
-                    params = urlencode({'c': slug, 'theme': theme})
-                    response = await page.goto(f'{REFERENCE}?{params}', wait_until='domcontentloaded', timeout=18000)
-                    if response is None or response.status != 200:
-                        raise RuntimeError(f'HTTP {response.status if response else "unavailable"}')
-                    selector = 'html[data-chart-ready]' + ('.dark' if theme == 'dark' else ':not(.dark)')
-                    await page.locator(selector).wait_for(state='attached', timeout=12000)
-                    plot = page.locator('#chart')
-                if compare:
-                    await asyncio.wait_for(compare_dimensions(page, slug), timeout=45)
-                else:
-                    output = plot.locator('svg path, svg circle, svg rect, svg polygon, svg polyline, canvas, table, [role=alert]').first
-                    await output.wait_for(state='attached', timeout=8000)
-                    visible_output = await asyncio.wait_for(plot.evaluate('''plot => [...plot.querySelectorAll('svg, canvas, table')].some(mark => {
-                        const { width, height } = mark.getBoundingClientRect();
-                        return width > 0 && height > 0;
-                    })'''), timeout=20)
-                    if not visible_output or await page.locator('.detail-plot [role=alert], [data-chart-error]').count():
-                        errors.append('Chart output missing or error state displayed')
+                await asyncio.wait_for(page.evaluate('(hash) => { location.hash = hash }', urlencode({'example': slug})), timeout=20)
+                await page.get_by_role('heading', name=example['title'], exact=True).wait_for(timeout=8000)
+                await page.locator(f'html[data-theme="{theme}"]').wait_for(state='attached', timeout=8000)
+                plot = page.locator('.detail-plot')
+                output = plot.locator('svg path, svg circle, svg rect, svg polygon, svg polyline, canvas, table, [role=alert]').first
+                await output.wait_for(state='attached', timeout=8000)
+                visible_output = await asyncio.wait_for(plot.evaluate("""plot => [...plot.querySelectorAll('svg, canvas, table')].some(mark => {
+                    const { width, height } = mark.getBoundingClientRect();
+                    return width > 0 && height > 0;
+                })"""), timeout=20)
+                if not visible_output or await page.locator('.detail-plot [role=alert], [data-chart-error]').count():
+                    errors.append('Chart output missing or error state displayed')
             except TimeoutError as error:
                 raise RuntimeError(f'{name} {slug}: browser evaluation timed out') from error
             except Exception as error:
@@ -147,10 +106,9 @@ async def run(browser, queue, results, local_url, compare):
 async def audit(args):
     catalog = json.loads(CATALOG.read_text())
     examples = [example for family in catalog for example in family['examples']]
-    profiles = COMPARE_PROFILES if args.compare else PROFILES
-    results = {name: {} for name, *_ in profiles}
+    results = {name: {} for name, *_ in PROFILES}
     queue = asyncio.Queue()
-    for profile in profiles:
+    for profile in PROFILES:
         for start in range(0, len(examples), 56):
             queue.put_nowait((profile, examples[start:start + 56]))
     async with async_playwright() as playwright:
@@ -163,7 +121,8 @@ async def audit(args):
             browser = await playwright.firefox.launch()
         else:
             browser = await playwright.webkit.launch()
-        await asyncio.gather(*(run(browser, queue, results, args.local, args.compare) for _ in range(args.workers)))
+        await check_public_preview(browser, args.local, examples[0])
+        await asyncio.gather(*(run(browser, queue, results, args.local) for _ in range(args.workers)))
         await browser.close()
     for profile, observations in results.items():
         print(f'{profile}: {sum(not errors for errors in observations.values())}/{len(examples)} passed')
@@ -179,14 +138,9 @@ async def audit(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    target = parser.add_mutually_exclusive_group(required=True)
-    target.add_argument('--local', help='URL of the running gallery')
-    target.add_argument('--reference', action='store_true', help='Use the live shadcn.io React preview')
+    parser.add_argument('--local', required=True, help='URL of the running gallery')
     parser.add_argument('--browser', choices=['chromium', 'firefox', 'webkit', 'edge'], default='chromium')
-    parser.add_argument('--compare', action='store_true', help='Compare local plot dimensions with the live reference')
     parser.add_argument('--workers', type=int, default=4, choices=range(1, 9))
     parser.add_argument('--report', type=Path, help='Optional JSON output with all results')
     args = parser.parse_args()
-    if args.compare and not args.local:
-        parser.error('--compare requires --local')
     raise SystemExit(asyncio.run(audit(args)))
