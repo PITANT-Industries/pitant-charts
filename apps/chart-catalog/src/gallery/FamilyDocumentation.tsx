@@ -4,14 +4,13 @@ import { Tabs, TabsList, TabsPanel, TabsTab } from '@ui-sdk/react/tabs'
 import { ArrowUpRight, ChevronRight } from 'lucide-react'
 import { getGroupForFamily } from '../catalog'
 import { ChartPreview } from '../charts/ChartPreview'
-import type { ChartExample, ChartFamily } from '../types'
+import type { ChartFamily } from '../types'
 import { CodeBlock, ExampleCode, guideUrl, repositoryUrl } from './ExampleCode'
-import { parityNotes } from './ParityOverview'
 import cartesianDocs from './docs/cartesian.json'
 import specializedDocs from './docs/specialized.json'
 import './documentation.css'
 
-type FamilyNotes = {
+type FamilyGuide = {
   summary: string
   useWhen: string
   data: string
@@ -19,7 +18,7 @@ type FamilyNotes = {
   notes: string[]
 }
 
-const documentation: Record<string, FamilyNotes> = { ...cartesianDocs, ...specializedDocs }
+const documentation: Record<string, FamilyGuide> = { ...cartesianDocs, ...specializedDocs }
 const sourceBuild = `git clone https://github.com/PITANT-Industries/pitant-charts.git
 cd pitant-charts
 bun install --frozen-lockfile
@@ -28,7 +27,7 @@ cd apps/chart-catalog
 npm pack --ignore-scripts`
 const properties = [
   { name: 'example', type: 'ChartExample', description: 'Required. Select a registered chart with getExample(id).' },
-  { name: 'data', type: 'ChartData', description: 'Optional categories, numeric series, and family-specific rows. Omit it to use the example data. Check caller-data coverage for the variant you select.' },
+  { name: 'data', type: 'ChartData', description: 'Optional categories, numeric series, and family-specific rows. Omit it to use the included sample data. See Data and usage for accepted fields.' },
   { name: 'compact', type: 'boolean', description: 'Uses the compact presentation shown in gallery cards.' },
 ]
 const extraProperties: Record<string, (typeof properties)[number]> = {
@@ -45,25 +44,10 @@ const sections = [
   { id: 'docs-examples', name: 'Examples' },
 ]
 
-export function ExampleNotes({ example }: { example: ChartExample }) {
-  const notes = parityNotes[example.id]
-  return (
-    <div className="variant-notes">
-      <p>{example.description}</p>
-      {notes && <dl>
-        <dt>Checked behavior</dt>
-        <dd>{notes.checked}</dd>
-        <dt>Known differences</dt>
-        <dd>{notes.remaining}</dd>
-      </dl>}
-    </div>
-  )
-}
-
 export function FamilyDocumentation({ family, onBrowseFamily, onOpenExample }: {
   family: ChartFamily
   onBrowseFamily: (id: string) => void
-  onOpenExample: (example: string, tab: 'preview' | 'code' | 'notes') => void
+  onOpenExample: (example: string, tab: 'preview' | 'code') => void
 }) {
   const doc = documentation[family.id]
   const featured = family.examples[0]
@@ -183,7 +167,7 @@ export function FamilyDocumentation({ family, onBrowseFamily, onOpenExample }: {
             <dt>Reading the chart</dt><dd>{doc.reading}</dd>
           </dl>
           <ul>{doc.notes.map((note) => <li key={note}>{note}</li>)}</ul>
-          <p><a href={`${repositoryUrl}/blob/main/apps/chart-catalog/CALLER_DATA.md`}>Caller-data support by variant</a></p>
+          <p><a href={`${repositoryUrl}/blob/main/apps/chart-catalog/CALLER_DATA.md`}>Input data by example</a></p>
         </section>
 
         <section id="docs-props" aria-labelledby="docs-props-title">
@@ -207,7 +191,6 @@ export function FamilyDocumentation({ family, onBrowseFamily, onOpenExample }: {
                 <div className="docs-variant-actions">
                   <Button className="text-button" onClick={() => onOpenExample(example.id, 'preview')} aria-label={`Preview ${example.title}`}>Preview</Button>
                   <Button className="text-button" onClick={() => onOpenExample(example.id, 'code')} aria-label={`View code for ${example.title}`}>Code</Button>
-                  <Button className="text-button" onClick={() => onOpenExample(example.id, 'notes')} aria-label={`Notes for ${example.title}`}>Notes</Button>
                 </div>
               </li>
             ))}

@@ -72,7 +72,7 @@ export function OrdersChart() {
 }
 ```
 
-See the [dashboard component API and theme guide](packages/charts-ui/README.md) for the other components and styling options. For industrial charts, see the [core and React integration examples](docs/examples/README.md).
+See the [dashboard component API and theme guide](packages/charts-ui/README.md) for the other components and styling options. For industrial charts, see the [core API](packages/charts/README.md) and the [React bindings](packages/charts-react/README.md).
 
 ## Develop locally
 
@@ -84,17 +84,6 @@ bun run catalog:dev
 ```
 
 Common workspace commands are `bun run build`, `bun run test`, `bun run typecheck`, and `bun run lint`. See [Contributing](CONTRIBUTING.md), the [architecture overview](ARCHITECTURE.md), and the [changelog](CHANGELOG.md).
-
-<details>
-<summary>Project planning and engineering references</summary>
-
-- [Project definition](project.md)
-- [Architecture planning catalog](docs/architecture/README.md)
-- [Roadmap](docs/ROADMAP.md)
-- [Detailed phase plans](plan/00-master-plan.md)
-- [Current session state](SESSION.md)
-
-</details>
 
 ## License
 

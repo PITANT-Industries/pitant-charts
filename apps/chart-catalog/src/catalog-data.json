@@ -2,7 +2,7 @@
   {
     "id": "area",
     "name": "Area chart",
-    "url": "https://www.shadcn.io/area-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=area",
     "examples": [
       {
         "id": "area-default",
@@ -10,7 +10,7 @@
         "title": "Area Chart",
         "label": "Standard area",
         "description": "Standard area",
-        "url": "https://www.shadcn.io/examples/area-default",
+        "url": "http://opensource.pitant.de/charts/#example=area-default",
         "position": 1
       },
       {
@@ -19,7 +19,7 @@
         "title": "Fill-Only Area Chart",
         "label": "Fill with no outline",
         "description": "Fill with no outline",
-        "url": "https://www.shadcn.io/examples/area-fill",
+        "url": "http://opensource.pitant.de/charts/#example=area-fill",
         "position": 2
       },
       {
@@ -28,7 +28,7 @@
         "title": "Area Chart with Gradient Fill",
         "label": "Gradient fill",
         "description": "Gradient fill",
-        "url": "https://www.shadcn.io/examples/area-gradient-fill",
+        "url": "http://opensource.pitant.de/charts/#example=area-gradient-fill",
         "position": 3
       },
       {
@@ -37,7 +37,7 @@
         "title": "Hatched Area Chart",
         "label": "Hatched fill",
         "description": "Hatched fill",
-        "url": "https://www.shadcn.io/examples/area-pattern",
+        "url": "http://opensource.pitant.de/charts/#example=area-pattern",
         "position": 4
       },
       {
@@ -46,7 +46,7 @@
         "title": "Area Chart with Mixed Fills",
         "label": "Mixed fill styles",
         "description": "Mixed fill styles",
-        "url": "https://www.shadcn.io/examples/area-mixed",
+        "url": "http://opensource.pitant.de/charts/#example=area-mixed",
         "position": 5
       },
       {
@@ -55,7 +55,7 @@
         "title": "Area Chart with Forecast",
         "label": "Dashed forecast segment",
         "description": "Dashed forecast segment",
-        "url": "https://www.shadcn.io/examples/area-forecast",
+        "url": "http://opensource.pitant.de/charts/#example=area-forecast",
         "position": 6
       },
       {
@@ -64,7 +64,7 @@
         "title": "Area Chart with a Target Band",
         "label": "Target range band",
         "description": "Target range band",
-        "url": "https://www.shadcn.io/examples/area-reference-band",
+        "url": "http://opensource.pitant.de/charts/#example=area-reference-band",
         "position": 7
       },
       {
@@ -73,7 +73,7 @@
         "title": "Area Chart with Highlighted Range",
         "label": "Highlighted interval",
         "description": "Highlighted interval",
-        "url": "https://www.shadcn.io/examples/area-reference-range",
+        "url": "http://opensource.pitant.de/charts/#example=area-reference-range",
         "position": 8
       },
       {
@@ -82,7 +82,7 @@
         "title": "Area Chart with Patterned Background",
         "label": "Background pattern",
         "description": "Background pattern",
-        "url": "https://www.shadcn.io/examples/area-background",
+        "url": "http://opensource.pitant.de/charts/#example=area-background",
         "position": 9
       },
       {
@@ -91,7 +91,7 @@
         "title": "Area Chart Small Multiples",
         "label": "Small multiples",
         "description": "Small multiples",
-        "url": "https://www.shadcn.io/examples/area-small-multiples",
+        "url": "http://opensource.pitant.de/charts/#example=area-small-multiples",
         "position": 10
       },
       {
@@ -100,7 +100,7 @@
         "title": "Area Chart with Weekends and a Deadline",
         "label": "Weekend and overdue-date shading",
         "description": "Weekend and overdue-date shading",
-        "url": "https://www.shadcn.io/examples/area-date-highlights",
+        "url": "http://opensource.pitant.de/charts/#example=area-date-highlights",
         "position": 11
       },
       {
@@ -109,7 +109,7 @@
         "title": "Area Chart with Trend Line",
         "label": "Trend-line overlay",
         "description": "Trend-line overlay",
-        "url": "https://www.shadcn.io/examples/area-trend",
+        "url": "http://opensource.pitant.de/charts/#example=area-trend",
         "position": 12
       },
       {
@@ -118,7 +118,7 @@
         "title": "Area Chart with Value Labels",
         "label": "Values displayed on the plot",
         "description": "Values displayed on the plot",
-        "url": "https://www.shadcn.io/examples/area-value-labels",
+        "url": "http://opensource.pitant.de/charts/#example=area-value-labels",
         "position": 13
       },
       {
@@ -127,7 +127,7 @@
         "title": "Area Chart with Dual Axis",
         "label": "Two Y-axes",
         "description": "Two Y-axes",
-        "url": "https://www.shadcn.io/examples/area-dual-axis",
+        "url": "http://opensource.pitant.de/charts/#example=area-dual-axis",
         "position": 14
       },
       {
@@ -136,7 +136,7 @@
         "title": "Stepped Area Chart",
         "label": "Step interpolation",
         "description": "Step interpolation",
-        "url": "https://www.shadcn.io/examples/area-steps",
+        "url": "http://opensource.pitant.de/charts/#example=area-steps",
         "position": 15
       },
       {
@@ -145,7 +145,7 @@
         "title": "Area Chart with Range Selection",
         "label": "Range selection",
         "description": "Range selection",
-        "url": "https://www.shadcn.io/examples/area-selection",
+        "url": "http://opensource.pitant.de/charts/#example=area-selection",
         "position": 16
       },
       {
@@ -154,7 +154,7 @@
         "title": "Area Chart with Faded Pattern",
         "label": "Pattern with a fade",
         "description": "Pattern with a fade",
-        "url": "https://www.shadcn.io/examples/area-pattern-fade",
+        "url": "http://opensource.pitant.de/charts/#example=area-pattern-fade",
         "position": 17
       },
       {
@@ -163,7 +163,7 @@
         "title": "Area Chart with Bottom Fade",
         "label": "Fill fading toward the baseline",
         "description": "Fill fading toward the baseline",
-        "url": "https://www.shadcn.io/examples/area-fade-bottom",
+        "url": "http://opensource.pitant.de/charts/#example=area-fade-bottom",
         "position": 18
       },
       {
@@ -172,7 +172,7 @@
         "title": "Area Chart with Custom Labels",
         "label": "Custom labels",
         "description": "Custom labels",
-        "url": "https://www.shadcn.io/examples/area-custom-labels",
+        "url": "http://opensource.pitant.de/charts/#example=area-custom-labels",
         "position": 19
       },
       {
@@ -181,7 +181,7 @@
         "title": "Area Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/area-loading",
+        "url": "http://opensource.pitant.de/charts/#example=area-loading",
         "position": 20
       }
     ]
@@ -189,7 +189,7 @@
   {
     "id": "bar",
     "name": "Bar chart",
-    "url": "https://www.shadcn.io/bar-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=bar",
     "examples": [
       {
         "id": "bar-default",
@@ -197,7 +197,7 @@
         "title": "Bar Chart",
         "label": "Standard bar",
         "description": "Standard bar",
-        "url": "https://www.shadcn.io/examples/bar-default",
+        "url": "http://opensource.pitant.de/charts/#example=bar-default",
         "position": 1
       },
       {
@@ -206,7 +206,7 @@
         "title": "Grouped Bar Chart",
         "label": "Grouped bars",
         "description": "Grouped bars",
-        "url": "https://www.shadcn.io/examples/bar-grouped",
+        "url": "http://opensource.pitant.de/charts/#example=bar-grouped",
         "position": 2
       },
       {
@@ -215,7 +215,7 @@
         "title": "Stacked Bar Chart",
         "label": "Stacked bars",
         "description": "Stacked bars",
-        "url": "https://www.shadcn.io/examples/bar-stacked",
+        "url": "http://opensource.pitant.de/charts/#example=bar-stacked",
         "position": 3
       },
       {
@@ -224,7 +224,7 @@
         "title": "Bar Chart with Value Labels",
         "label": "Value labels",
         "description": "Value labels",
-        "url": "https://www.shadcn.io/examples/bar-values",
+        "url": "http://opensource.pitant.de/charts/#example=bar-values",
         "position": 4
       },
       {
@@ -233,7 +233,7 @@
         "title": "Bar Chart with Positive and Negative Values",
         "label": "Positive and negative bars",
         "description": "Positive and negative bars",
-        "url": "https://www.shadcn.io/examples/bar-profit-loss",
+        "url": "http://opensource.pitant.de/charts/#example=bar-profit-loss",
         "position": 5
       },
       {
@@ -242,7 +242,7 @@
         "title": "Horizontal Bar Chart of Traffic Sources",
         "label": "Horizontal bars",
         "description": "Horizontal bars",
-        "url": "https://www.shadcn.io/examples/bar-sources",
+        "url": "http://opensource.pitant.de/charts/#example=bar-sources",
         "position": 6
       },
       {
@@ -251,7 +251,7 @@
         "title": "Bar Chart with Squares",
         "label": "Bars made of squares",
         "description": "Bars made of squares",
-        "url": "https://www.shadcn.io/examples/bar-squares",
+        "url": "http://opensource.pitant.de/charts/#example=bar-squares",
         "position": 7
       },
       {
@@ -260,7 +260,7 @@
         "title": "Square Bar Chart with Legend",
         "label": "Square bars with an interactive legend",
         "description": "Square bars with an interactive legend",
-        "url": "https://www.shadcn.io/examples/bar-squares-legend",
+        "url": "http://opensource.pitant.de/charts/#example=bar-squares-legend",
         "position": 8
       },
       {
@@ -269,7 +269,7 @@
         "title": "3D Bar Chart",
         "label": "Three-dimensional styling",
         "description": "Three-dimensional styling",
-        "url": "https://www.shadcn.io/examples/bar-depth",
+        "url": "http://opensource.pitant.de/charts/#example=bar-depth",
         "position": 9
       },
       {
@@ -278,7 +278,7 @@
         "title": "Bar Chart with Synced Cursors",
         "label": "Cursor shared between charts",
         "description": "Cursor shared between charts",
-        "url": "https://www.shadcn.io/examples/bar-synced",
+        "url": "http://opensource.pitant.de/charts/#example=bar-synced",
         "position": 10
       },
       {
@@ -287,7 +287,7 @@
         "title": "Bar Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/bar-loading",
+        "url": "http://opensource.pitant.de/charts/#example=bar-loading",
         "position": 11
       }
     ]
@@ -295,7 +295,7 @@
   {
     "id": "line",
     "name": "Line chart",
-    "url": "https://www.shadcn.io/line-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=line",
     "examples": [
       {
         "id": "line-default",
@@ -303,7 +303,7 @@
         "title": "Line Chart",
         "label": "Standard two-series line",
         "description": "Standard two-series line",
-        "url": "https://www.shadcn.io/examples/line-default",
+        "url": "http://opensource.pitant.de/charts/#example=line-default",
         "position": 1
       },
       {
@@ -312,7 +312,7 @@
         "title": "Line Chart with Dual Axis",
         "label": "Two Y-axes",
         "description": "Two Y-axes",
-        "url": "https://www.shadcn.io/examples/line-dual-axis",
+        "url": "http://opensource.pitant.de/charts/#example=line-dual-axis",
         "position": 2
       },
       {
@@ -321,7 +321,7 @@
         "title": "Line Chart with Grid",
         "label": "Dotted chart grid",
         "description": "Dotted chart grid",
-        "url": "https://www.shadcn.io/examples/line-grid",
+        "url": "http://opensource.pitant.de/charts/#example=line-grid",
         "position": 3
       },
       {
@@ -330,7 +330,7 @@
         "title": "Line Chart with Points",
         "label": "Point markers on the line",
         "description": "Point markers on the line",
-        "url": "https://www.shadcn.io/examples/line-points",
+        "url": "http://opensource.pitant.de/charts/#example=line-points",
         "position": 4
       },
       {
@@ -339,7 +339,7 @@
         "title": "Dashed Line Chart",
         "label": "Dashed end segment",
         "description": "Dashed end segment",
-        "url": "https://www.shadcn.io/examples/line-dashed",
+        "url": "http://opensource.pitant.de/charts/#example=line-dashed",
         "position": 5
       },
       {
@@ -348,7 +348,7 @@
         "title": "Line Chart with Markers",
         "label": "Event markers",
         "description": "Event markers",
-        "url": "https://www.shadcn.io/examples/line-markers",
+        "url": "http://opensource.pitant.de/charts/#example=line-markers",
         "position": 6
       },
       {
@@ -357,7 +357,7 @@
         "title": "Line Chart with Legend",
         "label": "Interactive series legend",
         "description": "Interactive series legend",
-        "url": "https://www.shadcn.io/examples/line-legend",
+        "url": "http://opensource.pitant.de/charts/#example=line-legend",
         "position": 7
       },
       {
@@ -366,7 +366,7 @@
         "title": "Line Chart with Time Range",
         "label": "Time-range switcher",
         "description": "Time-range switcher",
-        "url": "https://www.shadcn.io/examples/line-time-range",
+        "url": "http://opensource.pitant.de/charts/#example=line-time-range",
         "position": 8
       },
       {
@@ -375,7 +375,7 @@
         "title": "Line Chart with Segment Selection",
         "label": "Drag-to-select a segment",
         "description": "Drag-to-select a segment",
-        "url": "https://www.shadcn.io/examples/line-segment",
+        "url": "http://opensource.pitant.de/charts/#example=line-segment",
         "position": 9
       },
       {
@@ -384,7 +384,7 @@
         "title": "Line Chart with Brush",
         "label": "Overview brush for range selection",
         "description": "Overview brush for range selection",
-        "url": "https://www.shadcn.io/examples/line-brush",
+        "url": "http://opensource.pitant.de/charts/#example=line-brush",
         "position": 10
       },
       {
@@ -393,7 +393,7 @@
         "title": "Line Chart with Linked Brush",
         "label": "One brush for two linked charts",
         "description": "One brush for two linked charts",
-        "url": "https://www.shadcn.io/examples/line-linked-brush",
+        "url": "http://opensource.pitant.de/charts/#example=line-linked-brush",
         "position": 11
       },
       {
@@ -402,7 +402,7 @@
         "title": "Line Chart with Zoom and Pan",
         "label": "Zoom and pan controls",
         "description": "Zoom and pan controls",
-        "url": "https://www.shadcn.io/examples/line-zoom",
+        "url": "http://opensource.pitant.de/charts/#example=line-zoom",
         "position": 12
       },
       {
@@ -411,7 +411,7 @@
         "title": "Line Chart with Synced Cursors",
         "label": "Cursor shared between charts",
         "description": "Cursor shared between charts",
-        "url": "https://www.shadcn.io/examples/line-synced",
+        "url": "http://opensource.pitant.de/charts/#example=line-synced",
         "position": 13
       },
       {
@@ -420,7 +420,7 @@
         "title": "Line Chart with Linked Table",
         "label": "Linked chart and table",
         "description": "Linked chart and table",
-        "url": "https://www.shadcn.io/examples/line-table",
+        "url": "http://opensource.pitant.de/charts/#example=line-table",
         "position": 14
       },
       {
@@ -429,7 +429,7 @@
         "title": "Line Chart with Projection",
         "label": "Projected values",
         "description": "Projected values",
-        "url": "https://www.shadcn.io/examples/line-projection",
+        "url": "http://opensource.pitant.de/charts/#example=line-projection",
         "position": 15
       },
       {
@@ -438,7 +438,7 @@
         "title": "Line Chart with Manual Projection",
         "label": "Manually specified projection",
         "description": "Manually specified projection",
-        "url": "https://www.shadcn.io/examples/line-projection-manual",
+        "url": "http://opensource.pitant.de/charts/#example=line-projection-manual",
         "position": 16
       },
       {
@@ -447,7 +447,7 @@
         "title": "Line Chart with Threshold",
         "label": "Reference threshold",
         "description": "Reference threshold",
-        "url": "https://www.shadcn.io/examples/line-threshold",
+        "url": "http://opensource.pitant.de/charts/#example=line-threshold",
         "position": 17
       },
       {
@@ -456,7 +456,7 @@
         "title": "Profit and Loss Line Chart",
         "label": "Profit/loss coloring",
         "description": "Profit/loss coloring",
-        "url": "https://www.shadcn.io/examples/line-profit-loss",
+        "url": "http://opensource.pitant.de/charts/#example=line-profit-loss",
         "position": 18
       },
       {
@@ -465,7 +465,7 @@
         "title": "Profit and Loss Line Chart with Legend",
         "label": "Profit/loss with a legend",
         "description": "Profit/loss with a legend",
-        "url": "https://www.shadcn.io/examples/line-profit-loss-legend",
+        "url": "http://opensource.pitant.de/charts/#example=line-profit-loss-legend",
         "position": 19
       },
       {
@@ -474,7 +474,7 @@
         "title": "Line Chart with Band",
         "label": "Shaded band overlay",
         "description": "Shaded band overlay",
-        "url": "https://www.shadcn.io/examples/line-band",
+        "url": "http://opensource.pitant.de/charts/#example=line-band",
         "position": 20
       },
       {
@@ -483,7 +483,7 @@
         "title": "Line Chart with Range Area",
         "label": "Standalone range band",
         "description": "Standalone range band",
-        "url": "https://www.shadcn.io/examples/line-band-range",
+        "url": "http://opensource.pitant.de/charts/#example=line-band-range",
         "position": 21
       },
       {
@@ -492,7 +492,7 @@
         "title": "Line Chart with Band Ranges",
         "label": "Multiple band ranges",
         "description": "Multiple band ranges",
-        "url": "https://www.shadcn.io/examples/line-band-ranges",
+        "url": "http://opensource.pitant.de/charts/#example=line-band-ranges",
         "position": 22
       },
       {
@@ -501,7 +501,7 @@
         "title": "Line Chart with Bollinger Bands",
         "label": "Bollinger Bands overlay",
         "description": "Bollinger Bands overlay",
-        "url": "https://www.shadcn.io/examples/line-band-bollinger",
+        "url": "http://opensource.pitant.de/charts/#example=line-band-bollinger",
         "position": 23
       },
       {
@@ -510,7 +510,7 @@
         "title": "Line Chart with Band Fill Types",
         "label": "Alternative band fills",
         "description": "Alternative band fills",
-        "url": "https://www.shadcn.io/examples/line-band-fill",
+        "url": "http://opensource.pitant.de/charts/#example=line-band-fill",
         "position": 24
       },
       {
@@ -519,7 +519,7 @@
         "title": "Line Chart with Faded Band",
         "label": "Band with a fade",
         "description": "Band with a fade",
-        "url": "https://www.shadcn.io/examples/line-band-fade",
+        "url": "http://opensource.pitant.de/charts/#example=line-band-fade",
         "position": 25
       },
       {
@@ -528,7 +528,7 @@
         "title": "Line Chart with Band Edges",
         "label": "Band edge styling",
         "description": "Band edge styling",
-        "url": "https://www.shadcn.io/examples/line-band-edges",
+        "url": "http://opensource.pitant.de/charts/#example=line-band-edges",
         "position": 26
       },
       {
@@ -537,7 +537,7 @@
         "title": "Line Chart with Weekends",
         "label": "Weekend highlights",
         "description": "Weekend highlights",
-        "url": "https://www.shadcn.io/examples/line-weekends",
+        "url": "http://opensource.pitant.de/charts/#example=line-weekends",
         "position": 27
       },
       {
@@ -546,7 +546,7 @@
         "title": "Line Chart with Deadline",
         "label": "Deadline marker",
         "description": "Deadline marker",
-        "url": "https://www.shadcn.io/examples/line-deadline",
+        "url": "http://opensource.pitant.de/charts/#example=line-deadline",
         "position": 28
       },
       {
@@ -555,7 +555,7 @@
         "title": "Line Chart with Deadline Fills",
         "label": "Deadline range shading",
         "description": "Deadline range shading",
-        "url": "https://www.shadcn.io/examples/line-deadline-fills",
+        "url": "http://opensource.pitant.de/charts/#example=line-deadline-fills",
         "position": 29
       },
       {
@@ -564,7 +564,7 @@
         "title": "Line Chart with Date Highlights and Brush",
         "label": "Date highlights with a brush",
         "description": "Date highlights with a brush",
-        "url": "https://www.shadcn.io/examples/line-date-highlights-brush",
+        "url": "http://opensource.pitant.de/charts/#example=line-date-highlights-brush",
         "position": 30
       },
       {
@@ -573,7 +573,7 @@
         "title": "Line Chart with Glow",
         "label": "Glowing line",
         "description": "Glowing line",
-        "url": "https://www.shadcn.io/examples/line-glow",
+        "url": "http://opensource.pitant.de/charts/#example=line-glow",
         "position": 31
       },
       {
@@ -582,7 +582,7 @@
         "title": "Line Chart with Trend Line",
         "label": "Trend-line overlay",
         "description": "Trend-line overlay",
-        "url": "https://www.shadcn.io/examples/line-trend",
+        "url": "http://opensource.pitant.de/charts/#example=line-trend",
         "position": 32
       },
       {
@@ -591,7 +591,7 @@
         "title": "Line Chart with Bollinger Bands on a Floating Axis",
         "label": "Floating scale for Bollinger Bands",
         "description": "Floating scale for Bollinger Bands",
-        "url": "https://www.shadcn.io/examples/line-bollinger",
+        "url": "http://opensource.pitant.de/charts/#example=line-bollinger",
         "position": 33
       },
       {
@@ -600,7 +600,7 @@
         "title": "Line Chart with Point Crosshair",
         "label": "Crosshair at a point",
         "description": "Crosshair at a point",
-        "url": "https://www.shadcn.io/examples/line-crosshair-point",
+        "url": "http://opensource.pitant.de/charts/#example=line-crosshair-point",
         "position": 34
       },
       {
@@ -609,7 +609,7 @@
         "title": "Line Chart with Fixed Scale",
         "label": "Fixed axis scale",
         "description": "Fixed axis scale",
-        "url": "https://www.shadcn.io/examples/line-fixed-scale",
+        "url": "http://opensource.pitant.de/charts/#example=line-fixed-scale",
         "position": 35
       },
       {
@@ -618,7 +618,7 @@
         "title": "Straight Line Chart",
         "label": "Straight segments between points",
         "description": "Straight segments between points",
-        "url": "https://www.shadcn.io/examples/line-straight",
+        "url": "http://opensource.pitant.de/charts/#example=line-straight",
         "position": 36
       },
       {
@@ -627,7 +627,7 @@
         "title": "Line Chart with Export",
         "label": "Chart export",
         "description": "Chart export",
-        "url": "https://www.shadcn.io/examples/line-export",
+        "url": "http://opensource.pitant.de/charts/#example=line-export",
         "position": 37
       },
       {
@@ -636,7 +636,7 @@
         "title": "Line Chart with Large Data",
         "label": "Large dataset",
         "description": "Large dataset",
-        "url": "https://www.shadcn.io/examples/line-large-data",
+        "url": "http://opensource.pitant.de/charts/#example=line-large-data",
         "position": 38
       },
       {
@@ -645,7 +645,7 @@
         "title": "Line Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/line-loading",
+        "url": "http://opensource.pitant.de/charts/#example=line-loading",
         "position": 39
       },
       {
@@ -654,7 +654,7 @@
         "title": "Chart Data Table",
         "label": "Tabular view of chart data",
         "description": "Tabular view of chart data",
-        "url": "https://www.shadcn.io/examples/chart-data-table",
+        "url": "http://opensource.pitant.de/charts/#example=chart-data-table",
         "position": 40
       },
       {
@@ -663,7 +663,7 @@
         "title": "Line Chart Loading Placeholder",
         "label": "Loading placeholder",
         "description": "Loading placeholder",
-        "url": "https://www.shadcn.io/examples/line-loading-placeholder",
+        "url": "http://opensource.pitant.de/charts/#example=line-loading-placeholder",
         "position": 41
       }
     ]
@@ -671,7 +671,7 @@
   {
     "id": "scatter",
     "name": "Scatter chart",
-    "url": "https://www.shadcn.io/scatter-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=scatter",
     "examples": [
       {
         "id": "scatter-default",
@@ -679,7 +679,7 @@
         "title": "Scatter Chart",
         "label": "Standard scatter",
         "description": "Standard scatter",
-        "url": "https://www.shadcn.io/examples/scatter-default",
+        "url": "http://opensource.pitant.de/charts/#example=scatter-default",
         "position": 1
       },
       {
@@ -688,7 +688,7 @@
         "title": "Scatter Chart with Offset Rings",
         "label": "Offset ring markers",
         "description": "Offset ring markers",
-        "url": "https://www.shadcn.io/examples/scatter-rings",
+        "url": "http://opensource.pitant.de/charts/#example=scatter-rings",
         "position": 2
       },
       {
@@ -697,7 +697,7 @@
         "title": "Scatter Chart with Solid Dots",
         "label": "Filled dot markers",
         "description": "Filled dot markers",
-        "url": "https://www.shadcn.io/examples/scatter-solid",
+        "url": "http://opensource.pitant.de/charts/#example=scatter-solid",
         "position": 3
       },
       {
@@ -706,7 +706,7 @@
         "title": "Scatter Chart with Outlines",
         "label": "Outlined markers",
         "description": "Outlined markers",
-        "url": "https://www.shadcn.io/examples/scatter-outline",
+        "url": "http://opensource.pitant.de/charts/#example=scatter-outline",
         "position": 4
       },
       {
@@ -715,7 +715,7 @@
         "title": "Scatter Chart with Jitter",
         "label": "Jittered points",
         "description": "Jittered points",
-        "url": "https://www.shadcn.io/examples/scatter-jitter",
+        "url": "http://opensource.pitant.de/charts/#example=scatter-jitter",
         "position": 5
       },
       {
@@ -724,7 +724,7 @@
         "title": "Scatter Chart with Large Data",
         "label": "Large dataset",
         "description": "Large dataset",
-        "url": "https://www.shadcn.io/examples/scatter-large-data",
+        "url": "http://opensource.pitant.de/charts/#example=scatter-large-data",
         "position": 6
       }
     ]
@@ -732,7 +732,7 @@
   {
     "id": "candlestick",
     "name": "Candlestick chart",
-    "url": "https://www.shadcn.io/candlestick-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=candlestick",
     "examples": [
       {
         "id": "candlestick-default",
@@ -740,7 +740,7 @@
         "title": "Candlestick Chart",
         "label": "Standard candlestick",
         "description": "Standard candlestick",
-        "url": "https://www.shadcn.io/examples/candlestick-default",
+        "url": "http://opensource.pitant.de/charts/#example=candlestick-default",
         "position": 1
       },
       {
@@ -749,7 +749,7 @@
         "title": "Minimal Candlestick Chart",
         "label": "Minimal styling",
         "description": "Minimal styling",
-        "url": "https://www.shadcn.io/examples/candlestick-minimal",
+        "url": "http://opensource.pitant.de/charts/#example=candlestick-minimal",
         "position": 2
       },
       {
@@ -758,7 +758,7 @@
         "title": "Candlestick Chart with Custom Colors",
         "label": "Custom candle colors",
         "description": "Custom candle colors",
-        "url": "https://www.shadcn.io/examples/candlestick-colors",
+        "url": "http://opensource.pitant.de/charts/#example=candlestick-colors",
         "position": 3
       },
       {
@@ -767,7 +767,7 @@
         "title": "Candlestick Chart with a Range Selector",
         "label": "Range picker",
         "description": "Range picker",
-        "url": "https://www.shadcn.io/examples/candlestick-range",
+        "url": "http://opensource.pitant.de/charts/#example=candlestick-range",
         "position": 4
       },
       {
@@ -776,7 +776,7 @@
         "title": "Candlestick Chart with a Matching Crosshair",
         "label": "Coordinated crosshair",
         "description": "Coordinated crosshair",
-        "url": "https://www.shadcn.io/examples/candlestick-crosshair",
+        "url": "http://opensource.pitant.de/charts/#example=candlestick-crosshair",
         "position": 5
       },
       {
@@ -785,7 +785,7 @@
         "title": "Candlestick Chart with Striped Bodies",
         "label": "Striped candle bodies",
         "description": "Striped candle bodies",
-        "url": "https://www.shadcn.io/examples/candlestick-pattern",
+        "url": "http://opensource.pitant.de/charts/#example=candlestick-pattern",
         "position": 6
       }
     ]
@@ -793,7 +793,7 @@
   {
     "id": "composed",
     "name": "Composed chart",
-    "url": "https://www.shadcn.io/composed-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=composed",
     "examples": [
       {
         "id": "composed-default",
@@ -801,7 +801,7 @@
         "title": "Composed Chart",
         "label": "Standard combined chart",
         "description": "Standard combined chart",
-        "url": "https://www.shadcn.io/examples/composed-default",
+        "url": "http://opensource.pitant.de/charts/#example=composed-default",
         "position": 1
       },
       {
@@ -810,7 +810,7 @@
         "title": "Composed Chart with a Target Line",
         "label": "Target reference line",
         "description": "Target reference line",
-        "url": "https://www.shadcn.io/examples/composed-target",
+        "url": "http://opensource.pitant.de/charts/#example=composed-target",
         "position": 2
       },
       {
@@ -819,7 +819,7 @@
         "title": "Composed Chart with Grouped Bars",
         "label": "Grouped bar series",
         "description": "Grouped bar series",
-        "url": "https://www.shadcn.io/examples/composed-grouped",
+        "url": "http://opensource.pitant.de/charts/#example=composed-grouped",
         "position": 3
       },
       {
@@ -828,7 +828,7 @@
         "title": "Composed Chart with Stacked Bars",
         "label": "Stacked bar series",
         "description": "Stacked bar series",
-        "url": "https://www.shadcn.io/examples/composed-stacked",
+        "url": "http://opensource.pitant.de/charts/#example=composed-stacked",
         "position": 4
       },
       {
@@ -837,7 +837,7 @@
         "title": "Composed Chart with an Expected Range",
         "label": "Expected range overlay",
         "description": "Expected range overlay",
-        "url": "https://www.shadcn.io/examples/composed-band",
+        "url": "http://opensource.pitant.de/charts/#example=composed-band",
         "position": 5
       },
       {
@@ -846,7 +846,7 @@
         "title": "Composed Chart with Date Highlights",
         "label": "Date highlighting",
         "description": "Date highlighting",
-        "url": "https://www.shadcn.io/examples/composed-date-highlights",
+        "url": "http://opensource.pitant.de/charts/#example=composed-date-highlights",
         "position": 6
       },
       {
@@ -855,7 +855,7 @@
         "title": "Composed Chart with Trend Lines",
         "label": "Trend-line overlays",
         "description": "Trend-line overlays",
-        "url": "https://www.shadcn.io/examples/composed-trend",
+        "url": "http://opensource.pitant.de/charts/#example=composed-trend",
         "position": 7
       },
       {
@@ -864,7 +864,7 @@
         "title": "Composed Chart with Separate Scales",
         "label": "Separate axis scales",
         "description": "Separate axis scales",
-        "url": "https://www.shadcn.io/examples/composed-y-domains",
+        "url": "http://opensource.pitant.de/charts/#example=composed-y-domains",
         "position": 8
       },
       {
@@ -873,7 +873,7 @@
         "title": "Composed Chart with Price and Volume",
         "label": "Price and volume combination",
         "description": "Price and volume combination",
-        "url": "https://www.shadcn.io/examples/composed-price-volume",
+        "url": "http://opensource.pitant.de/charts/#example=composed-price-volume",
         "position": 9
       },
       {
@@ -882,7 +882,7 @@
         "title": "Composed Chart with a Moving Average",
         "label": "Moving-average overlay",
         "description": "Moving-average overlay",
-        "url": "https://www.shadcn.io/examples/composed-signal",
+        "url": "http://opensource.pitant.de/charts/#example=composed-signal",
         "position": 10
       },
       {
@@ -891,7 +891,7 @@
         "title": "Composed Chart with Profit and Loss",
         "label": "Profit/loss combination",
         "description": "Profit/loss combination",
-        "url": "https://www.shadcn.io/examples/composed-profit-loss",
+        "url": "http://opensource.pitant.de/charts/#example=composed-profit-loss",
         "position": 11
       }
     ]
@@ -899,7 +899,7 @@
   {
     "id": "live-line",
     "name": "Live line chart",
-    "url": "https://www.shadcn.io/live-line-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=live-line",
     "examples": [
       {
         "id": "live-line-default",
@@ -907,7 +907,7 @@
         "title": "Live Line Chart",
         "label": "Standard live line",
         "description": "Standard live line",
-        "url": "https://www.shadcn.io/examples/live-line-default",
+        "url": "http://opensource.pitant.de/charts/#example=live-line-default",
         "position": 1
       },
       {
@@ -916,7 +916,7 @@
         "title": "Live Line Chart with Momentum Colors",
         "label": "Colors that follow momentum",
         "description": "Colors that follow momentum",
-        "url": "https://www.shadcn.io/examples/live-line-momentum",
+        "url": "http://opensource.pitant.de/charts/#example=live-line-momentum",
         "position": 2
       },
       {
@@ -925,7 +925,7 @@
         "title": "Live Line Chart with Pause",
         "label": "Pause control",
         "description": "Pause control",
-        "url": "https://www.shadcn.io/examples/live-line-paused",
+        "url": "http://opensource.pitant.de/charts/#example=live-line-paused",
         "position": 3
       },
       {
@@ -934,7 +934,7 @@
         "title": "Live Line Chart with a Right Axis",
         "label": "Right-side axis",
         "description": "Right-side axis",
-        "url": "https://www.shadcn.io/examples/live-line-right-axis",
+        "url": "http://opensource.pitant.de/charts/#example=live-line-right-axis",
         "position": 4
       },
       {
@@ -943,7 +943,7 @@
         "title": "Live Line Chart with Patterned Background",
         "label": "Background pattern",
         "description": "Background pattern",
-        "url": "https://www.shadcn.io/examples/live-line-background",
+        "url": "http://opensource.pitant.de/charts/#example=live-line-background",
         "position": 5
       },
       {
@@ -952,7 +952,7 @@
         "title": "Live Line Chart with Dot Grid",
         "label": "Dotted grid",
         "description": "Dotted grid",
-        "url": "https://www.shadcn.io/examples/live-line-dots",
+        "url": "http://opensource.pitant.de/charts/#example=live-line-dots",
         "position": 6
       },
       {
@@ -961,7 +961,7 @@
         "title": "Live Line Chart with a Target Band",
         "label": "Target range band",
         "description": "Target range band",
-        "url": "https://www.shadcn.io/examples/live-line-reference-band",
+        "url": "http://opensource.pitant.de/charts/#example=live-line-reference-band",
         "position": 7
       },
       {
@@ -970,7 +970,7 @@
         "title": "Live Line Chart with a Hatched Band",
         "label": "Hatched band",
         "description": "Hatched band",
-        "url": "https://www.shadcn.io/examples/live-line-pattern-band",
+        "url": "http://opensource.pitant.de/charts/#example=live-line-pattern-band",
         "position": 8
       },
       {
@@ -979,7 +979,7 @@
         "title": "Live Line Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/live-line-loading",
+        "url": "http://opensource.pitant.de/charts/#example=live-line-loading",
         "position": 9
       }
     ]
@@ -987,7 +987,7 @@
   {
     "id": "gantt",
     "name": "Gantt chart",
-    "url": "https://www.shadcn.io/gantt-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=gantt",
     "examples": [
       {
         "id": "gantt-default",
@@ -995,7 +995,7 @@
         "title": "Gantt Chart",
         "label": "Standard Gantt timeline",
         "description": "Standard Gantt timeline",
-        "url": "https://www.shadcn.io/examples/gantt-default",
+        "url": "http://opensource.pitant.de/charts/#example=gantt-default",
         "position": 1
       },
       {
@@ -1004,7 +1004,7 @@
         "title": "Roadmap Gantt Chart",
         "label": "Roadmap timeline",
         "description": "Roadmap timeline",
-        "url": "https://www.shadcn.io/examples/gantt-roadmap",
+        "url": "http://opensource.pitant.de/charts/#example=gantt-roadmap",
         "position": 2
       },
       {
@@ -1013,7 +1013,7 @@
         "title": "Gantt Chart with Milestones",
         "label": "Milestone markers",
         "description": "Milestone markers",
-        "url": "https://www.shadcn.io/examples/gantt-milestones",
+        "url": "http://opensource.pitant.de/charts/#example=gantt-milestones",
         "position": 3
       },
       {
@@ -1022,7 +1022,7 @@
         "title": "Gantt Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/gantt-loading",
+        "url": "http://opensource.pitant.de/charts/#example=gantt-loading",
         "position": 4
       }
     ]
@@ -1030,7 +1030,7 @@
   {
     "id": "waterfall",
     "name": "Waterfall chart",
-    "url": "https://www.shadcn.io/waterfall-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=waterfall",
     "examples": [
       {
         "id": "waterfall-default",
@@ -1038,7 +1038,7 @@
         "title": "Waterfall Chart",
         "label": "Standard waterfall",
         "description": "Standard waterfall",
-        "url": "https://www.shadcn.io/examples/waterfall-default",
+        "url": "http://opensource.pitant.de/charts/#example=waterfall-default",
         "position": 1
       },
       {
@@ -1047,7 +1047,7 @@
         "title": "Waterfall Chart with Subtotals",
         "label": "Subtotal bars",
         "description": "Subtotal bars",
-        "url": "https://www.shadcn.io/examples/waterfall-subtotals",
+        "url": "http://opensource.pitant.de/charts/#example=waterfall-subtotals",
         "position": 2
       },
       {
@@ -1056,7 +1056,7 @@
         "title": "Cash Flow Waterfall Chart",
         "label": "Cash-flow breakdown",
         "description": "Cash-flow breakdown",
-        "url": "https://www.shadcn.io/examples/waterfall-cash-flow",
+        "url": "http://opensource.pitant.de/charts/#example=waterfall-cash-flow",
         "position": 3
       },
       {
@@ -1065,7 +1065,7 @@
         "title": "Waterfall Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/waterfall-loading",
+        "url": "http://opensource.pitant.de/charts/#example=waterfall-loading",
         "position": 4
       }
     ]
@@ -1073,7 +1073,7 @@
   {
     "id": "lollipop",
     "name": "Lollipop chart",
-    "url": "https://www.shadcn.io/lollipop-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=lollipop",
     "examples": [
       {
         "id": "lollipop-default",
@@ -1081,7 +1081,7 @@
         "title": "Lollipop Chart",
         "label": "Standard lollipop",
         "description": "Standard lollipop",
-        "url": "https://www.shadcn.io/examples/lollipop-default",
+        "url": "http://opensource.pitant.de/charts/#example=lollipop-default",
         "position": 1
       },
       {
@@ -1090,7 +1090,7 @@
         "title": "Horizontal Lollipop Chart",
         "label": "Horizontal layout",
         "description": "Horizontal layout",
-        "url": "https://www.shadcn.io/examples/lollipop-horizontal",
+        "url": "http://opensource.pitant.de/charts/#example=lollipop-horizontal",
         "position": 2
       },
       {
@@ -1099,7 +1099,7 @@
         "title": "Lollipop Chart with Negative Values",
         "label": "Negative values",
         "description": "Negative values",
-        "url": "https://www.shadcn.io/examples/lollipop-change",
+        "url": "http://opensource.pitant.de/charts/#example=lollipop-change",
         "position": 3
       },
       {
@@ -1108,7 +1108,7 @@
         "title": "Lollipop Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/lollipop-loading",
+        "url": "http://opensource.pitant.de/charts/#example=lollipop-loading",
         "position": 4
       }
     ]
@@ -1116,7 +1116,7 @@
   {
     "id": "dumbbell",
     "name": "Dumbbell chart",
-    "url": "https://www.shadcn.io/dumbbell-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=dumbbell",
     "examples": [
       {
         "id": "dumbbell-default",
@@ -1124,7 +1124,7 @@
         "title": "Dumbbell Chart",
         "label": "Standard dumbbell",
         "description": "Standard dumbbell",
-        "url": "https://www.shadcn.io/examples/dumbbell-default",
+        "url": "http://opensource.pitant.de/charts/#example=dumbbell-default",
         "position": 1
       },
       {
@@ -1133,7 +1133,7 @@
         "title": "Dumbbell Chart with Legend",
         "label": "Series legend",
         "description": "Series legend",
-        "url": "https://www.shadcn.io/examples/dumbbell-legend",
+        "url": "http://opensource.pitant.de/charts/#example=dumbbell-legend",
         "position": 2
       },
       {
@@ -1142,7 +1142,7 @@
         "title": "Vertical Dumbbell Chart",
         "label": "Vertical layout",
         "description": "Vertical layout",
-        "url": "https://www.shadcn.io/examples/dumbbell-vertical",
+        "url": "http://opensource.pitant.de/charts/#example=dumbbell-vertical",
         "position": 3
       },
       {
@@ -1151,7 +1151,7 @@
         "title": "Dumbbell Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/dumbbell-loading",
+        "url": "http://opensource.pitant.de/charts/#example=dumbbell-loading",
         "position": 4
       }
     ]
@@ -1159,7 +1159,7 @@
   {
     "id": "uncertainty",
     "name": "Uncertainty chart",
-    "url": "https://www.shadcn.io/uncertainty-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=uncertainty",
     "examples": [
       {
         "id": "uncertainty-default",
@@ -1167,7 +1167,7 @@
         "title": "Error Bar Chart",
         "label": "Error bars",
         "description": "Error bars",
-        "url": "https://www.shadcn.io/examples/uncertainty-default",
+        "url": "http://opensource.pitant.de/charts/#example=uncertainty-default",
         "position": 1
       },
       {
@@ -1176,7 +1176,7 @@
         "title": "Forest Plot",
         "label": "Forest plot",
         "description": "Forest plot",
-        "url": "https://www.shadcn.io/examples/uncertainty-forest",
+        "url": "http://opensource.pitant.de/charts/#example=uncertainty-forest",
         "position": 2
       },
       {
@@ -1185,7 +1185,7 @@
         "title": "Ribbon Chart with Percentile Bands",
         "label": "Percentile ribbons",
         "description": "Percentile ribbons",
-        "url": "https://www.shadcn.io/examples/uncertainty-ribbon",
+        "url": "http://opensource.pitant.de/charts/#example=uncertainty-ribbon",
         "position": 3
       },
       {
@@ -1194,7 +1194,7 @@
         "title": "Forecast Fan Chart",
         "label": "Fan-shaped forecast intervals",
         "description": "Fan-shaped forecast intervals",
-        "url": "https://www.shadcn.io/examples/uncertainty-forecast",
+        "url": "http://opensource.pitant.de/charts/#example=uncertainty-forecast",
         "position": 4
       },
       {
@@ -1203,7 +1203,7 @@
         "title": "Error Bar Chart Loading State",
         "label": "Error-bar loading state",
         "description": "Error-bar loading state",
-        "url": "https://www.shadcn.io/examples/uncertainty-loading",
+        "url": "http://opensource.pitant.de/charts/#example=uncertainty-loading",
         "position": 5
       }
     ]
@@ -1211,7 +1211,7 @@
   {
     "id": "bump",
     "name": "Bump chart",
-    "url": "https://www.shadcn.io/bump-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=bump",
     "examples": [
       {
         "id": "bump-default",
@@ -1219,7 +1219,7 @@
         "title": "Bump Chart",
         "label": "Standard rank-over-time chart",
         "description": "Standard rank-over-time chart",
-        "url": "https://www.shadcn.io/examples/bump-default",
+        "url": "http://opensource.pitant.de/charts/#example=bump-default",
         "position": 1
       },
       {
@@ -1228,7 +1228,7 @@
         "title": "Bump Chart Ranked Lowest First",
         "label": "Rank lowest values first",
         "description": "Rank lowest values first",
-        "url": "https://www.shadcn.io/examples/bump-ascending",
+        "url": "http://opensource.pitant.de/charts/#example=bump-ascending",
         "position": 2
       },
       {
@@ -1237,7 +1237,7 @@
         "title": "Bump Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/bump-loading",
+        "url": "http://opensource.pitant.de/charts/#example=bump-loading",
         "position": 3
       }
     ]
@@ -1245,7 +1245,7 @@
   {
     "id": "slope",
     "name": "Slope chart",
-    "url": "https://www.shadcn.io/slope-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=slope",
     "examples": [
       {
         "id": "slope-default",
@@ -1253,7 +1253,7 @@
         "title": "Slope Chart",
         "label": "Standard slope chart",
         "description": "Standard slope chart",
-        "url": "https://www.shadcn.io/examples/slope-default",
+        "url": "http://opensource.pitant.de/charts/#example=slope-default",
         "position": 1
       },
       {
@@ -1262,7 +1262,7 @@
         "title": "Slope Chart Where Lower Is Better",
         "label": "Highlight decreases as improvements",
         "description": "Highlight decreases as improvements",
-        "url": "https://www.shadcn.io/examples/slope-response-time",
+        "url": "http://opensource.pitant.de/charts/#example=slope-response-time",
         "position": 2
       },
       {
@@ -1271,7 +1271,7 @@
         "title": "Slope Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/slope-loading",
+        "url": "http://opensource.pitant.de/charts/#example=slope-loading",
         "position": 3
       }
     ]
@@ -1279,7 +1279,7 @@
   {
     "id": "sparkline",
     "name": "Sparkline",
-    "url": "https://www.shadcn.io/sparkline-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=sparkline",
     "examples": [
       {
         "id": "sparkline-default",
@@ -1287,7 +1287,7 @@
         "title": "Sparklines",
         "label": "Sparkline overview",
         "description": "Sparkline overview",
-        "url": "https://www.shadcn.io/examples/sparkline-default",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-default",
         "position": 1
       },
       {
@@ -1296,7 +1296,7 @@
         "title": "Line Sparkline",
         "label": "Line sparkline",
         "description": "Line sparkline",
-        "url": "https://www.shadcn.io/examples/sparkline-line",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-line",
         "position": 2
       },
       {
@@ -1305,7 +1305,7 @@
         "title": "Area Sparkline",
         "label": "Area sparkline",
         "description": "Area sparkline",
-        "url": "https://www.shadcn.io/examples/sparkline-area",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-area",
         "position": 3
       },
       {
@@ -1314,7 +1314,7 @@
         "title": "Area Sparkline with a Solid Fill",
         "label": "Solid-filled area sparkline",
         "description": "Solid-filled area sparkline",
-        "url": "https://www.shadcn.io/examples/sparkline-area-solid",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-area-solid",
         "position": 4
       },
       {
@@ -1323,7 +1323,7 @@
         "title": "Bar Sparkline",
         "label": "Bar sparkline",
         "description": "Bar sparkline",
-        "url": "https://www.shadcn.io/examples/sparkline-bar",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-bar",
         "position": 5
       },
       {
@@ -1332,7 +1332,7 @@
         "title": "Bar Sparkline with Negative Values",
         "label": "Bars with negative values",
         "description": "Bars with negative values",
-        "url": "https://www.shadcn.io/examples/sparkline-bar-negative",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-bar-negative",
         "position": 6
       },
       {
@@ -1341,7 +1341,7 @@
         "title": "Sparkline with an End Dot",
         "label": "Endpoint marker",
         "description": "Endpoint marker",
-        "url": "https://www.shadcn.io/examples/sparkline-end-dot",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-end-dot",
         "position": 7
       },
       {
@@ -1350,7 +1350,7 @@
         "title": "Stepped Area Sparkline",
         "label": "Stepped area",
         "description": "Stepped area",
-        "url": "https://www.shadcn.io/examples/sparkline-step",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-step",
         "position": 8
       },
       {
@@ -1359,7 +1359,7 @@
         "title": "Sparkline Crosshairs",
         "label": "Hover crosshairs",
         "description": "Hover crosshairs",
-        "url": "https://www.shadcn.io/examples/sparkline-crosshairs",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-crosshairs",
         "position": 9
       },
       {
@@ -1368,7 +1368,7 @@
         "title": "Sparkline Hover Springs",
         "label": "Spring-animated hover",
         "description": "Spring-animated hover",
-        "url": "https://www.shadcn.io/examples/sparkline-hover-feel",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-hover-feel",
         "position": 10
       },
       {
@@ -1377,7 +1377,7 @@
         "title": "Synced Sparklines",
         "label": "Synchronized sparklines",
         "description": "Synchronized sparklines",
-        "url": "https://www.shadcn.io/examples/sparkline-synced",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-synced",
         "position": 11
       },
       {
@@ -1386,7 +1386,7 @@
         "title": "Sparklines in a Table",
         "label": "Embedded in table rows",
         "description": "Embedded in table rows",
-        "url": "https://www.shadcn.io/examples/sparkline-table",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-table",
         "position": 12
       },
       {
@@ -1395,7 +1395,7 @@
         "title": "Sparkline Stat Card",
         "label": "Metric card",
         "description": "Metric card",
-        "url": "https://www.shadcn.io/examples/sparkline-stat-card",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-stat-card",
         "position": 13
       },
       {
@@ -1404,7 +1404,7 @@
         "title": "Sparkline with a Range Toggle",
         "label": "Range switcher",
         "description": "Range switcher",
-        "url": "https://www.shadcn.io/examples/sparkline-range",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-range",
         "position": 14
       },
       {
@@ -1413,7 +1413,7 @@
         "title": "Sparkline Grid",
         "label": "Grid of sparklines",
         "description": "Grid of sparklines",
-        "url": "https://www.shadcn.io/examples/sparkline-grid",
+        "url": "http://opensource.pitant.de/charts/#example=sparkline-grid",
         "position": 15
       }
     ]
@@ -1421,7 +1421,7 @@
   {
     "id": "pie",
     "name": "Pie chart",
-    "url": "https://www.shadcn.io/pie-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=pie",
     "examples": [
       {
         "id": "pie-default",
@@ -1429,7 +1429,7 @@
         "title": "Pie Chart",
         "label": "Standard pie",
         "description": "Standard pie",
-        "url": "https://www.shadcn.io/examples/pie-default",
+        "url": "http://opensource.pitant.de/charts/#example=pie-default",
         "position": 1
       },
       {
@@ -1438,7 +1438,7 @@
         "title": "Donut Chart with Center Total",
         "label": "Donut with a total in the center",
         "description": "Donut with a total in the center",
-        "url": "https://www.shadcn.io/examples/pie-center",
+        "url": "http://opensource.pitant.de/charts/#example=pie-center",
         "position": 2
       },
       {
@@ -1447,7 +1447,7 @@
         "title": "Donut Chart with Custom Center",
         "label": "Donut with custom center content",
         "description": "Donut with custom center content",
-        "url": "https://www.shadcn.io/examples/pie-center-custom",
+        "url": "http://opensource.pitant.de/charts/#example=pie-center-custom",
         "position": 3
       },
       {
@@ -1456,7 +1456,7 @@
         "title": "Pie Chart with Legend",
         "label": "Donut with an interactive legend",
         "description": "Donut with an interactive legend",
-        "url": "https://www.shadcn.io/examples/pie-hover-legend",
+        "url": "http://opensource.pitant.de/charts/#example=pie-hover-legend",
         "position": 4
       },
       {
@@ -1465,7 +1465,7 @@
         "title": "Half Donut Chart",
         "label": "Semicircular donut",
         "description": "Semicircular donut",
-        "url": "https://www.shadcn.io/examples/pie-half-donut",
+        "url": "http://opensource.pitant.de/charts/#example=pie-half-donut",
         "position": 5
       },
       {
@@ -1474,7 +1474,7 @@
         "title": "Pie Chart with Pattern",
         "label": "Patterned pie",
         "description": "Patterned pie",
-        "url": "https://www.shadcn.io/examples/pie-pattern",
+        "url": "http://opensource.pitant.de/charts/#example=pie-pattern",
         "position": 6
       },
       {
@@ -1483,7 +1483,7 @@
         "title": "Pie Chart with Pattern Presets",
         "label": "Pie with preset patterns",
         "description": "Pie with preset patterns",
-        "url": "https://www.shadcn.io/examples/pie-pattern-presets",
+        "url": "http://opensource.pitant.de/charts/#example=pie-pattern-presets",
         "position": 7
       },
       {
@@ -1492,7 +1492,7 @@
         "title": "Pie Chart with a Pattern Tile",
         "label": "Pie with a custom tiled pattern",
         "description": "Pie with a custom tiled pattern",
-        "url": "https://www.shadcn.io/examples/pie-pattern-tile",
+        "url": "http://opensource.pitant.de/charts/#example=pie-pattern-tile",
         "position": 8
       },
       {
@@ -1501,7 +1501,7 @@
         "title": "Donut Chart with Share in the Center",
         "label": "Donut with the share in the center",
         "description": "Donut with the share in the center",
-        "url": "https://www.shadcn.io/examples/pie-center-share",
+        "url": "http://opensource.pitant.de/charts/#example=pie-center-share",
         "position": 9
       },
       {
@@ -1510,7 +1510,7 @@
         "title": "Pie Chart with Hover Effects",
         "label": "Pie with hover styling",
         "description": "Pie with hover styling",
-        "url": "https://www.shadcn.io/examples/pie-hover-effects",
+        "url": "http://opensource.pitant.de/charts/#example=pie-hover-effects",
         "position": 10
       },
       {
@@ -1519,7 +1519,7 @@
         "title": "Donut Chart with Grow Hover",
         "label": "Donut segments expand on hover",
         "description": "Donut segments expand on hover",
-        "url": "https://www.shadcn.io/examples/pie-donut-grow",
+        "url": "http://opensource.pitant.de/charts/#example=pie-donut-grow",
         "position": 11
       },
       {
@@ -1528,7 +1528,7 @@
         "title": "Donut Chart with Glow",
         "label": "Donut with a glow effect",
         "description": "Donut with a glow effect",
-        "url": "https://www.shadcn.io/examples/pie-glow",
+        "url": "http://opensource.pitant.de/charts/#example=pie-glow",
         "position": 12
       },
       {
@@ -1537,7 +1537,7 @@
         "title": "Pie Chart with Gradients",
         "label": "Gradient-filled pie slices",
         "description": "Gradient-filled pie slices",
-        "url": "https://www.shadcn.io/examples/pie-gradients",
+        "url": "http://opensource.pitant.de/charts/#example=pie-gradients",
         "position": 13
       },
       {
@@ -1546,7 +1546,7 @@
         "title": "Donut Chart with Patterns",
         "label": "Patterned donut segments",
         "description": "Patterned donut segments",
-        "url": "https://www.shadcn.io/examples/pie-patterns",
+        "url": "http://opensource.pitant.de/charts/#example=pie-patterns",
         "position": 14
       }
     ]
@@ -1554,7 +1554,7 @@
   {
     "id": "ring",
     "name": "Ring chart",
-    "url": "https://www.shadcn.io/ring-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=ring",
     "examples": [
       {
         "id": "ring-default",
@@ -1562,7 +1562,7 @@
         "title": "Ring Chart",
         "label": "Standard ring",
         "description": "Standard ring",
-        "url": "https://www.shadcn.io/examples/ring-default",
+        "url": "http://opensource.pitant.de/charts/#example=ring-default",
         "position": 1
       },
       {
@@ -1571,7 +1571,7 @@
         "title": "Ring Chart with Custom Center",
         "label": "Custom content in the center",
         "description": "Custom content in the center",
-        "url": "https://www.shadcn.io/examples/ring-center-custom",
+        "url": "http://opensource.pitant.de/charts/#example=ring-center-custom",
         "position": 2
       },
       {
@@ -1580,7 +1580,7 @@
         "title": "Three-Quarter Ring Chart",
         "label": "270-degree ring",
         "description": "270-degree ring",
-        "url": "https://www.shadcn.io/examples/ring-arc",
+        "url": "http://opensource.pitant.de/charts/#example=ring-arc",
         "position": 3
       },
       {
@@ -1589,7 +1589,7 @@
         "title": "Ring Chart with Legend",
         "label": "Ring with a legend",
         "description": "Ring with a legend",
-        "url": "https://www.shadcn.io/examples/ring-legend",
+        "url": "http://opensource.pitant.de/charts/#example=ring-legend",
         "position": 4
       },
       {
@@ -1598,7 +1598,7 @@
         "title": "Ring Chart with Progress Grid",
         "label": "Progress rings with quarter guides",
         "description": "Progress rings with quarter guides",
-        "url": "https://www.shadcn.io/examples/ring-grid",
+        "url": "http://opensource.pitant.de/charts/#example=ring-grid",
         "position": 5
       },
       {
@@ -1607,7 +1607,7 @@
         "title": "Half Ring Chart",
         "label": "180-degree ring",
         "description": "180-degree ring",
-        "url": "https://www.shadcn.io/examples/ring-semicircle",
+        "url": "http://opensource.pitant.de/charts/#example=ring-semicircle",
         "position": 6
       }
     ]
@@ -1615,7 +1615,7 @@
   {
     "id": "radar",
     "name": "Radar chart",
-    "url": "https://www.shadcn.io/radar-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=radar",
     "examples": [
       {
         "id": "radar-default",
@@ -1623,7 +1623,7 @@
         "title": "Radar Chart",
         "label": "Standard radar",
         "description": "Standard radar",
-        "url": "https://www.shadcn.io/examples/radar-default",
+        "url": "http://opensource.pitant.de/charts/#example=radar-default",
         "position": 1
       },
       {
@@ -1632,7 +1632,7 @@
         "title": "Radar Chart with Controlled Hover",
         "label": "Externally controlled hover",
         "description": "Externally controlled hover",
-        "url": "https://www.shadcn.io/examples/radar-hover",
+        "url": "http://opensource.pitant.de/charts/#example=radar-hover",
         "position": 2
       },
       {
@@ -1641,7 +1641,7 @@
         "title": "Minimal Radar Chart",
         "label": "Minimal styling",
         "description": "Minimal styling",
-        "url": "https://www.shadcn.io/examples/radar-minimal",
+        "url": "http://opensource.pitant.de/charts/#example=radar-minimal",
         "position": 3
       },
       {
@@ -1650,7 +1650,7 @@
         "title": "Radar Chart with Legend",
         "label": "Series legend",
         "description": "Series legend",
-        "url": "https://www.shadcn.io/examples/radar-hover-legend",
+        "url": "http://opensource.pitant.de/charts/#example=radar-hover-legend",
         "position": 4
       },
       {
@@ -1659,7 +1659,7 @@
         "title": "Triangle Radar Chart",
         "label": "Triangular layout",
         "description": "Triangular layout",
-        "url": "https://www.shadcn.io/examples/radar-triangle",
+        "url": "http://opensource.pitant.de/charts/#example=radar-triangle",
         "position": 5
       },
       {
@@ -1668,7 +1668,7 @@
         "title": "Radar Chart with Fills Only",
         "label": "Filled shapes only",
         "description": "Filled shapes only",
-        "url": "https://www.shadcn.io/examples/radar-fill-only",
+        "url": "http://opensource.pitant.de/charts/#example=radar-fill-only",
         "position": 6
       },
       {
@@ -1677,7 +1677,7 @@
         "title": "Single Series Radar Chart",
         "label": "One series",
         "description": "One series",
-        "url": "https://www.shadcn.io/examples/radar-single",
+        "url": "http://opensource.pitant.de/charts/#example=radar-single",
         "position": 7
       },
       {
@@ -1686,7 +1686,7 @@
         "title": "Radar Chart with Three Levels",
         "label": "Three grid levels",
         "description": "Three grid levels",
-        "url": "https://www.shadcn.io/examples/radar-levels",
+        "url": "http://opensource.pitant.de/charts/#example=radar-levels",
         "position": 8
       },
       {
@@ -1695,7 +1695,7 @@
         "title": "Radar Chart without Spokes",
         "label": "Hidden spokes",
         "description": "Hidden spokes",
-        "url": "https://www.shadcn.io/examples/radar-grid-only",
+        "url": "http://opensource.pitant.de/charts/#example=radar-grid-only",
         "position": 9
       }
     ]
@@ -1703,7 +1703,7 @@
   {
     "id": "radial",
     "name": "Radial chart",
-    "url": "https://www.shadcn.io/radial-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=radial",
     "examples": [
       {
         "id": "radial-default",
@@ -1711,7 +1711,7 @@
         "title": "Radial Chart",
         "label": "Standard radial chart",
         "description": "Standard radial chart",
-        "url": "https://www.shadcn.io/examples/radial-default",
+        "url": "http://opensource.pitant.de/charts/#example=radial-default",
         "position": 1
       },
       {
@@ -1720,7 +1720,7 @@
         "title": "Radial Chart with Patterned Dots",
         "label": "Patterned dot plot",
         "description": "Patterned dot plot",
-        "url": "https://www.shadcn.io/examples/radial-patterned-dots",
+        "url": "http://opensource.pitant.de/charts/#example=radial-patterned-dots",
         "position": 2
       },
       {
@@ -1729,7 +1729,7 @@
         "title": "Radial Line Chart",
         "label": "Circular line plot",
         "description": "Circular line plot",
-        "url": "https://www.shadcn.io/examples/radial-line",
+        "url": "http://opensource.pitant.de/charts/#example=radial-line",
         "position": 3
       },
       {
@@ -1738,7 +1738,7 @@
         "title": "Radial Area Chart of a Year",
         "label": "Yearly radial area plot",
         "description": "Yearly radial area plot",
-        "url": "https://www.shadcn.io/examples/radial-temperature",
+        "url": "http://opensource.pitant.de/charts/#example=radial-temperature",
         "position": 4
       },
       {
@@ -1747,7 +1747,7 @@
         "title": "Radial Stacked Bar Chart by State",
         "label": "Stacked radial bars by state",
         "description": "Stacked radial bars by state",
-        "url": "https://www.shadcn.io/examples/radial-population",
+        "url": "http://opensource.pitant.de/charts/#example=radial-population",
         "position": 5
       },
       {
@@ -1756,7 +1756,7 @@
         "title": "Radial Ring Bars on a Semicircle",
         "label": "Semicircular ring bars",
         "description": "Semicircular ring bars",
-        "url": "https://www.shadcn.io/examples/radial-semicircle",
+        "url": "http://opensource.pitant.de/charts/#example=radial-semicircle",
         "position": 6
       },
       {
@@ -1765,7 +1765,7 @@
         "title": "Radial Stacked Bar Chart",
         "label": "Stacked radial bars",
         "description": "Stacked radial bars",
-        "url": "https://www.shadcn.io/examples/radial-bar-clock",
+        "url": "http://opensource.pitant.de/charts/#example=radial-bar-clock",
         "position": 7
       },
       {
@@ -1774,7 +1774,7 @@
         "title": "Radial Stacked Area Chart",
         "label": "Stacked radial areas",
         "description": "Stacked radial areas",
-        "url": "https://www.shadcn.io/examples/radial-area-clock",
+        "url": "http://opensource.pitant.de/charts/#example=radial-area-clock",
         "position": 8
       },
       {
@@ -1783,7 +1783,7 @@
         "title": "Radial Activity Card",
         "label": "Activity card",
         "description": "Activity card",
-        "url": "https://www.shadcn.io/examples/radial-activity-card",
+        "url": "http://opensource.pitant.de/charts/#example=radial-activity-card",
         "position": 9
       },
       {
@@ -1792,7 +1792,7 @@
         "title": "Radial Storage Card",
         "label": "Storage card",
         "description": "Storage card",
-        "url": "https://www.shadcn.io/examples/radial-storage-card",
+        "url": "http://opensource.pitant.de/charts/#example=radial-storage-card",
         "position": 10
       },
       {
@@ -1801,7 +1801,7 @@
         "title": "Radial Temperature Card",
         "label": "Temperature card",
         "description": "Temperature card",
-        "url": "https://www.shadcn.io/examples/radial-seasonal-card",
+        "url": "http://opensource.pitant.de/charts/#example=radial-seasonal-card",
         "position": 11
       }
     ]
@@ -1809,7 +1809,7 @@
   {
     "id": "gauge",
     "name": "Gauge",
-    "url": "https://www.shadcn.io/gauge-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=gauge",
     "examples": [
       {
         "id": "gauge-default",
@@ -1817,7 +1817,7 @@
         "title": "Gauge",
         "label": "Standard gauge",
         "description": "Standard gauge",
-        "url": "https://www.shadcn.io/examples/gauge-default",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-default",
         "position": 1
       },
       {
@@ -1826,7 +1826,7 @@
         "title": "Semicircle Gauge",
         "label": "Semicircular gauge",
         "description": "Semicircular gauge",
-        "url": "https://www.shadcn.io/examples/gauge-semicircle",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-semicircle",
         "position": 2
       },
       {
@@ -1835,7 +1835,7 @@
         "title": "Linear Gauge",
         "label": "Horizontal linear gauge",
         "description": "Horizontal linear gauge",
-        "url": "https://www.shadcn.io/examples/gauge-linear",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-linear",
         "position": 3
       },
       {
@@ -1844,7 +1844,7 @@
         "title": "Linear Gauge with Gradient",
         "label": "Gradient-filled linear gauge",
         "description": "Gradient-filled linear gauge",
-        "url": "https://www.shadcn.io/examples/gauge-linear-gradient",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-linear-gradient",
         "position": 4
       },
       {
@@ -1853,7 +1853,7 @@
         "title": "Fixed-Size Gauges",
         "label": "Gauges at fixed sizes",
         "description": "Gauges at fixed sizes",
-        "url": "https://www.shadcn.io/examples/gauge-fixed",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-fixed",
         "position": 5
       },
       {
@@ -1862,7 +1862,7 @@
         "title": "Interactive Gauge",
         "label": "Interactive gauge",
         "description": "Interactive gauge",
-        "url": "https://www.shadcn.io/examples/gauge-interactive",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-interactive",
         "position": 6
       },
       {
@@ -1871,7 +1871,7 @@
         "title": "Dial Gauge",
         "label": "Dial-style gauge",
         "description": "Dial-style gauge",
-        "url": "https://www.shadcn.io/examples/gauge-dial",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-dial",
         "position": 7
       },
       {
@@ -1880,7 +1880,7 @@
         "title": "Gauge Arc Styles",
         "label": "Alternative arc styles",
         "description": "Alternative arc styles",
-        "url": "https://www.shadcn.io/examples/gauge-arc-styles",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-arc-styles",
         "position": 8
       },
       {
@@ -1889,7 +1889,7 @@
         "title": "Gauge with Ruler",
         "label": "Ruler markings",
         "description": "Ruler markings",
-        "url": "https://www.shadcn.io/examples/gauge-ruler",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-ruler",
         "position": 9
       },
       {
@@ -1898,7 +1898,7 @@
         "title": "Gauge Needles",
         "label": "Needle styles",
         "description": "Needle styles",
-        "url": "https://www.shadcn.io/examples/gauge-needles",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-needles",
         "position": 10
       },
       {
@@ -1907,7 +1907,7 @@
         "title": "Gauge Needle Tips",
         "label": "Needle-tip styles",
         "description": "Needle-tip styles",
-        "url": "https://www.shadcn.io/examples/gauge-needle-tips",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-needle-tips",
         "position": 11
       },
       {
@@ -1916,7 +1916,7 @@
         "title": "Gauge with Zones",
         "label": "Value zones",
         "description": "Value zones",
-        "url": "https://www.shadcn.io/examples/gauge-zones",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-zones",
         "position": 12
       },
       {
@@ -1925,7 +1925,7 @@
         "title": "Gauge Sectors",
         "label": "Sector styling",
         "description": "Sector styling",
-        "url": "https://www.shadcn.io/examples/gauge-sectors",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-sectors",
         "position": 13
       },
       {
@@ -1934,7 +1934,7 @@
         "title": "Gauge with Progress Ring",
         "label": "Progress ring",
         "description": "Progress ring",
-        "url": "https://www.shadcn.io/examples/gauge-progress-ring",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-progress-ring",
         "position": 14
       },
       {
@@ -1943,7 +1943,7 @@
         "title": "Gauge with Dots",
         "label": "Progress shown with rings of dots",
         "description": "Progress shown with rings of dots",
-        "url": "https://www.shadcn.io/examples/gauge-dots",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-dots",
         "position": 15
       },
       {
@@ -1952,7 +1952,7 @@
         "title": "Gauge with Glow",
         "label": "Glow styling",
         "description": "Glow styling",
-        "url": "https://www.shadcn.io/examples/gauge-glow",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-glow",
         "position": 16
       },
       {
@@ -1961,7 +1961,7 @@
         "title": "Gauge with Center Disc",
         "label": "Central disc",
         "description": "Central disc",
-        "url": "https://www.shadcn.io/examples/gauge-center-disc",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-center-disc",
         "position": 17
       },
       {
@@ -1970,7 +1970,7 @@
         "title": "Fan Duty Gauge",
         "label": "Fan duty metric",
         "description": "Fan duty metric",
-        "url": "https://www.shadcn.io/examples/gauge-fan-duty",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-fan-duty",
         "position": 18
       },
       {
@@ -1979,7 +1979,7 @@
         "title": "Speedometer Gauge",
         "label": "Speedometer",
         "description": "Speedometer",
-        "url": "https://www.shadcn.io/examples/gauge-speedometer",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-speedometer",
         "position": 19
       },
       {
@@ -1988,7 +1988,7 @@
         "title": "Throughput Gauge",
         "label": "Throughput metric",
         "description": "Throughput metric",
-        "url": "https://www.shadcn.io/examples/gauge-throughput",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-throughput",
         "position": 20
       },
       {
@@ -1997,7 +1997,7 @@
         "title": "Live Load Gauge",
         "label": "Live system load",
         "description": "Live system load",
-        "url": "https://www.shadcn.io/examples/gauge-live-load",
+        "url": "http://opensource.pitant.de/charts/#example=gauge-live-load",
         "position": 21
       }
     ]
@@ -2005,7 +2005,7 @@
   {
     "id": "funnel",
     "name": "Funnel chart",
-    "url": "https://www.shadcn.io/funnel-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=funnel",
     "examples": [
       {
         "id": "funnel-default",
@@ -2013,7 +2013,7 @@
         "title": "Funnel Chart",
         "label": "Standard funnel",
         "description": "Standard funnel",
-        "url": "https://www.shadcn.io/examples/funnel-default",
+        "url": "http://opensource.pitant.de/charts/#example=funnel-default",
         "position": 1
       },
       {
@@ -2022,7 +2022,7 @@
         "title": "Vertical Funnel Chart",
         "label": "Vertical layout",
         "description": "Vertical layout",
-        "url": "https://www.shadcn.io/examples/funnel-vertical",
+        "url": "http://opensource.pitant.de/charts/#example=funnel-vertical",
         "position": 2
       },
       {
@@ -2031,7 +2031,7 @@
         "title": "Funnel Chart with Custom Colors",
         "label": "Custom stage colors",
         "description": "Custom stage colors",
-        "url": "https://www.shadcn.io/examples/funnel-colors",
+        "url": "http://opensource.pitant.de/charts/#example=funnel-colors",
         "position": 3
       },
       {
@@ -2040,7 +2040,7 @@
         "title": "Funnel Chart with a Pattern",
         "label": "Pattern fill",
         "description": "Pattern fill",
-        "url": "https://www.shadcn.io/examples/funnel-pattern",
+        "url": "http://opensource.pitant.de/charts/#example=funnel-pattern",
         "position": 4
       },
       {
@@ -2049,7 +2049,7 @@
         "title": "Interactive Funnel Chart",
         "label": "Interactive stages",
         "description": "Interactive stages",
-        "url": "https://www.shadcn.io/examples/funnel-interactive",
+        "url": "http://opensource.pitant.de/charts/#example=funnel-interactive",
         "position": 5
       },
       {
@@ -2058,7 +2058,7 @@
         "title": "Funnel Chart with Legend",
         "label": "Stage legend",
         "description": "Stage legend",
-        "url": "https://www.shadcn.io/examples/funnel-legend",
+        "url": "http://opensource.pitant.de/charts/#example=funnel-legend",
         "position": 6
       },
       {
@@ -2067,7 +2067,7 @@
         "title": "Funnel Chart with Straight Edges",
         "label": "Straight edges",
         "description": "Straight edges",
-        "url": "https://www.shadcn.io/examples/funnel-straight",
+        "url": "http://opensource.pitant.de/charts/#example=funnel-straight",
         "position": 7
       },
       {
@@ -2076,7 +2076,7 @@
         "title": "Funnel Chart with Gradients",
         "label": "Gradient fills",
         "description": "Gradient fills",
-        "url": "https://www.shadcn.io/examples/funnel-gradient",
+        "url": "http://opensource.pitant.de/charts/#example=funnel-gradient",
         "position": 8
       },
       {
@@ -2085,7 +2085,7 @@
         "title": "Funnel Chart with Grouped Labels",
         "label": "Grouped stage labels",
         "description": "Grouped stage labels",
-        "url": "https://www.shadcn.io/examples/funnel-grouped",
+        "url": "http://opensource.pitant.de/charts/#example=funnel-grouped",
         "position": 9
       },
       {
@@ -2094,7 +2094,7 @@
         "title": "Funnel Chart with Grid",
         "label": "Background grid",
         "description": "Background grid",
-        "url": "https://www.shadcn.io/examples/funnel-grid",
+        "url": "http://opensource.pitant.de/charts/#example=funnel-grid",
         "position": 10
       },
       {
@@ -2103,7 +2103,7 @@
         "title": "Vertical Curved Funnel Chart",
         "label": "Vertical layout with curved edges",
         "description": "Vertical layout with curved edges",
-        "url": "https://www.shadcn.io/examples/funnel-vertical-curved",
+        "url": "http://opensource.pitant.de/charts/#example=funnel-vertical-curved",
         "position": 11
       }
     ]
@@ -2111,7 +2111,7 @@
   {
     "id": "heatmap",
     "name": "Heatmap",
-    "url": "https://www.shadcn.io/heatmap-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=heatmap",
     "examples": [
       {
         "id": "heatmap-default",
@@ -2119,7 +2119,7 @@
         "title": "Contribution Heatmap",
         "label": "Contribution calendar",
         "description": "Contribution calendar",
-        "url": "https://www.shadcn.io/examples/heatmap-default",
+        "url": "http://opensource.pitant.de/charts/#example=heatmap-default",
         "position": 1
       },
       {
@@ -2128,7 +2128,7 @@
         "title": "Heatmap with a Striped Level",
         "label": "Striped intensity level",
         "description": "Striped intensity level",
-        "url": "https://www.shadcn.io/examples/heatmap-patterns",
+        "url": "http://opensource.pitant.de/charts/#example=heatmap-patterns",
         "position": 2
       },
       {
@@ -2137,7 +2137,7 @@
         "title": "Heatmap with Faded Weekends",
         "label": "Muted weekends",
         "description": "Muted weekends",
-        "url": "https://www.shadcn.io/examples/heatmap-weekdays",
+        "url": "http://opensource.pitant.de/charts/#example=heatmap-weekdays",
         "position": 3
       },
       {
@@ -2146,7 +2146,7 @@
         "title": "Heatmap Split by Quarter",
         "label": "Quarterly sections",
         "description": "Quarterly sections",
-        "url": "https://www.shadcn.io/examples/heatmap-quarters",
+        "url": "http://opensource.pitant.de/charts/#example=heatmap-quarters",
         "position": 4
       },
       {
@@ -2155,7 +2155,7 @@
         "title": "Heatmap with a Gradient Legend",
         "label": "Continuous color legend",
         "description": "Continuous color legend",
-        "url": "https://www.shadcn.io/examples/heatmap-gradient-legend",
+        "url": "http://opensource.pitant.de/charts/#example=heatmap-gradient-legend",
         "position": 5
       },
       {
@@ -2164,7 +2164,7 @@
         "title": "Dot Heatmap",
         "label": "Dot markers",
         "description": "Dot markers",
-        "url": "https://www.shadcn.io/examples/heatmap-dots",
+        "url": "http://opensource.pitant.de/charts/#example=heatmap-dots",
         "position": 6
       },
       {
@@ -2173,7 +2173,7 @@
         "title": "Heatmap with Solid Dividers",
         "label": "Solid quarter dividers",
         "description": "Solid quarter dividers",
-        "url": "https://www.shadcn.io/examples/heatmap-separators-solid",
+        "url": "http://opensource.pitant.de/charts/#example=heatmap-separators-solid",
         "position": 7
       },
       {
@@ -2182,7 +2182,7 @@
         "title": "Heatmap with Dashed Dividers",
         "label": "Dashed quarter dividers",
         "description": "Dashed quarter dividers",
-        "url": "https://www.shadcn.io/examples/heatmap-separators-dashed",
+        "url": "http://opensource.pitant.de/charts/#example=heatmap-separators-dashed",
         "position": 8
       },
       {
@@ -2191,7 +2191,7 @@
         "title": "Heatmap That Lifts on Hover",
         "label": "Cells enlarge on hover",
         "description": "Cells enlarge on hover",
-        "url": "https://www.shadcn.io/examples/heatmap-active-scale",
+        "url": "http://opensource.pitant.de/charts/#example=heatmap-active-scale",
         "position": 9
       },
       {
@@ -2200,7 +2200,7 @@
         "title": "Scrolling Heatmap",
         "label": "Scrollable grid",
         "description": "Scrollable grid",
-        "url": "https://www.shadcn.io/examples/heatmap-scroll",
+        "url": "http://opensource.pitant.de/charts/#example=heatmap-scroll",
         "position": 10
       },
       {
@@ -2209,7 +2209,7 @@
         "title": "Heatmap Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/heatmap-loading",
+        "url": "http://opensource.pitant.de/charts/#example=heatmap-loading",
         "position": 11
       }
     ]
@@ -2217,7 +2217,7 @@
   {
     "id": "sunburst",
     "name": "Sunburst chart",
-    "url": "https://www.shadcn.io/sunburst-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=sunburst",
     "examples": [
       {
         "id": "sunburst-default",
@@ -2225,7 +2225,7 @@
         "title": "Sunburst Chart",
         "label": "Standard sunburst",
         "description": "Standard sunburst",
-        "url": "https://www.shadcn.io/examples/sunburst-default",
+        "url": "http://opensource.pitant.de/charts/#example=sunburst-default",
         "position": 1
       },
       {
@@ -2234,7 +2234,7 @@
         "title": "Sunburst Chart with Breadcrumb",
         "label": "Breadcrumb trail",
         "description": "Breadcrumb trail",
-        "url": "https://www.shadcn.io/examples/sunburst-breadcrumb",
+        "url": "http://opensource.pitant.de/charts/#example=sunburst-breadcrumb",
         "position": 2
       },
       {
@@ -2243,7 +2243,7 @@
         "title": "Sunburst Chart with Segment Colors",
         "label": "Custom segment colors",
         "description": "Custom segment colors",
-        "url": "https://www.shadcn.io/examples/sunburst-segment-colors",
+        "url": "http://opensource.pitant.de/charts/#example=sunburst-segment-colors",
         "position": 3
       },
       {
@@ -2252,7 +2252,7 @@
         "title": "Sunburst Chart with Patterns",
         "label": "Patterned segments",
         "description": "Patterned segments",
-        "url": "https://www.shadcn.io/examples/sunburst-patterns",
+        "url": "http://opensource.pitant.de/charts/#example=sunburst-patterns",
         "position": 4
       },
       {
@@ -2261,7 +2261,7 @@
         "title": "Sunburst Chart with Legend",
         "label": "Category legend",
         "description": "Category legend",
-        "url": "https://www.shadcn.io/examples/sunburst-legend",
+        "url": "http://opensource.pitant.de/charts/#example=sunburst-legend",
         "position": 5
       },
       {
@@ -2270,7 +2270,7 @@
         "title": "Sunburst Chart with Custom Hint",
         "label": "Custom segment hint",
         "description": "Custom segment hint",
-        "url": "https://www.shadcn.io/examples/sunburst-custom-hint",
+        "url": "http://opensource.pitant.de/charts/#example=sunburst-custom-hint",
         "position": 6
       }
     ]
@@ -2278,7 +2278,7 @@
   {
     "id": "sankey",
     "name": "Sankey diagram",
-    "url": "https://www.shadcn.io/sankey-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=sankey",
     "examples": [
       {
         "id": "sankey-default",
@@ -2286,7 +2286,7 @@
         "title": "Sankey of Site Traffic",
         "label": "Website traffic flows",
         "description": "Website traffic flows",
-        "url": "https://www.shadcn.io/examples/sankey-default",
+        "url": "http://opensource.pitant.de/charts/#example=sankey-default",
         "position": 1
       },
       {
@@ -2295,7 +2295,7 @@
         "title": "Sankey with Vertical Labels",
         "label": "Vertical labels",
         "description": "Vertical labels",
-        "url": "https://www.shadcn.io/examples/sankey-vertical-labels",
+        "url": "http://opensource.pitant.de/charts/#example=sankey-vertical-labels",
         "position": 2
       },
       {
@@ -2304,7 +2304,7 @@
         "title": "Sankey Colored by Stage",
         "label": "Flow colors by stage",
         "description": "Flow colors by stage",
-        "url": "https://www.shadcn.io/examples/sankey-category-colors",
+        "url": "http://opensource.pitant.de/charts/#example=sankey-category-colors",
         "position": 3
       },
       {
@@ -2313,7 +2313,7 @@
         "title": "Sankey with Solid Links",
         "label": "Solid-color links",
         "description": "Solid-color links",
-        "url": "https://www.shadcn.io/examples/sankey-solid-links",
+        "url": "http://opensource.pitant.de/charts/#example=sankey-solid-links",
         "position": 4
       },
       {
@@ -2322,7 +2322,7 @@
         "title": "Single-Color Sankey",
         "label": "Single-color palette",
         "description": "Single-color palette",
-        "url": "https://www.shadcn.io/examples/sankey-single-color",
+        "url": "http://opensource.pitant.de/charts/#example=sankey-single-color",
         "position": 5
       },
       {
@@ -2331,7 +2331,7 @@
         "title": "Sankey without Labels",
         "label": "Hidden labels",
         "description": "Hidden labels",
-        "url": "https://www.shadcn.io/examples/sankey-no-labels",
+        "url": "http://opensource.pitant.de/charts/#example=sankey-no-labels",
         "position": 6
       },
       {
@@ -2340,7 +2340,7 @@
         "title": "Sankey with Striped Flows",
         "label": "Striped flow links",
         "description": "Striped flow links",
-        "url": "https://www.shadcn.io/examples/sankey-pattern-lines",
+        "url": "http://opensource.pitant.de/charts/#example=sankey-pattern-lines",
         "position": 7
       },
       {
@@ -2349,7 +2349,7 @@
         "title": "Sankey with a Legend",
         "label": "Interactive flow legend",
         "description": "Interactive flow legend",
-        "url": "https://www.shadcn.io/examples/sankey-legend",
+        "url": "http://opensource.pitant.de/charts/#example=sankey-legend",
         "position": 8
       },
       {
@@ -2358,7 +2358,7 @@
         "title": "Sankey with Hatched Flows",
         "label": "Hatched flow links",
         "description": "Hatched flow links",
-        "url": "https://www.shadcn.io/examples/sankey-patterns",
+        "url": "http://opensource.pitant.de/charts/#example=sankey-patterns",
         "position": 9
       }
     ]
@@ -2366,7 +2366,7 @@
   {
     "id": "treemap",
     "name": "Treemap",
-    "url": "https://www.shadcn.io/treemap-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=treemap",
     "examples": [
       {
         "id": "treemap-default",
@@ -2374,7 +2374,7 @@
         "title": "Cloud Spend Treemap",
         "label": "Cloud spending breakdown",
         "description": "Cloud spending breakdown",
-        "url": "https://www.shadcn.io/examples/treemap-default",
+        "url": "http://opensource.pitant.de/charts/#example=treemap-default",
         "position": 1
       },
       {
@@ -2383,7 +2383,7 @@
         "title": "Treemap with Drill-Down",
         "label": "Hierarchy drill-down",
         "description": "Hierarchy drill-down",
-        "url": "https://www.shadcn.io/examples/treemap-drilldown",
+        "url": "http://opensource.pitant.de/charts/#example=treemap-drilldown",
         "position": 2
       },
       {
@@ -2392,7 +2392,7 @@
         "title": "Portfolio Treemap",
         "label": "Portfolio breakdown",
         "description": "Portfolio breakdown",
-        "url": "https://www.shadcn.io/examples/treemap-portfolio",
+        "url": "http://opensource.pitant.de/charts/#example=treemap-portfolio",
         "position": 3
       },
       {
@@ -2401,7 +2401,7 @@
         "title": "Treemap Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/treemap-loading",
+        "url": "http://opensource.pitant.de/charts/#example=treemap-loading",
         "position": 4
       }
     ]
@@ -2409,7 +2409,7 @@
   {
     "id": "tree",
     "name": "Tree chart",
-    "url": "https://www.shadcn.io/tree-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=tree",
     "examples": [
       {
         "id": "tree-default",
@@ -2417,7 +2417,7 @@
         "title": "Org Chart",
         "label": "Organizational chart",
         "description": "Organizational chart",
-        "url": "https://www.shadcn.io/examples/tree-default",
+        "url": "http://opensource.pitant.de/charts/#example=tree-default",
         "position": 1
       },
       {
@@ -2426,7 +2426,7 @@
         "title": "Radial Dendrogram",
         "label": "Radial dendrogram",
         "description": "Radial dendrogram",
-        "url": "https://www.shadcn.io/examples/tree-radial",
+        "url": "http://opensource.pitant.de/charts/#example=tree-radial",
         "position": 2
       },
       {
@@ -2435,7 +2435,7 @@
         "title": "Vertical Site Map",
         "label": "Vertical website hierarchy",
         "description": "Vertical website hierarchy",
-        "url": "https://www.shadcn.io/examples/tree-vertical",
+        "url": "http://opensource.pitant.de/charts/#example=tree-vertical",
         "position": 3
       },
       {
@@ -2444,7 +2444,7 @@
         "title": "Tree Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/tree-loading",
+        "url": "http://opensource.pitant.de/charts/#example=tree-loading",
         "position": 4
       }
     ]
@@ -2452,7 +2452,7 @@
   {
     "id": "network",
     "name": "Network chart",
-    "url": "https://www.shadcn.io/network-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=network",
     "examples": [
       {
         "id": "network-default",
@@ -2460,7 +2460,7 @@
         "title": "Service Dependency Graph",
         "label": "Service dependencies",
         "description": "Service dependencies",
-        "url": "https://www.shadcn.io/examples/network-default",
+        "url": "http://opensource.pitant.de/charts/#example=network-default",
         "position": 1
       },
       {
@@ -2469,7 +2469,7 @@
         "title": "Network with a Team Legend",
         "label": "Team legend",
         "description": "Team legend",
-        "url": "https://www.shadcn.io/examples/network-legend",
+        "url": "http://opensource.pitant.de/charts/#example=network-legend",
         "position": 2
       },
       {
@@ -2478,7 +2478,7 @@
         "title": "Network Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/network-loading",
+        "url": "http://opensource.pitant.de/charts/#example=network-loading",
         "position": 3
       }
     ]
@@ -2486,7 +2486,7 @@
   {
     "id": "waffle",
     "name": "Waffle chart",
-    "url": "https://www.shadcn.io/waffle-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=waffle",
     "examples": [
       {
         "id": "waffle-default",
@@ -2494,7 +2494,7 @@
         "title": "Browser Share Waffle",
         "label": "Browser market share",
         "description": "Browser market share",
-        "url": "https://www.shadcn.io/examples/waffle-default",
+        "url": "http://opensource.pitant.de/charts/#example=waffle-default",
         "position": 1
       },
       {
@@ -2503,7 +2503,7 @@
         "title": "Waffle as a Progress Bar",
         "label": "Waffle progress indicator",
         "description": "Waffle progress indicator",
-        "url": "https://www.shadcn.io/examples/waffle-progress",
+        "url": "http://opensource.pitant.de/charts/#example=waffle-progress",
         "position": 2
       },
       {
@@ -2512,7 +2512,7 @@
         "title": "Waffle Filled by Column",
         "label": "Column-first fill",
         "description": "Column-first fill",
-        "url": "https://www.shadcn.io/examples/waffle-columns",
+        "url": "http://opensource.pitant.de/charts/#example=waffle-columns",
         "position": 3
       },
       {
@@ -2521,7 +2521,7 @@
         "title": "Waffle Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/waffle-loading",
+        "url": "http://opensource.pitant.de/charts/#example=waffle-loading",
         "position": 4
       }
     ]
@@ -2529,7 +2529,7 @@
   {
     "id": "marimekko",
     "name": "Marimekko chart",
-    "url": "https://www.shadcn.io/marimekko-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=marimekko",
     "examples": [
       {
         "id": "marimekko-default",
@@ -2537,7 +2537,7 @@
         "title": "Revenue Marimekko",
         "label": "Revenue breakdown",
         "description": "Revenue breakdown",
-        "url": "https://www.shadcn.io/examples/marimekko-default",
+        "url": "http://opensource.pitant.de/charts/#example=marimekko-default",
         "position": 1
       },
       {
@@ -2546,7 +2546,7 @@
         "title": "Marimekko with a Legend",
         "label": "Category legend",
         "description": "Category legend",
-        "url": "https://www.shadcn.io/examples/marimekko-legend",
+        "url": "http://opensource.pitant.de/charts/#example=marimekko-legend",
         "position": 2
       },
       {
@@ -2555,7 +2555,7 @@
         "title": "Marimekko Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/marimekko-loading",
+        "url": "http://opensource.pitant.de/charts/#example=marimekko-loading",
         "position": 3
       }
     ]
@@ -2563,7 +2563,7 @@
   {
     "id": "stream",
     "name": "Stream chart",
-    "url": "https://www.shadcn.io/stream-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=stream",
     "examples": [
       {
         "id": "stream-default",
@@ -2571,7 +2571,7 @@
         "title": "Stream Chart",
         "label": "Standard streamgraph",
         "description": "Standard streamgraph",
-        "url": "https://www.shadcn.io/examples/stream-default",
+        "url": "http://opensource.pitant.de/charts/#example=stream-default",
         "position": 1
       },
       {
@@ -2580,7 +2580,7 @@
         "title": "Normalized Stream Chart",
         "label": "Normalized streamgraph",
         "description": "Normalized streamgraph",
-        "url": "https://www.shadcn.io/examples/stream-expand",
+        "url": "http://opensource.pitant.de/charts/#example=stream-expand",
         "position": 2
       },
       {
@@ -2589,7 +2589,7 @@
         "title": "Stream Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/stream-loading",
+        "url": "http://opensource.pitant.de/charts/#example=stream-loading",
         "position": 3
       }
     ]
@@ -2597,7 +2597,7 @@
   {
     "id": "diverging",
     "name": "Diverging bar chart",
-    "url": "https://www.shadcn.io/diverging-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=diverging",
     "examples": [
       {
         "id": "diverging-default",
@@ -2605,7 +2605,7 @@
         "title": "Diverging Bar Chart",
         "label": "Standard diverging bars",
         "description": "Standard diverging bars",
-        "url": "https://www.shadcn.io/examples/diverging-default",
+        "url": "http://opensource.pitant.de/charts/#example=diverging-default",
         "position": 1
       },
       {
@@ -2614,7 +2614,7 @@
         "title": "Diverging Bars with a Legend",
         "label": "Diverging bars with series legend",
         "description": "Diverging bars with series legend",
-        "url": "https://www.shadcn.io/examples/diverging-legend",
+        "url": "http://opensource.pitant.de/charts/#example=diverging-legend",
         "position": 2
       },
       {
@@ -2623,7 +2623,7 @@
         "title": "Diverging Bar Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/diverging-loading",
+        "url": "http://opensource.pitant.de/charts/#example=diverging-loading",
         "position": 3
       }
     ]
@@ -2631,7 +2631,7 @@
   {
     "id": "choropleth",
     "name": "Choropleth map",
-    "url": "https://www.shadcn.io/choropleth-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=choropleth",
     "examples": [
       {
         "id": "choropleth-default",
@@ -2639,7 +2639,7 @@
         "title": "World Choropleth",
         "label": "World choropleth",
         "description": "World choropleth",
-        "url": "https://www.shadcn.io/examples/choropleth-default",
+        "url": "http://opensource.pitant.de/charts/#example=choropleth-default",
         "position": 1
       },
       {
@@ -2648,7 +2648,7 @@
         "title": "Map Shaded by Value",
         "label": "Regions shaded by value",
         "description": "Regions shaded by value",
-        "url": "https://www.shadcn.io/examples/choropleth-values",
+        "url": "http://opensource.pitant.de/charts/#example=choropleth-values",
         "position": 2
       },
       {
@@ -2657,7 +2657,7 @@
         "title": "Map with a Graticule",
         "label": "Latitude and longitude grid",
         "description": "Latitude and longitude grid",
-        "url": "https://www.shadcn.io/examples/choropleth-graticule",
+        "url": "http://opensource.pitant.de/charts/#example=choropleth-graticule",
         "position": 3
       },
       {
@@ -2666,7 +2666,7 @@
         "title": "Map with Striped Countries",
         "label": "Striped country fills",
         "description": "Striped country fills",
-        "url": "https://www.shadcn.io/examples/choropleth-patterns",
+        "url": "http://opensource.pitant.de/charts/#example=choropleth-patterns",
         "position": 4
       },
       {
@@ -2675,7 +2675,7 @@
         "title": "Click-to-Zoom Map",
         "label": "Click to zoom",
         "description": "Click to zoom",
-        "url": "https://www.shadcn.io/examples/choropleth-click-to-zoom",
+        "url": "http://opensource.pitant.de/charts/#example=choropleth-click-to-zoom",
         "position": 5
       },
       {
@@ -2684,7 +2684,7 @@
         "title": "Dot-Grid Map",
         "label": "World map made of dots",
         "description": "World map made of dots",
-        "url": "https://www.shadcn.io/examples/choropleth-dot-grid",
+        "url": "http://opensource.pitant.de/charts/#example=choropleth-dot-grid",
         "position": 6
       },
       {
@@ -2693,7 +2693,7 @@
         "title": "Map with a Pointer Camera",
         "label": "Pointer-controlled camera",
         "description": "Pointer-controlled camera",
-        "url": "https://www.shadcn.io/examples/choropleth-pointer-camera",
+        "url": "http://opensource.pitant.de/charts/#example=choropleth-pointer-camera",
         "position": 7
       },
       {
@@ -2702,7 +2702,7 @@
         "title": "Map with Markers",
         "label": "Location markers",
         "description": "Location markers",
-        "url": "https://www.shadcn.io/examples/choropleth-markers",
+        "url": "http://opensource.pitant.de/charts/#example=choropleth-markers",
         "position": 8
       },
       {
@@ -2711,7 +2711,7 @@
         "title": "Map over a Pattern",
         "label": "Patterned background",
         "description": "Patterned background",
-        "url": "https://www.shadcn.io/examples/choropleth-background",
+        "url": "http://opensource.pitant.de/charts/#example=choropleth-background",
         "position": 9
       }
     ]
@@ -2719,7 +2719,7 @@
   {
     "id": "histogram",
     "name": "Histogram",
-    "url": "https://www.shadcn.io/histogram-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=histogram",
     "examples": [
       {
         "id": "histogram-default",
@@ -2727,7 +2727,7 @@
         "title": "Histogram",
         "label": "Standard histogram",
         "description": "Standard histogram",
-        "url": "https://www.shadcn.io/examples/histogram-default",
+        "url": "http://opensource.pitant.de/charts/#example=histogram-default",
         "position": 1
       },
       {
@@ -2736,7 +2736,7 @@
         "title": "Overlapping Histograms",
         "label": "Overlaid distributions",
         "description": "Overlaid distributions",
-        "url": "https://www.shadcn.io/examples/histogram-overlay",
+        "url": "http://opensource.pitant.de/charts/#example=histogram-overlay",
         "position": 2
       },
       {
@@ -2745,7 +2745,7 @@
         "title": "Stacked Histogram",
         "label": "Stacked distributions",
         "description": "Stacked distributions",
-        "url": "https://www.shadcn.io/examples/histogram-stacked",
+        "url": "http://opensource.pitant.de/charts/#example=histogram-stacked",
         "position": 3
       },
       {
@@ -2754,7 +2754,7 @@
         "title": "Histogram Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/histogram-loading",
+        "url": "http://opensource.pitant.de/charts/#example=histogram-loading",
         "position": 4
       }
     ]
@@ -2762,7 +2762,7 @@
   {
     "id": "ridgeline",
     "name": "Ridgeline plot",
-    "url": "https://www.shadcn.io/ridgeline-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=ridgeline",
     "examples": [
       {
         "id": "ridgeline-default",
@@ -2770,7 +2770,7 @@
         "title": "Ridgeline Plot",
         "label": "Standard ridgeline",
         "description": "Standard ridgeline",
-        "url": "https://www.shadcn.io/examples/ridgeline-default",
+        "url": "http://opensource.pitant.de/charts/#example=ridgeline-default",
         "position": 1
       },
       {
@@ -2779,7 +2779,7 @@
         "title": "Ridgeline with a Color per Row",
         "label": "Distinct color per row",
         "description": "Distinct color per row",
-        "url": "https://www.shadcn.io/examples/ridgeline-colors",
+        "url": "http://opensource.pitant.de/charts/#example=ridgeline-colors",
         "position": 2
       },
       {
@@ -2788,7 +2788,7 @@
         "title": "Ridgeline Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/ridgeline-loading",
+        "url": "http://opensource.pitant.de/charts/#example=ridgeline-loading",
         "position": 3
       }
     ]
@@ -2796,7 +2796,7 @@
   {
     "id": "ecdf",
     "name": "ECDF chart",
-    "url": "https://www.shadcn.io/ecdf-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=ecdf",
     "examples": [
       {
         "id": "ecdf-default",
@@ -2804,7 +2804,7 @@
         "title": "ECDF Chart",
         "label": "Standard empirical cumulative distribution",
         "description": "Standard empirical cumulative distribution",
-        "url": "https://www.shadcn.io/examples/ecdf-default",
+        "url": "http://opensource.pitant.de/charts/#example=ecdf-default",
         "position": 1
       },
       {
@@ -2813,7 +2813,7 @@
         "title": "ECDF Comparing Two Releases",
         "label": "Comparison of two releases",
         "description": "Comparison of two releases",
-        "url": "https://www.shadcn.io/examples/ecdf-compare",
+        "url": "http://opensource.pitant.de/charts/#example=ecdf-compare",
         "position": 2
       },
       {
@@ -2822,7 +2822,7 @@
         "title": "ECDF Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/ecdf-loading",
+        "url": "http://opensource.pitant.de/charts/#example=ecdf-loading",
         "position": 3
       }
     ]
@@ -2830,7 +2830,7 @@
   {
     "id": "beeswarm",
     "name": "Beeswarm chart",
-    "url": "https://www.shadcn.io/beeswarm-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=beeswarm",
     "examples": [
       {
         "id": "beeswarm-default",
@@ -2838,7 +2838,7 @@
         "title": "Beeswarm Chart",
         "label": "Standard beeswarm",
         "description": "Standard beeswarm",
-        "url": "https://www.shadcn.io/examples/beeswarm-default",
+        "url": "http://opensource.pitant.de/charts/#example=beeswarm-default",
         "position": 1
       },
       {
@@ -2847,7 +2847,7 @@
         "title": "Beeswarm with Two Series",
         "label": "Two series",
         "description": "Two series",
-        "url": "https://www.shadcn.io/examples/beeswarm-series",
+        "url": "http://opensource.pitant.de/charts/#example=beeswarm-series",
         "position": 2
       },
       {
@@ -2856,7 +2856,7 @@
         "title": "Vertical Beeswarm",
         "label": "Vertical layout",
         "description": "Vertical layout",
-        "url": "https://www.shadcn.io/examples/beeswarm-vertical",
+        "url": "http://opensource.pitant.de/charts/#example=beeswarm-vertical",
         "position": 3
       },
       {
@@ -2865,7 +2865,7 @@
         "title": "Beeswarm Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/beeswarm-loading",
+        "url": "http://opensource.pitant.de/charts/#example=beeswarm-loading",
         "position": 4
       }
     ]
@@ -2873,7 +2873,7 @@
   {
     "id": "violin",
     "name": "Violin plot",
-    "url": "https://www.shadcn.io/violin-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=violin",
     "examples": [
       {
         "id": "violin-default",
@@ -2881,7 +2881,7 @@
         "title": "Violin Plot",
         "label": "Standard violin plot",
         "description": "Standard violin plot",
-        "url": "https://www.shadcn.io/examples/violin-default",
+        "url": "http://opensource.pitant.de/charts/#example=violin-default",
         "position": 1
       },
       {
@@ -2890,7 +2890,7 @@
         "title": "Horizontal Violin Plot",
         "label": "Horizontal layout",
         "description": "Horizontal layout",
-        "url": "https://www.shadcn.io/examples/violin-horizontal",
+        "url": "http://opensource.pitant.de/charts/#example=violin-horizontal",
         "position": 2
       },
       {
@@ -2899,7 +2899,7 @@
         "title": "Grouped Violin Plot",
         "label": "Grouped violins",
         "description": "Grouped violins",
-        "url": "https://www.shadcn.io/examples/violin-grouped",
+        "url": "http://opensource.pitant.de/charts/#example=violin-grouped",
         "position": 3
       },
       {
@@ -2908,7 +2908,7 @@
         "title": "Violin Plot Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/violin-loading",
+        "url": "http://opensource.pitant.de/charts/#example=violin-loading",
         "position": 4
       }
     ]
@@ -2916,7 +2916,7 @@
   {
     "id": "box-plot",
     "name": "Box plot",
-    "url": "https://www.shadcn.io/box-plot-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=box-plot",
     "examples": [
       {
         "id": "box-plot-default",
@@ -2924,7 +2924,7 @@
         "title": "Box Plot",
         "label": "Standard box plot",
         "description": "Standard box plot",
-        "url": "https://www.shadcn.io/examples/box-plot-default",
+        "url": "http://opensource.pitant.de/charts/#example=box-plot-default",
         "position": 1
       },
       {
@@ -2933,7 +2933,7 @@
         "title": "Horizontal Box Plot",
         "label": "Horizontal layout",
         "description": "Horizontal layout",
-        "url": "https://www.shadcn.io/examples/box-plot-horizontal",
+        "url": "http://opensource.pitant.de/charts/#example=box-plot-horizontal",
         "position": 2
       },
       {
@@ -2942,7 +2942,7 @@
         "title": "Grouped Box Plot",
         "label": "Grouped boxes",
         "description": "Grouped boxes",
-        "url": "https://www.shadcn.io/examples/box-plot-grouped",
+        "url": "http://opensource.pitant.de/charts/#example=box-plot-grouped",
         "position": 3
       },
       {
@@ -2951,7 +2951,7 @@
         "title": "Box Plot Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/box-plot-loading",
+        "url": "http://opensource.pitant.de/charts/#example=box-plot-loading",
         "position": 4
       }
     ]
@@ -2959,7 +2959,7 @@
   {
     "id": "hexbin",
     "name": "Hexbin chart",
-    "url": "https://www.shadcn.io/hexbin-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=hexbin",
     "examples": [
       {
         "id": "hexbin-default",
@@ -2967,7 +2967,7 @@
         "title": "Hexbin Chart",
         "label": "Standard hexagonal bins",
         "description": "Standard hexagonal bins",
-        "url": "https://www.shadcn.io/examples/hexbin-default",
+        "url": "http://opensource.pitant.de/charts/#example=hexbin-default",
         "position": 1
       },
       {
@@ -2976,7 +2976,7 @@
         "title": "Hexbin Chart with Averages",
         "label": "Average value per bin",
         "description": "Average value per bin",
-        "url": "https://www.shadcn.io/examples/hexbin-average",
+        "url": "http://opensource.pitant.de/charts/#example=hexbin-average",
         "position": 2
       },
       {
@@ -2985,7 +2985,7 @@
         "title": "Hexbin Chart with a Custom Tooltip",
         "label": "Custom bin tooltip",
         "description": "Custom bin tooltip",
-        "url": "https://www.shadcn.io/examples/hexbin-custom-tooltip",
+        "url": "http://opensource.pitant.de/charts/#example=hexbin-custom-tooltip",
         "position": 3
       },
       {
@@ -2994,7 +2994,7 @@
         "title": "Hexbin Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/hexbin-loading",
+        "url": "http://opensource.pitant.de/charts/#example=hexbin-loading",
         "position": 4
       }
     ]
@@ -3002,7 +3002,7 @@
   {
     "id": "density",
     "name": "Density chart",
-    "url": "https://www.shadcn.io/density-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=density",
     "examples": [
       {
         "id": "density-default",
@@ -3010,7 +3010,7 @@
         "title": "Density Chart",
         "label": "Standard density plot",
         "description": "Standard density plot",
-        "url": "https://www.shadcn.io/examples/density-default",
+        "url": "http://opensource.pitant.de/charts/#example=density-default",
         "position": 1
       },
       {
@@ -3019,7 +3019,7 @@
         "title": "Density Chart with Groups",
         "label": "Grouped densities",
         "description": "Grouped densities",
-        "url": "https://www.shadcn.io/examples/density-groups",
+        "url": "http://opensource.pitant.de/charts/#example=density-groups",
         "position": 2
       },
       {
@@ -3028,7 +3028,7 @@
         "title": "Density Chart with Contours Only",
         "label": "Contour lines only",
         "description": "Contour lines only",
-        "url": "https://www.shadcn.io/examples/density-contours",
+        "url": "http://opensource.pitant.de/charts/#example=density-contours",
         "position": 3
       },
       {
@@ -3037,7 +3037,7 @@
         "title": "Density Chart Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/density-loading",
+        "url": "http://opensource.pitant.de/charts/#example=density-loading",
         "position": 4
       }
     ]
@@ -3045,7 +3045,7 @@
   {
     "id": "bubble-map",
     "name": "Bubble map",
-    "url": "https://www.shadcn.io/bubble-map-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=bubble-map",
     "examples": [
       {
         "id": "bubble-map-default",
@@ -3053,7 +3053,7 @@
         "title": "Bubble Map",
         "label": "Standard bubble map",
         "description": "Standard bubble map",
-        "url": "https://www.shadcn.io/examples/bubble-map-default",
+        "url": "http://opensource.pitant.de/charts/#example=bubble-map-default",
         "position": 1
       },
       {
@@ -3062,7 +3062,7 @@
         "title": "Bubble Map with Categories",
         "label": "Categorical bubbles",
         "description": "Categorical bubbles",
-        "url": "https://www.shadcn.io/examples/bubble-map-categories",
+        "url": "http://opensource.pitant.de/charts/#example=bubble-map-categories",
         "position": 2
       },
       {
@@ -3071,7 +3071,7 @@
         "title": "Bubble Map of a Region",
         "label": "Regional bubble map",
         "description": "Regional bubble map",
-        "url": "https://www.shadcn.io/examples/bubble-map-region",
+        "url": "http://opensource.pitant.de/charts/#example=bubble-map-region",
         "position": 3
       },
       {
@@ -3080,7 +3080,7 @@
         "title": "Bubble Map Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/bubble-map-loading",
+        "url": "http://opensource.pitant.de/charts/#example=bubble-map-loading",
         "position": 4
       }
     ]
@@ -3088,7 +3088,7 @@
   {
     "id": "route-map",
     "name": "Route map",
-    "url": "https://www.shadcn.io/route-map-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=route-map",
     "examples": [
       {
         "id": "route-map-default",
@@ -3096,7 +3096,7 @@
         "title": "Route Map",
         "label": "Standard route map",
         "description": "Standard route map",
-        "url": "https://www.shadcn.io/examples/route-map-default",
+        "url": "http://opensource.pitant.de/charts/#example=route-map-default",
         "position": 1
       },
       {
@@ -3105,7 +3105,7 @@
         "title": "Route Map of a Region",
         "label": "Regional route map",
         "description": "Regional route map",
-        "url": "https://www.shadcn.io/examples/route-map-region",
+        "url": "http://opensource.pitant.de/charts/#example=route-map-region",
         "position": 2
       },
       {
@@ -3114,7 +3114,7 @@
         "title": "Route Map Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/route-map-loading",
+        "url": "http://opensource.pitant.de/charts/#example=route-map-loading",
         "position": 3
       }
     ]
@@ -3122,7 +3122,7 @@
   {
     "id": "globe",
     "name": "Globe",
-    "url": "https://www.shadcn.io/globe-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=globe",
     "examples": [
       {
         "id": "globe-default",
@@ -3130,7 +3130,7 @@
         "title": "Globe",
         "label": "Standard globe",
         "description": "Standard globe",
-        "url": "https://www.shadcn.io/examples/globe-default",
+        "url": "http://opensource.pitant.de/charts/#example=globe-default",
         "position": 1
       },
       {
@@ -3139,7 +3139,7 @@
         "title": "Globe with Sized Markers",
         "label": "Globe with size-encoded markers",
         "description": "Globe with size-encoded markers",
-        "url": "https://www.shadcn.io/examples/globe-sized",
+        "url": "http://opensource.pitant.de/charts/#example=globe-sized",
         "position": 2
       },
       {
@@ -3148,7 +3148,7 @@
         "title": "Globe Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/globe-loading",
+        "url": "http://opensource.pitant.de/charts/#example=globe-loading",
         "position": 3
       }
     ]
@@ -3156,7 +3156,7 @@
   {
     "id": "vector-field",
     "name": "Vector field",
-    "url": "https://www.shadcn.io/vector-field-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=vector-field",
     "examples": [
       {
         "id": "vector-field-default",
@@ -3164,7 +3164,7 @@
         "title": "Vector Field",
         "label": "Standard vector field",
         "description": "Standard vector field",
-        "url": "https://www.shadcn.io/examples/vector-field-default",
+        "url": "http://opensource.pitant.de/charts/#example=vector-field-default",
         "position": 1
       },
       {
@@ -3173,7 +3173,7 @@
         "title": "Vector Field of Weather Stations",
         "label": "Weather-station vectors",
         "description": "Weather-station vectors",
-        "url": "https://www.shadcn.io/examples/vector-field-stations",
+        "url": "http://opensource.pitant.de/charts/#example=vector-field-stations",
         "position": 2
       },
       {
@@ -3182,7 +3182,7 @@
         "title": "Vector Field Loading State",
         "label": "Loading state",
         "description": "Loading state",
-        "url": "https://www.shadcn.io/examples/vector-field-loading",
+        "url": "http://opensource.pitant.de/charts/#example=vector-field-loading",
         "position": 3
       }
     ]
@@ -3190,7 +3190,7 @@
   {
     "id": "tooltip",
     "name": "Tooltip",
-    "url": "https://www.shadcn.io/tooltip-chart-examples",
+    "url": "http://opensource.pitant.de/charts/#docs=tooltip",
     "examples": [
       {
         "id": "tooltip-standard",
@@ -3198,7 +3198,7 @@
         "title": "Chart Tooltip",
         "label": "Standard chart tooltip",
         "description": "Standard chart tooltip",
-        "url": "https://www.shadcn.io/examples/tooltip-standard",
+        "url": "http://opensource.pitant.de/charts/#example=tooltip-standard",
         "position": 1
       },
       {
@@ -3207,7 +3207,7 @@
         "title": "Tooltip with a Dashed Crosshair",
         "label": "Dashed crosshair",
         "description": "Dashed crosshair",
-        "url": "https://www.shadcn.io/examples/tooltip-crosshair",
+        "url": "http://opensource.pitant.de/charts/#example=tooltip-crosshair",
         "position": 2
       },
       {
@@ -3216,7 +3216,7 @@
         "title": "Tooltip with a Styled Indicator",
         "label": "Styled crosshair and dots",
         "description": "Styled crosshair and dots",
-        "url": "https://www.shadcn.io/examples/tooltip-indicator",
+        "url": "http://opensource.pitant.de/charts/#example=tooltip-indicator",
         "position": 3
       },
       {
@@ -3225,7 +3225,7 @@
         "title": "Tooltip with Panel Motion",
         "label": "Animated tooltip panel",
         "description": "Animated tooltip panel",
-        "url": "https://www.shadcn.io/examples/tooltip-motion",
+        "url": "http://opensource.pitant.de/charts/#example=tooltip-motion",
         "position": 4
       },
       {
@@ -3234,7 +3234,7 @@
         "title": "Tooltip with Custom Rows",
         "label": "Custom data rows",
         "description": "Custom data rows",
-        "url": "https://www.shadcn.io/examples/tooltip-rows",
+        "url": "http://opensource.pitant.de/charts/#example=tooltip-rows",
         "position": 5
       },
       {
@@ -3243,7 +3243,7 @@
         "title": "Tooltip with Custom Content",
         "label": "Custom content layout",
         "description": "Custom content layout",
-        "url": "https://www.shadcn.io/examples/tooltip-content",
+        "url": "http://opensource.pitant.de/charts/#example=tooltip-content",
         "position": 6
       },
       {
@@ -3252,7 +3252,7 @@
         "title": "Pinned Tooltip",
         "label": "Pinned tooltip",
         "description": "Pinned tooltip",
-        "url": "https://www.shadcn.io/examples/tooltip-pinned",
+        "url": "http://opensource.pitant.de/charts/#example=tooltip-pinned",
         "position": 7
       },
       {
@@ -3261,7 +3261,7 @@
         "title": "Bar Chart Tooltip with Rings",
         "label": "Ring indicators on bars",
         "description": "Ring indicators on bars",
-        "url": "https://www.shadcn.io/examples/tooltip-ring",
+        "url": "http://opensource.pitant.de/charts/#example=tooltip-ring",
         "position": 8
       },
       {
@@ -3270,7 +3270,7 @@
         "title": "Tooltip with a Horizontal Crosshair",
         "label": "Horizontal crosshair",
         "description": "Horizontal crosshair",
-        "url": "https://www.shadcn.io/examples/tooltip-horizontal-crosshair",
+        "url": "http://opensource.pitant.de/charts/#example=tooltip-horizontal-crosshair",
         "position": 9
       },
       {
@@ -3279,7 +3279,7 @@
         "title": "Tooltip with a Header",
         "label": "Tooltip header",
         "description": "Tooltip header",
-        "url": "https://www.shadcn.io/examples/tooltip-header",
+        "url": "http://opensource.pitant.de/charts/#example=tooltip-header",
         "position": 10
       },
       {
@@ -3288,7 +3288,7 @@
         "title": "Tooltip with a Custom Indicator",
         "label": "Custom indicator bar under the active value",
         "description": "Custom indicator bar under the active value",
-        "url": "https://www.shadcn.io/examples/tooltip-custom-indicator",
+        "url": "http://opensource.pitant.de/charts/#example=tooltip-custom-indicator",
         "position": 11
       }
     ]

@@ -25,14 +25,14 @@
     "useWhen": "Show a repeating time cycle or a compact circular breakdown whose ordering is meaningful.",
     "data": "Supply ordered categories and named numeric series. Clock examples use the category order for angular positions, while storage examples interpret the values as component quantities.",
     "reading": "Find the time or category around the rim, then read the distance or mark length according to the chosen variant.",
-    "notes": ["Equal angular spacing follows the position order. Provide a regularly spaced time sequence when equal clock intervals matter.", "The reference comparisons and prior-day context in clock demos are specific to the fixture."]
+    "notes": ["Equal angular spacing follows the position order. Provide a regularly spaced time sequence when equal clock intervals matter."]
   },
   "gauge": {
     "summary": "Show a single reading on a bounded scale using a dial or a linear track.",
     "useWhen": "Display utilization or progress for a current reading that already has a meaningful percentage scale.",
     "data": "Pass a percentage as the first row's value or the first value of the first numeric series. The gauge clamps the reading to 0–100.",
     "reading": "Read the numeric label for the current value and use the pointer or fill to judge its position on the scale.",
-    "notes": ["The quarter selector, next-reading control, and repeating Live Load samples use fixture data. Supply a current reading to use your own data."]
+    "notes": ["Pass an updated value through data to change the reading. The quarter selector, next-reading control, and automatic Live Load updates use the included sample readings."]
   },
   "funnel": {
     "summary": "Show how a cohort changes through a sequence of stages.",
@@ -60,7 +60,7 @@
     "useWhen": "Compare the major contributors in a hierarchy, such as compute usage by team and service, in a compact space.",
     "data": "Supply nested rows with name or label, optional color, and children on branches. Set leaf values to nonnegative quantities in one unit.",
     "reading": "Larger rectangles represent larger values. In the Drilldown variant, open a group to inspect its contents and use the breadcrumb to return.",
-    "notes": ["The supplied-data renderer supports independent selection and drill identities for siblings with duplicate names."]
+    "notes": ["You can select or drill into sibling groups separately even when their names match."]
   },
   "tree": {
     "summary": "Draw explicit parent–child links in a horizontal, vertical, or radial layout.",
@@ -85,7 +85,7 @@
   },
   "marimekko": {
     "summary": "Draw a stacked percentage chart with columns whose widths represent different totals.",
-    "useWhen": "Compare each group's overall size and its internal mix in a single view.",
+    "useWhen": "Compare each group's overall size and the share of each category within it.",
     "data": "Supply categories and aligned nonnegative numeric series with optional colors. Missing values contribute zero, and omitted category labels receive numbered positions.",
     "reading": "Read the column width for the group's share of the grand total and the segment height for its share within the column.",
     "notes": ["Keep category series in the same unit so width and area are meaningful.", "The Legend variant lets you pin a series to track it across columns."]
