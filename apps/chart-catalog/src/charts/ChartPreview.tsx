@@ -15,6 +15,7 @@ const ShaftOrbitPreview = lazy(() => import('./scientific/orbit/ShaftOrbitPrevie
 const FrequencyResponsePreview = lazy(() => import('./scientific/response/FrequencyResponsePreview'))
 const CoherencePhasePreview = lazy(() => import('./scientific/coherence/CoherencePhasePreview'))
 const WaveletScalogramPreview = lazy(() => import('./scientific/wavelet/WaveletScalogramPreview'))
+const BearingEnvelopeSpectrumPreview = lazy(() => import('./scientific/envelope/BearingEnvelopeSpectrumPreview'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
 const ParticleMassSpectrum = lazy(() => import('./scientific/particle/ParticleMassSpectrumPreview'))
 const ScientificWaterfall = lazy(() => import('./scientific/waterfall/SpectralWaterfallPreview'))
@@ -30,6 +31,7 @@ export const rendererFamilies = {
   response: ['frequency-response'],
   coherence: ['coherence-phase'],
   wavelet: ['wavelet-scalogram'],
+  envelope: ['bearing-envelope'],
   spectrogram: ['spectrogram'],
   scientific: ['spectrum', 'correlation-matrix', 'process-control'],
   statsmaps: ['scatter', 'heatmap', 'uncertainty', 'histogram', 'ridgeline', 'ecdf', 'beeswarm', 'violin', 'box-plot', 'hexbin', 'density', 'choropleth', 'bubble-map', 'route-map', 'globe', 'vector-field'],
@@ -45,6 +47,7 @@ const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.response.map((id) => [id, FrequencyResponsePreview] as const),
   ...rendererFamilies.coherence.map((id) => [id, CoherencePhasePreview] as const),
   ...rendererFamilies.wavelet.map((id) => [id, WaveletScalogramPreview] as const),
+  ...rendererFamilies.envelope.map((id) => [id, BearingEnvelopeSpectrumPreview] as const),
   ...rendererFamilies.waterfall.map((id) => [id, ScientificWaterfall] as const),
   ...rendererFamilies.spectrogram.map((id) => [id, MaunaLoaSpectrogram] as const),
   ...rendererFamilies.scientific.map((id) => [id, Scientific] as const),

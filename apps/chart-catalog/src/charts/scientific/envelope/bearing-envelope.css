@@ -1,0 +1,148 @@
+.bearing-envelope {
+  display: grid;
+  gap: .65rem;
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+}
+
+.bearing-envelope[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.bearing-envelope),
+.detail-plot:has(.bearing-envelope) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.envelope-panel {
+  block-size: clamp(12.5rem, 28cqw, 15rem);
+}
+
+.bearing-envelope[data-compact='true'] .envelope-panel {
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.envelope-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .4rem .85rem;
+}
+
+.envelope-options label,
+.envelope-inspector label {
+  display: grid;
+  gap: .22rem;
+  min-inline-size: 0;
+  font-size: .8rem;
+}
+
+.envelope-options select {
+  min-block-size: 2.3rem;
+  max-inline-size: 100%;
+  padding-inline: .5rem;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .3rem;
+  background: var(--gallery-surface, var(--card));
+  color: inherit;
+  font: inherit;
+}
+
+.envelope-options .envelope-show-reference {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  min-block-size: 2.3rem;
+}
+
+.bearing-envelope input {
+  accent-color: var(--gallery-accent, var(--primary));
+}
+
+.envelope-band-window {
+  fill: #e1edf8;
+  stroke: #9cbbd5;
+  stroke-width: 1px;
+}
+
+.envelope-reference {
+  fill: #303841;
+  font-size: 10px;
+}
+
+.envelope-reference line {
+  stroke: #7d5b38;
+}
+
+.envelope-trace {
+  fill: none;
+  stroke: #1f5b91;
+  stroke-width: 1.1px;
+  stroke-linejoin: round;
+}
+
+.envelope-selection circle {
+  fill: #fff;
+  stroke: #1f5b91;
+  stroke-width: 1.5px;
+}
+
+.envelope-plot-pick {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.envelope-reference-key {
+  margin: -.15rem 0 .2rem;
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .75rem;
+}
+
+.envelope-inspector {
+  display: grid;
+  gap: .55rem;
+  min-inline-size: 0;
+}
+
+.envelope-inspector output {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .2rem .65rem;
+  font-size: .875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.envelope-inspector output span {
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+.envelope-inspector input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 1.7rem;
+  margin: 0;
+}
+
+.envelope-caption {
+  border-block-start: 1px solid var(--gallery-rule, var(--border));
+  padding-block-start: .6rem;
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.envelope-caption p {
+  margin: .2rem 0 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+.envelope-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}

@@ -3284,6 +3284,22 @@
     ]
   },
   {
+    "id": "bearing-envelope",
+    "name": "Bearing Envelope Spectrum",
+    "url": "https://opensource.pitant.de/charts/#docs=bearing-envelope",
+    "examples": [
+      {
+        "id": "bearing-envelope-ottawa",
+        "family": "bearing-envelope",
+        "title": "Ottawa Bearing Envelope Spectrum",
+        "label": "Measured vibration from two bearing run-ups",
+        "description": "Compare how the selected carrier band changes the envelope spectrum of measured bearing vibration.",
+        "url": "https://opensource.pitant.de/charts/#example=bearing-envelope-ottawa",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",
