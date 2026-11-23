@@ -14,6 +14,8 @@ export type { FrequencyResponseProps } from './charts/scientific/response/Freque
 export type { FrequencyResponseData, FrequencyResponseSeries } from './charts/scientific/response/frequency-response'
 export { CoherencePhase } from './charts/scientific/coherence/CoherencePhase'
 export type { CoherencePhaseProps, CoherenceData, CoherenceRun } from './charts/scientific/coherence/CoherencePhase'
+export { WaveletScalogram } from './charts/scientific/wavelet/WaveletScalogram'
+export type { WaveletScalogramProps, WaveletScalogramData, WaveletSignal } from './charts/scientific/wavelet/WaveletScalogram'
 export { SpectralWaterfall } from './charts/scientific/waterfall/SpectralWaterfall'
 export type { SpectralWaterfallProps } from './charts/scientific/waterfall/SpectralWaterfall'
 export type { SpectralAxis, SpectralWaterfallAxes, SpectralWaterfallData } from './charts/scientific/waterfall/model'

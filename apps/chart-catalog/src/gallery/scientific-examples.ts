@@ -9,6 +9,7 @@ import shaftOrbit from './docs/examples/ShaftOrbit.tsx?raw'
 import spectrogram from './docs/examples/Spectrogram.tsx?raw'
 import spectrum from './docs/examples/Spectrum.tsx?raw'
 import steelDefectCorrelation from './docs/examples/SteelDefectCorrelation.tsx?raw'
+import waveletScalogram from './docs/examples/WaveletScalogram.tsx?raw'
 
 function withCatalogImports(source: string) {
   return source
@@ -22,6 +23,7 @@ const scientificExamples = new Map([
   ['shaft-orbit-probes', withCatalogImports(shaftOrbit)],
   ['frequency-response-servo', withCatalogImports(frequencyResponse)],
   ['coherence-phase-bearing', withCatalogImports(coherencePhase)],
+  ['wavelet-scalogram-bearing', withCatalogImports(waveletScalogram)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],
