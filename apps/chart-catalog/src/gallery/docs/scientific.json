@@ -416,6 +416,33 @@
       { "label": "NIST/SEMATECH Engineering Statistics Handbook, simplex-centroid mixture designs", "href": "https://www.itl.nist.gov/div898/handbook/pri/section5/pri543.htm" }
     ]
   },
+  "industrial-ct": {
+    "summary": "Inspect the same industrial X-ray CT volume in three linked cross-sections and a rotatable view of segmented pores.",
+    "useWhen": "Locate pore features in a scan, examine their shape from multiple angles, or inspect their volume at known voxel spacing.",
+    "data": "Supply dimensions and positive voxel spacing in X, Y, Z order, with at least two voxels on each axis. The gray and labels arrays must each contain nx × ny × nz entries. Store X fastest at x + nx × (y + ny × z). Gray is an 8-bit display volume. Label 0 is unassigned and each positive label identifies a pore. Set originMm to the physical coordinates of voxel (0, 0, 0) if the crop has an offset.",
+    "reading": "Axial (XY) holds Z fixed, coronal (XZ) holds Y fixed, and sagittal (YZ) holds X fixed. Click a slice or use X slice, Y slice, and Z slice to move their shared intersection. Select a pore from Pore or pick it on the 3D reconstruction. Drag to turn the 3D view, or use Rotate left and Rotate right. Use Show pore mask to display the segmentation over the slices.",
+    "notes": [
+      "The three planes are cross-sections of the same grayscale and label volumes. A crosshair shows the shared voxel position. Its physical coordinates are the crop origin plus the voxel indices multiplied by the corresponding spacing.",
+      "Pore volume is the number of voxels carrying the pore’s label multiplied by the volume per voxel. The 3D reconstruction draws the exposed faces of the labeled voxels at the supplied physical scale. Selecting a pore centers the crosshairs on its labeled voxel nearest the centroid.",
+      "Grayscale values report display intensity on a 0–255 scale. Physical density and attenuation require additional scanner calibration. Pore size and shape estimates depend on voxel resolution and the supplied segmentation.",
+      "The measured example crops a 64 × 64 × 64 volume from NIST’s set 1, sample 2. The scan is of laser powder bed–fused cobalt–chromium and the voxel pitch is 2.45 µm along each axis. The crop starts at source voxel (362, 518, 372), with reconstructed slices 0372–0435 in increasing order.",
+      "All three views use the same display window. The example clips the source 16-bit intensities to 34,000–57,000 and maps that range linearly to 0–255, rounding to whole numbers.",
+      "The example takes pore voxels from the published binary mask. It labels face-connected pore regions, keeping those with at least 25 voxels that lie fully inside the crop, then orders them by volume. The four volumes describe these retained regions within the crop.",
+      "Select Pore 1 to inspect 959 labeled voxels, a volume of 1.4103 × 10⁻⁵ mm³. The shared probe moves to local voxel (25, 12, 37), where Display intensity reads 47 / 255."
+    ],
+    "properties": [
+      { "name": "data", "type": "IndustrialCtData", "description": "Required. Supply dimensions, spacingUm, gray, and labels. Use originMm for a physical coordinate offset." },
+      { "name": "label", "type": "string", "description": "Describe the scan and segmented features for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact CT preview for a gallery card." },
+      { "name": "initialPoreId", "type": "number", "description": "Set the pore label selected when the viewer starts." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Credit the acquisition, segmentation source, and license." }
+    ],
+    "sources": [
+      { "label": "Kim et al. (2020), NIST high-resolution X-ray CT data for additively manufactured cobalt–chromium specimens", "href": "https://doi.org/10.18434/M32162" },
+      { "label": "Kim et al. (2017), investigation of pore structure in additively manufactured parts by X-ray CT", "href": "https://www.nist.gov/publications/investigation-pore-structure-cobalt-chrome-additively-manufactured-parts-using-x-ray" },
+      { "label": "Lu et al. (2023), additive manufacturing data and metadata acquisition, X-ray CT", "href": "https://www.nist.gov/publications/additive-manufacturing-data-and-metadata-acquisition-general-practice" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",

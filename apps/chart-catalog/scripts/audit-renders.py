@@ -222,7 +222,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
-        'ternary-mixture-map',
+        'ternary-mixture-map', 'industrial-ct',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -383,6 +383,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=ternary-mixture-map&variant=ternary-mixture-response'
                 )
+            elif example['family'] == 'industrial-ct':
+                await check_compact_industrial_ct(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=industrial-ct&variant=industrial-ct-porosity'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -475,6 +480,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'ternary-mixture-map':
                 await check_ternary_mixture(plot, touch)
                 code_import = 'TernaryMixtureMap'
+            elif example['family'] == 'industrial-ct':
+                await check_industrial_ct(plot, touch)
+                code_import = 'IndustrialCtViewer'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -2545,6 +2553,258 @@ async def check_ternary_mixture(plot, touch):
         await marker.click()
     if await measure() != (default_parts, default_prediction, default_observed, default_id):
         raise RuntimeError('Clicking a measured mixture should restore its exact recorded and fitted response')
+
+
+async def check_ct_slice(panel, horizontal, vertical):
+    await expect(panel).to_be_visible()
+    await expect(panel.locator('rect[data-ct-slice-frame]')).to_be_visible()
+    await expect(panel.locator('.scientific-tick').first).to_be_attached()
+    await expect(panel.get_by_text(f'{horizontal} (mm)', exact=True)).to_be_visible()
+    await expect(panel.get_by_text(f'{vertical} (mm)', exact=True)).to_be_visible()
+    raster = panel.locator('image[data-ct-raster]')
+    await expect(raster).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+    return raster
+
+
+async def check_compact_industrial_ct(card_plot):
+    root = card_plot.locator('[data-industrial-ct]')
+    xy = root.locator('svg[data-ct-slice][data-plane="xy"]')
+    await expect(root.locator('svg[data-ct-slice]')).to_have_count(1)
+    raster = await check_ct_slice(xy, 'X', 'Y')
+    await check_compact_figure_bounds(xy, 'rect[data-ct-slice-frame]')
+    width, height, levels, colored, _ = await ct_raster_stats(raster)
+    if (width, height) != (64, 64) or levels < 12 or colored <= 0:
+        raise RuntimeError('The compact preview should include measured CT texture and the segmented pore overlay')
+    await expect(root.locator('canvas, input, select, button, [data-ct-crosshair], [data-ct-readout], .ct-slice-pick')).to_have_count(0)
+
+
+async def ct_raster_stats(raster, pixel=None):
+    return await raster.evaluate("""async (raster, pixel) => {
+      const image = new Image()
+      image.src = raster.getAttribute('href')
+      await image.decode()
+      const buffer = document.createElement('canvas')
+      buffer.width = image.naturalWidth
+      buffer.height = image.naturalHeight
+      const context = buffer.getContext('2d')
+      context.drawImage(image, 0, 0)
+      const bytes = context.getImageData(0, 0, buffer.width, buffer.height).data
+      const luminance = new Set()
+      let colored = 0
+      for (let pixel = 0; pixel < bytes.length; pixel += 4) {
+        const [r, g, b, a] = bytes.subarray(pixel, pixel + 4)
+        if (a === 0) continue
+        luminance.add(r)
+        if (r !== g || g !== b) colored++
+      }
+      const intensity = pixel ? bytes[4 * (pixel[0] + buffer.width * pixel[1])] : null
+      return [buffer.width, buffer.height, luminance.size, colored, intensity]
+    }""", pixel)
+
+
+async def check_industrial_ct(plot, touch):
+    chart = plot.locator('[data-industrial-ct]')
+    readout = chart.locator('output[data-ct-readout]')
+    volume = chart.locator('canvas[data-ct-volume-render]')
+    pore = chart.get_by_role('combobox', name='Pore', exact=True)
+    mask = chart.get_by_role('checkbox', name='Show pore mask', exact=True)
+    rotate_right = chart.get_by_role('button', name='Rotate right', exact=True)
+    rotate_left = chart.get_by_role('button', name='Rotate left', exact=True)
+    sliders = [chart.get_by_role('slider', name=f'{axis} slice', exact=True) for axis in 'XYZ']
+    await expect(readout).to_be_visible()
+    await expect(chart.locator('figcaption a').first).to_have_attribute('href', 'https://doi.org/10.18434/M32162')
+    await expect(volume).to_be_visible()
+    await expect(mask).to_be_checked()
+    await expect(chart.locator('svg[data-ct-slice]')).to_have_count(3)
+    spatial_axes = [(0, 1, 2), (0, 2, 1), (1, 2, 0)]
+    panels = [chart.locator(f'svg[data-ct-slice][data-plane="{name}"]') for name in ('xy', 'xz', 'yz')]
+    rasters = [await check_ct_slice(panel, 'XYZ'[h], 'XYZ'[v]) for panel, (h, v, _) in zip(panels, spatial_axes)]
+    for panel, section in zip(panels, ['Axial · XY', 'Coronal · XZ', 'Sagittal · YZ']):
+        await expect(panel.get_by_text(section, exact=True)).to_be_visible()
+    dimensions = [int(await slider.get_attribute('max')) + 1 for slider in sliders]
+    if dimensions != [64, 64, 64]:
+        raise RuntimeError(f'Unexpected native NIST CT crop dimensions: {dimensions}')
+    spacing_mm = 0.00245
+    origin = [0.8869, 1.2691, 0.9114]
+    for slider in sliders:
+        await expect(slider).to_have_attribute('min', '0')
+        await expect(slider).to_have_attribute('step', '1')
+    for raster, (h, v, _) in zip(rasters, spatial_axes):
+        width, height, levels, colored, _ = await ct_raster_stats(raster)
+        if (width, height) != (dimensions[h], dimensions[v]) or levels < 12 or colored <= 0:
+            raise RuntimeError('Each CT cross-section should contain native grayscale levels and a pore overlay')
+
+    async def selection():
+        values = await readout.evaluate("""out => [
+          ['x', 'y', 'z'].map(key => Number(out.dataset[key])),
+          ['xMm', 'yMm', 'zMm'].map(key => Number(out.dataset[key])),
+          ...['pore', 'voxels', 'volumeMm3', 'intensity'].map(key => out.dataset[key]),
+        ]""")
+        indices, physical = values[:2]
+        expected_physical = [start + index * spacing_mm for start, index in zip(origin, indices)]
+        if not all(math.isclose(observed, expected, abs_tol=1e-10) for observed, expected in zip(physical, expected_physical)):
+            raise RuntimeError(f'CT coordinates should retain source voxel spacing and crop origin: {indices}, {physical}, {expected_physical}')
+        for slider, index in zip(sliders, indices):
+            await expect(slider).to_have_value(str(index))
+        for panel, (horizontal, vertical, fixed) in zip(panels, spatial_axes):
+            await expect(panel).to_have_attribute('data-slice-index', str(indices[fixed]))
+            geometry = await panel.evaluate("""svg => {
+              const frame = svg.querySelector('[data-ct-slice-frame]')
+              const [left, top, width, height] = ['x', 'y', 'width', 'height'].map(key => frame[key].baseVal.value)
+              const lines = [...svg.querySelectorAll('line[data-ct-crosshair], [data-ct-crosshair] line')]
+              const value = (line, key) => line[key].baseVal.value
+              const x = lines.find(line => value(line, 'x1') === value(line, 'x2'))
+              const y = lines.find(line => value(line, 'y1') === value(line, 'y2'))
+              return [left, top, width, height, x && value(x, 'x1'), y && value(y, 'y1')]
+            }""")
+            left, top, width, height, cross_x, cross_y = geometry
+            if not math.isclose(width / height, dimensions[horizontal] / dimensions[vertical], rel_tol=1e-5):
+                raise RuntimeError('The isotropic scan should use the same physical scale on both slice axes')
+            expected_x = left + width * (indices[horizontal] + 0.5) / dimensions[horizontal]
+            expected_y = top + height * (1 - (indices[vertical] + 0.5) / dimensions[vertical])
+            if cross_x is None or cross_y is None or not (
+                math.isclose(cross_x, expected_x, abs_tol=0.5) and math.isclose(cross_y, expected_y, abs_tol=0.5)
+            ):
+                raise RuntimeError(f'CT crosshair should mark the calibrated voxel center on each slice: {indices}, {geometry}')
+        return indices, physical, *values[2:]
+
+    async def pick_voxel(panel, horizontal, vertical, axes):
+        target = panel.locator('.ct-slice-pick')
+        bounds = await target.bounding_box()
+        h, v, _ = axes
+        position = {
+            'x': bounds['width'] * (horizontal + 0.5) / dimensions[h],
+            'y': bounds['height'] * (1 - (vertical + 0.5) / dimensions[v]),
+        }
+        if touch:
+            await target.tap(position=position)
+        else:
+            await target.click(position=position)
+
+    async def view_state():
+        yaw, pitch, active, faces = await volume.evaluate(
+            "canvas => [Number(canvas.dataset.yaw), Number(canvas.dataset.pitch), canvas.dataset.pore, Number(canvas.dataset.faceCount)]"
+        )
+        if not all(map(math.isfinite, (yaw, pitch, faces))) or faces <= 0:
+            raise RuntimeError(f'Expected visible reconstructed pore faces and finite view angles: {yaw}, {pitch}, {faces}')
+        return yaw, pitch, active
+
+    async def capture_volume():
+        return await volume.evaluate("""async canvas => {
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+          return canvas.toDataURL()
+        }""")
+
+    async def check_pore(pore_id, expected_indices, expected_voxels, expected_intensity):
+        sample = await selection()
+        indices, _, active_pore, voxels, volume_mm3, intensity = sample
+        await expect(pore).to_have_value(str(pore_id))
+        await expect(volume).to_have_attribute('data-pore', str(pore_id))
+        if indices != expected_indices or active_pore != str(pore_id) or int(voxels) != expected_voxels or not math.isclose(
+            float(volume_mm3), expected_voxels * spacing_mm ** 3, abs_tol=1e-12
+        ) or int(intensity) != expected_intensity:
+            raise RuntimeError(f'Pore {pore_id} should retain its representative voxel, count, volume and display intensity: {sample}')
+        return sample
+
+    pore_one = (1, [25, 12, 37], 959, 47)
+    pore_two = (2, [20, 56, 42], 423, 48)
+    initial_selection = await check_pore(*pore_one)
+    await expect(readout).to_contain_text('47 / 255')
+    initial_yaw, initial_pitch, active = await view_state()
+    initial_image = await capture_volume()
+    if touch:
+        await rotate_right.tap()
+    else:
+        await rotate_right.press('Enter')
+    yaw, pitch, rotated_pore = await view_state()
+    if yaw == initial_yaw or pitch != initial_pitch or rotated_pore != active or await selection() != initial_selection:
+        raise RuntimeError('Rotating the CT volume should change only the viewing angle')
+    if len(initial_image) < 1024 or await capture_volume() == initial_image:
+        raise RuntimeError('The rendered CT reconstruction pixels should change with the view')
+    await rotate_left.click()
+    restored_yaw, restored_pitch, _ = await view_state()
+    if not math.isclose(restored_yaw, initial_yaw, abs_tol=1e-8) or restored_pitch != initial_pitch:
+        raise RuntimeError('Rotate left should reverse the Rotate right step')
+
+    # Capture a solid orange facet while pore 1 is active, then change its selection color without moving the camera.
+    pixel = await volume.evaluate("""async canvas => {
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      const { width, height } = canvas
+      const { data } = canvas.getContext('2d').getImageData(0, 0, width, height)
+      const pixels = []
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] > 100 && data[i + 1] <= 80 && data[i + 2] <= 48) {
+          const pixel = i / 4
+          pixels.push([pixel % width, Math.floor(pixel / width)])
+        }
+      }
+      if (pixels.length === 0) return null
+      const centerX = pixels.reduce((sum, point) => sum + point[0], 0) / pixels.length
+      const centerY = pixels.reduce((sum, point) => sum + point[1], 0) / pixels.length
+      const distance = ([x, y]) => (x - centerX) ** 2 + (y - centerY) ** 2
+      const [x, y] = pixels.reduce((best, point) => distance(point) < distance(best) ? point : best)
+      return [(x + 0.5) / width, (y + 0.5) / height]
+    }""")
+    if pixel is None:
+        raise RuntimeError('The rotatable rendering should include a colored surface for the selected pore')
+    await pore.select_option('2')
+    await check_pore(*pore_two)
+    bounds = await volume.bounding_box()
+    position = {'x': pixel[0] * bounds['width'], 'y': pixel[1] * bounds['height']}
+    if touch:
+        await volume.tap(position=position)
+    else:
+        await volume.click(position=position)
+    await check_pore(*pore_one)
+
+    if not touch:
+        await volume.scroll_into_view_if_needed()
+        bounds = await volume.bounding_box()
+        mouse = volume.page.mouse
+        x, y = bounds['x'] + bounds['width'] * 0.45, bounds['y'] + bounds['height'] * 0.45
+        await mouse.move(x, y)
+        await mouse.down()
+        await mouse.move(x + 35, y - 20, steps=5)
+        await mouse.up()
+        yaw, pitch, active_pore = await view_state()
+        if yaw <= initial_yaw or pitch >= initial_pitch or active_pore != '1':
+            raise RuntimeError('Dragging the reconstructed volume should rotate both axes and preserve its pore selection')
+        await check_pore(*pore_one)
+
+    masked_xy = await rasters[0].get_attribute('href')
+    await mask.uncheck()
+    await expect(rasters[0]).not_to_have_attribute('href', masked_xy)
+    for raster, (h, v, _) in zip(rasters, spatial_axes):
+        voxel = pore_one[1]
+        pixel = [voxel[h], dimensions[v] - 1 - voxel[v]]
+        _, _, levels, colored, intensity = await ct_raster_stats(raster, pixel)
+        if levels < 12 or colored != 0 or intensity != 47:
+            raise RuntimeError(f'Unmasked planes should show the same recorded grayscale voxel (47/255), observed {intensity}')
+    await sliders[2].press('ArrowRight')
+    adjacent = await selection()
+    if adjacent[0] != [25, 12, 38] or adjacent[-1] != '17':
+        raise RuntimeError(f'Moving the Z slider one voxel should show the adjacent measured intensity: {adjacent}')
+    await sliders[2].press('ArrowLeft')
+    await check_pore(*pore_one)
+    await expect(rasters[0]).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+    previous_slices = [await raster.get_attribute('href') for raster in rasters]
+
+    await sliders[0].press('Home')
+    if (await selection())[0] != [0, 12, 37]:
+        raise RuntimeError('Moving the X slider should update only the sagittal slice index')
+    await expect(rasters[2]).not_to_have_attribute('href', previous_slices[2])
+    for raster, previous in zip(rasters[:2], previous_slices[:2]):
+        await expect(raster).to_have_attribute('href', previous)
+
+    await pick_voxel(panels[0], 5, 50, spatial_axes[0])
+    if (await selection())[0] != [5, 50, 37]:
+        raise RuntimeError('Axial picking should update X/Y and keep the active Z slice')
+    await pick_voxel(panels[1], 12, 20, spatial_axes[1])
+    if (await selection())[0] != [12, 50, 20]:
+        raise RuntimeError('Coronal picking should update X/Z and keep the active Y slice')
+    await pick_voxel(panels[2], 9, 26, spatial_axes[2])
+    if (await selection())[0] != [12, 9, 26]:
+        raise RuntimeError('Sagittal picking should update Y/Z and keep the active X slice')
 
 
 async def check_native_scientific(plot, slug, touch):

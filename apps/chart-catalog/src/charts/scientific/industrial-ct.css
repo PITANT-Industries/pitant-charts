@@ -1,0 +1,233 @@
+.industrial-ct {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .72rem;
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+}
+
+.industrial-ct[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.industrial-ct),
+.detail-plot:has(.industrial-ct) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.ct-view-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .7rem;
+  min-inline-size: 0;
+}
+
+.industrial-ct[data-compact='true'] .ct-view-grid {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.ct-slice-panel,
+.ct-volume-panel {
+  min-inline-size: 0;
+  block-size: clamp(15rem, 45cqw, 17rem);
+}
+
+.industrial-ct[data-compact='true'] .ct-slice-panel {
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.ct-crosshair {
+  fill: none;
+  stroke: #faf3df;
+  stroke-width: 1px;
+  filter: drop-shadow(0 0 1px #1f2b33);
+}
+
+.ct-crosshair line {
+  stroke-dasharray: 4 4;
+}
+
+.ct-slice-pick {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.ct-volume-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: .25rem;
+  border: 1px solid #d2dce1;
+}
+
+.ct-volume-title {
+  margin: .55rem .65rem 0;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ct-volume-canvas {
+  min-inline-size: 0;
+  min-block-size: 0;
+}
+
+.ct-volume-canvas canvas {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+
+.ct-volume-canvas canvas:active {
+  cursor: grabbing;
+}
+
+.ct-rotation {
+  display: flex;
+  justify-content: center;
+  gap: .4rem;
+  padding: 0 .35rem .4rem;
+}
+
+.ct-rotation button {
+  min-block-size: 1.75rem;
+  padding: .2rem .4rem;
+  border: 1px solid #c4d0d8;
+  border-radius: .25rem;
+  background: #fff;
+  color: #263640;
+  font-size: .75rem;
+  cursor: pointer;
+}
+
+.ct-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: .76rem;
+}
+
+.ct-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.ct-key li::before {
+  content: '';
+  inline-size: .52rem;
+  block-size: .52rem;
+  background: #b95a37;
+}
+
+.ct-key li + li::before {
+  background: #467897;
+}
+
+.ct-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+  font-size: .8rem;
+}
+
+.ct-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.ct-controls select {
+  min-block-size: 2rem;
+  min-inline-size: 0;
+  padding-inline: .45rem;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .25rem;
+  background: var(--gallery-surface, var(--card));
+  color: inherit;
+  font: inherit;
+}
+
+.ct-mask-control input,
+.ct-coordinate-controls input {
+  margin: 0;
+  accent-color: var(--gallery-accent, var(--primary));
+}
+
+.ct-coordinate-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .5rem 1rem;
+  min-inline-size: 0;
+  font-size: .8rem;
+}
+
+.ct-coordinate-controls label {
+  display: grid;
+  gap: .15rem;
+  min-inline-size: 0;
+}
+
+.ct-coordinate-controls input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 1.65rem;
+}
+
+.ct-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem 1.2rem;
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ct-readout span {
+  display: grid;
+  gap: .12rem;
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+.ct-readout strong {
+  color: var(--gallery-ink, var(--foreground));
+  font-size: .92rem;
+}
+
+.ct-caption {
+  padding-block-start: .6rem;
+  border-block-start: 1px solid var(--gallery-rule, var(--border));
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.ct-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+.ct-caption p {
+  margin: .18rem 0 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+@container (min-width: 39rem) {
+  .industrial-ct[data-compact='false'] .ct-view-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 28rem) {
+  .ct-coordinate-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

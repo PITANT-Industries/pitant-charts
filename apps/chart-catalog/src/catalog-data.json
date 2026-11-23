@@ -3460,6 +3460,22 @@
     ]
   },
   {
+    "id": "industrial-ct",
+    "name": "Industrial CT Viewer",
+    "url": "https://opensource.pitant.de/charts/#docs=industrial-ct",
+    "examples": [
+      {
+        "id": "industrial-ct-porosity",
+        "family": "industrial-ct",
+        "title": "Cobalt–Chromium CT Pore Inspection",
+        "label": "Three linked slices and rotatable pore surfaces",
+        "description": "Inspect segmented pores in three orthogonal slices and in a rotatable surface reconstruction of the same calibrated X-ray CT volume.",
+        "url": "https://opensource.pitant.de/charts/#example=industrial-ct-porosity",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",
