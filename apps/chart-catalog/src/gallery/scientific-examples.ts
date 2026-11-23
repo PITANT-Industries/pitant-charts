@@ -17,6 +17,7 @@ import individualsControlChart from './docs/examples/IndividualsControlChart.tsx
 import industrialCtViewer from './docs/examples/IndustrialCtViewer.tsx?raw'
 import modeShapes from './docs/examples/ModeShapes.tsx?raw'
 import phasePlane from './docs/examples/PhasePlane.tsx?raw'
+import responseSurface from './docs/examples/ResponseSurface.tsx?raw'
 import shaftOrbit from './docs/examples/ShaftOrbit.tsx?raw'
 import spectrogram from './docs/examples/Spectrogram.tsx?raw'
 import spectrum from './docs/examples/Spectrum.tsx?raw'
@@ -54,6 +55,7 @@ const scientificExamples = new Map([
   ['cad-scan-deviation-registered', withCatalogImports(cadScanDeviation)],
   ['cie-chromaticity-gamuts', withCatalogImports(cieChromaticityDiagram)],
   ['hyperspectral-cube-cuprite', withCatalogImports(hyperspectralCube)],
+  ['response-surface-thermal', withCatalogImports(responseSurface)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

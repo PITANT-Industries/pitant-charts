@@ -222,7 +222,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
-        'ternary-mixture-map', 'industrial-ct', 'cad-scan-deviation', 'cie-chromaticity', 'hyperspectral-cube',
+        'ternary-mixture-map', 'industrial-ct', 'cad-scan-deviation', 'cie-chromaticity', 'hyperspectral-cube', 'response-surface',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -409,6 +409,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=hyperspectral-cube&variant=hyperspectral-cube-cuprite'
                 )
+            elif example['family'] == 'response-surface':
+                await check_compact_response_surface(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=response-surface&variant=response-surface-thermal'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -513,6 +518,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'hyperspectral-cube':
                 await check_hyperspectral_cube(plot, touch)
                 code_import = 'HyperspectralCube'
+            elif example['family'] == 'response-surface':
+                await check_response_surface(plot, touch)
+                code_import = 'ResponseSurface'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -3493,6 +3501,253 @@ async def check_hyperspectral_cube(plot, touch):
         shoulder[2], 34.575, abs_tol=1e-8
     ):
         raise RuntimeError(f'Band ordinal 97 should show the measured 2260.10 nm shoulder: {shoulder}')
+
+
+async def check_response_surface_pixels(viewport):
+    await expect(viewport).to_be_visible()
+    await expect(viewport).to_have_attribute('data-face-count', re.compile(r'^[1-9]\d*$'))
+    width, height, drawn, tones = await viewport.evaluate("""async canvas => {
+      await document.fonts.ready
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      const { width, height } = canvas
+      const pixels = canvas.getContext('2d').getImageData(0, 0, width, height).data
+      const colors = new Set()
+      let colored = 0
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (!pixels[i + 3]) continue
+        const [red, green, blue] = pixels.subarray(i, i + 3)
+        if (Math.max(red, green, blue) - Math.min(red, green, blue) < 23) continue
+        colored++
+        colors.add((red << 16) | (green << 8) | blue)
+      }
+      return [width, height, colored, colors.size]
+    }""")
+    if min(width, height) < 100 or drawn < 300 or tones < 12:
+        raise RuntimeError(f'Expected an actual color-filled response mesh, observed {width}×{height} with {drawn} pixels and {tones} tones')
+
+
+async def check_compact_response_surface(card_plot):
+    chart = card_plot.locator('[data-response-surface]')
+    viewport = chart.locator('canvas[data-response-viewport]')
+    await check_response_surface_pixels(viewport)
+    await expect(viewport).to_have_attribute('data-face-count', '1352')
+    await expect(viewport).to_have_attribute('data-trial-count', '0')
+    clipped = await viewport.evaluate("""canvas => {
+      const view = canvas.getBoundingClientRect()
+      const card = canvas.closest('.card-plot').getBoundingClientRect()
+      const fits = view.left >= card.left - 1 && view.right <= card.right + 1 &&
+        view.top >= card.top - 1 && view.bottom <= card.bottom + 1
+      return fits ? null : { view: view.toJSON(), card: card.toJSON() }
+    }""")
+    if clipped:
+        raise RuntimeError(f'The compact response surface must fit the gallery card: {clipped}')
+    await expect(chart.locator('input, select, button, [data-response-section], [data-response-readout]')).to_have_count(0)
+
+
+async def check_response_surface(plot, touch):
+    chart = plot.locator('[data-response-surface]')
+    viewport = chart.locator('canvas[data-response-viewport]')
+    section = chart.locator('svg[data-response-section]')
+    trace = section.locator('path[data-response-section-path]')
+    marker = section.locator('circle[data-response-section-marker]')
+    target = section.locator('rect[data-response-section-pick]')
+    readout = chart.locator('output[data-response-readout]')
+    fixed = chart.get_by_role('combobox', name='Fixed factor', exact=True)
+    position = chart.get_by_role('slider', name='Section position', exact=True)
+    trial = chart.get_by_role('combobox', name='Trial', exact=True)
+    rotate_left = chart.get_by_role('button', name='Rotate left', exact=True)
+    rotate_right = chart.get_by_role('button', name='Rotate right', exact=True)
+    await check_response_surface_pixels(viewport)
+    await expect(viewport).to_have_attribute('data-face-count', '1352')
+    await expect(viewport).to_have_attribute('data-trial-count', '11')
+    await expect(section).to_be_visible()
+    await expect(section.locator('rect[data-response-frame]')).to_be_visible()
+    await expect(section.locator('.scientific-tick').first).to_be_attached()
+    await expect(trace).to_have_attribute('d', re.compile(r'^M'))
+    await expect(marker).to_be_visible()
+    await expect(readout).to_be_visible()
+    await expect(chart.locator('figcaption a').first).to_have_attribute('href', 'https://doi.org/10.3390/foods8110578')
+    await expect(section.get_by_text('Heating time (min)', exact=True)).to_be_visible()
+    await expect(section.get_by_text('Sphericity (%)', exact=True)).to_be_visible()
+    await expect(fixed).to_have_value('x')
+    await expect(target).to_have_attribute('data-min', '5')
+    await expect(target).to_have_attribute('data-max', '60')
+
+    async def selection():
+        x, y, fit, axis, plane, id_, measured, residual = await readout.evaluate("""out => [
+          ...['x','y','fitted'].map(key => Number(out.dataset[key])),
+          out.dataset.axis, Number(out.dataset.position), out.dataset.trial, out.dataset.measured, out.dataset.residual
+        ]""")
+        if not all(map(math.isfinite, (x, y, fit, plane))):
+            raise RuntimeError(f'Response selection must retain its calibrated factors and fitted value: {x}, {y}, {fit}, {plane}')
+        await expect(section).to_have_attribute('data-axis', axis)
+        if not math.isclose(plane, float(await section.get_attribute('data-position')), abs_tol=1e-8) or not math.isclose(
+            plane, x if axis == 'x' else y, abs_tol=1e-8
+        ):
+            raise RuntimeError('Selected point and section coordinates should stay linked')
+        await expect(fixed).to_have_value(axis)
+        if not math.isclose(float(await position.input_value()), plane, abs_tol=1e-8):
+            raise RuntimeError('The physical section slider should agree with the selected factor')
+        coordinates = await marker.evaluate("mark => ['x','y','fitted'].map(key => Number(mark.dataset[key]))")
+        if any(not math.isclose(actual, expected, abs_tol=1e-8) for actual, expected in zip(coordinates, [x, y, fit])):
+            raise RuntimeError('Section marker and readout must represent the same fitted response')
+        error = await section.evaluate("""svg => {
+          const path = svg.querySelector('[data-response-section-path]')
+          const mark = svg.querySelector('[data-response-section-marker]')
+          const x = mark.cx.baseVal.value
+          const y = mark.cy.baseVal.value
+          let lower = 0
+          let upper = path.getTotalLength()
+          for (let i = 0; i < 22; i++) {
+            const middle = (lower + upper) / 2
+            if (path.getPointAtLength(middle).x < x) lower = middle
+            else upper = middle
+          }
+          const nearest = path.getPointAtLength((lower + upper) / 2)
+          return Math.hypot(nearest.x - x, nearest.y - y)
+        }""")
+        if error > 0.9:
+            raise RuntimeError(f'Fitted section marker should lie on the visible response trace, observed {error}px separation')
+        return x, y, fit, axis, plane, id_, float(measured) if measured is not None else None, float(residual) if residual is not None else None
+
+    async def angles():
+        result = await viewport.evaluate('canvas => [Number(canvas.dataset.yaw), Number(canvas.dataset.pitch)]')
+        if not all(map(math.isfinite, result)):
+            raise RuntimeError(f'Invalid response-surface camera state: {result}')
+        return result
+
+    async def image():
+        return await viewport.evaluate("""async canvas => {
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+          return canvas.toDataURL()
+        }""")
+
+    def predict(x, y):
+        u, v = (x - 70) / 30, (y - 32.5) / 27.5
+        coefficients = [98.297022020586, -0.522681087942, -0.240539951291, -2.782882437407, -0.051321663937, -1.336001607748]
+        return math.fsum(coefficient * predictor for coefficient, predictor in zip(coefficients, [1, u, v, u * u, u * v, v * v]))
+
+    async def check_fit():
+        result = await selection()
+        x, y, fitted = result[:3]
+        if not math.isclose(fitted, predict(x, y), abs_tol=1e-8):
+            raise RuntimeError(f'Expected published-trial quadratic fit at {x}, {y}; observed {fitted}')
+        return result
+
+    async def pick(locator, point=None):
+        if touch:
+            await locator.tap(position=point)
+        else:
+            await locator.click(position=point)
+
+    async def check_trial(id_, x, y, actual):
+        result = await check_fit()
+        if result[:2] != (x, y) or result[5] != id_ or result[6] != actual or not math.isclose(
+            result[7], actual - predict(x, y), abs_tol=1e-8
+        ):
+            raise RuntimeError(f'Measured trial and signed residual should be linked to its fitted point: {result}')
+        await expect(trial).to_have_value(id_)
+        await expect(viewport).to_have_attribute('data-selected-trial', id_)
+        point = section.locator(f'circle[data-response-trial][data-id="{id_}"]')
+        await expect(point).to_have_attribute('data-measured', str(actual))
+        if not math.isclose(float(await point.get_attribute('data-residual')), result[7], abs_tol=1e-8):
+            raise RuntimeError('Section residual should match measured minus fitted')
+        point_x, point_y = await point.evaluate('circle => [circle.cx.baseVal.value, circle.cy.baseVal.value]')
+        fitted_y = float(await marker.get_attribute('cy'))
+        if (point_y < fitted_y) != (result[7] > 0):
+            raise RuntimeError('Trial marker should appear above the fit for positive residual and below for negative')
+        segments = await section.locator('line[data-response-residual]').evaluate_all("""lines => lines.map(
+          line => ['x1', 'x2', 'y1', 'y2'].map(key => line[key].baseVal.value)
+        )""")
+        expected_y = sorted([point_y, fitted_y])
+        if not any(
+            all(math.isclose(value, point_x, abs_tol=0.5) for value in line[:2])
+            and all(math.isclose(value, expected, abs_tol=0.5) for value, expected in zip(sorted(line[2:]), expected_y))
+            for line in segments
+        ):
+            raise RuntimeError('A rendered residual connector should span the fitted and measured points')
+        return {
+            'x': float(await viewport.get_attribute('data-trial-x')),
+            'y': float(await viewport.get_attribute('data-trial-y')),
+        }
+
+    initial = await check_fit()
+    if initial[:2] != (70, 32.5) or initial[3:] != ('x', 70, None, None, None):
+        raise RuntimeError(f'Expected initial prediction at 70 °C and 32.5 min: {initial}')
+    initial_angles = await angles()
+    start_image = await image()
+    await pick(rotate_right)
+    yaw, pitch = await angles()
+    if yaw == initial_angles[0] or pitch != initial_angles[1] or await check_fit() != initial or await image() == start_image:
+        raise RuntimeError('Rotate right should redraw the 3D surface while preserving the fitted selection')
+    await pick(rotate_left)
+    restored = await angles()
+    if any(not math.isclose(actual, expected, abs_tol=1e-8) for actual, expected in zip(restored, initial_angles)):
+        raise RuntimeError('The two rotate buttons should undo each other')
+
+    if not touch:
+        await expect(viewport).to_have_attribute('tabindex', '0')
+        await viewport.press('ArrowUp')
+        yaw, pitch = await angles()
+        if yaw != restored[0] or pitch == restored[1] or await check_fit() != initial:
+            raise RuntimeError('ArrowUp should change only pitch and preserve the response')
+        await viewport.press('ArrowDown')
+        if not math.isclose((await angles())[1], restored[1], abs_tol=1e-8):
+            raise RuntimeError('ArrowDown should reverse the pitch change')
+
+    center_trace = await trace.get_attribute('d')
+    await position.fill('60')
+    moved = await check_fit()
+    if moved[:2] != (60, 32.5) or moved[3] != 'x':
+        raise RuntimeError(f'Changing section temperature should preserve heating time: {moved}')
+    await expect(trace).not_to_have_attribute('d', center_trace)
+    clipped_bounds = [float(await target.get_attribute(f'data-{end}')) for end in ('min', 'max')]
+    expected_bounds = [5 + 8.1 * 10 / 21, 60 - 8 * 10 / 21]
+    if any(not math.isclose(actual, expected, abs_tol=1e-8) for actual, expected in zip(clipped_bounds, expected_bounds)):
+        raise RuntimeError(f'Fitted section should end at the sampled factor hull: {clipped_bounds}, expected {expected_bounds}')
+    await fixed.select_option('y')
+    await expect(section.get_by_text('Heating temperature (°C)', exact=True)).to_be_visible()
+    await position.fill('25')
+    linked = await check_fit()
+    if linked[:2] != (60, 25) or linked[3] != 'y' or not math.isclose(linked[2], 98.12360406886233, abs_tol=1e-8):
+        raise RuntimeError(f'Expected the fitted calibration point for 60 °C × 25 min: {linked}')
+
+    await target.scroll_into_view_if_needed()
+    box = await target.bounding_box()
+    low, high = [float(await target.get_attribute(f'data-{end}')) for end in ('min', 'max')]
+    expected_x = 75
+    await pick(target, {'x': box['width'] * (expected_x - low) / (high - low), 'y': box['height'] * .5})
+    projected = await check_fit()
+    if not math.isclose(projected[0], expected_x, abs_tol=0.35) or projected[1] != 25 or projected[5] is not None:
+        raise RuntimeError(f'Section click should vary temperature at a fixed heating time: {projected}')
+
+    await trial.select_option('run-02')
+    target_trial = await check_trial('run-02', 91, 13.1, 95.6)
+    await trial.select_option('run-09')
+    await check_trial('run-09', 70, 32.5, 98)
+    await trial.select_option('run-11')
+    await check_trial('run-11', 70, 32.5, 98.7)
+    await pick(viewport, target_trial)
+    await check_trial('run-02', 91, 13.1, 95.6)
+    await pick(section.locator('circle[data-response-trial][data-id="run-01"]'))
+    await check_trial('run-01', 49, 13.1, 96.6)
+    await position.fill('25')
+    prediction = await check_fit()
+    if prediction[5:] != (None, None, None):
+        raise RuntimeError('Moving off an observed trial should leave a model prediction without a measured value or residual')
+    if not touch:
+        await viewport.scroll_into_view_if_needed()
+        box = await viewport.bounding_box()
+        mouse = viewport.page.mouse
+        x, y = box['x'] + box['width'] * .45, box['y'] + box['height'] * .45
+        yaw, pitch = await angles()
+        await mouse.move(x, y)
+        await mouse.down()
+        await mouse.move(x + 35, y - 20, steps=5)
+        await mouse.up()
+        next_yaw, next_pitch = await angles()
+        if next_yaw <= yaw or next_pitch >= pitch or await check_fit() != prediction:
+            raise RuntimeError('Dragging the surface should rotate both axes without changing the fitted point')
 
 
 async def check_native_scientific(plot, slug, touch):

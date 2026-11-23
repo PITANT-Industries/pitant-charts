@@ -46,6 +46,8 @@ export { CieChromaticityDiagram } from './charts/scientific/CieChromaticityDiagr
 export type { CieChromaticityDiagramProps, CieChromaticityData, ChromaticityPoint, ChromaticitySpace, CieGamut, CieSpectralSample } from './charts/scientific/CieChromaticityDiagram'
 export { HyperspectralCube } from './charts/scientific/HyperspectralCube'
 export type { HyperspectralCubeProps, HyperspectralCubeData, HyperChannels, HyperMode, HyperPixel } from './charts/scientific/HyperspectralCube'
+export { ResponseSurface } from './charts/scientific/ResponseSurface'
+export type { ResponseSurfaceProps, ResponseSurfaceData, ResponseAxis, ResponseFactor, ResponsePosition, ResponseTrial } from './charts/scientific/ResponseSurface'
 export { SpectralWaterfall } from './charts/scientific/waterfall/SpectralWaterfall'
 export type { SpectralWaterfallProps } from './charts/scientific/waterfall/SpectralWaterfall'
 export type { SpectralAxis, SpectralWaterfallAxes, SpectralWaterfallData } from './charts/scientific/waterfall/model'

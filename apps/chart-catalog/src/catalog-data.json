@@ -3524,6 +3524,22 @@
     ]
   },
   {
+    "id": "response-surface",
+    "name": "3D Response Surface",
+    "url": "https://opensource.pitant.de/charts/#docs=response-surface",
+    "examples": [
+      {
+        "id": "response-surface-thermal",
+        "family": "response-surface",
+        "title": "Gel Bead Sphericity Response Surface",
+        "label": "Heating temperature and time",
+        "description": "Compare measured gel bead sphericity with a fitted surface, then hold temperature or time fixed to inspect a cross-section.",
+        "url": "https://opensource.pitant.de/charts/#example=response-surface-thermal",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",
