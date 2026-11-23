@@ -1,6 +1,6 @@
 .pitant-docs {
   --fd-banner-height: var(--gallery-header-height);
-  --fd-layout-width: 90rem;
+  --fd-layout-width: var(--gallery-max);
   --sidebar: var(--gallery-paper);
   --sidebar-foreground: var(--gallery-ink);
   --sidebar-border: var(--gallery-rule);
@@ -16,25 +16,58 @@
   outline-color: var(--gallery-accent);
 }
 
-.pitant-docs #nd-page > .pitant-docs-title {
-  margin: 0;
-  color: var(--gallery-ink);
-  font-size: clamp(2rem, 3.7vw, 3rem);
-  font-weight: 680;
-  letter-spacing: -.045em;
-  line-height: 1.07;
+.pitant-docs #nd-sidebar a[aria-current='page'] {
+  color: var(--gallery-selection-text);
+  font-weight: 630;
 }
 
-.pitant-docs #nd-page > .pitant-docs-description {
-  max-width: 63ch;
+.pitant-docs #nd-page {
+  gap: .85rem;
+  padding-block-start: clamp(1.4rem, 3vw, 2.5rem);
+}
+
+.pitant-docs-heading {
+  display: grid;
+  gap: .65rem;
+  margin-block-end: .8rem;
+}
+
+.pitant-docs-title {
+  margin: 0;
+  color: var(--gallery-ink);
+  font-size: clamp(2rem, 3.4vw, 2.8rem);
+  font-weight: 680;
+  letter-spacing: -.045em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.pitant-docs .pitant-docs-description {
+  max-width: 60ch;
   margin: 0;
   color: var(--gallery-muted);
+  font-size: clamp(.95rem, 1.4vw, 1.05rem);
   line-height: 1.55;
+  text-wrap: pretty;
 }
 
 .pitant-docs .pitant-docs-body {
   min-width: 0;
   max-width: none;
+}
+
+.pitant-docs-body > section:first-child > h2 {
+  margin-block-start: 0;
+}
+
+.pitant-docs #nd-toc {
+  padding-block-start: 2.5rem;
+}
+
+.pitant-docs #toc-title {
+  color: var(--gallery-ink);
+  font-size: .8125rem;
+  font-weight: 620;
 }
 
 .pitant-docs #nd-page :is(section, h1, h2, h3)[id] {
@@ -43,4 +76,27 @@
 
 .pitant-docs a[href='#nd-page'] {
   top: calc(var(--gallery-header-height) + .5rem);
+}
+
+@media (min-width: 768px) {
+  .pitant-docs#nd-docs-layout {
+    --fd-sidebar-width: 14.75rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .pitant-docs#nd-docs-layout {
+    --fd-toc-width: 12.25rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .pitant-docs#nd-docs-layout {
+    --fd-header-height: 2.875rem;
+    --fd-toc-popover-height: 2.375rem;
+  }
+
+  .pitant-docs [data-toc-popover-trigger] {
+    height: var(--fd-toc-popover-height);
+  }
 }

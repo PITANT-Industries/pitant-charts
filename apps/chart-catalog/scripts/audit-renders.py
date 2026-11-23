@@ -166,6 +166,11 @@ async def check_docs_navigation(browser, local_url, catalog):
         line = next(family for family in catalog if family['id'] == 'line')
         fragment = urlencode({'docs': 'line', 'variant': 'line-time-range'})
         await page.goto(f'{local_url}#{fragment}', wait_until='domcontentloaded')
+        range_plot = page.locator('#docs-preview .docs-example-plot[data-example-id="line-time-range"]')
+        await check_chart_output(range_plot)
+        await expect(range_plot.locator('[data-line-axis] text').last).to_be_in_viewport(ratio=1)
+        if await range_plot.evaluate('(plot) => plot.scrollHeight - plot.clientHeight > 1'):
+            raise RuntimeError('The time-range preview should show its date axis without an inner scrollbar')
         toc = page.locator('#nd-toc')
         await toc.get_by_role('link', name='Examples', exact=True).click()
         section_url = f'{local_url}#{fragment}&section=docs-examples-title'

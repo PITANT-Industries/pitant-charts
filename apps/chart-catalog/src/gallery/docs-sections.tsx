@@ -1,8 +1,10 @@
 import type { JSX } from 'react'
+import { BookOpen, Download, Layers3 } from 'lucide-react'
 import { examples, families, getFamily, groups } from '../catalog'
 import registry from '../../../../registry.json'
 import { CodeBlock, guideUrl, repositoryUrl } from './ExampleCode'
 import { archiveInstallCommands, PackageManagerCommands } from './PackageManagerCommands'
+import './docs-sections.css'
 
 export const docSections = [
   { id: 'introduction', title: 'Introduction', description: 'React charts for dashboards, scientific analysis, and industrial time series.' },
@@ -109,25 +111,45 @@ function shadcn(command: string) {
   }
 }
 
+const introductionLinks = [
+  { href: '#docs=components', title: 'Browse component guides', icon: BookOpen },
+  { href: '#docs=installation', title: 'Install PITANT Charts', icon: Download },
+  { href: '#docs=registry', title: 'Add a shadcn chart block', icon: Layers3 },
+]
+
 function Introduction() {
   return <>
-    <section>
+    <section className="pitant-guide-start">
       <GuideHeading section="introduction" id="start-here" />
       <p>Explore {examples.length} interactive examples across {families.length} chart families. Component guides include previews, input formats, React props, and examples you can adapt to your data.</p>
-      <ul>
-        <li><a href="#docs=components">Browse component guides</a></li>
-        <li><a href="#docs=installation">Install PITANT Charts</a></li>
-        <li><a href="#docs=registry">Add a shadcn chart block</a></li>
+      <ul className="pitant-guide-actions">
+        {introductionLinks.map(({ href, title, icon: Icon }) => (
+          <li key={href}>
+            <a href={href}><Icon size={17} aria-hidden="true" />{title}</a>
+          </li>
+        ))}
       </ul>
     </section>
-    <section>
+    <section className="pitant-guide-packages">
       <GuideHeading section="introduction" id="choose-a-package" />
-      <ul>
-        <li><code>pitant-charts</code> provides typed line, bar, donut, and sunburst components for React dashboards.</li>
-        <li><code>@pitant/chart-catalog</code> embeds a gallery example, with its sample data or your own.</li>
-        <li><code>@pitant/charts-react</code> provides scientific and industrial charts, including spectra, spectrograms, process-control charts, streaming trends, and synchronized panels.</li>
-        <li><code>@pitant/charts</code> is the TypeScript rendering and data engine for apps that manage their own canvas.</li>
-      </ul>
+      <dl>
+        <div>
+          <dt><code>pitant-charts</code></dt>
+          <dd>Typed line, bar, donut, and sunburst components for React dashboards.</dd>
+        </div>
+        <div>
+          <dt><code>@pitant/chart-catalog</code></dt>
+          <dd>Embed a gallery example with its sample data or your own.</dd>
+        </div>
+        <div>
+          <dt><code>@pitant/charts-react</code></dt>
+          <dd>Scientific and industrial charts, including spectra, spectrograms, process-control charts, streaming trends, and synchronized panels.</dd>
+        </div>
+        <div>
+          <dt><code>@pitant/charts</code></dt>
+          <dd>TypeScript rendering and data engine for apps that manage their own canvas.</dd>
+        </div>
+      </dl>
     </section>
     <p>PITANT Charts is open source under MPL 2.0. See the source, license, and contribution guide on <a href={repositoryUrl}>GitHub</a>.</p>
   </>
@@ -137,7 +159,7 @@ function Components() {
   return <>
     <p>Open a component to find its supported data, properties, and live variations. To compare designs visually, browse the <a href="#">chart gallery</a>.</p>
     {groups.map((group) => (
-      <section key={group.id}>
+      <section className="pitant-guide-component-group" key={group.id}>
         <GuideHeading section="components" id={`component-group-${group.id}`} />
         <ul>
           {group.families.map((id) => {

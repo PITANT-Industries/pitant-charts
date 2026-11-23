@@ -219,8 +219,10 @@ export function DocsShell({ pageId, title, description, toc, onNavigate, childre
           containerProps={{ className: 'pitant-docs', onClick: followHeading, onAuxClick: followHeading }}
         >
           <DocsPage toc={tocItems} tableOfContent={{ enabled: tocItems.length > 0, single: true }} aria-labelledby="family-docs-title">
-            <DocsTitle id="family-docs-title" className="pitant-docs-title" tabIndex={-1}>{title}</DocsTitle>
-            <DocsDescription className="pitant-docs-description">{description}</DocsDescription>
+            <header className="pitant-docs-heading">
+              <DocsTitle id="family-docs-title" className="pitant-docs-title" tabIndex={-1}>{title}</DocsTitle>
+              <DocsDescription className="pitant-docs-description">{description}</DocsDescription>
+            </header>
             <DocsBody className="pitant-docs-body">{children}</DocsBody>
           </DocsPage>
         </DocsLayout>

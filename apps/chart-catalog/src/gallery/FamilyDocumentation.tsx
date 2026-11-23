@@ -64,15 +64,21 @@ function ExamplePlot({ example, deferred }: { example: ChartExample; deferred: b
   )
 }
 
-function ExamplePreview({ example, deferred = false }: { example: ChartExample; deferred?: boolean }) {
+function ExamplePreview({ example, featured = false }: { example: ChartExample; featured?: boolean }) {
+  const Title = featured ? 'h2' : 'h3'
+  const titleId = featured ? 'docs-preview-title' : `example-${example.id}`
+
   return (
     <Tabs defaultValue="preview" activationMode="manual" className="docs-preview">
-      <TabsList aria-label={`${example.title} example view`}>
-        <TabsTrigger value="preview">Preview</TabsTrigger>
-        <TabsTrigger value="code">Code</TabsTrigger>
-      </TabsList>
+      <div className="docs-preview-toolbar not-prose">
+        <Title id={titleId} tabIndex={-1}>{example.title}</Title>
+        <TabsList variant="line" aria-label={`${example.title} example view`}>
+          <TabsTrigger value="preview">Preview</TabsTrigger>
+          <TabsTrigger value="code">Code</TabsTrigger>
+        </TabsList>
+      </div>
       <TabsContent value="preview" className="docs-preview-panel">
-        <ExamplePlot example={example} deferred={deferred} />
+        <ExamplePlot example={example} deferred={!featured} />
       </TabsContent>
       <TabsContent value="code" className="docs-preview-panel">
         <ExampleCode example={example} />
@@ -100,9 +106,7 @@ export function FamilyDocumentation({ family, variantId, onNavigate }: {
     <DocsShell pageId={family.id} title={family.name} description={doc.summary} toc={toc} onNavigate={onNavigate}>
       <div className="family-docs">
         <section id="docs-preview" aria-labelledby="docs-preview-title">
-          <h2 id="docs-preview-title" tabIndex={-1}>Preview</h2>
-          {featured.title.toLowerCase() !== family.name.toLowerCase() && <p className="docs-preview-label">{featured.title}</p>}
-          <ExamplePreview key={featured.id} example={featured} />
+          <ExamplePreview key={featured.id} example={featured} featured />
         </section>
 
         <section id="docs-usage" aria-labelledby="docs-usage-title">
@@ -149,8 +153,7 @@ export function FamilyDocumentation({ family, variantId, onNavigate }: {
             <div className="docs-variants">
               {otherExamples.map((example) => (
                 <section key={example.id} aria-labelledby={`example-${example.id}`}>
-                  <h3 id={`example-${example.id}`}>{example.title}</h3>
-                  <ExamplePreview example={example} deferred />
+                  <ExamplePreview example={example} />
                 </section>
               ))}
             </div>
