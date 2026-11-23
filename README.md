@@ -18,6 +18,8 @@
   <a href="http://opensource.pitant.de/charts/#docs=area">Component documentation</a>
   &nbsp;·&nbsp;
   <a href="#quick-start">Quick start</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/PITANT-Industries/pitant-charts">Star on GitHub</a>
 </p>
 
 <p align="center">
