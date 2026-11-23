@@ -8,11 +8,11 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 61 chart and tooltip families and all 350 public examples', () => {
+test('covers 62 chart and tooltip families and all 351 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()
-  assert.equal(catalog.length, 61)
+  assert.equal(catalog.length, 62)
   for (const family of catalog) {
     assert(!familyIds.has(family.id), `Duplicate family ${family.id}`)
     familyIds.add(family.id)
@@ -38,8 +38,9 @@ test('covers 61 chart and tooltip families and all 350 public examples', () => {
   assert.deepEqual(catalog.find((family) => family.id === 'eye-diagram')?.examples.map((example) => example.id), ['eye-diagram-nrz'])
   assert.deepEqual(catalog.find((family) => family.id === 'allan-deviation')?.examples.map((example) => example.id), ['allan-deviation-stability'])
   assert.deepEqual(catalog.find((family) => family.id === 'phase-plane')?.examples.map((example) => example.id), ['phase-plane-pendulum'])
-  assert.equal(ids.size, 350)
-  assert.equal(urls.size, 350)
+  assert.deepEqual(catalog.find((family) => family.id === 'xrd-peak-tracker')?.examples.map((example) => example.id), ['xrd-peak-tracker-dynic2'])
+  assert.equal(ids.size, 351)
+  assert.equal(urls.size, 351)
 })
 
 test('documents every catalog family exactly once with practical guidance', async () => {
@@ -89,7 +90,7 @@ test('documents every catalog family exactly once with practical guidance', asyn
 test('each catalog family is routed to exactly one renderer group', () => {
   const groups = chartPreview.match(/export const rendererFamilies = \{([\s\S]+?)\} as const/)?.[1] ?? ''
   const mapped = Array.from(groups.matchAll(/'([^']+)'/g), (match) => match[1])
-  assert.equal(mapped.length, 61)
+  assert.equal(mapped.length, 62)
   assert.deepEqual(mapped.sort(), catalog.map((family) => family.id).sort())
 })
 

@@ -220,7 +220,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
     families = {
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
-        'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane',
+        'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -324,6 +324,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=phase-plane&variant=phase-plane-pendulum'
                 )
+            elif example['family'] == 'xrd-peak-tracker':
+                profile = card_plot.locator('svg[data-xrd-profile]')
+                await check_xrd_profile(profile)
+                await check_compact_figure_bounds(profile, 'rect[data-xrd-axis-frame]')
+                await expect(card_plot.locator('select, [data-xrd-trend], [data-xrd-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=xrd-peak-tracker&variant=xrd-peak-tracker-dynic2'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -395,6 +403,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'phase-plane':
                 await check_phase_plane(plot, touch)
                 code_import = 'PhasePlane'
+            elif example['family'] == 'xrd-peak-tracker':
+                await check_xrd_peak_tracker(plot, touch)
+                code_import = 'PeakTracker'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -1453,6 +1464,130 @@ async def check_phase_plane(plot, touch):
         await trajectory.select_option(trajectory_id)
         if await selection() != (2, *state):
             raise RuntimeError(f'Unexpected measured {trajectory_id} state at 2 s')
+
+
+async def check_xrd_profile(profile):
+    await expect(profile).to_be_visible()
+    await expect(profile.locator('rect[data-xrd-axis-frame]')).to_be_visible()
+    await expect(profile.locator('.scientific-tick').first).to_be_attached()
+    await expect(profile.get_by_text('Diffraction angle, 2θ (°)', exact=True)).to_be_visible()
+    await expect(profile.get_by_text('Intensity (a.u.)', exact=True)).to_be_visible()
+    await expect(profile.locator('[data-xrd-measured]')).to_be_visible()
+    await expect(profile.locator('path[data-xrd-fit]')).to_have_attribute('d', re.compile(r'^M'))
+
+
+async def check_xrd_peak_tracker(plot, touch):
+    chart = plot.locator('[data-xrd-peak-tracker]')
+    await expect(chart.locator('figcaption a').first).to_have_attribute(
+        'href', re.compile(r'^https://doi\.org/10\.7910/DVN/ACPWBG/?$', re.I)
+    )
+    profile = chart.locator('svg[data-xrd-profile]')
+    await check_xrd_profile(profile)
+    fit = profile.locator('path[data-xrd-fit]')
+    await expect(profile.locator('[data-xrd-baseline]')).to_be_attached()
+    await expect(profile.locator('[data-xrd-fwhm]')).to_be_visible()
+    await expect(chart.locator('svg[data-xrd-trend]')).to_have_count(3)
+    trends = {name: chart.locator(f'svg[data-xrd-trend][data-metric="{name}"]') for name in ['center', 'fwhm', 'height']}
+    for name, label in [('center', '2θ (°)'), ('fwhm', 'FWHM (°)'), ('height', 'Height (a.u.)')]:
+        trend = trends[name]
+        await expect(trend).to_be_visible()
+        await expect(trend.get_by_text('Temperature (K)', exact=True)).to_be_visible()
+        await expect(trend.get_by_text(label, exact=True)).to_be_visible()
+    peak = chart.get_by_role('combobox', name='Peak', exact=True)
+    temperatures = chart.get_by_role('slider', name='Temperature', exact=True)
+    readout = chart.locator('output[data-xrd-readout]')
+    await expect(readout).to_be_visible()
+    await expect(peak).to_have_value('peak-high')
+
+    async def selection():
+        values = await readout.evaluate(
+            "out => ['temperature', 'center', 'fwhm', 'height', 'rmse'].map(key => out.dataset[key])"
+        )
+        kelvin, center, fwhm, height, rmse = map(float, values)
+        if not all(map(math.isfinite, (kelvin, center, fwhm, height, rmse))) or not (
+            kelvin > 0 and center > 0 and fwhm > 0 and height > 0 and rmse >= 0
+        ):
+            raise RuntimeError(f'Invalid local XRD fit or temperature: {values}')
+        cursor_x_positions = []
+        for metric, value in zip(trends, values[1:4]):
+            cursor = trends[metric].locator('circle[data-xrd-trend-cursor]')
+            await expect(cursor).to_be_visible()
+            await expect(cursor).to_have_attribute('data-temperature', values[0])
+            await expect(cursor).to_have_attribute('data-value', value)
+            cursor_x_positions.append(float(await cursor.get_attribute('cx')))
+        if max(cursor_x_positions) - min(cursor_x_positions) > 0.5:
+            raise RuntimeError(f'XRD trend cursors should align at the selected temperature: {cursor_x_positions}')
+        return kelvin, center, fwhm, height, rmse
+
+    trend_cursor = trends['center'].locator('circle[data-xrd-trend-cursor]')
+
+    async def cursor_x():
+        return await trend_cursor.evaluate('cursor => { const box = cursor.getBoundingClientRect(); return box.left + box.width / 2 }')
+
+    async def pick(target, x):
+        await expect(target).to_be_visible()
+        bounds = await target.bounding_box()
+        position = {'x': x - bounds['x'], 'y': bounds['height'] * 0.5}
+        if touch:
+            await target.tap(position=position)
+        else:
+            await target.click(position=position)
+
+    initial_fit = await selection()
+    await temperatures.press('Home')
+    first_temperature, *_ = await selection()
+    first_x = await cursor_x()
+    first_fit = await fit.get_attribute('d')
+    await temperatures.press('End')
+    last_temperature, *_ = await selection()
+    last_x = await cursor_x()
+    if (first_temperature, last_temperature) != (10.91, 294.11) or not first_x < last_x:
+        raise RuntimeError(f'Unexpected temperature endpoints or cursor positions: {first_temperature}–{last_temperature} K')
+    await expect(fit).not_to_have_attribute('d', first_fit)
+
+    await temperatures.fill('13')
+    chosen_temperature, *_ = await selection()
+    expected_x = first_x + (last_x - first_x) * (269.16 - first_temperature) / (last_temperature - first_temperature)
+    if chosen_temperature != 269.16 or not math.isclose(await cursor_x(), expected_x, abs_tol=0.5):
+        raise RuntimeError('The cursor must position 269.16 K using its physical temperature instead of its recording index')
+    await temperatures.press('Home')
+
+    hit = trends['center'].locator('.xrd-trend-pick')
+    await pick(hit, expected_x)
+    picked_fit = await selection()
+    picked_temperature = picked_fit[0]
+    if picked_temperature != chosen_temperature:
+        raise RuntimeError(f'Trend selection should pick the nearest physical temperature: {picked_temperature} K')
+    known_fits = [
+        (initial_fit, (144.29, 5.358128979, 0.02017690145, 63.56737184, 1.554932679)),
+        (picked_fit, (269.16, 5.349275413, 0.02301408353, 25.28104532, 0.2268623807)),
+    ]
+    for observed, expected in known_fits:
+        if not all(math.isclose(value, anchor, rel_tol=1e-7) for value, anchor in zip(observed, expected)):
+            raise RuntimeError(f'Unexpected high-peak fit: observed {observed}, expected {expected}')
+
+    options = await peak.locator('option').evaluate_all('options => options.map(option => option.value)')
+    if set(options) != {'peak-low', 'peak-middle', 'peak-high'}:
+        raise RuntimeError(f'Expected the three local diffraction peaks, observed {options}')
+    initial_peak = await peak.input_value()
+    previous_center = (await selection())[1]
+    previous_fit = await fit.get_attribute('d')
+    await peak.select_option(next(value for value in options if value != initial_peak))
+    new_temperature, center, *_ = await selection()
+    if new_temperature != picked_temperature or center == previous_center:
+        raise RuntimeError('Changing tracked peak should retain the scan and show its local fit')
+    await expect(fit).not_to_have_attribute('d', previous_fit)
+
+    profile_hit = profile.locator('.xrd-profile-pick')
+    await expect(profile_hit).to_be_visible()
+    profile_bounds = await profile_hit.bounding_box()
+    minimum_angle, maximum_angle = 5.00235532352023, 5.499932201584514
+    for angle in [5.29, 5.45]:
+        x = profile_bounds['x'] + profile_bounds['width'] * (angle - minimum_angle) / (maximum_angle - minimum_angle)
+        await pick(profile_hit, x)
+        await expect(peak).to_have_value('peak-middle')
+        if (await selection())[0] != picked_temperature:
+            raise RuntimeError(f'Picking diffraction angle {angle}° should retain the selected scan')
 
 
 async def check_native_scientific(plot, slug, touch):

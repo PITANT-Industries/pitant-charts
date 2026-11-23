@@ -14,6 +14,7 @@ import spectrogram from './docs/examples/Spectrogram.tsx?raw'
 import spectrum from './docs/examples/Spectrum.tsx?raw'
 import steelDefectCorrelation from './docs/examples/SteelDefectCorrelation.tsx?raw'
 import waveletScalogram from './docs/examples/WaveletScalogram.tsx?raw'
+import xrdPeakTracker from './docs/examples/XrdPeakTracker.tsx?raw'
 
 function withCatalogImports(source: string) {
   return source
@@ -32,6 +33,7 @@ const scientificExamples = new Map([
   ['eye-diagram-nrz', withCatalogImports(eyeDiagram)],
   ['allan-deviation-stability', withCatalogImports(allanDeviation)],
   ['phase-plane-pendulum', withCatalogImports(phasePlane)],
+  ['xrd-peak-tracker-dynic2', withCatalogImports(xrdPeakTracker)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],
