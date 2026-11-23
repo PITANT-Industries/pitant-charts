@@ -48,7 +48,7 @@ function projection(width: number, height: number, camera: Camera, compact: bool
   const verticalZ = -0.74 * Math.cos(elevation)
   const xSpan = horizontalX - horizontalY
   const ySpan = verticalX + verticalY - verticalZ
-  const marginX = compact ? 8 : Math.min(46, width * 0.16)
+  const marginX = compact ? 8 : Math.min(56, width * 0.19)
   const marginY = compact ? 6 : 25
   const scale = Math.max(1, Math.min((width - marginX * 2) / xSpan, (height - marginY * 2) / ySpan))
   const originX = (width - xSpan * scale) / 2 - horizontalY * scale
