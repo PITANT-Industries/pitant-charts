@@ -8,11 +8,11 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 66 chart and tooltip families and all 355 public examples', () => {
+test('covers 67 chart and tooltip families and all 356 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()
-  assert.equal(catalog.length, 66)
+  assert.equal(catalog.length, 67)
   for (const family of catalog) {
     assert(!familyIds.has(family.id), `Duplicate family ${family.id}`)
     familyIds.add(family.id)
@@ -43,8 +43,9 @@ test('covers 66 chart and tooltip families and all 355 public examples', () => {
   assert.deepEqual(catalog.find((family) => family.id === 'full-field-strain')?.examples.map((example) => example.id), ['full-field-strain-tensile'])
   assert.deepEqual(catalog.find((family) => family.id === 'fatigue-sn')?.examples.map((example) => example.id), ['fatigue-sn-measured'])
   assert.deepEqual(catalog.find((family) => family.id === 'crack-growth')?.examples.map((example) => example.id), ['crack-growth-fatigue'])
-  assert.equal(ids.size, 355)
-  assert.equal(urls.size, 355)
+  assert.deepEqual(catalog.find((family) => family.id === 'binary-phase-diagram')?.examples.map((example) => example.id), ['binary-phase-diagram-ag-cu'])
+  assert.equal(ids.size, 356)
+  assert.equal(urls.size, 356)
 })
 
 test('documents every catalog family exactly once with practical guidance', async () => {
@@ -94,7 +95,7 @@ test('documents every catalog family exactly once with practical guidance', asyn
 test('each catalog family is routed to exactly one renderer group', () => {
   const groups = chartPreview.match(/export const rendererFamilies = \{([\s\S]+?)\} as const/)?.[1] ?? ''
   const mapped = Array.from(groups.matchAll(/'([^']+)'/g), (match) => match[1])
-  assert.equal(mapped.length, 66)
+  assert.equal(mapped.length, catalog.length)
   assert.deepEqual(mapped.sort(), catalog.map((family) => family.id).sort())
 })
 

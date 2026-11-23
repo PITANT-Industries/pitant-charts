@@ -3428,6 +3428,22 @@
     ]
   },
   {
+    "id": "binary-phase-diagram",
+    "name": "Binary Phase Diagram",
+    "url": "https://opensource.pitant.de/charts/#docs=binary-phase-diagram",
+    "examples": [
+      {
+        "id": "binary-phase-diagram-ag-cu",
+        "family": "binary-phase-diagram",
+        "title": "Silver–Copper Equilibrium Phase Diagram",
+        "label": "Calculated Ag–Cu phase equilibria",
+        "description": "Follow a cooling path through a calculated Ag–Cu diagram and read coexisting phase compositions and fractions from a tie line.",
+        "url": "https://opensource.pitant.de/charts/#example=binary-phase-diagram-ag-cu",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",

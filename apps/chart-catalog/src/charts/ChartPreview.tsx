@@ -24,6 +24,7 @@ const StressStrainComparisonPreview = lazy(() => import('./scientific/StressStra
 const FullFieldStrainPreview = lazy(() => import('./scientific/FullFieldStrainPreview'))
 const FatigueSnPreview = lazy(() => import('./scientific/FatigueSnPreview'))
 const CrackGrowthPreview = lazy(() => import('./scientific/CrackGrowthPreview'))
+const BinaryPhaseDiagramPreview = lazy(() => import('./scientific/BinaryPhaseDiagramPreview'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
 const ParticleMassSpectrum = lazy(() => import('./scientific/particle/ParticleMassSpectrumPreview'))
 const ScientificWaterfall = lazy(() => import('./scientific/waterfall/SpectralWaterfallPreview'))
@@ -48,6 +49,7 @@ export const rendererFamilies = {
   fullFieldStrain: ['full-field-strain'],
   fatigueSn: ['fatigue-sn'],
   crackGrowth: ['crack-growth'],
+  binaryPhaseDiagram: ['binary-phase-diagram'],
   spectrogram: ['spectrogram'],
   scientific: ['spectrum', 'correlation-matrix', 'process-control'],
   statsmaps: ['scatter', 'heatmap', 'uncertainty', 'histogram', 'ridgeline', 'ecdf', 'beeswarm', 'violin', 'box-plot', 'hexbin', 'density', 'choropleth', 'bubble-map', 'route-map', 'globe', 'vector-field'],
@@ -72,6 +74,7 @@ const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.fullFieldStrain.map((id) => [id, FullFieldStrainPreview] as const),
   ...rendererFamilies.fatigueSn.map((id) => [id, FatigueSnPreview] as const),
   ...rendererFamilies.crackGrowth.map((id) => [id, CrackGrowthPreview] as const),
+  ...rendererFamilies.binaryPhaseDiagram.map((id) => [id, BinaryPhaseDiagramPreview] as const),
   ...rendererFamilies.waterfall.map((id) => [id, ScientificWaterfall] as const),
   ...rendererFamilies.spectrogram.map((id) => [id, MaunaLoaSpectrogram] as const),
   ...rendererFamilies.scientific.map((id) => [id, Scientific] as const),
