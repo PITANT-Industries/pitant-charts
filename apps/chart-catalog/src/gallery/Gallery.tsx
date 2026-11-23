@@ -270,6 +270,8 @@ export function Gallery() {
   const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const showFeature = currentPage === 1 && !query && !showSaved &&
     (!selectedGroup || ['area', 'bar', 'line'].includes(link.family))
+  const landingFeature = showFeature && !selectedGroup && layout === 'grid' ? visible[0] : undefined
+  const gridExamples = landingFeature ? visible.slice(1) : visible
 
   function choose(group: string, family = 'all', onlySaved = false) {
     const next: GalleryLink = { group, family, example: '', tab: 'preview' }
@@ -414,7 +416,7 @@ export function Gallery() {
         </div>
       </header>
       <main id="main-content" tabIndex={-1}>
-        {!documentedFamily && !showSaved && <section className="hero" aria-labelledby="page-title">
+        {!documentedFamily && !showSaved && <section className={landingFeature ? 'hero hero--featured' : 'hero'} aria-labelledby="page-title">
           <div className="hero-copy">
             <h1 id="page-title">PITANT Charts</h1>
             <p className="hero-intro">Explore {examples.length} interactive React examples for dashboards, time series, maps, and more.</p>
@@ -423,6 +425,11 @@ export function Gallery() {
               <a className="secondary-button" href="#docs=area" onClick={(event) => followLink(event, () => showDocumentation('area'))}>Documentation <BookOpen size={16} aria-hidden="true" /></a>
             </div>
           </div>
+          {landingFeature && <ExampleCard
+            example={landingFeature}
+            featured
+            onDocumentation={() => showDocumentation(landingFeature.family, landingFeature.id)}
+          />}
         </section>}
         <div className={documentedFamily ? 'workspace' : 'workspace workspace--catalog'}>
           {documentedFamily && <aside className="sidebar">{categoryNavigation()}</aside>}
@@ -446,11 +453,11 @@ export function Gallery() {
               </div>
               {visible.length ? layout === 'grid' ? (
                 <div className="example-grid">
-                  {visible.map((example, index) => (
+                  {gridExamples.map((example, index) => (
                     <ExampleCard
                       key={example.id}
                       example={example}
-                      featured={showFeature && index === 0}
+                      featured={showFeature && !landingFeature && index === 0}
                       onDocumentation={() => showDocumentation(example.family, example.id)}
                     />
                   ))}
