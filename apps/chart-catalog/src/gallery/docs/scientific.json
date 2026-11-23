@@ -89,6 +89,33 @@
       { "label": "MathWorks, Plotting System Responses, Bode and Nyquist examples", "href": "https://www.mathworks.com/help/control/ug/plotting-system-responses.html" }
     ]
   },
+  "coherence-phase": {
+    "summary": "Read magnitude-squared coherence and signed cross-phase at the same frequency.",
+    "useWhen": "Check which frequency components two sensors share and whether their relative phase is consistent over a test run.",
+    "data": "Supply spectral estimates from synchronized sensor recordings. For each run, provide a unique ID and label, at least two nonnegative frequencies in Hz in strictly increasing order, and aligned arrays of finite coherence and phase values. Coherence ranges from 0 to 1. Wrap phase to the −180° to 180° interval.",
+    "reading": "Choose a Recording, then select a frequency in either panel or with the Frequency control. A shared cursor identifies the same bin in the coherence and phase panels. Frequency band can restrict the view to the lower quarter of the range when that interval contains at least two bins.",
+    "notes": [
+      "The example compares the first baseline and drive-end unbalance recordings at a nominal 30 Hz shaft speed (1,800 RPM) on the same Universidade de São Paulo rig. The source files are Normal_30Hz_001.lvm and Desbalanc1_30Hz_001.lvm. The unbalance recording lists an added 18.13 g mass at 0°.",
+      "Channel X is horizontal acceleration at the drive-end bearing and channel Y is horizontal acceleration at the non-drive-end bearing. Each six-second record contains 36,000 synchronized samples per channel at 6,000 Hz.",
+      "The displayed estimates use 34 Welch segments with per-segment mean removal, a 2,048-sample periodic Hann window, and 1,024 samples of overlap. The 512 displayed frequency bins span about 2.93–1,500 Hz with 2.93 Hz spacing. The preview starts on the bin nearest the nominal shaft speed, at 29.30 Hz.",
+      "Estimate the auto-spectra Pxx and Pyy and cross-spectrum Pxy with the same Welch window, segment length, overlap, and sampling rate. Magnitude-squared coherence is |Pxy|²/(Pxx Pyy). Values near 1 indicate a consistent linear association at that frequency.",
+      "The phase convention is Y relative to X. Phase is arg(Pxy), where the Welch cross-spectrum averages segment products conj(X)Y. Swapping X and Y reverses the phase sign. A pure delay τ from X to Y gives phase −360° × frequency × τ modulo 360°, with time in seconds.",
+      "Coherence threshold starts at 0.60 and controls the phase display. Phase has gaps at bins below the selected cutoff and at jumps across the ±180° wrap. Interpreting phase or choosing a statistical threshold requires knowledge of the sensor setup and the spectral estimates."
+    ],
+    "properties": [
+      { "name": "data", "type": "CoherenceData", "description": "Required. Give each run an id, label, frequencyHz array, coherence array, and phaseDeg array." },
+      { "name": "initialBand", "type": "\"full\" | \"low\"", "description": "Choose the starting frequency range. The recorded example starts at 0–375 Hz to show detail near the shaft frequency." },
+      { "name": "initialFrequencyHz", "type": "number", "description": "Start at the nearest frequency bin. The default is the bin with the highest coherence." },
+      { "name": "label", "type": "string", "description": "Describe the two channels and test condition for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact preview of the aligned spectra." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Add the data source, a measurement note, and optional license information." }
+    ],
+    "sources": [
+      { "label": "Amanda Lucatto Marra and Claudio Garcia (2024), Vibration signals of different fault conditions in a generic rotating machine (CC BY 4.0)", "href": "https://doi.org/10.5281/zenodo.14388093" },
+      { "label": "SciPy, magnitude-squared coherence by Welch’s method", "href": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.coherence.html" },
+      { "label": "SciPy, cross spectral density and phase sign convention", "href": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.csd.html" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",

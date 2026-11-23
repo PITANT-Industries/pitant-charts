@@ -443,7 +443,7 @@ export default function ScientificPreview({ example, compact = false, data }: Ch
   const props = {
     ariaLabel: example.title,
     ...(compact ? {} : { ariaDescribedBy: caption }),
-    className: 'scientific-plot',
+    className: 'scientific-native-plot',
     renderer: 'canvas2d' as const,
   }
   const figure = { id: example.id, caption, compact, dark }

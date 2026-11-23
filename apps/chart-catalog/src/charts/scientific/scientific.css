@@ -27,7 +27,7 @@
   overflow: hidden;
 }
 
-.scientific-plot {
+.scientific-native-plot {
   inline-size: 100%;
   block-size: 100%;
 }
@@ -37,7 +37,7 @@
 .scientific-preview:is(
   [data-scientific-preview='spectrum-measured'],
   [data-scientific-preview^='process-control-']
-) .scientific-plot {
+) .scientific-native-plot {
   margin-block-start: -2.25rem;
   block-size: calc(100% + 2.25rem);
 }
@@ -65,7 +65,7 @@
   block-size: auto;
 }
 
-.scientific-preview[data-dark='true'] .scientific-plot canvas {
+.scientific-preview[data-dark='true'] .scientific-native-plot canvas {
   filter: invert(1);
 }
 

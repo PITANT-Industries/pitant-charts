@@ -218,7 +218,7 @@ async def check_docs_navigation(browser, local_url, catalog):
 async def check_scientific_catalog(browser, local_url, catalog):
     families = {
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
-        'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response',
+        'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -270,8 +270,35 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=frequency-response&variant=frequency-response-servo'
                 )
+            elif example['family'] == 'coherence-phase':
+                coherence = card_plot.locator('svg[data-coherence-plot]')
+                await check_coherence_axes(coherence, 'Coherence')
+                await expect(coherence.get_by_text('Frequency (Hz)', exact=True)).to_be_visible()
+                await check_compact_figure_bounds(coherence, 'rect[data-coherence-axis-frame]')
+                await expect(coherence.locator('path[data-coherence-trace]')).to_have_attribute('d', re.compile(r'^M'))
+                await expect(card_plot.locator('select, [data-cross-phase-plot], [data-coherence-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=coherence-phase&variant=coherence-phase-bearing'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
+        if touch:
+            await page.go_back()
+            await page.wait_for_url(f'{local_url}#category=scientific', timeout=8000)
+            legacy_spectrum = grid.locator('.example-card[data-example-id="spectrum-measured"]')
+            await legacy_spectrum.scroll_into_view_if_needed()
+            await expect(legacy_spectrum.locator('.card-plot [data-scientific-ready]')).to_be_attached()
+            coherence_card = grid.locator('.example-card[data-example-id="coherence-phase-bearing"]')
+            await coherence_card.locator('.example-card-link').click()
+            await page.wait_for_url(f'{local_url}#docs=coherence-phase&variant=coherence-phase-bearing', timeout=8000)
+            panels = page.locator('#docs-preview svg[data-coherence-plot], #docs-preview svg[data-cross-phase-plot]')
+            await expect(panels).to_have_count(2)
+            heights = await panels.evaluate_all("""async panels => {
+              await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+              return panels.map(panel => panel.getBoundingClientRect().height)
+            }""")
+            if min(heights) < 170:
+                raise RuntimeError(f'Mobile coherence panels should remain at least 170px after the spectrum loads: {heights}')
 
         for example in examples:
             slug = example['id']
@@ -306,6 +333,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'frequency-response':
                 await check_frequency_response(plot, touch)
                 code_import = 'FrequencyResponse'
+            elif example['family'] == 'coherence-phase':
+                await check_coherence_phase(plot, touch)
+                code_import = 'CoherencePhase'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -748,6 +778,127 @@ async def check_frequency_response(plot, touch):
         raise RuntimeError('Increasing loop gain should scale the complex response and preserve its phase')
     await expect(traces[0]).not_to_have_attribute('d', nominal_magnitude_path)
     await expect(traces[2]).not_to_have_attribute('d', nominal_nyquist_path)
+
+
+async def check_coherence_axes(panel, label):
+    await expect(panel).to_be_visible()
+    await expect(panel.locator('rect[data-coherence-axis-frame]')).to_be_visible()
+    await expect(panel.locator('.scientific-tick').first).to_be_attached()
+    await expect(panel.get_by_text(label, exact=True)).to_be_visible()
+
+
+async def check_coherence_phase(plot, touch):
+    chart = plot.locator('[data-coherence-chart]')
+    coherence = chart.locator('svg[data-coherence-plot]')
+    phase = chart.locator('svg[data-cross-phase-plot]')
+    await check_coherence_axes(coherence, 'Coherence')
+    await check_coherence_axes(phase, 'Phase (°)')
+    await expect(phase.get_by_text('Frequency (Hz)', exact=True)).to_be_visible()
+    await expect(chart.get_by_role('link', name='Dataset', exact=True)).to_have_attribute(
+        'href', re.compile(r'^https://(?:doi\.org/10\.5281/zenodo\.|zenodo\.org/records/)14388093/?$')
+    )
+    coherence_trace = coherence.locator('path[data-coherence-trace]')
+    await expect(coherence_trace).to_have_attribute('d', re.compile(r'^M'))
+    phase_trace = phase.locator('path[data-phase-trace]')
+    coherence_marker = coherence.locator('[data-coherence-marker]')
+    phase_marker = phase.locator('[data-phase-marker]')
+    readout = chart.locator('output[data-coherence-readout]')
+    threshold = chart.get_by_role('slider', name='Coherence threshold', exact=True)
+    frequency = chart.get_by_role('slider', name='Frequency', exact=True)
+    band = chart.get_by_role('combobox', name='Frequency band', exact=True)
+    await expect(readout).to_be_visible()
+    await expect(band).to_have_value('low')
+    await band.select_option('full')
+    await threshold.press('Home')
+    await expect(readout).to_have_attribute('data-threshold', '0')
+    await expect(phase_trace).to_have_attribute('d', re.compile(r'^M'))
+
+    async def linked_sample():
+        attributes = await readout.evaluate(
+            "output => ['frequency', 'coherence', 'phase'].map(key => output.dataset[key])"
+        )
+        for marker in [coherence_marker, phase_marker]:
+            await expect(marker).to_be_visible()
+            await expect(marker).to_have_attribute('data-frequency', attributes[0])
+        if not math.isclose(float(await coherence_marker.get_attribute('cx')),
+                            float(await phase_marker.get_attribute('cx')), abs_tol=0.5):
+            raise RuntimeError('The coherence and phase cursors should align at the selected frequency')
+        hz, magnitude_squared, phase_deg = map(float, attributes)
+        if not all(map(math.isfinite, (hz, magnitude_squared, phase_deg))) or not (
+            hz >= 0 and 0 <= magnitude_squared <= 1 and -180 <= phase_deg <= 180
+        ):
+            raise RuntimeError(f'Invalid coherence and phase sample: {attributes}')
+        return hz, magnitude_squared, phase_deg
+
+    await frequency.press('Home')
+    first_hz, *_ = await linked_sample()
+    await frequency.press('End')
+    last_hz, *_ = await linked_sample()
+    if (first_hz, last_hz) != (2.9296875, 1500):
+        raise RuntimeError(f'Expected the measured fixture range 2.9296875–1500 Hz, observed {first_hz}–{last_hz} Hz')
+    selected = []
+    for panel, fraction in [(coherence, 0.73), (phase, 0.28)]:
+        target = panel.locator('.coherence-plot-pick')
+        await expect(target).to_be_visible()
+        bounds = await target.bounding_box()
+        position = {'x': bounds['width'] * fraction, 'y': bounds['height'] * 0.5}
+        if touch:
+            await target.tap(position=position)
+        else:
+            await target.click(position=position)
+        selected.append(await linked_sample())
+    if not first_hz < selected[1][0] < selected[0][0] < last_hz:
+        raise RuntimeError(f'Both plots should select frequencies from their horizontal axis: {selected}')
+    if selected[1][1] >= 1:
+        raise RuntimeError('The demo selection must fall below unit coherence to audit phase masking')
+
+    selected_hz = await readout.get_attribute('data-frequency')
+    selected_value = await readout.get_attribute('data-coherence')
+    selected_phase = await readout.get_attribute('data-phase')
+    unmasked_path = await phase_trace.get_attribute('d')
+    await threshold.press('End')
+    await expect(readout).to_have_attribute('data-threshold', '1')
+    await expect(readout).to_have_attribute('data-frequency', selected_hz)
+    await expect(readout).to_have_attribute('data-coherence', selected_value)
+    await expect(readout).to_have_attribute('data-phase', '')
+    await expect(phase_marker).to_have_count(0)
+    await expect(phase_trace).not_to_have_attribute('d', unmasked_path)
+    await threshold.press('Home')
+    await expect(readout).to_have_attribute('data-threshold', '0')
+    await expect(readout).to_have_attribute('data-phase', selected_phase)
+    await linked_sample()
+
+    await expect(band).to_have_value('full')
+    await band.select_option('low')
+    await frequency.press('End')
+    low_last_hz, *_ = await linked_sample()
+    if not first_hz < low_last_hz < last_hz:
+        raise RuntimeError(f'Low band should narrow the selectable frequency range, observed {low_last_hz} Hz')
+    await band.select_option('full')
+    await frequency.press('End')
+    restored_hz, *_ = await linked_sample()
+    if restored_hz != last_hz:
+        raise RuntimeError('Restoring the full band should restore its last selectable frequency')
+
+    recording = chart.get_by_role('combobox', name='Recording', exact=True)
+    await expect(recording).to_have_value('baseline')
+    values = await recording.locator('option').evaluate_all('options => options.map(option => option.value)')
+    if values != ['baseline', 'drive-end-unbalance']:
+        raise RuntimeError('The demo should offer the two measured recordings')
+    await frequency.fill('9')
+    hz, baseline_coherence, baseline_phase = await linked_sample()
+    if hz != 29.296875 or not math.isclose(baseline_coherence, 0.9989, abs_tol=0.00005) or not math.isclose(
+        baseline_phase, 132.73, abs_tol=0.01
+    ):
+        raise RuntimeError(f'Unexpected baseline coherence or phase at the rotor-speed bin: {hz}, {baseline_coherence}, {baseline_phase}')
+    original_trace = await coherence_trace.get_attribute('d')
+    await recording.select_option('drive-end-unbalance')
+    await expect(coherence_trace).not_to_have_attribute('d', original_trace)
+    new_hz, unbalance_coherence, unbalance_phase = await linked_sample()
+    if new_hz != hz or not math.isclose(unbalance_coherence, 0.9992, abs_tol=0.00005) or not math.isclose(
+        unbalance_phase, -143.14, abs_tol=0.01
+    ):
+        raise RuntimeError(f'Unexpected unbalance coherence or phase at the prior bin: {new_hz}, {unbalance_coherence}, {unbalance_phase}')
 
 
 async def check_native_scientific(plot, slug, touch):
