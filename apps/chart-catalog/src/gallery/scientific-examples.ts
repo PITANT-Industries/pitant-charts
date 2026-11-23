@@ -4,6 +4,7 @@ import campbellDiagram from './docs/examples/CampbellDiagram.tsx?raw'
 import capabilityHistogram from './docs/examples/CapabilityHistogram.tsx?raw'
 import coherencePhase from './docs/examples/CoherencePhase.tsx?raw'
 import correlationMatrix from './docs/examples/CorrelationMatrix.tsx?raw'
+import crackGrowth from './docs/examples/CrackGrowth.tsx?raw'
 import eyeDiagram from './docs/examples/EyeDiagram.tsx?raw'
 import fatigueSn from './docs/examples/FatigueSn.tsx?raw'
 import frequencyResponse from './docs/examples/FrequencyResponse.tsx?raw'
@@ -40,6 +41,7 @@ const scientificExamples = new Map([
   ['stress-strain-heat-treatment', withCatalogImports(stressStrainComparison)],
   ['full-field-strain-tensile', withCatalogImports(fullFieldStrain)],
   ['fatigue-sn-measured', withCatalogImports(fatigueSn)],
+  ['crack-growth-fatigue', withCatalogImports(crackGrowth)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

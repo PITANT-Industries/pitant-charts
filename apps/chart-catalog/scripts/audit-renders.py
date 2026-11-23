@@ -221,7 +221,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
-        'stress-strain-comparison', 'full-field-strain', 'fatigue-sn',
+        'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -358,6 +358,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=fatigue-sn&variant=fatigue-sn-measured'
                 )
+            elif example['family'] == 'crack-growth':
+                crack = card_plot.locator('svg[data-crack-plot]')
+                await check_crack_figure(crack, compact=True)
+                await check_compact_figure_bounds(crack, 'rect[data-crack-axis-frame]')
+                await expect(card_plot.locator('select, [data-crack-cursor], [data-crack-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=crack-growth&variant=crack-growth-fatigue'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -441,6 +449,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'fatigue-sn':
                 await check_fatigue_sn(plot, touch)
                 code_import = 'FatigueSn'
+            elif example['family'] == 'crack-growth':
+                await check_crack_growth(plot, touch)
+                code_import = 'CrackGrowth'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -2005,6 +2016,150 @@ async def check_fatigue_sn(plot, touch):
     await outcome.select_option('all')
     await expect(marks).to_have_count(total_count)
     await expect(specimen.locator('option')).to_have_count(total_count)
+
+
+async def check_crack_figure(crack, compact=False):
+    await expect(crack).to_be_visible()
+    await expect(crack.locator('rect[data-crack-axis-frame]')).to_be_visible()
+    await expect(crack.locator('.scientific-tick').first).to_be_attached()
+    horizontal = 'ΔK (MPa√m)' if compact else 'Stress-intensity range, ΔK (MPa√m)'
+    vertical = 'da/dN (mm/cycle)' if compact else 'Crack-growth rate, da/dN (mm/cycle)'
+    await expect(crack.get_by_text(horizontal, exact=True)).to_be_visible()
+    await expect(crack.get_by_text(vertical, exact=True)).to_be_visible()
+    await expect(crack.locator('circle[data-crack-point]').first).to_be_visible()
+    await expect(crack.locator('path[data-crack-fit]')).to_have_attribute('d', re.compile(r'^M'))
+
+
+async def check_crack_growth(plot, touch):
+    chart = plot.locator('[data-crack-growth]')
+    await expect(chart.locator('figcaption a').first).to_have_attribute(
+        'href', re.compile(r'^https://(?:doi\.org/10\.5281/zenodo\.|zenodo\.org/records/)21901500/?$')
+    )
+    crack = chart.locator('svg[data-crack-plot]')
+    await check_crack_figure(crack)
+    marks = crack.locator('circle[data-crack-point]')
+    fit = crack.locator('path[data-crack-fit]')
+    cursor = crack.locator('circle[data-crack-cursor]')
+    readout = chart.locator('output[data-crack-readout]')
+    measurement = chart.get_by_role('combobox', name='Measurement', exact=True)
+    fit_from = chart.get_by_role('combobox', name='Fit from', exact=True)
+    fit_through = chart.get_by_role('combobox', name='Fit through', exact=True)
+    series = chart.get_by_role('combobox', name='Series', exact=True)
+    await expect(readout).to_be_visible()
+    await expect(cursor).to_be_visible()
+    await expect(series).to_have_value('s460')
+
+    async def points():
+        return await marks.evaluate_all("""marks => marks.map(point => [
+          Number(point.dataset.deltaK), Number(point.dataset.rate), point.dataset.inFit === 'true',
+          point.cx.baseVal.value, point.cy.baseVal.value
+        ])""")
+
+    async def check_fit():
+        data = await points()
+        first = int(await fit_from.input_value())
+        last = int(await fit_through.input_value())
+        selected = [point for point in data if point[2]]
+        if not 0 <= first < last < len(data) or selected != data[first:last + 1]:
+            raise RuntimeError(f'The fit must use only its declared measurement interval {first}–{last}')
+        x = [math.log10(point[0]) for point in selected]
+        y = [math.log10(point[1]) for point in selected]
+        count = len(x)
+        mean_x, mean_y = sum(x) / count, sum(y) / count
+        sxx = sum((value - mean_x) ** 2 for value in x)
+        syy = sum((value - mean_y) ** 2 for value in y)
+        sxy = sum((delta - mean_x) * (rate - mean_y) for delta, rate in zip(x, y))
+        slope = sxy / sxx
+        expected = (count, slope, 10 ** (mean_y - slope * mean_x), sxy ** 2 / (sxx * syy))
+        observed = await readout.evaluate(
+            "out => ['count', 'exponent', 'coefficient', 'rSquared'].map(key => Number(out.dataset[key]))"
+        )
+        if slope <= 0 or not all(math.isclose(value, target, rel_tol=1e-7) for value, target in zip(observed, expected)):
+            raise RuntimeError(f'Paris-law fit should match log-space OLS: observed {observed}, expected {expected}')
+        line_ends = await fit.evaluate(
+            'line => [line.getPointAtLength(0), line.getPointAtLength(line.getTotalLength())].map(point => [point.x, point.y])'
+        )
+        endpoints = [data[first][3], data[last][3]]
+        start_k = float(await fit.get_attribute('data-from'))
+        through_k = float(await fit.get_attribute('data-through'))
+        if not math.isclose(start_k, data[first][0]) or not math.isclose(through_k, data[last][0]):
+            raise RuntimeError('The fit path should declare the selected physical ΔK bounds')
+        low, high = min(data, key=lambda point: point[1]), max(data, key=lambda point: point[1])
+        for (actual_x, actual_y), index in zip(line_ends, (first, last)):
+            log_rate = math.log10(expected[2]) + slope * math.log10(data[index][0])
+            fraction = (log_rate - math.log10(low[1])) / math.log10(high[1] / low[1])
+            expected_y = low[4] + (high[4] - low[4]) * fraction
+            if not math.isclose(actual_x, data[index][3], abs_tol=0.5) or not math.isclose(actual_y, expected_y, abs_tol=0.5):
+                raise RuntimeError(f'Fit geometry should show the calculated segment at the selected ΔK bounds: {line_ends}')
+        for selector, limit in zip(['[data-crack-fit-start]', '[data-crack-fit-end]'], endpoints):
+            guide_x = float(await crack.locator(selector).get_attribute('x1'))
+            if not math.isclose(guide_x, limit, abs_tol=0.5):
+                raise RuntimeError('A marked fit bound does not match its selected measurement')
+        return (first, last), observed
+
+    async def check_measurement(index):
+        mark = marks.nth(index)
+        await expect(measurement).to_have_value(str(index))
+        await expect(cursor).to_have_attribute('data-index', str(index))
+        for field in ['delta-k', 'rate']:
+            await expect(readout).to_have_attribute(f'data-{field}', await mark.get_attribute(f'data-{field}'))
+        for field in ['cx', 'cy']:
+            if not math.isclose(float(await cursor.get_attribute(field)), float(await mark.get_attribute(field)), abs_tol=0.5):
+                raise RuntimeError('The crack-growth cursor must align with the recorded measurement')
+
+    data = await points()
+    for axis, coordinate in [(0, 3), (1, 4)]:
+        low, high = min(data, key=lambda point: point[axis]), max(data, key=lambda point: point[axis])
+        if not 0 < low[axis] < high[axis]:
+            raise RuntimeError('Crack-growth measurements must use positive values on both logarithmic axes')
+        for point in data:
+            fraction = math.log(point[axis] / low[axis]) / math.log(high[axis] / low[axis])
+            expected = low[coordinate] + (high[coordinate] - low[coordinate]) * fraction
+            if not math.isclose(point[coordinate], expected, abs_tol=0.5):
+                raise RuntimeError(f'Crack-growth point is misplaced on its logarithmic axis: {point}')
+
+    measured_fits = [
+        ('s460', 24, (9, 20), (12, 2.985466161628327, 4.1693025652975545e-9, 0.9975404230504434)),
+        ('s690', 75, (17, 57), (41, 2.833413463957257, 7.044641745705058e-9, 0.979295503806746)),
+        ('s960', 97, (54, 92), (39, 2.5452216103445395, 1.5579579690189874e-8, 0.9985085213085692)),
+    ]
+    axis_ticks = crack.locator('g.scientific-axis text')
+    shared_scale = await axis_ticks.all_text_contents()
+    for series_id, count, bounds, expected in measured_fits:
+        await series.select_option(series_id)
+        await expect(readout).to_have_attribute('data-series', series_id)
+        await expect(marks).to_have_count(count)
+        actual_bounds, metrics = await check_fit()
+        if actual_bounds != bounds or not all(math.isclose(value, anchor, rel_tol=1e-7) for value, anchor in zip(metrics, expected)):
+            raise RuntimeError(f'Unexpected measured default fit for {series_id}: {actual_bounds}, {metrics}')
+        if await axis_ticks.all_text_contents() != shared_scale:
+            raise RuntimeError('Switching steel grades should retain the common crack-growth plot scales')
+
+    await series.select_option('s460')
+    (first, last), _ = await check_fit()
+    initial_path = await fit.get_attribute('d')
+    await fit_from.select_option(str(first + 1))
+    if (await check_fit())[0] != (first + 1, last):
+        raise RuntimeError('Moving the starting bound should shrink the fitted interval')
+    await fit_through.select_option(str(last - 1))
+    if (await check_fit())[0] != (first + 1, last - 1):
+        raise RuntimeError('Moving the ending bound should shrink the fitted interval')
+    await expect(fit).not_to_have_attribute('d', initial_path)
+
+    await measurement.select_option('0')
+    await check_measurement(0)
+    selected = len(data) - 1
+    target = marks.nth(selected)
+    if touch:
+        await target.tap()
+    else:
+        await target.click()
+    await check_measurement(selected)
+    picked_k = float(await readout.get_attribute('data-delta-k'))
+    picked_rate = float(await readout.get_attribute('data-rate'))
+    if not math.isclose(picked_k, 27.02276940331986) or not math.isclose(picked_rate, 8.85838e-5):
+        raise RuntimeError(f'Unexpected final S460 measurement: {picked_k}, {picked_rate}')
+    await check_fit()
 
 
 async def check_native_scientific(plot, slug, touch):

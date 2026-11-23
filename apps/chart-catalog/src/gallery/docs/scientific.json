@@ -337,6 +337,32 @@
       { "label": "ASTM E466-21, force-controlled constant-amplitude axial fatigue testing", "href": "https://store.astm.org/standards/e466" }
     ]
   },
+  "crack-growth": {
+    "summary": "Explore how fatigue crack-growth rate changes with stress-intensity range in measured compact-tension tests on three high-strength steels.",
+    "useWhen": "Compare fatigue crack growth across material or test series and estimate a Paris-law exponent over a selected range of measured values.",
+    "data": "Give each series a unique ID and at least three points ordered by increasing or equal deltaK. Both deltaK in MPa√m and rateMmPerCycle in mm/cycle must be finite and positive. Supply stressRatio when available. Optional fitRange sets the initial ΔK bounds and needs at least three points spanning two distinct ΔK values. Otherwise the chart starts with the full series.",
+    "reading": "Both axes are logarithmic. The horizontal axis is stress-intensity factor range ΔK, in MPa√m. The vertical axis is crack advance per cycle da/dN, in mm/cycle. Use Series to switch curves when multiple are available. Click a marker or use Measurement to read its values. Set Fit from and Fit through to change which points are included in the fit. Filled markers are included and open markers are outside the fit interval.",
+    "notes": [
+      "In the Paris law da/dN = C(ΔK)ᵐ, m is the slope of log₁₀(da/dN) against log₁₀(ΔK) and log₁₀(C) is the intercept. The chart estimates both by ordinary least squares on the selected points and reports R² in log space with the count of those points.",
+      "C uses units of (mm/cycle)/(MPa√m)ᵐ. Compare coefficients after matching the units and accounting for the specimen, loading conditions, and fitted interval.",
+      "Select the approximately linear part of the log–log curve for a Paris-law fit. The line spans the selected observations. Threshold and rapid fracture regions may follow different relationships.",
+      "The example compares S460, S690, and S960 compact-tension curves from Seitl et al. The specimens had the same effective width (50 mm) and thickness (10 mm) and were tested at 22 ± 1 °C in opening mode (mode I), with a force ratio of R = 0.1. The study estimated crack length from the compliance of clip-gauge measurements of crack mouth opening displacement (CMOD).",
+      "The example groups points by steel grade and uses the positive ΔK and da/dN pairs from the workbook’s selected CMOD columns. The plotted values retain their published units. Each grade starts with the common 10–20 MPa√m fit interval. The displayed coefficients depend on the measurements that fall inside that interval.",
+      "For S460, the default interval includes 12 observations and gives m ≈ 2.985 and log-space R² ≈ 0.998. Select the S460 point near ΔK = 13.50 MPa√m to read a growth rate of 9.673 × 10⁻⁶ mm/cycle."
+    ],
+    "properties": [
+      { "name": "data", "type": "CrackGrowthData", "description": "Required. Provide series of paired deltaK and rateMmPerCycle points, with optional stressRatio and fitRange for each series." },
+      { "name": "label", "type": "string", "description": "Describe the material and test conditions for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact crack-growth figure for a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Credit the measurement and calculation source with optional license information." }
+    ],
+    "sources": [
+      { "label": "Seitl et al. (2026), S460, S690, and S960 fatigue crack propagation data, version 2 (CC BY 4.0)", "href": "https://doi.org/10.5281/zenodo.21901500" },
+      { "label": "Seitl et al. (2026), comparative evaluation of fatigue crack propagation in high-strength steels", "href": "https://www.degruyterbrill.com/document/doi/10.1515/jmbm-2025-0133/html" },
+      { "label": "Paris and Erdogan (1963), A Critical Analysis of Crack Propagation Laws", "href": "https://doi.org/10.1115/1.3656900" },
+      { "label": "ASTM E647-24, measurement of fatigue crack growth rates", "href": "https://store.astm.org/standards/e647" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",

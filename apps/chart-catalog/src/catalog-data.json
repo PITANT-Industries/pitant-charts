@@ -3412,6 +3412,22 @@
     ]
   },
   {
+    "id": "crack-growth",
+    "name": "Fatigue Crack Growth",
+    "url": "https://opensource.pitant.de/charts/#docs=crack-growth",
+    "examples": [
+      {
+        "id": "crack-growth-fatigue",
+        "family": "crack-growth",
+        "title": "S460, S690, and S960 Crack Growth",
+        "label": "Measured crack growth and Paris-law fit",
+        "description": "Compare fatigue crack growth in three high-strength steels tested with the same compact-tension geometry and load ratio.",
+        "url": "https://opensource.pitant.de/charts/#example=crack-growth-fatigue",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",
