@@ -522,6 +522,29 @@
       { "label": "Clark et al. (2002), AVIRIS surface reflectance calibration and RTGC encoding", "href": "https://aviris.jpl.nasa.gov/proceedings/workshops/02_docs/2002_Clark_web.pdf" }
     ]
   },
+  "response-surface": {
+    "summary": "Explore a fitted response to two factors and compare the surface with measured trials and a linked cross-section.",
+    "useWhen": "Inspect how two factor settings affect a fitted response, compare observations with their fitted values, and hold one factor fixed to study the other.",
+    "data": "Supply axis labels and units, measured trials with unique IDs and finite x, y, and response values in physical units, and an evaluate(x, y) function that returns the fitted response. The chart uses the convex hull of the measured factor settings by default. To set an explicit supported domain, provide its boundary vertices in factor coordinates and include every observed setting. Use initialPosition and sectionAxis to set the starting probe and section.",
+    "reading": "Drag the 3D view or use Rotate left and Rotate right. With the 3D view focused, Up and Down change its tilt. Click a trial or choose it from Trial to compare the measured and fitted responses. Select a position on the surface to inspect its prediction. Use Fixed factor and Section position to draw a cross-section through the fit. Click the section or focus it and use Left and Right to move the probe. Home and End jump to the section endpoints.",
+    "notes": [
+      "The mesh shows the fitted response. Points are individual observations. Each vertical segment joins an observation to the fit at the same factor settings. Residuals are observed minus fitted. Points at the same x and y can have different measured responses.",
+      "The section fixes one factor in its original units and sweeps the other. Only trials at that fixed setting appear in the section. The fitted mesh and section stop at the boundary of the supplied factor domain. Predictions between measured settings depend on the chosen model.",
+      "The example uses eleven reported run means from Kim et al.’s central composite design, with temperatures of 40–100 °C and times of 5–60 minutes. For each run, the authors averaged five beads. Sphericity was calculated from microscope images as 100 times the minor diameter divided by the major diameter.",
+      "The fit is an unweighted quadratic regression on the eleven published run means at their tabulated physical factor settings. It has an in-sample RMSE of about 0.289 percentage points. The nine distinct settings form an octagonal factor domain.",
+      "At 70 °C and 32.5 min the fitted response is 98.297%. Select run-09, run-10, and run-11 individually to see measured sphericities of 98.0%, 98.2%, and 98.7% and residuals of −0.297, −0.097, and +0.403 percentage points."
+    ],
+    "properties": [
+      { "name": "data", "type": "ResponseSurfaceData", "description": "Required. Provide factor and response axes, observed trials, and an evaluator. Set domain, initialPosition, or sectionAxis to customize the plot." },
+      { "name": "label", "type": "string", "description": "Describe the experiment and response for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact response surface for a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Credit the source measurements, describe the fit, and link any license." }
+    ],
+    "sources": [
+      { "label": "Kim et al. (2019), thermal treatment of calcium alginate gel beads, Table 2 (CC BY 4.0)", "href": "https://doi.org/10.3390/foods8110578" },
+      { "label": "NIST/SEMATECH Engineering Statistics Handbook, response surface designs", "href": "https://www.itl.nist.gov/div898/handbook/pri/section3/pri336.htm" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",

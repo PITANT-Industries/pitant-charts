@@ -30,6 +30,7 @@ const IndustrialCtViewerPreview = lazy(() => import('./scientific/IndustrialCtVi
 const CadScanDeviationPreview = lazy(() => import('./scientific/CadScanDeviationPreview'))
 const CieChromaticityDiagramPreview = lazy(() => import('./scientific/CieChromaticityDiagramPreview'))
 const HyperspectralCubePreview = lazy(() => import('./scientific/HyperspectralCubePreview'))
+const ResponseSurfacePreview = lazy(() => import('./scientific/ResponseSurfacePreview'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
 const ParticleMassSpectrum = lazy(() => import('./scientific/particle/ParticleMassSpectrumPreview'))
 const ScientificWaterfall = lazy(() => import('./scientific/waterfall/SpectralWaterfallPreview'))
@@ -60,6 +61,7 @@ export const rendererFamilies = {
   cadScanDeviation: ['cad-scan-deviation'],
   cieChromaticity: ['cie-chromaticity'],
   hyperspectralCube: ['hyperspectral-cube'],
+  responseSurface: ['response-surface'],
   spectrogram: ['spectrogram'],
   scientific: ['spectrum', 'correlation-matrix', 'process-control'],
   statsmaps: ['scatter', 'heatmap', 'uncertainty', 'histogram', 'ridgeline', 'ecdf', 'beeswarm', 'violin', 'box-plot', 'hexbin', 'density', 'choropleth', 'bubble-map', 'route-map', 'globe', 'vector-field'],
@@ -90,6 +92,7 @@ const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.cadScanDeviation.map((id) => [id, CadScanDeviationPreview] as const),
   ...rendererFamilies.cieChromaticity.map((id) => [id, CieChromaticityDiagramPreview] as const),
   ...rendererFamilies.hyperspectralCube.map((id) => [id, HyperspectralCubePreview] as const),
+  ...rendererFamilies.responseSurface.map((id) => [id, ResponseSurfacePreview] as const),
   ...rendererFamilies.waterfall.map((id) => [id, ScientificWaterfall] as const),
   ...rendererFamilies.spectrogram.map((id) => [id, MaunaLoaSpectrogram] as const),
   ...rendererFamilies.scientific.map((id) => [id, Scientific] as const),
