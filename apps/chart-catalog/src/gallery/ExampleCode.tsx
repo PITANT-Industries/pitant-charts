@@ -58,10 +58,8 @@ async function copyText(source: string) {
   }
 }
 
-function CopyButton({ source, label, compact, onUnavailable }: {
+function CopyButton({ source, onUnavailable }: {
   source: string
-  label?: string
-  compact?: boolean
   onUnavailable: () => void
 }) {
   const [copied, setCopied] = useState(false)
@@ -73,19 +71,15 @@ function CopyButton({ source, label, compact, onUnavailable }: {
   }, [copied])
 
   return <>
-    <Button className={compact ? 'card-code card-copy' : 'text-button'} aria-label={label} title={compact ? 'Copy code' : undefined} onClick={async () => {
+    <Button className="text-button" onClick={async () => {
       if (await copyText(source)) setCopied(true)
       else onUnavailable()
     }}>
       {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
-      {!compact && (copied ? 'Copied' : 'Copy code')}
+      {copied ? 'Copied' : 'Copy code'}
     </Button>
     <span className="clipboard-status" role="status">{copied ? 'Code copied' : ''}</span>
   </>
-}
-
-export function CopyExample({ example, onShowCode }: { example: ChartExample; onShowCode: () => void }) {
-  return <CopyButton source={exampleSnippet(example)} label={`Copy code for ${example.title}`} compact onUnavailable={onShowCode} />
 }
 
 export function CodeBlock({ language, source, note }: { language: string; source: string; note?: ReactNode }) {

@@ -4,10 +4,11 @@ import argparse
 import asyncio
 import json
 import os
+import re
 from pathlib import Path
 from urllib.parse import urlencode, urlsplit
 
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, expect
 
 
 CATALOG = Path(__file__).resolve().parents[1] / 'src/catalog-data.json'
@@ -38,6 +39,39 @@ async def check_public_preview(browser, local_url, example):
         await menu.wait_for(timeout=8000)
         if await menu.get_by_text('Parity review', exact=True).count() or await menu.get_by_text('Reference gallery', exact=True).count():
             raise RuntimeError('Internal controls appeared in the public catalog menu')
+    finally:
+        await page.close()
+
+
+async def check_gallery_documentation(browser, local_url, example):
+    page = await browser.new_page(reduced_motion='reduce')
+    try:
+        slug = example['id']
+        fragment = urlencode({'docs': example['family'], 'variant': slug})
+        await page.goto(local_url, wait_until='domcontentloaded', timeout=20000)
+        catalog = page.locator('#catalog')
+        tile = catalog.locator(f'.example-card[data-example-id="{slug}"]')
+        link = tile.locator('a.example-card-link').and_(
+            tile.get_by_role('link', name=f'Documentation for {example["title"]}', exact=True),
+        )
+        await expect(link).to_have_attribute('href', f'#{fragment}', timeout=8000)
+        await expect(link).not_to_have_attribute('title', re.compile('.+'))
+        plot = tile.locator('.card-plot[inert]')
+        await plot.locator('svg, canvas').first.wait_for(state='visible', timeout=8000)
+        await link.hover(timeout=8000)
+        await expect(tile.get_by_role('link')).to_have_count(1)
+        await expect(tile.locator('button:visible, [role="tooltip"]:visible, .line-detail-tooltip:visible')).to_have_count(0)
+        await expect(catalog.get_by_role('button', name=re.compile(r'copy|view code', re.I))).to_have_count(0)
+        await expect(catalog.get_by_role('tooltip')).to_have_count(0)
+
+        await link.click(timeout=8000)
+        await page.wait_for_url(f'{local_url}#{fragment}', timeout=8000)
+        await expect(page.locator('dialog[open]')).to_have_count(0)
+        preview = page.locator('#docs-preview')
+        await preview.locator(f'.docs-example-plot[data-example-id="{slug}"]').wait_for(timeout=8000)
+        await preview.get_by_role('tab', name='Code', exact=True).click(timeout=8000)
+        await expect(preview.locator('pre code')).to_contain_text(f"getExample('{slug}')", timeout=8000)
+        await expect(preview.get_by_role('button', name='Copy code', exact=True)).to_be_visible()
     finally:
         await page.close()
 
@@ -122,6 +156,9 @@ async def audit(args):
         else:
             browser = await playwright.webkit.launch()
         await check_public_preview(browser, args.local, examples[0])
+        await check_gallery_documentation(
+            browser, args.local, next(example for example in examples if example['id'] == 'line-time-range'),
+        )
         await asyncio.gather(*(run(browser, queue, results, args.local) for _ in range(args.workers)))
         await browser.close()
     for profile, observations in results.items():
