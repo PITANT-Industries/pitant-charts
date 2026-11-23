@@ -12,6 +12,7 @@ const CampbellPreview = lazy(() => import('./scientific/campbell/CampbellPreview
 const ModeShapesPreview = lazy(() => import('./scientific/modes/ModeShapesPreview'))
 const MaunaLoaSpectrogram = lazy(() => import('./scientific/MaunaLoaSpectrogram'))
 const ShaftOrbitPreview = lazy(() => import('./scientific/orbit/ShaftOrbitPreview'))
+const FrequencyResponsePreview = lazy(() => import('./scientific/response/FrequencyResponsePreview'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
 const ParticleMassSpectrum = lazy(() => import('./scientific/particle/ParticleMassSpectrumPreview'))
 const ScientificWaterfall = lazy(() => import('./scientific/waterfall/SpectralWaterfallPreview'))
@@ -24,6 +25,7 @@ export const rendererFamilies = {
   campbell: ['campbell-diagram'],
   modes: ['mode-shapes'],
   orbit: ['shaft-orbit'],
+  response: ['frequency-response'],
   spectrogram: ['spectrogram'],
   scientific: ['spectrum', 'correlation-matrix', 'process-control'],
   statsmaps: ['scatter', 'heatmap', 'uncertainty', 'histogram', 'ridgeline', 'ecdf', 'beeswarm', 'violin', 'box-plot', 'hexbin', 'density', 'choropleth', 'bubble-map', 'route-map', 'globe', 'vector-field'],
@@ -36,6 +38,7 @@ const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.campbell.map((id) => [id, CampbellPreview] as const),
   ...rendererFamilies.modes.map((id) => [id, ModeShapesPreview] as const),
   ...rendererFamilies.orbit.map((id) => [id, ShaftOrbitPreview] as const),
+  ...rendererFamilies.response.map((id) => [id, FrequencyResponsePreview] as const),
   ...rendererFamilies.waterfall.map((id) => [id, ScientificWaterfall] as const),
   ...rendererFamilies.spectrogram.map((id) => [id, MaunaLoaSpectrogram] as const),
   ...rendererFamilies.scientific.map((id) => [id, Scientific] as const),

@@ -1,0 +1,230 @@
+.frequency-response {
+  display: grid;
+  gap: .8rem;
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+}
+
+.frequency-response[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.frequency-response),
+.detail-plot:has(.frequency-response) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.response-caption strong {
+  font-size: .95rem;
+  font-weight: 650;
+}
+
+.response-caption p {
+  margin: .25rem 0 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .875rem;
+  line-height: 1.5;
+}
+
+.response-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+.response-gain {
+  display: grid;
+  justify-self: start;
+  gap: .25rem;
+  font-size: .8rem;
+}
+
+.response-gain select {
+  min-block-size: 2.45rem;
+  max-inline-size: 100%;
+  padding-inline: .55rem;
+  color: inherit;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .4rem;
+  background: var(--gallery-surface, var(--card));
+  font: inherit;
+}
+
+.response-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: .55rem;
+  min-inline-size: 0;
+}
+
+.response-bode-stack {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  gap: .55rem;
+  min-inline-size: 0;
+}
+
+.response-panel {
+  min-inline-size: 0;
+  border-radius: .6rem;
+  overflow: hidden;
+  background: #111a28;
+  --response-stroke: #74dec2;
+}
+
+.response-bode {
+  block-size: clamp(9rem, 22cqw, 11rem);
+}
+
+.response-bode--phase {
+  --response-stroke: #fad18b;
+}
+
+.response-nyquist {
+  --response-stroke: #87dbf5;
+}
+
+.frequency-response[data-compact='true'] .response-panels {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.frequency-response[data-compact='true'] .response-nyquist {
+  min-block-size: 0;
+  background: radial-gradient(ellipse at center, #182738 0%, #111a28 74%);
+}
+
+.response-panel svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.response-grid {
+  fill: #b8c8d7;
+  font-size: 10px;
+}
+
+.response-grid line {
+  stroke: #293747;
+}
+
+.response-grid .response-zero {
+  stroke: #738ba2;
+  stroke-dasharray: 3 4;
+}
+
+.response-grid .response-reference {
+  stroke: #8599ae;
+  stroke-dasharray: 3 4;
+}
+
+.response-axis-title {
+  font-size: 11px;
+  font-weight: 620;
+}
+
+.response-line,
+.response-reflection {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.response-line {
+  stroke: var(--response-stroke);
+  stroke-width: 2;
+}
+
+.response-reflection {
+  stroke: #9aacc3;
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+  opacity: .73;
+}
+
+.response-critical {
+  fill: none;
+  stroke: #fbd39a;
+  stroke-width: 1.75;
+}
+
+.response-critical-label {
+  fill: #fbd39a;
+  paint-order: stroke;
+  stroke: #111a28;
+  stroke-width: 2px;
+  font-size: 10px;
+}
+
+.response-point {
+  fill: var(--response-stroke);
+  stroke: #111a28;
+  stroke-width: 1px;
+}
+
+.response-crosshair {
+  stroke: #c2d0df;
+  stroke-dasharray: 3 4;
+  opacity: .8;
+}
+
+.response-bode-pick,
+.response-nyquist-pick {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.response-inspector {
+  display: grid;
+  gap: .65rem;
+  min-inline-size: 0;
+  padding: .7rem;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .55rem;
+}
+
+.response-inspector output {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .2rem .75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.response-inspector output span {
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .8rem;
+}
+
+.response-inspector label {
+  display: grid;
+  gap: .2rem;
+  font-size: .8rem;
+}
+
+.response-inspector input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 1.7rem;
+  margin: 0;
+  accent-color: var(--gallery-accent, var(--primary));
+}
+
+@container (max-width: 37rem) {
+  .response-panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .response-nyquist {
+    block-size: 16rem;
+  }
+
+  .frequency-response[data-compact='true'] .response-nyquist {
+    block-size: 100%;
+  }
+}
