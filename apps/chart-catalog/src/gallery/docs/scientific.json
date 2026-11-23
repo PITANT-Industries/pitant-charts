@@ -71,12 +71,12 @@
     "summary": "Inspect one complex frequency response as Bode magnitude, Bode phase, and a Nyquist curve.",
     "useWhen": "Compare controller gains, locate resonant peaks, or relate the phase and magnitude at a frequency to the loop’s position in the complex plane.",
     "data": "Supply one or more responses, each with a unique ID and a label. Provide at least two positive, strictly increasing frequencies in Hz. The real and imaginary arrays must have the same length as the frequency array, with a finite, nonzero complex magnitude at every sample.",
-    "reading": "Choose a loop gain and select a frequency on either plot or with the Frequency control. The same sample updates the magnitude, phase, and complex-plane markers. The Bode plots place frequency on logarithmic axes. The Nyquist plot places the real part on the horizontal axis and the imaginary part on the vertical axis.",
+    "reading": "Choose a loop gain and select a frequency in a panel or with the Frequency control. Open circles identify the same sample in all three panels. The framed Bode panels align their logarithmic frequency ticks in Hz, with horizontal reference guides at 0 dB for magnitude and −180° for phase.",
     "notes": [
-      "The simulated loop combines a 28 Hz second-order elastic mode with damping ratio 0.14 and a first-order lag with a 45 Hz corner frequency. The example evaluates the open-loop response from 0.6 to 200 Hz at gains of 0.48 and 0.84.",
+      "The simulated loop combines a 28 Hz second-order elastic mode with damping ratio 0.14 and a first-order lag with a 45 Hz corner frequency. The example plots the modeled open-loop response at 301 sampled frequencies from 0.6 to 200 Hz for gains of 0.48 and 0.84.",
       "The chart takes magnitude in decibels as 20 × log₁₀ of the complex modulus and phase as the signed angle in degrees. Phase unwrapping assumes the true phase changes by less than 180° between adjacent samples.",
-      "The positive-frequency points trace the measured or modeled response. For real-coefficient systems, the negative-frequency branch is their complex conjugate, reflected across the real axis.",
-      "The point (−1, 0) marks where 1 + L equals zero under unity negative feedback. Near 33.7 Hz the modeled nominal response crosses the real axis at about −0.68 and the higher-gain response crosses at about −1.20. A stability analysis needs the full Nyquist contour and the count of open-loop poles in the right half-plane."
+      "The white Nyquist panel uses equal scales for the horizontal real axis and the vertical imaginary axis. The solid curve joins the positive-frequency samples. For real-coefficient systems, the dashed negative-frequency branch is their complex conjugate reflected across the real axis.",
+      "The cross at (−1, 0) marks where 1 + L equals zero under unity negative feedback. Near 33.7 Hz the modeled nominal response crosses the real axis at about −0.68 and the higher-gain response crosses at about −1.20. The chart covers the sampled frequency band. A stability analysis needs the full Nyquist contour and the count of open-loop poles in the right half-plane."
     ],
     "properties": [
       { "name": "data", "type": "FrequencyResponseData", "description": "Required. Give each response an id, label, frequencyHz array, real array, and imaginary array." },
@@ -85,7 +85,8 @@
       { "name": "source", "type": "{ label: string, href: string, description?: string }", "description": "Link to the test data, model, or analysis method and describe its provenance." }
     ],
     "sources": [
-      { "label": "Karl J. Åström and Richard M. Murray, Feedback Systems, Frequency Domain Analysis", "href": "https://www.cds.caltech.edu/~murray/books/AM05/pdf/fbs-loopanal_13Aug2019.pdf" }
+      { "label": "Karl J. Åström and Richard M. Murray, Feedback Systems, Frequency Domain Analysis", "href": "https://www.cds.caltech.edu/~murray/books/AM05/pdf/fbs-loopanal_13Aug2019.pdf" },
+      { "label": "MathWorks, Plotting System Responses, Bode and Nyquist examples", "href": "https://www.mathworks.com/help/control/ug/plotting-system-responses.html" }
     ]
   },
   "mass-spectrum": {

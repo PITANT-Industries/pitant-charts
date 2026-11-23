@@ -263,7 +263,8 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 )
             elif example['family'] == 'frequency-response':
                 nyquist = card_plot.locator('svg[data-nyquist-plot]')
-                await expect(nyquist).to_be_visible()
+                await check_nyquist_figure(nyquist)
+                await check_compact_figure_bounds(nyquist, 'rect[data-nyquist-axis-frame]')
                 await expect(nyquist.locator('path[data-response-trace]')).to_have_attribute('d', re.compile(r'^M'))
                 await expect(card_plot.locator('select, [data-bode-magnitude], [data-bode-phase], [data-response-readout]')).to_have_count(0)
                 await expect(card.locator('.example-card-link')).to_have_attribute(
@@ -490,6 +491,24 @@ async def check_mode_shapes(plot, touch):
     await expect(readout).to_have_attribute('data-phase', stopped_phase)
 
 
+async def check_compact_figure_bounds(svg, frame_selector):
+    clipped = await svg.evaluate("""async (figure, frameSelector) => {
+      await document.fonts.ready
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      const cardBounds = figure.closest('.card-plot').getBoundingClientRect()
+      const figureBounds = figure.getBoundingClientRect()
+      const fits = (box, bounds) => box.left >= bounds.left - 1 && box.top >= bounds.top - 1 &&
+        box.right <= bounds.right + 1 && box.bottom <= bounds.bottom + 1
+      const marks = figure.querySelectorAll(frameSelector + ', text')
+      return [figure, ...marks].filter(mark => {
+        const box = mark.getBoundingClientRect()
+        return !fits(box, cardBounds) || (mark !== figure && !fits(box, figureBounds))
+      }).map(mark => mark.matches('text') ? mark.textContent : mark.localName)
+    }""", frame_selector)
+    if clipped:
+        raise RuntimeError(f'Compact figure marks extend beyond the visible card plot: {clipped}')
+
+
 async def check_shaft_orbit_figure(orbit, compact=False):
     await expect(orbit).to_be_visible()
     frame = orbit.locator('rect[data-orbit-axis-frame]')
@@ -502,21 +521,7 @@ async def check_shaft_orbit_figure(orbit, compact=False):
     if not math.isclose(bounds['width'], bounds['height'], abs_tol=0.5):
         raise RuntimeError(f'The equal-scale orbit frame should be square, observed {bounds["width"]} × {bounds["height"]}')
     if compact:
-        clipped = await orbit.evaluate("""async figure => {
-          await document.fonts.ready
-          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
-          const cardBounds = figure.closest('.card-plot').getBoundingClientRect()
-          const figureBounds = figure.getBoundingClientRect()
-          const fits = (box, bounds) => box.left >= bounds.left - 1 && box.top >= bounds.top - 1 &&
-            box.right <= bounds.right + 1 && box.bottom <= bounds.bottom + 1
-          const marks = figure.querySelectorAll('rect[data-orbit-axis-frame], text')
-          return [figure, ...marks].filter(mark => {
-            const box = mark.getBoundingClientRect()
-            return !fits(box, cardBounds) || (mark !== figure && !fits(box, figureBounds))
-          }).map(mark => mark.matches('text') ? mark.textContent : mark.localName)
-        }""")
-        if clipped:
-            raise RuntimeError(f'Compact orbit marks extend beyond the visible card plot: {clipped}')
+        await check_compact_figure_bounds(orbit, 'rect[data-orbit-axis-frame]')
 
 
 async def check_shaft_orbit(plot, touch):
@@ -604,6 +609,44 @@ async def check_shaft_orbit(plot, touch):
     await expect(readout).to_have_attribute('data-rpm', '1800')
 
 
+async def check_nyquist_figure(nyquist):
+    await expect(nyquist).to_be_visible()
+    await expect(nyquist.locator('rect[data-nyquist-axis-frame]')).to_be_visible()
+    await expect(nyquist.locator('.scientific-tick').first).to_be_attached()
+    await expect(nyquist.get_by_text('Real part', exact=True)).to_be_visible()
+    await expect(nyquist.get_by_text('Imaginary part', exact=True)).to_be_visible()
+    await expect(nyquist.locator('[data-nyquist-critical]')).to_be_visible()
+    reflection = nyquist.locator('path[data-nyquist-reflection]')
+    await expect(reflection).to_have_attribute('d', re.compile(r'^M'))
+    if await reflection.evaluate('path => getComputedStyle(path).strokeDasharray') == 'none':
+        raise RuntimeError('The reflected branch should use a dashed trace')
+
+
+async def check_bode_axes(magnitude, phase):
+    ticks_by_panel = []
+    for panel, label in [(magnitude, 'Magnitude (dB)'), (phase, 'Phase (°)')]:
+        await expect(panel.locator('rect[data-bode-axis-frame]')).to_be_visible()
+        await expect(panel.locator('.scientific-tick').first).to_be_attached()
+        await expect(panel.get_by_text(label, exact=True)).to_be_visible()
+        ticks = await panel.locator('[data-bode-frequency-tick]').evaluate_all("""marks => marks.map(mark => [
+          Number(mark.dataset.frequency), mark.getBoundingClientRect().left
+        ])""")
+        ticks_by_panel.append(dict(ticks))
+    await expect(phase.get_by_text('Frequency (Hz)', exact=True)).to_be_visible()
+
+    magnitude_ticks, phase_ticks = ticks_by_panel
+    if len(magnitude_ticks) < 3 or magnitude_ticks.keys() != phase_ticks.keys():
+        raise RuntimeError(f'The Bode plots should show the same major frequency ticks: {ticks_by_panel}')
+    first, last = min(magnitude_ticks), max(magnitude_ticks)
+    if first <= 0 or not magnitude_ticks[first] < magnitude_ticks[last]:
+        raise RuntimeError(f'The logarithmic axis should increase from left to right: {magnitude_ticks}')
+    for hz, x in magnitude_ticks.items():
+        fraction = math.log(hz / first) / math.log(last / first)
+        expected_x = magnitude_ticks[first] + (magnitude_ticks[last] - magnitude_ticks[first]) * fraction
+        if not math.isclose(x, phase_ticks[hz], abs_tol=0.5) or not math.isclose(x, expected_x, abs_tol=0.5):
+            raise RuntimeError(f'Bode panels should align on a shared logarithmic axis at {hz} Hz')
+
+
 async def check_frequency_response(plot, touch):
     chart = plot.locator('[data-frequency-response]')
     await expect(chart.locator('figcaption')).to_contain_text(re.compile(r'\bsimulat(?:ed|ion)\b', re.I))
@@ -616,7 +659,13 @@ async def check_frequency_response(plot, touch):
         await expect(panel).to_be_visible()
         await expect(trace).to_have_attribute('d', re.compile(r'^M'))
         await expect(panel.locator('[data-response-marker]')).to_be_visible()
-    await expect(nyquist.locator('[data-nyquist-critical]')).to_be_visible()
+    await check_bode_axes(magnitude, phase)
+    await check_nyquist_figure(nyquist)
+    nyquist_key = chart.get_by_role('list', name='Nyquist key', exact=True)
+    await expect(nyquist_key).to_be_visible()
+    await expect(nyquist_key.get_by_role('listitem')).to_have_text(
+        ['Positive frequency', 'Reflected branch', 'Critical point (−1, 0)']
+    )
 
     readout = chart.locator('output[data-response-readout]')
     frequency = chart.get_by_role('slider', name='Frequency', exact=True)

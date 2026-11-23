@@ -6,7 +6,7 @@ const [nominal, higherGain] = demoFrequencyResponse.responses
 const galleryResponse = { responses: [higherGain, nominal] }
 const source = {
   label: 'Simulated flexible servo loop',
-  description: 'A 28 Hz resonance and a 45 Hz lag pole shape the loop response. The dotted Nyquist branch reflects negative frequencies.',
+  description: 'A 28 Hz mode with damping ratio 0.14 and a 45 Hz lag pole. Each gain setting uses 301 samples from 0.6 to 200 Hz.',
   href: 'https://www.cds.caltech.edu/~murray/books/AM05/pdf/fbs-loopanal_13Aug2019.pdf',
 }
 
