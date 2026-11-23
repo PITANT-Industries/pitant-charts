@@ -222,7 +222,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
-        'ternary-mixture-map', 'industrial-ct', 'cad-scan-deviation', 'cie-chromaticity',
+        'ternary-mixture-map', 'industrial-ct', 'cad-scan-deviation', 'cie-chromaticity', 'hyperspectral-cube',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -401,6 +401,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=cie-chromaticity&variant=cie-chromaticity-gamuts'
                 )
+            elif example['family'] == 'hyperspectral-cube':
+                image = card_plot.locator('svg[data-hyper-image]')
+                await check_hyper_image(image)
+                await check_compact_figure_bounds(image, 'rect[data-hyper-image-frame]')
+                await expect(card_plot.locator('input, select, button, [data-hyper-region], [data-hyper-spectrum], [data-hyper-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=hyperspectral-cube&variant=hyperspectral-cube-cuprite'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -502,6 +510,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'cie-chromaticity':
                 await check_cie_chromaticity(plot, touch)
                 code_import = 'CieChromaticityDiagram'
+            elif example['family'] == 'hyperspectral-cube':
+                await check_hyperspectral_cube(plot, touch)
+                code_import = 'HyperspectralCube'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -3270,6 +3281,218 @@ async def check_cie_chromaticity(plot, touch):
     new_u, new_v = cie_uv(*(await selection('uv'))[:2])
     if not math.isclose(new_u, u + 0.005, abs_tol=1e-9) or not math.isclose(new_v, v, abs_tol=1e-9):
         raise RuntimeError('Right arrow should move by 0.005 along the active u′ axis and preserve v′')
+
+
+async def check_hyper_image(image, mode='rgb'):
+    await expect(image).to_be_visible()
+    await expect(image).to_have_attribute('data-mode', mode)
+    frame = image.locator('rect[data-hyper-image-frame]')
+    await expect(frame).to_be_visible()
+    raster = image.locator('image[data-hyper-raster]')
+    await expect(raster).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+    width, height, levels, colored = await raster.evaluate("""async raster => {
+      const decoded = new Image()
+      decoded.src = raster.getAttribute('href')
+      await decoded.decode()
+      const { naturalWidth: width, naturalHeight: height } = decoded
+      const buffer = document.createElement('canvas')
+      buffer.width = width
+      buffer.height = height
+      const ctx = buffer.getContext('2d')
+      ctx.drawImage(decoded, 0, 0)
+      const { data } = ctx.getImageData(0, 0, width, height)
+      const colors = new Set()
+      let colored = 0
+      for (let i = 0; i < data.length; i += 4) {
+        if (!data[i + 3]) continue
+        const [r, g, b] = data.subarray(i, i + 3)
+        colors.add((r << 16) | (g << 8) | b)
+        if (r !== g || r !== b) colored++
+      }
+      return [width, height, colors.size, colored]
+    }""")
+    expected = [int(await image.get_attribute(f'data-{axis}')) for axis in ['width', 'height']]
+    if [width, height] != expected or expected != [108, 84] or levels < 8 or ((colored > 0) != (mode == 'rgb')):
+        raise RuntimeError(f'Expected native measured {mode} raster {expected}; observed {width}×{height}, {levels} levels, {colored} colored pixels')
+    plot_width, plot_height = await frame.evaluate('frame => [frame.width.baseVal.value, frame.height.baseVal.value]')
+    if not math.isclose(plot_width / plot_height, width / height, rel_tol=1e-5):
+        raise RuntimeError('Hyperspectral image should preserve its source pixel aspect ratio')
+    return raster
+
+
+async def check_hyperspectral_cube(plot, touch):
+    chart = plot.locator('[data-hyperspectral-cube]')
+    image = chart.locator('svg[data-hyper-image]')
+    spectrum = chart.locator('svg[data-hyper-spectrum]')
+    frame = image.locator('rect[data-hyper-image-frame]')
+    trace = spectrum.locator('path[data-hyper-trace]')
+    envelope = spectrum.locator('path[data-hyper-envelope]')
+    readout = chart.locator('output[data-hyper-readout]')
+    region = image.locator('rect[data-hyper-region]')
+    image_pick = image.locator('rect[data-hyper-image-pick]')
+    spectrum_pick = spectrum.locator('rect[data-hyper-spectrum-pick]')
+    mode = chart.get_by_role('combobox', name='Image mode', exact=True)
+    red = chart.get_by_role('combobox', name='Red band', exact=True)
+    green = chart.get_by_role('combobox', name='Green band', exact=True)
+    blue = chart.get_by_role('combobox', name='Blue band', exact=True)
+    bands = chart.get_by_role('slider', name='Wavelength band', exact=True)
+    raster = await check_hyper_image(image)
+    await expect(chart.locator('figcaption a').first).to_have_attribute('href', 'https://popo.jpl.nasa.gov/1995_cuprite_RTGC_rfl_cube/')
+    for label in ('Source column', 'Source row'):
+        await expect(image.get_by_text(label, exact=True)).to_be_visible()
+    await expect(spectrum.get_by_text('Wavelength (nm)', exact=True)).to_be_visible()
+    await expect(spectrum.get_by_text('Surface reflectance (%)', exact=True)).to_be_visible()
+    await expect(trace).to_have_attribute('d', re.compile(r'^M'))
+    await expect(bands).to_have_attribute('min', '0')
+    await expect(bands).to_have_attribute('max', '117')
+    await expect(image_pick).to_have_attribute('tabindex', '0')
+    await expect(spectrum_pick).to_have_attribute('tabindex', '0')
+    await expect(readout).to_be_visible()
+    await expect(mode).to_have_value('rgb')
+    width, height = [int(await image.get_attribute(f'data-{axis}')) for axis in ('width', 'height')]
+
+    async def stats():
+        band, wavelength, mean, sd, count, current, *roi = await readout.evaluate("""out => [
+          Number(out.dataset.band), Number(out.dataset.wavelength), out.dataset.mean, out.dataset.sd,
+          Number(out.dataset.count), out.dataset.mode,
+          ...['x0', 'x1', 'y0', 'y1'].map(key => Number(out.dataset[key]))
+        ]""")
+        await expect(image).to_have_attribute('data-band', str(band))
+        await expect(spectrum).to_have_attribute('data-band', str(band))
+        await expect(image).to_have_attribute('data-mode', current)
+        spectral_x, spectral_width = await spectrum_pick.evaluate('rect => [rect.x.baseVal.value, rect.width.baseVal.value]')
+        marker = spectrum.locator('line[data-hyper-spectral-marker]')
+        marker_x = float(await marker.get_attribute('x1'))
+        expected_x = spectral_x + spectral_width * (wavelength - 383.15) / (2508.20 - 383.15)
+        if not math.isclose(marker_x, expected_x, abs_tol=0.5):
+            raise RuntimeError('The selected band marker should match its physical wavelength')
+        await expect(mode).to_have_value(current)
+        for axis, coord in zip(['x0', 'x1', 'y0', 'y1'], roi):
+            await expect(region).to_have_attribute(f'data-{axis}', str(coord))
+        left, top, plot_width, plot_height = await frame.evaluate(
+            "frame => ['x', 'y', 'width', 'height'].map(key => frame[key].baseVal.value)"
+        )
+        observed = await region.evaluate(
+            "region => ['x', 'y', 'width', 'height'].map(key => region[key].baseVal.value)"
+        )
+        x0, x1, y0, y1 = roi
+        expected = [
+            left + plot_width * x0 / width, top + plot_height * y0 / height,
+            plot_width * (x1 - x0 + 1) / width, plot_height * (y1 - y0 + 1) / height,
+        ]
+        if any(not math.isclose(actual, anchor, abs_tol=0.5) for actual, anchor in zip(observed, expected)):
+            raise RuntimeError(f'ROI must cover its entire inclusive pixel rectangle: {roi}, {observed}, expected {expected}')
+        mean = float(mean) if mean not in ('', None) else None
+        sd = float(sd) if sd not in ('', None) else None
+        return band, wavelength, mean, sd, count, current, roi
+
+    async def pick(target, horizontal, vertical):
+        await target.scroll_into_view_if_needed()
+        box = await target.bounding_box()
+        position = {'x': box['width'] * horizontal, 'y': box['height'] * vertical}
+        if touch:
+            await target.tap(position=position)
+        else:
+            await target.click(position=position)
+
+    for control, channel, expected_band in [(red, 'red', 106), (green, 'green', 100), (blue, 'blue', 88)]:
+        await expect(control).to_have_value(str(expected_band))
+        await expect(image).to_have_attribute(f'data-{channel}', str(expected_band))
+        await expect(control.locator('option')).to_have_count(118)
+    await expect(envelope).to_have_count(0)
+    initial = await stats()
+    if initial[:2] != (100, 2210.28) or initial[3:] != (0, 1, 'rgb', [85, 85, 39, 39]) or not math.isclose(
+        initial[2], 29.12, abs_tol=1e-8
+    ):
+        raise RuntimeError(f'Unexpected initial Cuprite pixel or reflectance: {initial}')
+    start_trace = await trace.get_attribute('d')
+    if start_trace.count('M') != 3:
+        raise RuntimeError('Excluded atmospheric intervals should leave two gaps in the physical-wavelength trace')
+
+    original_rgb = await raster.get_attribute('href')
+    await red.select_option('88')
+    await expect(image).to_have_attribute('data-red', '88')
+    await expect(image).to_have_attribute('data-green', '100')
+    await expect(image).to_have_attribute('data-blue', '88')
+    await expect(raster).not_to_have_attribute('href', original_rgb)
+    if await stats() != initial:
+        raise RuntimeError('Changing an RGB channel should preserve the measured spectrum and the selected region')
+    await red.select_option('106')
+    await expect(raster).to_have_attribute('href', original_rgb)
+    await mode.select_option('band')
+    await expect(raster).not_to_have_attribute('href', original_rgb)
+    await check_hyper_image(image, 'band')
+    tone = image.locator('[data-hyper-colorbar]')
+    await expect(tone).to_have_attribute('data-min', '19')
+    await expect(tone).to_have_attribute('data-max', '40')
+    if (await stats())[-1] != initial[-1]:
+        raise RuntimeError('Switching to a single band should retain the location')
+
+    await pick(image_pick, (70 + .5) / width, (52 + .5) / height)
+    pixel = await stats()
+    if pixel[4:] != (1, 'band', [70, 70, 52, 52]) or not math.isclose(pixel[2], 36.425, abs_tol=1e-8):
+        raise RuntimeError(f'Unexpected result for the selected measured pixel: {pixel}')
+
+    await image_pick.scroll_into_view_if_needed()
+    if touch:
+        await pick(image_pick, (81 + .5) / width, (34 + .5) / height)
+        for key, steps in [('Shift+ArrowRight', 4), ('Shift+ArrowDown', 5)]:
+            for _ in range(steps):
+                await image_pick.press(key)
+    else:
+        box = await image_pick.bounding_box()
+        mouse = image_pick.page.mouse
+        await mouse.move(box['x'] + box['width'] * (81 + .5) / width, box['y'] + box['height'] * (34 + .5) / height)
+        await mouse.down()
+        secondary = {
+            'pointerId': 200, 'pointerType': 'touch', 'isPrimary': False,
+            'clientX': box['x'] + 5, 'clientY': box['y'] + 5,
+        }
+        await image_pick.dispatch_event('pointermove', secondary)
+        await expect(region).to_have_attribute('data-x0', '81')
+        await expect(region).to_have_attribute('data-y0', '34')
+        await image_pick.dispatch_event('pointerup', secondary)
+        await image_pick.dispatch_event('pointercancel', {**secondary, 'pointerId': 201})
+        await mouse.move(box['x'] + box['width'] * (85 + .5) / width, box['y'] + box['height'] * (39 + .5) / height, steps=5)
+        await mouse.up()
+    area = await stats()
+    if area[:2] != initial[:2] or area[4:] != (30, 'band', [81, 85, 34, 39]) or not all(
+        value is not None and math.isclose(value, target, abs_tol=1e-8)
+        for value, target in zip(area[2:4], [31.34733333333333, 3.3164563752428418])
+    ):
+        raise RuntimeError(f'Inclusive Cuprite ROI must report its 30 measured pixels, mean and population SD: {area}')
+    await expect(envelope).to_have_attribute('d', re.compile(r'^M'))
+    await expect(trace).not_to_have_attribute('d', start_trace)
+
+    await mode.select_option('rgb')
+    if (await stats())[-1] != area[-1]:
+        raise RuntimeError('Returning to RGB should preserve the selected region')
+    await bands.press('Home')
+    first = await stats()
+    if first[:2] != (0, 383.15) or first[-2:] != ('band', area[-1]):
+        raise RuntimeError(f'Spectral slider Home should select the first valid physical band: {first}')
+    await bands.press('End')
+    last = await stats()
+    if last[:2] != (125, 2508.20) or last[-2:] != ('band', area[-1]):
+        raise RuntimeError(f'Spectral slider End should select the last valid physical band: {last}')
+    await expect(spectrum).to_have_attribute('data-wavelength-min', '383.15')
+    await expect(spectrum).to_have_attribute('data-wavelength-max', '2508.2')
+    await pick(image_pick, (85 + .5) / width, (39 + .5) / height)
+    await expect(envelope).to_have_count(0)
+    await pick(spectrum_pick, (1391.82 - 383.15) / (2508.20 - 383.15), .5)
+    before_gap = await stats()
+    if before_gap[:2] != (53, 1351.98) or not math.isclose(before_gap[2], 49.76, abs_tol=1e-8):
+        raise RuntimeError(f'Picking an excluded atmospheric band should select the physically nearest usable band: {before_gap}')
+    await spectrum_pick.press('ArrowRight')
+    after_gap = await stats()
+    if after_gap[:2] != (57, 1471.50) or not math.isclose(after_gap[2], 45.115, abs_tol=1e-8):
+        raise RuntimeError(f'Keyboard band navigation should skip the three unavailable bands: {after_gap}')
+    await bands.fill('97')
+    shoulder = await stats()
+    if shoulder[:2] != (105, 2260.10) or shoulder[-1] != initial[-1] or not math.isclose(
+        shoulder[2], 34.575, abs_tol=1e-8
+    ):
+        raise RuntimeError(f'Band ordinal 97 should show the measured 2260.10 nm shoulder: {shoulder}')
 
 
 async def check_native_scientific(plot, slug, touch):

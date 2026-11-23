@@ -1,0 +1,222 @@
+.hyperspectral-cube {
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+  font-variant-numeric: tabular-nums;
+}
+
+.hyperspectral-cube[data-compact='true'],
+.hyperspectral-cube[data-compact='true'] .hyper-panels,
+.hyperspectral-cube[data-compact='true'] .hyper-panel,
+.hyperspectral-cube[data-compact='true'] .hyper-image {
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.detail-plot:has(.hyperspectral-cube),
+.detail-plot:has(.hyperspectral-cube) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.hyper-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .65rem;
+}
+
+.hyperspectral-cube[data-compact='true'] .hyper-panels {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.hyper-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  min-inline-size: 0;
+}
+
+.hyperspectral-cube[data-compact='true'] .hyper-panel {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.hyperspectral-cube[data-compact='false'] .hyper-panel {
+  border: 1px solid var(--border);
+}
+
+.hyper-panel-title,
+.hyper-image-key,
+.hyper-spectrum-key {
+  padding: .55rem .7rem .34rem;
+  background: #fff;
+  color: #212b33;
+  font: 600 .77rem/1.25 Arial, Helvetica, sans-serif;
+}
+
+.hyper-panel-title b {
+  margin-right: .3rem;
+  color: #315a73;
+}
+
+.hyper-image,
+.hyper-spectrum {
+  position: relative;
+  block-size: clamp(13rem, 45cqw, 18.5rem);
+}
+
+.hyper-image > svg,
+.hyper-spectrum > svg {
+  position: absolute;
+  inset: 0;
+}
+
+.hyper-missing-pixels {
+  fill: #e7ebed;
+}
+
+.hyper-image-key,
+.hyper-spectrum-key {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .25rem .7rem;
+  padding: .2rem .45rem .55rem;
+  font-size: .69rem;
+  font-weight: 400;
+}
+
+.hyper-image-key [data-hyper-channel]::before {
+  content: '';
+  display: inline-block;
+  inline-size: .43rem;
+  block-size: .43rem;
+  margin-inline-end: .23rem;
+  background: var(--hyper-channel);
+}
+
+.hyper-image-key [data-hyper-channel='red'] { --hyper-channel: #a73d33; }
+.hyper-image-key [data-hyper-channel='green'] { --hyper-channel: #286148; }
+.hyper-image-key [data-hyper-channel='blue'] { --hyper-channel: #315c8d; }
+
+[data-hyper-region] {
+  fill: #ffffff26;
+  stroke: #fff;
+  stroke-width: 1.2;
+  filter: drop-shadow(0 0 1px #18272f);
+}
+
+.hyper-crosshair {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.15;
+  filter: drop-shadow(0 0 1px #18272f);
+}
+
+[data-hyper-image-pick],
+[data-hyper-spectrum-pick] {
+  cursor: crosshair;
+  outline: none;
+}
+
+[data-hyper-image-pick] { touch-action: none; }
+[data-hyper-spectrum-pick] { touch-action: pan-y; }
+
+[data-hyper-image-pick]:focus-visible,
+[data-hyper-spectrum-pick]:focus-visible {
+  stroke: #255d86;
+  stroke-width: 2;
+}
+
+[data-hyper-trace] {
+  fill: none;
+  stroke: #244e73;
+  stroke-width: 1.45;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+[data-hyper-envelope] {
+  fill: #d8e6f0;
+}
+
+[data-hyper-spectral-point] {
+  fill: #244e73;
+  stroke: #fff;
+  stroke-width: .8;
+}
+
+.hyper-controls {
+  display: grid;
+  gap: .5rem;
+  padding: .57rem .68rem;
+  border-top: 1px solid var(--border);
+  font-size: .74rem;
+  line-height: 1.4;
+}
+
+.hyper-control,
+.hyper-band-control {
+  display: grid;
+  min-inline-size: 0;
+  gap: .24rem;
+}
+
+.hyper-control select {
+  inline-size: 100%;
+  min-block-size: 1.85rem;
+  border: 1px solid var(--border);
+  border-radius: .25rem;
+  padding: .2rem .22rem;
+  background: var(--background);
+  color: inherit;
+  font: inherit;
+}
+
+.hyper-channels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .35rem;
+}
+
+.hyper-band-control {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.hyper-band-control input {
+  grid-column: 1 / -1;
+  inline-size: 100%;
+  margin: .3rem 0;
+}
+
+.hyper-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .28rem 1rem;
+  margin-block-start: .65rem;
+  padding: .55rem .68rem;
+  border: 1px solid var(--border);
+  font-size: .74rem;
+}
+
+.hyper-readout strong {
+  margin-inline-start: .32rem;
+}
+
+.hyper-caption {
+  margin: .55rem .12rem 0;
+  color: var(--muted-foreground);
+  font-size: .73rem;
+  line-height: 1.5;
+}
+
+.hyper-caption p {
+  margin: .13rem 0 0;
+}
+
+@container (min-width: 635px) {
+  .hyper-panels {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}

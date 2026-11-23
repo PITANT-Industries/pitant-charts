@@ -496,6 +496,32 @@
       { "label": "ITU-R BT.2020-2, primaries and reference white for UHD television", "href": "https://www.itu.int/rec/R-REC-BT.2020-2-201510-I/en" }
     ]
   },
+  "hyperspectral-cube": {
+    "summary": "Inspect a stack of spectral images and compare the spectrum of one pixel with a region average.",
+    "useWhen": "Explore which wavelengths distinguish spatial features in imaging spectroscopy data, or compare spectral variation within a region.",
+    "data": "Supply positive integer dimensions, strictly increasing positive wavelengths in nanometers, and exactly width × height × band count values. Store each band as a complete image, with the column changing fastest. The flat index is b × width × height + y × width + x. Use noDataValue for a raw-value sentinel and excludedBands for zero-based band indices. Keep at least two bands available for inspection.",
+    "reading": "Under Image mode, choose Single band for a grayscale image or RGB composite to assign wavelengths with Red band, Green band, and Blue band. Click or tap the image to inspect one pixel, or drag a rectangle to read a region spectrum. With the image focused, use arrow keys to pick a pixel or hold Shift to extend the region from its anchor. Pick a wavelength on the spectrum or use Wavelength band to switch the image to that band. With the spectrum focused, Left and Right step between bands. Home and End jump to the first and last available bands.",
+    "notes": [
+      "Each valid sample is displayed as raw × valueScale + valueOffset. Source column and Source row are columnOrigin + x × pixelStride and rowOrigin + y × pixelStride. The initialPixel indexes the local cube. Use zero-based band indices for initialBand and for rgbBands ordered red, green, blue. A common display range keeps the image contrast scale fixed across wavelengths and RGB channels.",
+      "The region spectrum plots the mean of valid pixels at each wavelength. Across adjacent bands with two or more valid pixels, the envelope extends one population standard deviation above and below the mean. A band’s valid count can vary because no-data pixels are excluded separately at each wavelength.",
+      "Excluded bands and bands with zero valid pixels break the spectrum. RGB composite colors reflect the chosen channel wavelengths and the display range. Assigning infrared bands produces a false-color image. Use the spectral readout for numerical comparison.",
+      "The measured example uses NASA/JPL AVIRIS data acquired over Cuprite, Nevada, on June 23, 1995. The published cube is radiative transfer ground calibrated (RTGC). A stored value of 20,000 represents 100% reflectance, so each integer step is 0.005 percentage point. The archive uses −32,767 for deleted samples.",
+      "The 108 × 84 crop starts at zero-based source column 161 and row 409 and keeps every third source pixel along each axis. It retains 126 original bands from 383.15 to 2508.20 nm in wavelength order, with denser sampling between 2050 and 2400 nm. Eight retained bands near the low-signal atmospheric water absorption regions around 1400 and 1900 nm are excluded from inspection.",
+      "The opening false-color composite assigns 2270.05, 2210.28, and 2090.47 nm to red, green, and blue, using a fixed 19–40% image display range. The starting pixel at source column 416 and row 526 has 29.12% reflectance at 2210.28 nm. The same pixel reads 34.085% at 2150.42 nm and 34.575% at 2260.10 nm.",
+      "Select source columns 404–416 and rows 511–526 to compare the starting pixel with its neighborhood. At 2210.28 nm the 30 sampled pixels give a mean of about 31.347% and a population standard deviation of 3.316 percentage points."
+    ],
+    "properties": [
+      { "name": "data", "type": "HyperspectralCubeData", "description": "Required. Provide dimensions, wavelength centers, and band-major values. Optional scaling, masking, display, and source-coordinate settings describe the cube." },
+      { "name": "label", "type": "string", "description": "Describe the sensor, scene, and measured quantity for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact cube preview for a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Credit the acquisition, data product, and license." }
+    ],
+    "sources": [
+      { "label": "NASA/JPL AVIRIS, 1995 Cuprite RTGC reflectance cube and ENVI header", "href": "https://popo.jpl.nasa.gov/1995_cuprite_RTGC_rfl_cube/" },
+      { "label": "Swayze et al. (2003), Cuprite imaging spectroscopy and spectral identification", "href": "https://doi.org/10.1029/2002JE001975" },
+      { "label": "Clark et al. (2002), AVIRIS surface reflectance calibration and RTGC encoding", "href": "https://aviris.jpl.nasa.gov/proceedings/workshops/02_docs/2002_Clark_web.pdf" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",
