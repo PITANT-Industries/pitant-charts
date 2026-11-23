@@ -144,6 +144,10 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.example-grid--scientific > .example-card:is([data-example-id='mass-spectrum-cms'], [data-example-id='spectral-waterfall-xrd']) {
+  --science-card-height: clamp(17rem, 29vw, 21.5rem);
+}
+
 .example-card { position: relative; min-width: 0; background: var(--gallery-surface); border: 1px solid var(--gallery-rule); border-radius: 9px; overflow: hidden; }
 .example-card:hover { border-color: color-mix(in srgb, var(--gallery-accent), var(--gallery-rule) 62%); }
 .example-card--featured {
@@ -157,6 +161,15 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 @media (min-width: 768px) {
   .example-card--featured [data-line-axis] { font-size: 11px; }
 }
+.example-card-title {
+  display: block;
+  padding: .75rem .9rem 0;
+  color: var(--gallery-ink);
+  font-size: .9rem;
+  font-weight: 630;
+  line-height: 1.35;
+}
+
 .example-card-link { position: absolute; z-index: 1; inset: 0; border-radius: inherit; }
 .example-card-link:focus-visible, .example-list-row:focus-visible { outline-color: var(--gallery-accent); outline-offset: -2px; }
 .card-plot { height: 211px; padding: 8px 9px; overflow: hidden; pointer-events: none; }

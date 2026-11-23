@@ -10,6 +10,7 @@ export interface SpectralWaterfallProps {
   data: SpectralWaterfallData
   axes: SpectralWaterfallAxes
   label?: string
+  dataset?: string
   description?: string
   source?: { label: string; href: string }
   compact?: boolean
@@ -31,7 +32,7 @@ function measuredValue(value: number, axis: SpectralAxis) {
 }
 
 export function SpectralWaterfall({
-  data, axes, label = 'Spectral waterfall', description, source, compact = false,
+  data, axes, label = 'Spectral waterfall', dataset, description, source, compact = false,
 }: SpectralWaterfallProps) {
   const initial = useMemo(() => firstSelection(data), [data])
   const [selection, setSelection] = useState<SpectralSelection>()
@@ -43,7 +44,7 @@ export function SpectralWaterfall({
     binIndex: Math.min(selection?.binIndex ?? initial.binIndex, data.spectralBins.length - 1),
   }
   const plot = { data, axes, selection: active, onSelect: setSelection }
-  const sourceVisible = Boolean(description || source)
+  const hasContext = Boolean(dataset || description || source)
   const scanValue = data.scanValues[active.scanIndex]
   const spectralValue = data.spectralBins[active.binIndex]
   const intensity = readIntensity(data, active)
@@ -73,8 +74,14 @@ export function SpectralWaterfall({
   )
   return (
     <figure className="spectral-waterfall" data-compact={compact} data-spectral-waterfall
-      aria-label={label} aria-describedby={!compact && sourceVisible ? caption : undefined}>
+      aria-label={label} aria-describedby={!compact && hasContext ? caption : undefined}>
       {compact ? <WaterfallPlot {...plot} compact /> : <>
+        {hasContext && <figcaption id={caption} className="spectral-waterfall-caption">
+          {dataset && <strong>{dataset}</strong>}
+          {(description || source) && <span>
+            {description}{description && source && ' '}{source && <a href={source.href}>{source.label}</a>}
+          </span>}
+        </figcaption>}
         <Tabs defaultValue="waterfall" className="waterfall-tabs">
           <TabsList className="waterfall-view-toggle" aria-label="Spectral views">
             <TabsTab value="waterfall">3D Waterfall</TabsTab>
@@ -86,9 +93,6 @@ export function SpectralWaterfall({
           <TabsPanel value="spectrum"><SelectedSpectrum {...plot} /></TabsPanel>
         </Tabs>
         {grid}
-        {sourceVisible && <figcaption id={caption}>
-          {description}{source && <> <a href={source.href}>{source.label}</a></>}
-        </figcaption>}
       </>}
     </figure>
   )

@@ -98,7 +98,7 @@
 }
 
 .waterfall-readout output span > span,
-.spectral-waterfall figcaption {
+.spectral-waterfall-caption {
   color: var(--muted-foreground);
 }
 
@@ -108,13 +108,22 @@
   font-weight: 650;
 }
 
-.spectral-waterfall figcaption {
+.spectral-waterfall-caption {
+  display: grid;
+  gap: .25rem;
+  max-inline-size: 70ch;
   padding: 0 .15rem .25rem;
-  font-size: .8125rem;
+  font-size: .875rem;
   line-height: 1.5;
 }
 
-.spectral-waterfall figcaption a {
+.spectral-waterfall-caption strong {
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.spectral-waterfall-caption a {
   color: var(--foreground);
   text-decoration: underline;
   text-underline-offset: .15em;

@@ -7,6 +7,7 @@ import {
   Spectrum,
   TimeSeries,
 } from '@pitant/charts-react'
+import type { CorrelationMatrixData } from '@pitant/charts-react'
 import { useId, useMemo, useState } from 'react'
 import type { CSSProperties, MouseEvent, ReactNode } from 'react'
 import type { ChartPreviewProps } from '../../types'
@@ -17,12 +18,13 @@ import {
   processControlFixture,
   spectrogramFixture,
   spectrumFixture,
+  steelCorrelationFixture,
 } from './data'
+import type { MeasuredSource } from './data'
 import './scientific.css'
 
 type Color = readonly [red: number, green: number, blue: number, alpha: number]
 type ColorStop = { value: number; rgba: Color }
-type MeasuredSource = { sourceLabel: string; sourceUrl: string; description: string }
 
 const spectrumGradient: readonly ColorStop[] = [
   { value: 0, rgba: [0.06, 0.11, 0.2, 1] },
@@ -42,6 +44,7 @@ const correlationGradient: readonly ColorStop[] = [
 
 const number = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 5, useGrouping: false })
 const correlationNumber = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 })
+const observationCount = new Intl.NumberFormat('en-US')
 
 function readNumber(value: number | undefined) {
   return value !== undefined && Number.isFinite(value) ? number.format(value) : 'Unavailable'
@@ -147,7 +150,7 @@ function ScientificOverlay({ view, axes, variables, cells, dark = false, mark, o
         preserveAspectRatio="none"
         aria-hidden="true"
       >
-        <g className="scientific-axes" data-scientific-axes="">
+        <g className={variables && width < 208 ? 'scientific-axes scientific-axes--dense-matrix' : 'scientific-axes'} data-scientific-axes="">
           {axes && <>
             {displayedXTicks.map((tick, index) => (
               <text key={tick.value} x={tick.position} y={bottom + 15}
@@ -216,18 +219,20 @@ function Figure({ id, caption, compact, dark, source, chart, controls, axes }: {
 }) {
   return (
     <figure className="scientific-preview" data-scientific-preview={id} data-compact={compact} data-dark={dark}>
+      {!compact && (
+        <figcaption id={caption} data-scientific-source="">
+          <span className="scientific-source-line">
+            <a href={source.sourceUrl}>{source.sourceLabel}</a>
+            {source.license && <a href={source.license.url}>{source.license.name}</a>}
+          </span>
+          <span>{source.description}</span>
+        </figcaption>
+      )}
       <div className="scientific-graphic">
         {axes?.yTitle && <p className="scientific-y-title" aria-hidden="true">{axes.yTitle}</p>}
         <div className="scientific-plot-frame">{chart}</div>
       </div>
-      {!compact && (
-        <>
-          {controls}
-          <figcaption id={caption}>
-            <span>{source.description}</span> <a href={source.sourceUrl}>{source.sourceLabel}</a>
-          </figcaption>
-        </>
-      )}
+      {!compact && controls}
     </figure>
   )
 }
@@ -311,8 +316,9 @@ function SpectrogramReadout({ x: { index: time, setIndex: setTime }, y: { index:
   )
 }
 
-function CorrelationReadout({ x: { index: column, setIndex: setColumn }, y: { index: row, setIndex: setRow } }: PairPicker) {
-  const { data } = correlationFixture
+function CorrelationReadout({ data, x: { index: column, setIndex: setColumn }, y: { index: row, setIndex: setRow } }: PairPicker & {
+  data: CorrelationMatrixData
+}) {
   const variableCount = data.variables.length
   const index = data.valueLayout === 'column-major' ? column * variableCount + row : row * variableCount + column
   const value = data.values[index]
@@ -323,7 +329,7 @@ function CorrelationReadout({ x: { index: column, setIndex: setColumn }, y: { in
 
   return (
     <div className="scientific-readout">
-      <output>Pearson r = {Number.isFinite(value) ? correlationNumber.format(value) : 'Unavailable'}{sampleCount !== undefined ? ` · ${sampleCount} paired observations` : ''}</output>
+      <output>Pearson r = {Number.isFinite(value) ? correlationNumber.format(value) : 'Unavailable'}{sampleCount !== undefined ? ` · ${observationCount.format(sampleCount)} paired observations` : ''}</output>
       <label className="scientific-input">
         <span>Row variable</span>
         <select value={row} onChange={(event) => setRow(Number(event.currentTarget.value))}>{options}</select>
@@ -385,6 +391,7 @@ const defaultSelections: Record<string, readonly [number, number]> = {
   'spectrum-measured': [nearestIndex(spectrumFixture.data.frequencies, 1), 0],
   'spectrogram-measured': [0, nearestIndex(spectrogramFixture.data.frequencyBins, 1)],
   'correlation-matrix-measured': [1, 0],
+  'correlation-matrix-steel': [1, 0],
   'process-control-individuals': [0, 0],
   'process-control-capability': [capabilityCounts.indexOf(Math.max(...capabilityCounts)), 0],
 }
@@ -500,8 +507,10 @@ export default function ScientificPreview({ example, compact = false, data }: Ch
       </Spectrogram>
       return <Figure {...figure} source={spectrogramFixture} chart={chart} axes={axes} controls={<SpectrogramReadout x={xPicker} y={yPicker} />} />
     }
-    case 'correlation-matrix-measured': {
-      const { data } = correlationFixture
+    case 'correlation-matrix-measured':
+    case 'correlation-matrix-steel': {
+      const fixture = example.id === 'correlation-matrix-steel' ? steelCorrelationFixture : correlationFixture
+      const { data } = fixture
       const count = data.variables.length
       const mark = { x: x + 0.5, y: count - y - 0.5, width: 1, height: 1, xIndex: x, yIndex: y }
       const pickCell = (column: number, row: number) =>
@@ -511,7 +520,7 @@ export default function ScientificPreview({ example, compact = false, data }: Ch
           mark={compact ? undefined : mark} cells={compact ? undefined : view.renderPlan.cells}
           onPick={compact ? undefined : pickCell} />}
       </CorrelationMatrix>
-      return <Figure {...figure} source={correlationFixture} chart={chart} controls={<CorrelationReadout x={xPicker} y={yPicker} />} />
+      return <Figure {...figure} source={fixture} chart={chart} controls={<CorrelationReadout data={data} x={xPicker} y={yPicker} />} />
     }
     case 'process-control-individuals': {
       const { data, config } = processControlFixture

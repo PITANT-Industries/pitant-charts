@@ -19,6 +19,7 @@ const co2Axes: SpectralWaterfallAxes = {
 const co2Waterfall = {
   data: co2Data,
   axes: co2Axes,
+  dataset: 'NOAA Mauna Loa CO₂ observations',
   description: spectrogramFixture.description,
   source: { label: spectrogramFixture.sourceLabel, href: spectrogramFixture.sourceUrl },
 }
@@ -27,6 +28,8 @@ export default function SpectralWaterfallPreview({ example, data, compact }: Cha
   if (data !== undefined) {
     return <p className="chart-render-message" role="status">Use the typed SpectralWaterfall input in the chart guide to plot your own scans.</p>
   }
-  const fixture = example.id === 'spectral-waterfall-xrd' ? xrdWaterfall : co2Waterfall
+  const fixture = example.id === 'spectral-waterfall-xrd'
+    ? { ...xrdWaterfall, dataset: 'DyNiC₂ synchrotron X-ray diffraction' }
+    : co2Waterfall
   return <SpectralWaterfall {...fixture} compact={compact} label={example.title} />
 }

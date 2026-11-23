@@ -9,7 +9,7 @@ import {
   ArrowDown, ArrowDownRight, ArrowLeft, ArrowUpRight, Bookmark, BookOpen, ChevronLeft, ChevronRight,
   Code2, Grid2X2, List, Menu, Moon, Search, Star, Sun, X,
 } from 'lucide-react'
-import { examples, galleryOrder, getExample, getFamily, getGroupForFamily, groups } from '../catalog'
+import { examples, galleryOrder, getExample, getFamily, getGroupForFamily, groups, scientificGalleryOrder } from '../catalog'
 import { ChartPreview } from '../charts/ChartPreview'
 import type { ChartExample } from '../types'
 import { Choices } from '../ui/Choices'
@@ -106,13 +106,15 @@ function VisibleChart({ example }: { example: ChartExample }) {
   return <div className="card-plot" ref={host} aria-hidden="true" inert>{visible && <ChartPreview example={example} compact />}</div>
 }
 
-function ExampleCard({ example, featured, onDocumentation }: {
+function ExampleCard({ example, featured, showTitle = false, onDocumentation }: {
   example: ChartExample
   featured: boolean
+  showTitle?: boolean
   onDocumentation: () => void
 }) {
   return (
     <div className={featured ? 'example-card example-card--featured' : 'example-card'} data-example-id={example.id}>
+      {showTitle && <span className="example-card-title" aria-hidden="true">{example.title}</span>}
       <VisibleChart example={example} />
       <a className="example-card-link" href={exampleDocsHref(example)} aria-label={`Documentation for ${example.title}`} onClick={(event) => followLink(event, onDocumentation)} />
     </div>
@@ -252,7 +254,7 @@ export function Gallery() {
     document.title = docTitle ? `${docTitle} | PITANT Charts` : catalogTitle
   }, [docTitle])
   const detail = getExample(link.example)
-  const available = selectedFamily ? selectedFamily.examples : galleryOrder
+  const available = selectedFamily?.examples ?? (scientificCategory ? scientificGalleryOrder : galleryOrder)
   const terms = query.split(/\s+/)
   const filtered = available.filter((example) => {
     if (selectedGroup && !selectedGroup.families.includes(example.family)) return false
@@ -431,6 +433,7 @@ export function Gallery() {
                       key={example.id}
                       example={example}
                       featured={showFeature && !landingFeature && index === 0}
+                      showTitle={scientificCategory}
                       onDocumentation={() => showDocumentation(example.family, example.id)}
                     />
                   ))}

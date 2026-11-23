@@ -3188,6 +3188,22 @@
     ]
   },
   {
+    "id": "mass-spectrum",
+    "name": "Particle mass spectrum",
+    "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",
+    "examples": [
+      {
+        "id": "mass-spectrum-cms",
+        "family": "mass-spectrum",
+        "title": "CERN Dimuon Mass Spectrum",
+        "label": "CMS Run2010B collision events",
+        "description": "Invariant mass distribution of 100,000 muon pairs in CERN's CMS Run2010B collision sample.",
+        "url": "https://opensource.pitant.de/charts/#example=mass-spectrum-cms",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "spectrum",
     "name": "Spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=spectrum",
@@ -3195,9 +3211,9 @@
       {
         "id": "spectrum-measured",
         "family": "spectrum",
-        "title": "Measured Frequency Spectrum",
-        "label": "Frequency peaks in a measured CO₂ series",
-        "description": "Frequency peaks in a measured CO₂ series",
+        "title": "Mauna Loa CO₂ Frequency Spectrum",
+        "label": "480 monthly CO₂ readings, 1980–2019",
+        "description": "480 monthly CO₂ readings, 1980–2019",
         "url": "https://opensource.pitant.de/charts/#example=spectrum-measured",
         "position": 1
       }
@@ -3211,9 +3227,9 @@
       {
         "id": "spectrogram-measured",
         "family": "spectrogram",
-        "title": "Measured Spectrogram",
-        "label": "Frequency content across overlapping time windows",
-        "description": "Frequency content across overlapping time windows",
+        "title": "Mauna Loa CO₂ Spectrogram",
+        "label": "CO₂ amplitude in overlapping 96-month windows",
+        "description": "CO₂ amplitude in overlapping 96-month windows",
         "url": "https://opensource.pitant.de/charts/#example=spectrogram-measured",
         "position": 1
       }
@@ -3227,7 +3243,7 @@
       {
         "id": "spectral-waterfall-co2",
         "family": "spectral-waterfall",
-        "title": "3D Frequency Waterfall",
+        "title": "Mauna Loa CO₂ Frequency Waterfall",
         "label": "Mauna Loa CO₂ amplitude by frequency and window",
         "description": "Mauna Loa CO₂ amplitude by frequency and window",
         "url": "https://opensource.pitant.de/charts/#example=spectral-waterfall-co2",
@@ -3236,7 +3252,7 @@
       {
         "id": "spectral-waterfall-xrd",
         "family": "spectral-waterfall",
-        "title": "3D X-ray Diffraction Waterfall",
+        "title": "DyNiC₂ X-ray Diffraction Waterfall",
         "label": "Temperature-resolved DyNiC₂ diffraction",
         "description": "Temperature-resolved DyNiC₂ diffraction",
         "url": "https://opensource.pitant.de/charts/#example=spectral-waterfall-xrd",
@@ -3252,11 +3268,20 @@
       {
         "id": "correlation-matrix-measured",
         "family": "correlation-matrix",
-        "title": "Measured Correlation Matrix",
-        "label": "Pearson correlation across measured variables",
-        "description": "Pearson correlation across measured variables",
+        "title": "Palmer Penguin Measurement Correlations",
+        "label": "Four body measurements across 342 penguins",
+        "description": "Four body measurements across 342 penguins",
         "url": "https://opensource.pitant.de/charts/#example=correlation-matrix-measured",
         "position": 1
+      },
+      {
+        "id": "correlation-matrix-steel",
+        "family": "correlation-matrix",
+        "title": "Steel Surface Defect Correlations",
+        "label": "Defect area, perimeter, and thickness across 1,941 records",
+        "description": "Pearson correlations of defect area, X and Y perimeter, and steel plate thickness across 1,941 UCI Steel Plates Faults records.",
+        "url": "https://opensource.pitant.de/charts/#example=correlation-matrix-steel",
+        "position": 2
       }
     ]
   },
@@ -3268,18 +3293,18 @@
       {
         "id": "process-control-individuals",
         "family": "process-control",
-        "title": "Individuals Control Chart",
-        "label": "Ordered measurements against baseline control limits",
-        "description": "Ordered measurements against baseline control limits",
+        "title": "NIST Heat Flow Meter Individuals Chart",
+        "label": "Ordered calibration readings against fixed 3σ limits",
+        "description": "Ordered calibration readings against fixed 3σ limits",
         "url": "https://opensource.pitant.de/charts/#example=process-control-individuals",
         "position": 1
       },
       {
         "id": "process-control-capability",
         "family": "process-control",
-        "title": "Capability Histogram",
-        "label": "Measurement distribution against illustrative specification limits",
-        "description": "Measurement distribution against illustrative specification limits",
+        "title": "NIST Heat Flow Meter Capability Histogram",
+        "label": "Calibration factors and illustrative specifications",
+        "description": "Calibration factors and illustrative specifications",
         "url": "https://opensource.pitant.de/charts/#example=process-control-capability",
         "position": 2
       }

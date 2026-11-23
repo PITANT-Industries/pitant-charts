@@ -99,7 +99,7 @@ export function FamilyDocumentation({ family, variantId, onNavigate }: {
 
   const otherExamples = family.examples.filter((example) => example.id !== featured.id)
   const toc = otherExamples.length ? [...familyToc, { id: 'docs-examples-title', title: 'Examples' }] : familyToc
-  const scientific = getGroupForFamily(family.id)?.id === 'scientific' && family.id !== 'spectral-waterfall'
+  const scientific = getGroupForFamily(family.id)?.id === 'scientific' && !['spectral-waterfall', 'mass-spectrum'].includes(family.id)
   const extra = extraProperties[family.id]
   const documentedProps = doc.properties ?? [...properties, ...(extra ? [extra] : [])]
 
