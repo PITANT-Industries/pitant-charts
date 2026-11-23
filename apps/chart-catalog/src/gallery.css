@@ -90,7 +90,15 @@ button:disabled { cursor: default; opacity: .42; }
 .documentation-nav a[aria-current] { background: var(--gallery-selection); color: var(--gallery-selection-text); font-weight: 650; }
 .gallery-main { min-width: 0; padding: 8px 0 55px; }
 .hero { max-width: var(--gallery-max); margin: auto; padding: clamp(2.2rem, 5vw, 4.45rem) var(--gallery-gutter) clamp(1.7rem, 4vw, 3.15rem); text-align: center; }
-.hero-copy { min-width: 0; }
+.hero--featured {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 3vw, 36px);
+  padding-block: clamp(1.25rem, 3.75vw, 3.75rem) 0;
+  max-block-size: max(32.5rem, calc(100svh - var(--gallery-header-height) - 16px));
+}
+.hero--featured + .workspace--catalog { padding-block-start: clamp(14px, 3vw, 30px); }
+.hero-copy { min-width: 0; flex-shrink: 0; }
 .hero h1 { margin: 0; font-size: clamp(2.55rem, 6vw, 4.9rem); letter-spacing: -.058em; line-height: 1.05; font-weight: 670; }
 .hero-intro { max-width: 37rem; margin: .75rem auto 1.25rem; font-size: clamp(.95rem, 1.65vw, 1.14rem); color: var(--gallery-muted); line-height: 1.55; }
 .hero-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; }
@@ -132,12 +140,14 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 .example-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: clamp(14px, 1.65vw, 20px); }
 .example-card { position: relative; min-width: 0; background: var(--gallery-surface); border: 1px solid var(--gallery-rule); border-radius: 9px; overflow: hidden; }
 .example-card:hover { border-color: color-mix(in srgb, var(--gallery-accent), var(--gallery-rule) 62%); }
-.example-card--featured { grid-column: 1 / -1; }
+.example-card--featured { --featured-plot-height: clamp(295px, 35vw, 430px); grid-column: 1 / -1; }
 .example-card-link { position: absolute; z-index: 1; inset: 0; border-radius: inherit; }
 .example-card-link:focus-visible, .example-list-row:focus-visible { outline-color: var(--gallery-accent); outline-offset: -2px; }
 .card-plot { height: 211px; padding: 8px 9px; overflow: hidden; pointer-events: none; }
 .card-plot :is(button, input, select, textarea, [role='tooltip']) { display: none; }
-.example-card--featured .card-plot { height: clamp(295px, 35vw, 430px); padding: 14px 17px; }
+.example-card--featured .card-plot { height: var(--featured-plot-height); padding: 14px 17px; }
+.hero--featured .example-card { height: calc(var(--featured-plot-height) + 2px); min-height: 212px; }
+.hero--featured .example-card .card-plot { height: 100%; }
 .example-grid > .example-card:nth-child(n+7) .card-plot { content-visibility: auto; contain-intrinsic-block-size: auto 211px; }
 .text-button[data-pressed] { color: var(--primary); }
 [data-pressed] > svg.lucide-bookmark { fill: color-mix(in srgb,var(--primary),transparent 63%); }
@@ -273,7 +283,8 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
   .example-list-row small { grid-row: 2; }
   .example-list-row svg { grid-column: 2; grid-row: 1 / span 2; }
   .card-plot { height: 183px; }
-  .example-card--featured .card-plot { height: 274px; padding: 7px; }
+  .example-card--featured { --featured-plot-height: 274px; }
+  .example-card--featured .card-plot { padding: 7px; }
   .dialog-inner { padding: 15px; }
   .docs-data { grid-template-columns: minmax(0, 1fr); gap: .2rem; }
   .docs-data dd + dt { margin-block-start: .45rem; }
@@ -282,6 +293,8 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 @media (max-width: 350px) {
   .site-header-inner { padding-inline: 10px; gap: 4px; }
   .brand-product { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .hero--featured h1 { font-size: 2.25rem; }
+  .hero--featured .hero-actions :is(.primary-button, .secondary-button) { padding-inline: 9px; }
   .family-filter { flex-basis: 95px; }
 }
 @media (prefers-reduced-motion: reduce) {

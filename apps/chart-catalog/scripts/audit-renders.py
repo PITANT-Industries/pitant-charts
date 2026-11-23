@@ -44,13 +44,13 @@ async def check_public_preview(browser, local_url, example):
 
 
 async def check_gallery_documentation(browser, local_url, example):
-    page = await browser.new_page(reduced_motion='reduce')
+    page = await browser.new_page(viewport={'width': 320, 'height': 568}, reduced_motion='reduce')
     try:
         slug = example['id']
         fragment = urlencode({'docs': example['family'], 'variant': slug})
         await page.goto(local_url, wait_until='domcontentloaded', timeout=20000)
         catalog = page.locator('#catalog')
-        tile = catalog.locator(f'.example-card[data-example-id="{slug}"]')
+        tile = page.locator(f'.hero .example-card[data-example-id="{slug}"]')
         link = tile.locator('a.example-card-link').and_(
             tile.get_by_role('link', name=f'Documentation for {example["title"]}', exact=True),
         )
@@ -58,6 +58,10 @@ async def check_gallery_documentation(browser, local_url, example):
         await expect(link).not_to_have_attribute('title', re.compile('.+'))
         plot = tile.locator('.card-plot[inert]')
         await plot.locator('svg, canvas').first.wait_for(state='visible', timeout=8000)
+        await page.evaluate('document.fonts.ready.then(() => true)')
+        await expect(tile).to_be_in_viewport(ratio=1)
+        if await page.evaluate('window.scrollY') != 0:
+            raise RuntimeError('The featured chart must fit on the first screen without scrolling')
         await link.hover(timeout=8000)
         await expect(tile.get_by_role('link')).to_have_count(1)
         await expect(tile.locator('button:visible, [role="tooltip"]:visible, .line-detail-tooltip:visible')).to_have_count(0)
