@@ -1,0 +1,40 @@
+.scientific-plot {
+  min-inline-size: 0;
+  background: #fff;
+  color: #1d2329;
+  font-family: Arial, Helvetica, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.scientific-plot > svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.scientific-axis {
+  fill: #1d2329;
+  font-size: 11px;
+}
+
+.scientific-axis-label {
+  font-size: 11px;
+}
+
+.scientific-panel-title {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.scientific-frame,
+.scientific-tick {
+  fill: none;
+  stroke: #303841;
+  stroke-width: 1px;
+}
+
+.scientific-reference {
+  stroke: #656f7a;
+  stroke-width: 1px;
+  stroke-dasharray: 4 3;
+}

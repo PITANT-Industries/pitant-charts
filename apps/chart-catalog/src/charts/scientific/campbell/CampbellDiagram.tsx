@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import type { MouseEvent } from 'react'
 import { usePlotSize } from '../../usePlotSize'
+import '../scientific-figure.css'
 import './campbell-diagram.css'
 
 export interface CampbellRun {
@@ -23,33 +24,39 @@ export interface CampbellDiagramProps {
 }
 
 type Range = [min: number, max: number]
-type AmplitudeDomains = { color: Range; spectrum: Range }
+type CampbellDomains = { color: Range; spectrum: Range; speed: Range }
 
 const orders = [1, 2, 3, 4, 5, 6]
 const palette = [
-  [12, 19, 36],
-  [25, 38, 77],
-  [27, 79, 112],
-  [27, 140, 143],
-  [120, 198, 157],
-  [255, 223, 124],
+  [68, 1, 84],
+  [71, 45, 123],
+  [59, 82, 139],
+  [44, 114, 142],
+  [33, 145, 140],
+  [40, 174, 128],
+  [94, 201, 98],
+  [173, 220, 48],
+  [253, 231, 37],
 ] as const
 const format = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 })
-const colorScale = `linear-gradient(to right, ${palette.map((color) => `rgb(${color.join(' ')})`).join(', ')})`
 
 function increasing(values: readonly number[]) {
   return values.length >= 2 && values.every((value, index) =>
     Number.isFinite(value) && value >= 0 && (index === 0 || value > values[index - 1]))
 }
 
-function amplitudeDomains(data: CampbellDiagramData): AmplitudeDomains | null {
+function plotDomains(data: CampbellDiagramData): CampbellDomains | null {
   if (!increasing(data.frequenciesHz) || !data.runs.length) return null
   if (new Set(data.runs.map((run) => run.id)).size !== data.runs.length) return null
 
   let lowest = Infinity
   let highest = -Infinity
+  let minimumSpeed = Infinity
+  let maximumSpeed = 0
   for (const run of data.runs) {
     if (!increasing(run.rpm) || run.levelsDb.length !== run.rpm.length) return null
+    minimumSpeed = Math.min(minimumSpeed, run.rpm[0])
+    maximumSpeed = Math.max(maximumSpeed, run.rpm[run.rpm.length - 1])
     for (const spectrum of run.levelsDb) {
       if (spectrum.length !== data.frequenciesHz.length) return null
       for (const level of spectrum) {
@@ -61,7 +68,7 @@ function amplitudeDomains(data: CampbellDiagramData): AmplitudeDomains | null {
   }
   const minimum = Math.min(lowest, highest - 1)
   if (minimum >= highest || !Number.isFinite(highest - minimum)) return null
-  return { color: [Math.max(highest - 60, minimum), highest], spectrum: [minimum, highest] }
+  return { color: [Math.max(highest - 60, minimum), highest], spectrum: [minimum, highest], speed: [minimumSpeed, maximumSpeed] }
 }
 
 function lowerIndex(values: readonly number[], value: number) {
@@ -146,10 +153,11 @@ function tickInterval(extent: number, limit: number) {
   return ([1, 2, 5, 10].find((step) => step * power >= target) ?? 10) * power
 }
 
-function CampbellMap({ run, frequencies, range, speed, band, showOrders, compact, label, onPick }: {
+function CampbellMap({ run, frequencies, range, speedRange, speed, band, showOrders, compact, label, onPick }: {
   run: CampbellRun
   frequencies: readonly number[]
   range: Range
+  speedRange: Range
   speed: number
   band: number
   showOrders: boolean
@@ -158,24 +166,32 @@ function CampbellMap({ run, frequencies, range, speed, band, showOrders, compact
   onPick: (speed: number, band: number) => void
 }) {
   const clipId = useId()
+  const scaleId = useId()
   const { plot, width, height } = usePlotSize<HTMLDivElement>(compact ? 400 : 750, 300)
   const [raster, setRaster] = useState<{ run: CampbellRun; frequencies: readonly number[]; range: Range; url?: string }>()
   useEffect(() => {
     setRaster({ run, frequencies, range, url: heatmapImage(run, frequencies, range) })
   }, [run, frequencies, range])
   const image = raster?.run === run && raster.frequencies === frequencies && raster.range === range ? raster.url : undefined
-  const left = 40
-  const right = Math.max(left + 1, width - 16)
-  const top = 24
-  const bottom = Math.max(top + 1, height - 38)
+  const left = width < 375 ? 48 : 55
+  const right = Math.max(left + 1, width - (width < 375 ? 67 : 79))
+  const top = compact ? 20 : 26
+  const bottom = Math.max(top + 1, height - 41)
+  const centerY = (top + bottom) / 2
+  const colorLeft = right + (width < 375 ? 10 : 16)
+  const colorWidth = 11
+  const colorDivisions = compact ? 2 : 3
+  const colorTicks = Array.from({ length: colorDivisions + 1 }, (_, index) => index / colorDivisions)
   const firstSpeed = run.rpm[0]
   const lastSpeed = run.rpm[run.rpm.length - 1]
   const firstHz = frequencies[0]
   const lastHz = frequencies[frequencies.length - 1]
-  const x = (rpm: number) => blend(left, right, (rpm - firstSpeed) / (lastSpeed - firstSpeed))
+  const x = (rpm: number) => blend(left, right, (rpm - speedRange[0]) / (speedRange[1] - speedRange[0]))
   const y = (hz: number) => blend(bottom, top, (hz - firstHz) / (lastHz - firstHz))
-  const rpmTicks = ticks(firstSpeed, lastSpeed, tickInterval(lastSpeed - firstSpeed, width < 400 ? 3 : 6))
+  const rpmTicks = ticks(speedRange[0], speedRange[1], tickInterval(speedRange[1] - speedRange[0], width < 400 ? 3 : 6))
   const frequencyTicks = ticks(firstHz, lastHz, tickInterval(lastHz - firstHz, 5))
+  const measuredLeft = x(firstSpeed)
+  const measuredWidth = x(lastSpeed) - measuredLeft
 
   function select(event: MouseEvent<SVGRectElement>) {
     const bounds = event.currentTarget.getBoundingClientRect()
@@ -185,26 +201,61 @@ function CampbellMap({ run, frequencies, range, speed, band, showOrders, compact
   }
 
   return (
-    <div className="campbell-map" ref={plot}>
-      <svg viewBox={`0 0 ${width} ${height}`} data-campbell-heatmap="" role="img" aria-label={label}>
-        <defs><clipPath id={clipId}><rect x={left} y={top} width={right - left} height={bottom - top} /></clipPath></defs>
-        {image && <image data-campbell-raster="" href={image} x={left} y={top} width={right - left} height={bottom - top} preserveAspectRatio="none" />}
+    <div className="campbell-map scientific-plot" ref={plot}>
+      <svg viewBox={`0 0 ${width} ${height}`} data-campbell-heatmap="" role="img" aria-label={`${label}, ${run.label}, relative amplitude ${format.format(range[0])} to ${format.format(range[1])} dB`}>
+        <defs>
+          <clipPath id={clipId}>
+            <rect x={measuredLeft} y={top} width={measuredWidth} height={bottom - top} />
+          </clipPath>
+          <linearGradient id={scaleId} x1="0%" y1="100%" x2="0%" y2="0%">
+            {palette.map((color, index) => (
+              <stop key={index} offset={index / (palette.length - 1)} stopColor={`rgb(${color.join(' ')})`} />
+            ))}
+          </linearGradient>
+        </defs>
+        {image && <image data-campbell-raster="" href={image} x={measuredLeft} y={top} width={measuredWidth} height={bottom - top} preserveAspectRatio="none" />}
         {showOrders && (
           <g clipPath={`url(#${clipId})`} aria-hidden="true">
-            {orders.map((order) => {
-              const hz = lastSpeed * order / 60
-              return <g key={order}>
-                <line className="campbell-order" x1={left} y1={y(firstSpeed * order / 60)} x2={right} y2={y(hz)} />
-                <text className="campbell-order-label" x={right - 7} y={y(hz) - 3} textAnchor="end">{order}×</text>
-              </g>
-            })}
+            {orders.map((order) => (
+              <line key={order} className="campbell-order" x1={measuredLeft} y1={y(firstSpeed * order / 60)}
+                x2={measuredLeft + measuredWidth} y2={y(lastSpeed * order / 60)} />
+            ))}
           </g>
         )}
-        <g className="campbell-map-labels" aria-hidden="true">
-          <text className="campbell-axis-title" x={left} y={16}>Frequency (Hz)</text>
-          {frequencyTicks.map((hz) => <text key={hz} x={left - 6} y={y(hz) + 4} textAnchor="end">{format.format(hz)}</text>)}
-          {rpmTicks.map((rpm) => <text key={rpm} x={x(rpm)} y={bottom + 14} textAnchor="middle">{format.format(rpm)}</text>)}
-          <text className="campbell-axis-title" x={(left + right) / 2} y={height - 6} textAnchor="middle">Shaft speed (RPM)</text>
+        <g className="scientific-axis" aria-hidden="true">
+          <rect className="scientific-frame" data-campbell-axis-frame="" x={left} y={top} width={right - left} height={bottom - top} />
+          <text className="scientific-panel-title" x={left} y={compact ? 13 : 15}>
+            {compact ? run.label : '(a) Frequency–speed map'}
+          </text>
+          <text className="scientific-axis-label" transform={`translate(13 ${centerY}) rotate(-90)`} textAnchor="middle">Frequency (Hz)</text>
+          {frequencyTicks.map((hz) => (
+            <g key={hz}>
+              <line className="scientific-tick" x1={left - 4} x2={left} y1={y(hz)} y2={y(hz)} />
+              <text x={left - 8} y={y(hz) + 4} textAnchor="end">{format.format(hz)}</text>
+            </g>
+          ))}
+          {rpmTicks.map((rpm) => (
+            <g key={rpm}>
+              <line className="scientific-tick" x1={x(rpm)} x2={x(rpm)} y1={bottom} y2={bottom + 4} />
+              <text x={x(rpm)} y={bottom + 17} textAnchor="middle">{format.format(rpm)}</text>
+            </g>
+          ))}
+          <text className="scientific-axis-label" x={(left + right) / 2} y={height - 6} textAnchor="middle">Shaft speed (rpm)</text>
+        </g>
+        <g className="scientific-axis" aria-hidden="true" data-campbell-colorbar="">
+          <rect x={colorLeft} y={top} width={colorWidth} height={bottom - top} fill={`url(#${scaleId})`} />
+          <rect className="scientific-frame" x={colorLeft} y={top} width={colorWidth} height={bottom - top} />
+          {colorTicks.map((fraction) => {
+            const tickY = blend(bottom, top, fraction)
+            const tickX = colorLeft + colorWidth
+            return (
+              <g key={fraction}>
+                <line className="scientific-tick" x1={tickX} x2={tickX + 4} y1={tickY} y2={tickY} />
+                <text x={tickX + 7} y={tickY + 4}>{format.format(blend(range[0], range[1], fraction))}</text>
+              </g>
+            )
+          })}
+          <text className="scientific-axis-label" transform={`translate(${width - 8} ${centerY}) rotate(-90)`} textAnchor="middle">Relative amplitude (dB)</text>
         </g>
         {!compact && (
           <>
@@ -213,7 +264,7 @@ function CampbellMap({ run, frequencies, range, speed, band, showOrders, compact
               <line x1={left} x2={right} y1={y(frequencies[band])} y2={y(frequencies[band])} />
               <circle cx={x(run.rpm[speed])} cy={y(frequencies[band])} r={4} />
             </g>
-            <rect className="campbell-pick" x={left} y={top} width={right - left} height={bottom - top}
+            <rect className="campbell-pick" x={measuredLeft} y={top} width={measuredWidth} height={bottom - top}
               fill="transparent" onClick={select} />
           </>
         )}
@@ -229,10 +280,10 @@ function SpectrumSlice({ frequencies, levels, range, band }: {
   band: number
 }) {
   const { plot, width, height } = usePlotSize<HTMLDivElement>(780, 150)
-  const left = 41
-  const right = Math.max(left + 1, width - 16)
-  const top = 20
-  const bottom = Math.max(top + 1, height - 32)
+  const left = width < 375 ? 48 : 55
+  const right = Math.max(left + 1, width - 18)
+  const top = 26
+  const bottom = Math.max(top + 1, height - 41)
   const firstHz = frequencies[0]
   const lastHz = frequencies[frequencies.length - 1]
   const x = (hz: number) => blend(left, right, (hz - firstHz) / (lastHz - firstHz))
@@ -240,31 +291,41 @@ function SpectrumSlice({ frequencies, levels, range, band }: {
   const path = levels.map((level, index) => `${index ? 'L' : 'M'}${x(frequencies[index])} ${y(level)}`).join(' ')
   const frequencyTicks = ticks(firstHz, lastHz, tickInterval(lastHz - firstHz, width < 400 ? 3 : 6))
   return (
-    <div className="campbell-spectrum" ref={plot} data-campbell-spectrum="">
+    <div className="campbell-spectrum scientific-plot" ref={plot} data-campbell-spectrum="">
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Frequency spectrum at the selected shaft speed">
-        <g className="campbell-spectrum-labels" aria-hidden="true">
-          <text className="campbell-axis-title" x={left} y={14}>Relative amplitude (dB)</text>
+        <g className="scientific-axis" aria-hidden="true">
+          <rect className="scientific-frame" x={left} y={top} width={right - left} height={bottom - top} />
+          <text className="scientific-panel-title" x={left} y={15}>(b) Spectrum at selected speed</text>
+          <text className="scientific-axis-label" transform={`translate(13 ${(top + bottom) / 2}) rotate(-90)`} textAnchor="middle">Relative amplitude (dB)</text>
           {[range[0], blend(range[0], range[1], .5), range[1]].map((level) => (
             <g key={level}>
-              <line x1={left} x2={right} y1={y(level)} y2={y(level)} />
-              <text x={left - 5} y={y(level) + 3} textAnchor="end">{format.format(level)}</text>
+              <line className="scientific-tick" x1={left - 4} x2={left} y1={y(level)} y2={y(level)} />
+              <text x={left - 8} y={y(level) + 4} textAnchor="end">{format.format(level)}</text>
             </g>
           ))}
-          {frequencyTicks.map((hz) => <text key={hz} x={x(hz)} y={bottom + 12} textAnchor="middle">{format.format(hz)}</text>)}
-          <text className="campbell-axis-title" x={(left + right) / 2} y={height - 4} textAnchor="middle">Frequency (Hz)</text>
+          {frequencyTicks.map((hz) => (
+            <g key={hz}>
+              <line className="scientific-tick" x1={x(hz)} x2={x(hz)} y1={bottom} y2={bottom + 4} />
+              <text x={x(hz)} y={bottom + 17} textAnchor="middle">{format.format(hz)}</text>
+            </g>
+          ))}
+          <text className="scientific-axis-label" x={(left + right) / 2} y={height - 6} textAnchor="middle">Frequency (Hz)</text>
         </g>
         <path className="campbell-spectrum-line" d={path} data-campbell-spectrum-path="" />
-        <line className="campbell-spectrum-guide" x1={x(frequencies[band])} x2={x(frequencies[band])} y1={top} y2={bottom} />
+        <line className="scientific-reference" x1={x(frequencies[band])} x2={x(frequencies[band])} y1={top} y2={bottom} />
         <circle className="campbell-spectrum-marker" cx={x(frequencies[band])} cy={y(levels[band])} r={3.5} />
       </svg>
     </div>
   )
 }
 
-function CampbellFigure({ data, label, compact, source, domains }: CampbellDiagramProps & { label: string; domains: AmplitudeDomains }) {
+function CampbellFigure({ data, label, compact, source, domains }: CampbellDiagramProps & { label: string; domains: CampbellDomains }) {
   const [runId, setRunId] = useState(data.runs[0].id)
-  const [selectedSpeed, setSpeed] = useState(0)
-  const [selectedBand, setBand] = useState(0)
+  const [selectedSpeed, setSpeed] = useState(() => Math.floor(data.runs[0].rpm.length / 2))
+  const [selectedBand, setBand] = useState(() => {
+    const initialSpectrum = data.runs[0].levelsDb[selectedSpeed]
+    return initialSpectrum.reduce((peak, level, index) => level > initialSpectrum[peak] ? index : peak, 0)
+  })
   const [showOrders, setShowOrders] = useState(true)
   const run = data.runs.find(({ id }) => id === runId) ?? data.runs[0]
   const speed = Math.min(selectedSpeed, run.rpm.length - 1)
@@ -287,13 +348,6 @@ function CampbellFigure({ data, label, compact, source, domains }: CampbellDiagr
 
   return (
     <figure className="campbell-diagram" data-compact={compact}>
-      {!compact && source && (
-        <figcaption className="campbell-source">
-          <strong>{source.label}</strong>
-          <p>{source.description} <a href={source.href}>Dataset</a>
-            {source.license && <> · {source.licenseUrl ? <a href={source.licenseUrl}>{source.license}</a> : source.license}</>}</p>
-        </figcaption>
-      )}
       {!compact && (
         <div className="campbell-options">
           <label>Bearing condition
@@ -303,25 +357,20 @@ function CampbellFigure({ data, label, compact, source, domains }: CampbellDiagr
           </label>
           <label className="campbell-show-orders">
             <input type="checkbox" checked={showOrders} onChange={(event) => setShowOrders(event.currentTarget.checked)} />
-            Show shaft orders
+            Show shaft orders (1×–6×)
           </label>
         </div>
       )}
-      <CampbellMap run={run} frequencies={data.frequenciesHz} range={domains.color} speed={speed} band={band}
+      <CampbellMap run={run} frequencies={data.frequenciesHz} range={domains.color} speedRange={domains.speed} speed={speed} band={band}
         showOrders={showOrders} compact={Boolean(compact)} label={label} onPick={pick} />
       {!compact && (
         <>
-          <div className="campbell-scale">
-            <span>{format.format(domains.color[0])} dB</span>
-            <span aria-hidden="true" style={{ background: colorScale }} />
-            <span>{format.format(domains.color[1])} dB</span>
-          </div>
+          <SpectrumSlice frequencies={data.frequenciesHz} levels={run.levelsDb[speed]} range={domains.spectrum} band={band} />
           <div className="campbell-inspector">
             <output data-campbell-readout="" data-rpm={rpm} data-frequency={frequency} data-level={level}>
               <strong>{format.format(rpm)} RPM</strong>
               <span>{format.format(frequency)} Hz · {format.format(level)} dB</span>
             </output>
-            <SpectrumSlice frequencies={data.frequenciesHz} levels={run.levelsDb[speed]} range={domains.spectrum} band={band} />
             <div className="campbell-sliders">
               <label>Shaft speed
                 <input type="range" min={0} max={run.rpm.length - 1} value={speed}
@@ -335,12 +384,19 @@ function CampbellFigure({ data, label, compact, source, domains }: CampbellDiagr
           </div>
         </>
       )}
+      {!compact && source && (
+        <figcaption className="campbell-source">
+          <strong>{source.label}</strong>
+          <p>{source.description} <a href={source.href}>Dataset</a>
+            {source.license && <> · {source.licenseUrl ? <a href={source.licenseUrl}>{source.license}</a> : source.license}</>}</p>
+        </figcaption>
+      )}
     </figure>
   )
 }
 
 export function CampbellDiagram({ label = 'Campbell diagram', ...props }: CampbellDiagramProps) {
-  const domains = useMemo(() => amplitudeDomains(props.data), [props.data])
+  const domains = useMemo(() => plotDomains(props.data), [props.data])
   if (!domains) {
     return <p className="chart-render-message" role="status">Provide ordered shaft speeds, frequencies, and a complete amplitude grid for each run.</p>
   }
