@@ -215,7 +215,7 @@ async def check_docs_navigation(browser, local_url, catalog):
 
 
 async def check_scientific_catalog(browser, local_url, catalog):
-    families = {'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix', 'process-control'}
+    families = {'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix', 'process-control', 'campbell-diagram'}
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
         await check_scientific_profile(browser, local_url, examples, width, height, theme)
@@ -239,8 +239,13 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             card = grid.locator(f'.example-card[data-example-id="{example["id"]}"]')
             await card.scroll_into_view_if_needed()
             await expect(card.locator('.example-card-title')).to_have_text(example['title'])
-            await check_chart_output(card.locator('.card-plot[inert]'))
+            card_plot = card.locator('.card-plot[inert]')
+            await check_chart_output(card_plot)
             await expect(card.locator('button:visible, input:visible, [role="tooltip"]:visible')).to_have_count(0)
+            if example['family'] == 'campbell-diagram':
+                await expect(card_plot.locator('[data-campbell-heatmap]')).to_be_visible()
+                await expect(card_plot.locator('[data-campbell-raster]')).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+                await expect(card_plot.locator('select, output[data-campbell-readout]')).to_have_count(0)
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
 
@@ -265,6 +270,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'mass-spectrum':
                 await check_particle_mass_spectrum(plot)
                 code_import = "getExample('mass-spectrum-cms')"
+            elif example['family'] == 'campbell-diagram':
+                await check_campbell_diagram(plot, touch)
+                code_import = 'CampbellDiagram'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -276,6 +284,68 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             await expect(preview.get_by_role('button', name='Copy code', exact=True)).to_be_visible()
     finally:
         await page.close()
+
+
+async def check_campbell_diagram(plot, touch):
+    heatmap = plot.locator('[data-campbell-heatmap]')
+    await expect(heatmap).to_be_visible()
+    await expect(heatmap.locator('[data-campbell-raster]')).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+    spectrum = plot.locator('[data-campbell-spectrum]')
+    await expect(spectrum).to_be_visible()
+    trace = spectrum.locator('[data-campbell-spectrum-path]')
+    await expect(trace).to_have_attribute('d', re.compile(r'^M'))
+    readout = plot.locator('output[data-campbell-readout]')
+    await expect(readout).to_be_visible()
+    speed = plot.get_by_role('slider', name='Shaft speed', exact=True)
+    frequency = plot.get_by_role('slider', name='Frequency', exact=True)
+    bearing = plot.get_by_role('combobox', name='Bearing condition', exact=True)
+    options = bearing.locator('option')
+    await expect(options).to_have_count(2)
+    initial_bearing = await bearing.input_value()
+    option_values = await options.evaluate_all('(options) => options.map(option => option.value)')
+    if len(set(option_values)) != 2 or initial_bearing not in option_values:
+        raise RuntimeError('The Campbell diagram should offer two distinct bearing conditions')
+    alternate_bearing = next(value for value in option_values if value != initial_bearing)
+
+    await speed.press('Home')
+    start_rpm = await readout.get_attribute('data-rpm')
+    start_spectrum = await trace.get_attribute('d')
+    await speed.press('End')
+    await expect(readout).not_to_have_attribute('data-rpm', start_rpm)
+    end_rpm = await readout.get_attribute('data-rpm')
+    if not float(end_rpm) > float(start_rpm):
+        raise RuntimeError(f'Increasing shaft speed should raise RPM, observed {start_rpm} to {end_rpm}')
+    await expect(trace).not_to_have_attribute('d', start_spectrum)
+
+    await frequency.press('Home')
+    start_frequency = await readout.get_attribute('data-frequency')
+    await frequency.press('End')
+    await expect(readout).not_to_have_attribute('data-frequency', start_frequency)
+    end_frequency = await readout.get_attribute('data-frequency')
+    if not float(end_frequency) > float(start_frequency):
+        raise RuntimeError(f'Increasing frequency should raise Hz, observed {start_frequency} to {end_frequency}')
+    await expect(readout).to_have_attribute('data-rpm', end_rpm)
+
+    await speed.press('Home')
+    await frequency.press('Home')
+    target = heatmap.locator('.campbell-pick')
+    bounds = await target.bounding_box()
+    position = {'x': bounds['width'] * 0.9, 'y': bounds['height'] * 0.1}
+    if touch:
+        await target.tap(position=position)
+    else:
+        await target.click(position=position)
+    await expect(readout).not_to_have_attribute('data-rpm', start_rpm)
+    await expect(readout).not_to_have_attribute('data-frequency', start_frequency)
+
+    await speed.press('Home')
+    await frequency.press('Home')
+    initial_spectrum = await trace.get_attribute('d')
+    await bearing.select_option(alternate_bearing)
+    await expect(bearing).to_have_value(alternate_bearing)
+    await speed.press('Home')
+    await frequency.press('Home')
+    await expect(trace).not_to_have_attribute('d', initial_spectrum)
 
 
 async def check_native_scientific(plot, slug, touch):

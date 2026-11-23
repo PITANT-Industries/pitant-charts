@@ -1,3 +1,4 @@
+import campbellDiagram from './docs/examples/CampbellDiagram.tsx?raw'
 import capabilityHistogram from './docs/examples/CapabilityHistogram.tsx?raw'
 import correlationMatrix from './docs/examples/CorrelationMatrix.tsx?raw'
 import individualsControlChart from './docs/examples/IndividualsControlChart.tsx?raw'
@@ -6,6 +7,9 @@ import spectrum from './docs/examples/Spectrum.tsx?raw'
 import steelDefectCorrelation from './docs/examples/SteelDefectCorrelation.tsx?raw'
 
 const scientificExamples = new Map([
+  ['campbell-diagram-ottawa', campbellDiagram
+    .replace("from '../../../index'", "from '@pitant/chart-catalog'")
+    .replace("import '../../../charts.css'", "import '@pitant/chart-catalog/styles.css'")],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],
