@@ -1,6 +1,7 @@
 import allanDeviation from './docs/examples/AllanDeviation.tsx?raw'
 import bearingEnvelope from './docs/examples/BearingEnvelopeSpectrum.tsx?raw'
 import binaryPhaseDiagram from './docs/examples/BinaryPhaseDiagram.tsx?raw'
+import cadScanDeviation from './docs/examples/CadScanDeviation.tsx?raw'
 import campbellDiagram from './docs/examples/CampbellDiagram.tsx?raw'
 import capabilityHistogram from './docs/examples/CapabilityHistogram.tsx?raw'
 import coherencePhase from './docs/examples/CoherencePhase.tsx?raw'
@@ -48,6 +49,7 @@ const scientificExamples = new Map([
   ['binary-phase-diagram-ag-cu', withCatalogImports(binaryPhaseDiagram)],
   ['ternary-mixture-response', withCatalogImports(ternaryMixtureMap)],
   ['industrial-ct-porosity', withCatalogImports(industrialCtViewer)],
+  ['cad-scan-deviation-registered', withCatalogImports(cadScanDeviation)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

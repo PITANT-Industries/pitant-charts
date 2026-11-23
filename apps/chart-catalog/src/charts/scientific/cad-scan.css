@@ -1,0 +1,251 @@
+.cad-scan {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+  font-variant-numeric: tabular-nums;
+}
+
+.cad-scan[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.cad-scan),
+.detail-plot:has(.cad-scan) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.cad-viewport {
+  position: relative;
+  height: clamp(15rem, 53cqw, 26rem);
+}
+
+.cad-scan[data-compact='true'] .cad-viewport {
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.cad-viewport canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.cad-scan[data-compact='false'] .cad-viewport canvas {
+  cursor: grab;
+  touch-action: none;
+}
+
+.cad-scan[data-compact='false'] .cad-viewport canvas:active {
+  cursor: grabbing;
+}
+
+.cad-viewport > .cad-deviation-scale {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  inline-size: 72px;
+  block-size: min(170px, 100%);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.cad-scan-heading {
+  display: flex;
+  min-inline-size: 0;
+  align-items: baseline;
+  gap: .55rem;
+  padding: .65rem .75rem;
+  background: #fff;
+  color: #212a32;
+  font: 600 .8rem/1.25 Arial, Helvetica, sans-serif;
+}
+
+.cad-scan-heading strong {
+  font-weight: 700;
+  color: #335671;
+}
+
+.cad-nominal-key {
+  display: inline-flex;
+  gap: .32rem;
+  align-items: center;
+  margin-inline-start: auto;
+  font-size: .69rem;
+  font-weight: 400;
+}
+
+.cad-nominal-key::before {
+  content: '';
+  inline-size: .8rem;
+  border-top: 1px solid #434c55;
+}
+
+.cad-scan-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .55rem .8rem;
+  font-size: .75rem;
+}
+
+.cad-view-controls {
+  padding: .42rem .65rem .58rem;
+  border-top: 1px solid var(--border);
+}
+
+.cad-scan-controls button,
+.cad-scan-controls input[type='number'] {
+  min-height: 1.85rem;
+  border: 1px solid var(--border);
+  border-radius: .25rem;
+  padding: .28rem .48rem;
+  background: var(--background);
+  color: inherit;
+  font: inherit;
+}
+
+.cad-scan-controls button {
+  cursor: pointer;
+}
+
+.cad-scan-controls button:hover {
+  background: var(--muted);
+}
+
+.cad-check,
+.cad-tolerance {
+  display: inline-flex;
+  align-items: center;
+  gap: .38rem;
+}
+
+.cad-check input {
+  margin: 0;
+}
+
+.cad-tolerance input {
+  inline-size: 4.55rem;
+}
+
+.cad-scan-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .7rem;
+  padding-top: .7rem;
+  border-top: 1px solid var(--border);
+}
+
+.cad-scan-panel {
+  min-inline-size: 0;
+  border: 1px solid var(--border);
+}
+
+.cad-section {
+  height: clamp(12rem, 41cqw, 17rem);
+}
+
+.cad-section svg:focus-visible,
+.cad-viewport canvas:focus-visible {
+  outline: 2px solid #205a86;
+  outline-offset: -2px;
+}
+
+.cad-section-nominal {
+  fill: none;
+  stroke: #434c55;
+  stroke-width: 1;
+}
+
+.cad-section circle[data-cad-section-point] {
+  cursor: crosshair;
+  stroke: #fff;
+  stroke-width: .55;
+}
+
+.cad-section circle[data-cad-section-selected] {
+  stroke: #182d3b;
+  stroke-width: 1.2;
+}
+
+.cad-section-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .35rem;
+  padding: .55rem .68rem .28rem;
+  border-top: 1px solid var(--border);
+  font-size: .75rem;
+}
+
+.cad-section-control input {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0;
+}
+
+.cad-section-note {
+  margin: 0;
+  padding: 0 .68rem .65rem;
+  font-size: .69rem;
+  color: var(--muted-foreground);
+}
+
+.cad-inspection .cad-scan-heading {
+  background: transparent;
+  color: inherit;
+}
+
+.cad-inspection .cad-scan-controls,
+.cad-scan-readout {
+  padding: .55rem .75rem;
+}
+
+.cad-scan-readout {
+  display: grid;
+  gap: .5rem;
+  font-size: .75rem;
+}
+
+.cad-scan-readout dl {
+  margin: 0;
+}
+
+.cad-scan-readout dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .38rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.cad-scan-readout dd {
+  margin: 0;
+  text-align: right;
+}
+
+.cad-scan-readout dl div:first-child dd {
+  font-weight: 650;
+}
+
+.cad-scan-caption {
+  margin: .65rem .15rem 0;
+  color: var(--muted-foreground);
+  font-size: .73rem;
+  line-height: 1.5;
+}
+
+.cad-scan-caption p {
+  margin: .18rem 0 0;
+}
+
+@container (min-width: 640px) {
+  .cad-scan-detail {
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, .54fr);
+  }
+}

@@ -222,7 +222,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
-        'ternary-mixture-map', 'industrial-ct',
+        'ternary-mixture-map', 'industrial-ct', 'cad-scan-deviation',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -388,6 +388,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=industrial-ct&variant=industrial-ct-porosity'
                 )
+            elif example['family'] == 'cad-scan-deviation':
+                await check_compact_cad_scan(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=cad-scan-deviation&variant=cad-scan-deviation-registered'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -483,6 +488,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'industrial-ct':
                 await check_industrial_ct(plot, touch)
                 code_import = 'IndustrialCtViewer'
+            elif example['family'] == 'cad-scan-deviation':
+                await check_cad_scan(plot, touch)
+                code_import = 'CadScanDeviation'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -2805,6 +2813,221 @@ async def check_industrial_ct(plot, touch):
     await pick_voxel(panels[2], 9, 26, spatial_axes[2])
     if (await selection())[0] != [12, 9, 26]:
         raise RuntimeError('Sagittal picking should update Y/Z and keep the active X slice')
+
+
+async def check_cad_canvas_pixels(viewport):
+    await expect(viewport).to_be_visible()
+    width, height, warm, cool = await viewport.evaluate("""async canvas => {
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      const { width, height } = canvas
+      const bytes = canvas.getContext('2d').getImageData(0, 0, width, height).data
+      let warm = 0
+      let cool = 0
+      for (let i = 0; i < bytes.length; i += 4) {
+        if (bytes[i + 3] === 0) continue
+        const red = bytes[i]
+        const blue = bytes[i + 2]
+        if (red > blue + 40) warm++
+        if (blue > red + 40) cool++
+      }
+      return [width, height, warm, cool]
+    }""")
+    if min(width, height) < 100 or min(warm, cool) < 12:
+        raise RuntimeError(f'Expected a live scan render with colors on both sides of zero: {width}×{height}, {warm} warm/{cool} cool pixels')
+
+
+async def check_compact_cad_scan(card_plot):
+    chart = card_plot.locator('[data-cad-scan]')
+    viewport = chart.locator('canvas[data-cad-viewport]')
+    await check_cad_canvas_pixels(viewport)
+    fit = await viewport.evaluate("""async canvas => {
+      await document.fonts.ready
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      const box = canvas.getBoundingClientRect()
+      const card = canvas.closest('.card-plot').getBoundingClientRect()
+      const fits = box.left >= card.left - 1 && box.top >= card.top - 1 && box.right <= card.right + 1 && box.bottom <= card.bottom + 1
+      return fits ? null : { canvas: box.toJSON(), card: card.toJSON() }
+    }""")
+    if fit:
+        raise RuntimeError(f'The compact scan render should fit the available gallery preview: {fit}')
+    await check_compact_figure_bounds(chart.locator('svg[data-cad-colorbar]'), 'rect.scientific-frame')
+    await expect(chart.locator('input, select, button, [data-cad-section], [data-cad-readout]')).to_have_count(0)
+
+
+async def check_cad_scan(plot, touch):
+    chart = plot.locator('[data-cad-scan]')
+    viewport = chart.locator('canvas[data-cad-viewport]')
+    section = chart.locator('svg[data-cad-section]')
+    tolerance = chart.get_by_label('Tolerance (mm)', exact=True)
+    outside = chart.get_by_role('checkbox', name='Outside tolerance only', exact=True)
+    nominal = chart.get_by_role('checkbox', name='Show nominal surface', exact=True)
+    plane = chart.get_by_role('slider', name='Section position', exact=True)
+    rotate_right = chart.get_by_role('button', name='Rotate right', exact=True)
+    rotate_left = chart.get_by_role('button', name='Rotate left', exact=True)
+    readout = chart.locator('output[data-cad-readout]')
+    colorbar = chart.locator('[data-cad-colorbar]')
+    scan_marks = section.locator('circle[data-cad-section-point]')
+    selected_mark = section.locator('circle[data-cad-section-selected]')
+    nominal_section = section.locator('[data-cad-section-nominal]')
+    await check_cad_canvas_pixels(viewport)
+    await expect(chart.locator('figcaption a').first).to_have_attribute('href', 'https://doi.org/10.18434/mds2-2291')
+    await expect(section).to_be_visible()
+    await expect(section).to_have_attribute('data-section-axis', 'y')
+    await expect(section.get_by_text('X (mm)', exact=True)).to_be_visible()
+    await expect(section.get_by_text('Z (mm)', exact=True)).to_be_visible()
+    await expect(section.locator('rect[data-cad-section-frame]')).to_be_visible()
+    await expect(section.locator('.scientific-tick').first).to_be_attached()
+    await expect(scan_marks.first).to_be_visible()
+    await expect(nominal_section.first).to_be_attached()
+    await expect(readout).to_be_visible()
+    await expect(colorbar).to_be_visible()
+    await expect(colorbar.get_by_text('Δ (mm)', exact=True)).to_be_visible()
+    await expect(colorbar.get_by_text('0', exact=True)).to_be_visible()
+    await expect(colorbar.locator('rect[fill^="url("]')).to_be_visible()
+    color_limit = float(await colorbar.get_attribute('data-max'))
+    if color_limit != 0.6 or -color_limit != float(await colorbar.get_attribute('data-min')):
+        raise RuntimeError('Signed scan deviations should use a fixed diverging scale centered on zero')
+    await expect(outside).not_to_be_checked()
+    await expect(nominal).to_be_checked()
+    await expect(viewport).to_have_attribute('data-nominal', 'true')
+
+    async def state():
+        attributes = await readout.evaluate("""out => [
+          ...['tolerance', 'outsideCount', 'visibleCount'].map(key => Number(out.dataset[key])),
+          ...['index', 'deviationMm', 'x', 'y', 'z'].map(key => out.dataset[key]),
+        ]""")
+        tol, beyond, visible, index, deviation, x, y, z = attributes
+        await expect(viewport).to_have_attribute('data-visible-count', str(visible))
+        if not math.isclose(float(await tolerance.input_value()), tol, abs_tol=1e-8):
+            raise RuntimeError('Tolerance control and point-count readout should agree')
+        if index in ('', None):
+            return tol, beyond, visible, None
+        await expect(viewport).to_have_attribute('data-selected', index)
+        return tol, beyond, visible, (int(index), float(deviation), [float(x), float(y), float(z)])
+
+    async def view_angles():
+        angles = await viewport.evaluate('canvas => [Number(canvas.dataset.yaw), Number(canvas.dataset.pitch)]')
+        if not all(map(math.isfinite, angles)):
+            raise RuntimeError(f'Invalid 3D scan camera angles: {angles}')
+        return angles
+
+    async def canvas_image():
+        return await viewport.evaluate("""async canvas => {
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+          return canvas.toDataURL()
+        }""")
+    async def check_point(expected):
+        index, deviation, xyz = expected
+        await expect(readout).to_have_attribute('data-index', str(index))
+        active = (await state())[3]
+        if active != (index, deviation, xyz):
+            raise RuntimeError(f'Unexpected signed deviation or coordinates for scan point {index}: {active}')
+        axis = await section.get_attribute('data-section-axis')
+        selected_position = float(await section.get_attribute('data-section-position'))
+        if not math.isclose(selected_position, xyz['xyz'.index(axis)], abs_tol=1e-5):
+            raise RuntimeError('Selecting a measured point should move the physical section plane to its coordinate')
+        await expect(selected_mark).to_have_attribute('data-index', str(index))
+        view_x = float(await viewport.get_attribute('data-selected-x'))
+        view_y = float(await viewport.get_attribute('data-selected-y'))
+        return {'x': view_x, 'y': view_y}
+
+    positive = (639, 1.043947, [1.062512, 2.421255, 3.452785])
+    negative = (2441, -0.475798, [6.223645, 1.116349, 0.524201])
+    initial_state = await state()
+    if initial_state != (0.1, 1269, 3601, positive):
+        raise RuntimeError(f'Unexpected NIST point count, default tolerance or selected measurement: {initial_state}')
+    await expect(readout.get_by_text('Outside tolerance', exact=True)).to_be_visible()
+    initial_angles = await view_angles()
+    initial_image = await canvas_image()
+    original_section = await section.get_attribute('data-section-position')
+    nominal_segments = await nominal_section.count()
+    await nominal.uncheck()
+    await expect(viewport).to_have_attribute('data-nominal', 'false')
+    if await canvas_image() == initial_image:
+        raise RuntimeError('The nominal mesh toggle should change the live 3D render')
+    if await state() != initial_state or await view_angles() != initial_angles or await nominal_section.count() != nominal_segments:
+        raise RuntimeError('Hiding the 3D nominal mesh should preserve data, camera and the sectional reference')
+    await nominal.check()
+    await expect(viewport).to_have_attribute('data-nominal', 'true')
+
+    if touch:
+        await rotate_right.tap()
+    else:
+        await rotate_right.press('Enter')
+    yaw, pitch = await view_angles()
+    if yaw == initial_angles[0] or pitch != initial_angles[1] or await state() != initial_state:
+        raise RuntimeError('The rotate button should change azimuth while preserving the selected measurement')
+    if await canvas_image() == initial_image:
+        raise RuntimeError('Changing the camera angle should produce a new 3D render')
+    await rotate_left.click()
+    restored_angles = await view_angles()
+    if any(not math.isclose(actual, expected, abs_tol=1e-8) for actual, expected in zip(restored_angles, initial_angles)):
+        raise RuntimeError('Rotate left should reverse the Rotate right angular step')
+
+    await plane.press('Home')
+    await expect(section).to_have_attribute('data-section-position', await plane.get_attribute('min'))
+    if await state() != initial_state or await view_angles() != restored_angles:
+        raise RuntimeError('Navigating section position should preserve the active 3D measurement')
+    await plane.fill(original_section)
+
+    async def pick(target, position=None):
+        if touch:
+            await target.tap(position=position)
+        else:
+            await target.click(position=position)
+
+    await outside.check()
+    if (await state())[:3] != (0.1, 1269, 1269):
+        raise RuntimeError('The default tolerance filter should show exactly 1269 sampled outliers')
+    await tolerance.fill('0.45')
+    tol, beyond, visible, _ = await state()
+    if (tol, beyond, visible) != (0.45, 198, 198):
+        raise RuntimeError(f'Expected 198 sampled outliers at ±0.45 mm, observed {tol}, {beyond}, {visible}')
+    await expect(colorbar).to_have_attribute('data-min', '-0.6')
+    await expect(colorbar).to_have_attribute('data-max', '0.6')
+
+    await pick(section.locator(f'circle[data-cad-section-point][data-index="{positive[0]}"]'))
+    projected = await check_point(positive)
+    await plane.fill(str(negative[2][1]))
+    if (await state())[3] != positive:
+        raise RuntimeError('Moving the section plane should preserve the selected scan point in the 3D view')
+    await pick(section.locator(f'circle[data-cad-section-point][data-index="{negative[0]}"]'))
+    await check_point(negative)
+    await pick(viewport, projected)
+    await check_point(positive)
+
+    await outside.uncheck()
+    if (await state())[:3] != (0.45, beyond, 3601):
+        raise RuntimeError('Disabling the filter should restore every measurement while retaining the updated tolerance')
+    await tolerance.fill('1.13')
+    if await state() != (1.13, 0, 3601, positive):
+        raise RuntimeError('A tolerance above the largest measured deviation should retain the sample and show no outliers')
+    await expect(readout.get_by_text('Within tolerance', exact=True)).to_be_visible()
+
+    if not touch:
+        await expect(viewport).to_have_attribute('tabindex', '0')
+        yaw, pitch = await view_angles()
+        await viewport.press('ArrowUp')
+        next_yaw, next_pitch = await view_angles()
+        if next_yaw != yaw or next_pitch == pitch or (await state())[3] != positive:
+            raise RuntimeError('The focused scan should support keyboard pitch without changing azimuth or selection')
+        await viewport.press('ArrowDown')
+        _, restored_pitch = await view_angles()
+        if not math.isclose(restored_pitch, pitch, abs_tol=1e-8):
+            raise RuntimeError('ArrowDown should reverse the keyboard pitch adjustment')
+        await viewport.scroll_into_view_if_needed()
+        bounds = await viewport.bounding_box()
+        mouse = viewport.page.mouse
+        x, y = bounds['x'] + bounds['width'] * 0.42, bounds['y'] + bounds['height'] * 0.46
+        yaw, pitch = await view_angles()
+        await mouse.move(x, y)
+        await mouse.down()
+        await mouse.move(x + 35, y - 20, steps=5)
+        await mouse.up()
+        next_yaw, next_pitch = await view_angles()
+        if next_yaw <= yaw or next_pitch >= pitch:
+            raise RuntimeError('Dragging the registered scan should rotate both viewing axes')
+        await check_point(positive)
 
 
 async def check_native_scientific(plot, slug, touch):

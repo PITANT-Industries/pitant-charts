@@ -3476,6 +3476,22 @@
     ]
   },
   {
+    "id": "cad-scan-deviation",
+    "name": "CAD-to-Scan Deviation",
+    "url": "https://opensource.pitant.de/charts/#docs=cad-scan-deviation",
+    "examples": [
+      {
+        "id": "cad-scan-deviation-registered",
+        "family": "cad-scan-deviation",
+        "title": "NIST Overhang Part Scan Deviation",
+        "label": "Registered X-ray CT surface and nominal CAD",
+        "description": "Inspect signed deviations in a measured nickel-superalloy specimen using a rotatable scan and a linked section of the nominal CAD surface.",
+        "url": "https://opensource.pitant.de/charts/#example=cad-scan-deviation-registered",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",

@@ -8,11 +8,11 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 69 chart and tooltip families and all 358 public examples', () => {
+test('covers 70 chart and tooltip families and all 359 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()
-  assert.equal(catalog.length, 69)
+  assert.equal(catalog.length, 70)
   for (const family of catalog) {
     assert(!familyIds.has(family.id), `Duplicate family ${family.id}`)
     familyIds.add(family.id)
@@ -46,8 +46,9 @@ test('covers 69 chart and tooltip families and all 358 public examples', () => {
   assert.deepEqual(catalog.find((family) => family.id === 'binary-phase-diagram')?.examples.map((example) => example.id), ['binary-phase-diagram-ag-cu'])
   assert.deepEqual(catalog.find((family) => family.id === 'ternary-mixture-map')?.examples.map((example) => example.id), ['ternary-mixture-response'])
   assert.deepEqual(catalog.find((family) => family.id === 'industrial-ct')?.examples.map((example) => example.id), ['industrial-ct-porosity'])
-  assert.equal(ids.size, 358)
-  assert.equal(urls.size, 358)
+  assert.deepEqual(catalog.find((family) => family.id === 'cad-scan-deviation')?.examples.map((example) => example.id), ['cad-scan-deviation-registered'])
+  assert.equal(ids.size, 359)
+  assert.equal(urls.size, 359)
 })
 
 test('documents every catalog family exactly once with practical guidance', async () => {
