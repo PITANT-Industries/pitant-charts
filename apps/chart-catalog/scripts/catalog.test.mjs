@@ -6,7 +6,7 @@ const root = new URL('../', import.meta.url)
 const read = (path) => readFile(new URL(path, root), 'utf8')
 const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
-const publicCatalogUrl = 'http://opensource.pitant.de/charts/'
+const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
 test('covers 44 chart families and all 331 public examples', () => {
   const ids = new Set()
