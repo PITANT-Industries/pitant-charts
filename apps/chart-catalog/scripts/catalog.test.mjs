@@ -8,7 +8,7 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 49 chart families and all 338 public examples', () => {
+test('covers 50 chart and tooltip families and all 338 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()

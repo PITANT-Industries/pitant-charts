@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
-import { Button } from '@ui-sdk/react/button'
-import { Tabs, TabsList, TabsPanel, TabsTab } from '@ui-sdk/react/tabs'
-import { ArrowUpRight, ChevronRight } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getGroupForFamily } from '../catalog'
 import { ChartPreview } from '../charts/ChartPreview'
-import type { ChartFamily } from '../types'
+import type { ChartExample, ChartFamily } from '../types'
 import { CodeBlock, ExampleCode, guideUrl, repositoryUrl, scientificGuideUrl } from './ExampleCode'
+import { DocsShell } from './DocsShell'
+import { useNearViewport } from './DeferredChart'
+import { archiveInstallCommands, PackageManagerCommands } from './PackageManagerCommands'
 import cartesianDocs from './docs/cartesian.json'
 import specializedDocs from './docs/specialized.json'
 import scientificDocs from './docs/scientific.json'
@@ -35,7 +35,8 @@ cd pitant-charts
 bun install --frozen-lockfile
 bun run build
 npm pack ./packages/charts ./packages/charts-react`
-const nativeInstall = 'npm install "/path/to/pitant-charts-1.0.0.tgz" "/path/to/pitant-charts-react-1.0.0.tgz"'
+const catalogInstall = archiveInstallCommands(['pitant-chart-catalog-0.7.0.tgz'])
+const nativeInstall = archiveInstallCommands(['pitant-charts-1.0.0.tgz', 'pitant-charts-react-1.0.0.tgz'])
 const properties: PropGuide[] = [
   { name: 'example', type: 'ChartExample', description: 'Required. Select a registered chart with getExample(id).' },
   { name: 'data', type: 'ChartData', description: 'Optional categories, numeric series, and family-specific rows. Omit it to use the included sample data. See Data and usage for accepted fields.' },
@@ -47,119 +48,61 @@ const extraProperties: Record<string, (typeof properties)[number]> = {
   ring: { name: 'renderCenter', type: '(context: ChartCenterContext) => ReactNode', description: 'Supplies custom center content from the current ring values and progress target when available.' },
   tooltip: { name: 'renderTooltip', type: '(context: ChartTooltipContext) => ReactNode', description: 'Supplies custom tooltip content using the active category, pin state, and series values.' },
 }
-const sections = [
-  { id: 'docs-preview', name: 'Preview' },
-  { id: 'docs-usage', name: 'Installation' },
-  { id: 'docs-data', name: 'Data and usage' },
-  { id: 'docs-props', name: 'Props' },
-  { id: 'docs-examples', name: 'Examples' },
+const familyToc = [
+  { id: 'docs-preview-title', title: 'Preview' },
+  { id: 'docs-usage-title', title: 'Installation' },
+  { id: 'docs-data-title', title: 'Data and usage' },
+  { id: 'docs-props-title', title: 'Props' },
 ]
 
-export function FamilyDocumentation({ family, variantId, onBrowseFamily, onOpenExample }: {
+function ExamplePlot({ example, deferred }: { example: ChartExample; deferred: boolean }) {
+  const [host, visible] = useNearViewport<HTMLDivElement>()
+  return (
+    <div className="docs-example-plot not-prose" data-example-id={example.id} ref={deferred ? host : undefined}>
+      {(!deferred || visible) && <ChartPreview example={example} />}
+    </div>
+  )
+}
+
+function ExamplePreview({ example, deferred = false }: { example: ChartExample; deferred?: boolean }) {
+  return (
+    <Tabs defaultValue="preview" activationMode="manual" className="docs-preview">
+      <TabsList aria-label={`${example.title} example view`}>
+        <TabsTrigger value="preview">Preview</TabsTrigger>
+        <TabsTrigger value="code">Code</TabsTrigger>
+      </TabsList>
+      <TabsContent value="preview" className="docs-preview-panel">
+        <ExamplePlot example={example} deferred={deferred} />
+      </TabsContent>
+      <TabsContent value="code" className="docs-preview-panel">
+        <ExampleCode example={example} />
+      </TabsContent>
+    </Tabs>
+  )
+}
+
+export function FamilyDocumentation({ family, variantId, onNavigate }: {
   family: ChartFamily
   variantId?: string
-  onBrowseFamily: (id: string) => void
-  onOpenExample: (example: string, tab: 'preview' | 'code') => void
+  onNavigate: (pageId: string) => void
 }) {
   const doc = documentation[family.id]
   const featured = family.examples.find((example) => example.id === variantId) ?? family.examples[0]
-  const extra = extraProperties[family.id]
-  const group = getGroupForFamily(family.id)
-  const article = useRef<HTMLElement>(null)
-  const [activeSection, setActiveSection] = useState<string>(sections[0].id)
-
-  useEffect(() => {
-    const content = article.current
-    if (!content) return
-    const targets = Array.from(content.querySelectorAll<HTMLElement>(':scope > section[id]'))
-    const header = document.querySelector('.site-header')
-    let frame = 0
-
-    function updateActiveSection() {
-      frame = 0
-      const cutoff = (header?.getBoundingClientRect().bottom ?? 0) + 28
-      let active = targets[0]?.id ?? sections[0].id
-      for (const target of targets) {
-        if (target.getBoundingClientRect().top > cutoff) break
-        active = target.id
-      }
-      if (Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight - 1) {
-        const focusedTarget = targets.find((target) => target.querySelector('h2') === document.activeElement)
-        const focusedTop = focusedTarget?.getBoundingClientRect().top ?? -1
-        active = focusedTarget && focusedTop >= cutoff - 28 && focusedTop < window.innerHeight
-          ? focusedTarget.id
-          : targets.at(-1)?.id ?? active
-      }
-      setActiveSection(active)
-    }
-
-    function scheduleUpdate() {
-      if (!frame) frame = window.requestAnimationFrame(updateActiveSection)
-    }
-
-    const resize = new ResizeObserver(scheduleUpdate)
-    resize.observe(content)
-    window.addEventListener('scroll', scheduleUpdate, { passive: true })
-    window.addEventListener('resize', scheduleUpdate)
-    scheduleUpdate()
-    return () => {
-      resize.disconnect()
-      window.removeEventListener('scroll', scheduleUpdate)
-      window.removeEventListener('resize', scheduleUpdate)
-      window.cancelAnimationFrame(frame)
-    }
-  }, [family.id])
-
   if (!doc || !featured) return null
-  const scientific = group?.id === 'scientific' && family.id !== 'spectral-waterfall'
+
+  const otherExamples = family.examples.filter((example) => example.id !== featured.id)
+  const toc = otherExamples.length ? [...familyToc, { id: 'docs-examples-title', title: 'Examples' }] : familyToc
+  const scientific = getGroupForFamily(family.id)?.id === 'scientific' && family.id !== 'spectral-waterfall'
+  const extra = extraProperties[family.id]
   const documentedProps = doc.properties ?? [...properties, ...(extra ? [extra] : [])]
 
   return (
-    <div className="family-docs-layout docs-showcase">
-      <header className="docs-header">
-        <div className="docs-header-links">
-          <nav aria-label="Breadcrumb" className="docs-breadcrumb">
-            <a href={`#category=${group?.id ?? 'all'}&family=${family.id}`} onClick={(event) => {
-              if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return
-              event.preventDefault()
-              onBrowseFamily(family.id)
-            }}>Charts</a>
-            {group && <><ChevronRight size={13} aria-hidden="true" /><span>{group.name}</span></>}
-          </nav>
-          <a className="docs-source-link" href={`${repositoryUrl}/tree/main/apps/chart-catalog`} aria-label="Catalog source">Source <ArrowUpRight size={14} aria-hidden="true" /></a>
-        </div>
-        <h1 id="family-docs-title" tabIndex={-1}>{family.name}</h1>
-        <p>{doc.summary}</p>
-      </header>
-      <nav className="docs-jump" aria-label="On this page">
-        <p>On this page</p>
-        {sections.map(({ id, name }) => (
-          <button aria-current={activeSection === id ? 'location' : undefined} type="button" key={id} onClick={() => {
-            const section = document.getElementById(id)
-            section?.querySelector('h2')?.focus({ preventScroll: true })
-            section?.scrollIntoView({ block: 'start' })
-            setActiveSection(id)
-          }}>{name}</button>
-        ))}
-      </nav>
-      <article className="family-docs" aria-labelledby="family-docs-title" ref={article}>
+    <DocsShell pageId={family.id} title={family.name} description={doc.summary} toc={toc} onNavigate={onNavigate}>
+      <div className="family-docs">
         <section id="docs-preview" aria-labelledby="docs-preview-title">
-          <h2 id="docs-preview-title" className="docs-preview-heading" tabIndex={-1}>Preview</h2>
-          <Tabs key={featured.id} defaultValue="preview" activation="manual" className="docs-preview">
-            <div className="docs-preview-toolbar">
-              <TabsList className="docs-preview-tabs" aria-label="Documentation example view">
-                <TabsTab value="preview">Preview</TabsTab>
-                <TabsTab value="code">Code</TabsTab>
-              </TabsList>
-              {featured.title.toLowerCase() !== family.name.toLowerCase() && <span className="docs-preview-label">{featured.title}</span>}
-            </div>
-            <div className="docs-preview-panel">
-              <TabsPanel value="preview">
-                <div className="docs-example-plot" data-example-id={featured.id}><ChartPreview example={featured} /></div>
-              </TabsPanel>
-              <TabsPanel value="code"><ExampleCode example={featured} /></TabsPanel>
-            </div>
-          </Tabs>
+          <h2 id="docs-preview-title" tabIndex={-1}>Preview</h2>
+          {featured.title.toLowerCase() !== family.name.toLowerCase() && <p className="docs-preview-label">{featured.title}</p>}
+          <ExamplePreview key={featured.id} example={featured} />
         </section>
 
         <section id="docs-usage" aria-labelledby="docs-usage-title">
@@ -169,8 +112,8 @@ export function FamilyDocumentation({ family, variantId, onBrowseFamily, onOpenE
             : 'Build the catalog from source with Bun. Your app needs React and React DOM 19.2 or a later 19.x version.'}</p>
           <div className="docs-install-blocks">
             <CodeBlock language="Build and pack" source={scientific ? nativeSourceBuild : sourceBuild} />
-            <CodeBlock language="Install in your app" source={scientific ? nativeInstall : 'npm install "/path/to/pitant-chart-catalog-VERSION.tgz"'}
-              note={<>Use the archive paths printed by <code>npm pack</code>.</>} />
+            <p>Copy the archives printed by <code>npm pack</code> into your app directory. Then run the command for your package manager.</p>
+            <PackageManagerCommands commands={scientific ? nativeInstall : catalogInstall} />
           </div>
           <p>See the <a href={scientific ? scientificGuideUrl : guideUrl}>integration guide</a> for importing the stylesheet and using a sized chart container.</p>
         </section>
@@ -200,21 +143,20 @@ export function FamilyDocumentation({ family, variantId, onBrowseFamily, onOpenE
           </div>
         </section>
 
-        <section id="docs-examples" aria-labelledby="docs-examples-title">
-          <h2 id="docs-examples-title" tabIndex={-1}>Examples</h2>
-          <ul className="docs-variants">
-            {family.examples.map((example) => (
-              <li key={example.id}>
-                <div><h3>{example.title}</h3><p>{example.label}</p></div>
-                <div className="docs-variant-actions">
-                  <Button className="text-button" onClick={() => onOpenExample(example.id, 'preview')} aria-label={`Preview ${example.title}`}>Preview</Button>
-                  <Button className="text-button" onClick={() => onOpenExample(example.id, 'code')} aria-label={`View code for ${example.title}`}>Code</Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </article>
-    </div>
+        {otherExamples.length > 0 && (
+          <section id="docs-examples" aria-labelledby="docs-examples-title">
+            <h2 id="docs-examples-title" tabIndex={-1}>Examples</h2>
+            <div className="docs-variants">
+              {otherExamples.map((example) => (
+                <section key={example.id} aria-labelledby={`example-${example.id}`}>
+                  <h3 id={`example-${example.id}`}>{example.title}</h3>
+                  <ExamplePreview example={example} deferred />
+                </section>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </DocsShell>
   )
 }

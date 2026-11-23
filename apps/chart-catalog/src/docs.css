@@ -1,0 +1,63 @@
+@import 'tailwindcss' source(none);
+@import 'fumadocs-ui/css/shadcn.css';
+@import 'fumadocs-ui/css/preset.css';
+
+@source './components/ui';
+@source './gallery';
+@source '../../../node_modules/fumadocs-ui/dist';
+
+@custom-variant dark (&:where(.dark, .dark *, [data-theme='dark'], [data-theme='dark'] *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--muted);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--gallery-selection);
+  --color-accent-foreground: var(--gallery-selection-text);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--ring);
+  --color-destructive: var(--chart-negative);
+}
+
+:root:has(.pitant-docs) {
+  --color-fd-background: var(--gallery-paper);
+  --color-fd-foreground: var(--gallery-ink);
+  --color-fd-card: var(--gallery-surface);
+  --color-fd-card-foreground: var(--gallery-ink);
+  --color-fd-popover: var(--gallery-surface);
+  --color-fd-popover-foreground: var(--gallery-ink);
+  --color-fd-muted: var(--muted);
+  --color-fd-muted-foreground: var(--gallery-muted);
+  --color-fd-border: var(--gallery-rule);
+  --color-fd-primary: var(--gallery-accent);
+  --color-fd-primary-foreground: var(--gallery-accent-on);
+  --color-fd-accent: var(--gallery-selection);
+  --color-fd-accent-foreground: var(--gallery-selection-text);
+  --color-fd-ring: var(--gallery-accent);
+}
+
+.docs-package-managers {
+  align-items: stretch;
+  margin-block: .75rem;
+}
+
+.docs-package-managers [role='tablist'] {
+  align-self: start;
+  max-inline-size: 100%;
+}
+
+.pitant-docs .snippet {
+  min-height: 0;
+}
+
+.docs-package-managers .snippet {
+  margin-block: 0;
+}

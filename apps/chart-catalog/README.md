@@ -1,6 +1,6 @@
 # PITANT Chart Catalog
 
-Explore 327 interactive examples across 49 chart families and 11 tooltip examples in the [PITANT Charts gallery](https://opensource.pitant.de/charts/).
+Explore 338 interactive examples across 50 chart and tooltip families in the [PITANT Charts gallery](https://opensource.pitant.de/charts/).
 
 ## Run the gallery
 
@@ -8,7 +8,7 @@ From the PITANT Charts repository root, run `bun install --frozen-lockfile` and 
 
 Open the URL printed by Vite. Search or filter by family, switch to list view, and save examples for later. The browser stores saved charts and theme preferences. Click a chart to open its guide. The guide includes a **Code** tab and a shareable variant URL.
 
-**Documentation** opens the chart family guides. Each guide covers installation, input data, supported props, how to read the chart, and the family’s variants. Select **Scientific analysis** for the native spectrum, spectrogram, correlation matrix, and process control examples, plus the linked 3D spectral waterfall. The header theme button switches the gallery and its charts together.
+**Documentation** opens the [PITANT Charts guides](https://opensource.pitant.de/charts/#docs=introduction), with installation commands for npm, pnpm, Yarn, and Bun. The component index links to every chart family. Each guide covers installation, input data, supported props, how to read the chart, and the family’s variants. Select **Scientific analysis** for the native spectrum, spectrogram, correlation matrix, and process control examples, plus the linked 3D spectral waterfall. The header theme button switches the gallery and its charts together.
 
 ## Use the React library
 

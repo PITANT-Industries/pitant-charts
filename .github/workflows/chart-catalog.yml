@@ -12,6 +12,8 @@ on:
       - 'package.json'
       - 'bunfig.toml'
       - 'bun.lock'
+      - 'registry.json'
+      - 'registry/**'
       - '.github/workflows/chart-catalog.yml'
   pull_request:
     branches: [main]
@@ -24,6 +26,8 @@ on:
       - 'package.json'
       - 'bunfig.toml'
       - 'bun.lock'
+      - 'registry.json'
+      - 'registry/**'
       - '.github/workflows/chart-catalog.yml'
 
 permissions:

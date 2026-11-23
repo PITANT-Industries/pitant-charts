@@ -1,4 +1,4 @@
-"""Render every catalog example in desktop and mobile light and dark profiles."""
+"""Check the public documentation and render every catalog example across viewport and theme profiles."""
 
 import argparse
 import asyncio
@@ -6,7 +6,7 @@ import json
 import os
 import re
 from pathlib import Path
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import urlencode, urljoin, urlsplit
 
 from playwright.async_api import async_playwright, expect
 
@@ -17,6 +17,22 @@ PROFILES = [
     for size, width, height in [('desktop', 1440, 900), ('mobile', 390, 844)]
     for theme in ['light', 'dark']
 ]
+DOC_SECTIONS = {
+    'introduction': 'Introduction',
+    'components': 'Components',
+    'installation': 'Installation',
+    'theming': 'Theming',
+    'cli': 'CLI',
+    'registry': 'Registry',
+    'skills': 'Skills',
+    'changelog': 'Changelog',
+}
+
+
+async def check_chart_output(plot):
+    await expect(plot.locator('.chart-preview')).to_be_visible()
+    await expect(plot.locator('.chart-preview').locator('svg:visible, canvas:visible, table:visible').first).to_be_visible()
+    await expect(plot.locator('.chart-render-message')).to_have_count(0)
 
 
 async def check_public_preview(browser, local_url, example):
@@ -72,10 +88,123 @@ async def check_gallery_documentation(browser, local_url, example):
         await page.wait_for_url(f'{local_url}#{fragment}', timeout=8000)
         await expect(page.locator('dialog[open]')).to_have_count(0)
         preview = page.locator('#docs-preview')
-        await preview.locator(f'.docs-example-plot[data-example-id="{slug}"]').wait_for(timeout=8000)
+        await check_chart_output(preview.locator(f'.docs-example-plot[data-example-id="{slug}"]'))
         await preview.get_by_role('tab', name='Code', exact=True).click(timeout=8000)
         await expect(preview.locator('pre code')).to_contain_text(f"getExample('{slug}')", timeout=8000)
         await expect(preview.get_by_role('button', name='Copy code', exact=True)).to_be_visible()
+        await page.get_by_role('button', name='Open Sidebar', exact=True).click()
+        mobile_sidebar = page.locator('#nd-sidebar-mobile')
+        await mobile_sidebar.get_by_role('link', name='Installation', exact=True).click()
+        await expect(page.locator('#family-docs-title')).to_have_text('Installation')
+        await expect(mobile_sidebar).not_to_be_visible()
+    finally:
+        await page.close()
+
+
+async def check_complete_gallery(browser, local_url, examples):
+    page = await browser.new_page(viewport={'width': 1440, 'height': 900}, reduced_motion='reduce')
+    try:
+        await page.goto(local_url, wait_until='domcontentloaded')
+        cards = page.locator('.example-card-link')
+        await expect(cards).to_have_count(len(examples))
+        expected = {f"#{urlencode({'docs': example['family'], 'variant': example['id']})}" for example in examples}
+        hrefs = await cards.evaluate_all("(links) => links.map(link => link.getAttribute('href'))")
+        if set(hrefs) != expected:
+            raise RuntimeError('Every example must have its own chart card and documentation link')
+
+        first_plot = page.locator('.example-card--featured .card-plot')
+        last_plot = page.locator('.example-grid .example-card').last.locator('.card-plot')
+        await check_chart_output(first_plot)
+        await expect(last_plot.locator('.chart-preview')).to_have_count(0)
+        await cards.last.scroll_into_view_if_needed()
+        await check_chart_output(last_plot)
+        await expect(first_plot.locator('.chart-preview')).to_have_count(0)
+
+        await page.get_by_role('button', name='List view', exact=True).click()
+        rows = page.locator('.example-list-row')
+        await expect(rows).to_have_count(len(examples))
+        hrefs = await rows.evaluate_all("(links) => links.map(link => link.getAttribute('href'))")
+        if set(hrefs) != expected:
+            raise RuntimeError('Every example must also be reachable from list view')
+    finally:
+        await page.close()
+
+
+async def check_docs_navigation(browser, local_url, catalog):
+    page = await browser.new_page(viewport={'width': 1440, 'height': 900}, reduced_motion='reduce')
+    try:
+        await page.goto(local_url, wait_until='domcontentloaded')
+        await page.get_by_role('navigation', name='PITANT Charts sections').get_by_role('link', name='Documentation', exact=True).click()
+        sidebar = page.locator('#nd-sidebar')
+        title = page.locator('#nd-page #family-docs-title')
+        for section, name in DOC_SECTIONS.items():
+            link = sidebar.get_by_role('link', name=name, exact=True)
+            await expect(link).to_have_attribute('href', f'#docs={section}')
+            await link.click()
+            await page.wait_for_url(f'{local_url}#docs={section}')
+            await expect(title).to_have_text(name)
+            await expect(link).to_have_attribute('aria-current', 'page')
+            await expect(page.locator('#nd-page .pitant-docs-body')).not_to_be_empty()
+
+        await sidebar.get_by_role('link', name='Installation', exact=True).click()
+        commands = page.locator('#nd-page .docs-package-managers').first
+        for manager, prefix in [('npm', 'npm install'), ('pnpm', 'pnpm add'), ('yarn', 'yarn add'), ('bun', 'bun add')]:
+            tab = commands.get_by_role('tab', name=manager, exact=True)
+            await tab.click()
+            await expect(tab).to_have_attribute('aria-selected', 'true')
+            await expect(commands.get_by_role('tabpanel').locator('pre code')).to_contain_text(prefix)
+
+        await sidebar.locator('[data-search-full]').click()
+        search = page.get_by_role('dialog')
+        search_input = search.get_by_role('combobox', name='Search documentation')
+        await search_input.fill('spectral waterfall')
+        await expect(search.get_by_role('option', name='Spectral waterfall', exact=False)).to_be_visible()
+        await search_input.press('Enter')
+        await page.wait_for_url(f'{local_url}#docs=spectral-waterfall')
+        await expect(search).not_to_be_visible()
+
+        line = next(family for family in catalog if family['id'] == 'line')
+        fragment = urlencode({'docs': 'line', 'variant': 'line-time-range'})
+        await page.goto(f'{local_url}#{fragment}', wait_until='domcontentloaded')
+        toc = page.locator('#nd-toc')
+        await toc.get_by_role('link', name='Examples', exact=True).click()
+        section_url = f'{local_url}#{fragment}&section=docs-examples-title'
+        await page.wait_for_url(section_url)
+        await expect(page.locator('#docs-examples-title')).to_be_in_viewport()
+        await page.reload(wait_until='domcontentloaded')
+        await expect(page.locator('#docs-examples-title')).to_be_in_viewport()
+        last_example = line['examples'][-1]
+        inline_plot = page.locator(f'#docs-examples .docs-example-plot[data-example-id="{last_example["id"]}"]')
+        await inline_plot.scroll_into_view_if_needed()
+        await check_chart_output(inline_plot)
+        inline_tabs = page.get_by_role('tablist', name=f'{last_example["title"]} example view', exact=True)
+        await inline_tabs.get_by_role('tab', name='Code', exact=True).click()
+        await expect(page.locator('#docs-examples pre code')).to_contain_text(f"getExample('{last_example['id']}')")
+        await inline_tabs.get_by_role('tab', name='Preview', exact=True).click()
+        await check_chart_output(inline_plot)
+
+        for family in catalog:
+            await page.goto(f'{local_url}#docs={family["id"]}', wait_until='domcontentloaded')
+            await expect(title).to_have_text(family['name'])
+            plots = page.locator('#nd-page .docs-example-plot[data-example-id]')
+            await expect(plots).to_have_count(len(family['examples']))
+            shown = await plots.evaluate_all('(plots) => plots.map(plot => plot.dataset.exampleId)')
+            if set(shown) != {example['id'] for example in family['examples']}:
+                raise RuntimeError(f'Incomplete inline examples for {family["id"]}')
+
+        response = await page.request.get(urljoin(local_url, 'r/registry.json'))
+        if not response.ok:
+            raise RuntimeError(f'Chart registry returned HTTP {response.status}')
+        registry = await response.json()
+        if not registry['items']:
+            raise RuntimeError('The chart registry must list installable chart blocks')
+        for item in registry['items']:
+            response = await page.request.get(urljoin(local_url, f'r/{item["name"]}.json'))
+            if not response.ok:
+                raise RuntimeError(f'Chart registry block {item["name"]} returned HTTP {response.status}')
+            block = await response.json()
+            if block['name'] != item['name'] or not block['files'] or not all(file.get('content') for file in block['files']):
+                raise RuntimeError(f'Chart registry block {item["name"]} is missing source files')
     finally:
         await page.close()
 
@@ -232,7 +361,13 @@ async def audit(args):
         await check_gallery_documentation(
             browser, args.local, next(example for example in examples if example['id'] == 'line-time-range'),
         )
+        await check_complete_gallery(browser, args.local, examples)
+        await check_docs_navigation(browser, args.local, catalog)
         await check_scientific_catalog(browser, args.local, catalog)
+        if args.docs_only:
+            print(f'Passed catalog and documentation checks for {len(examples)} examples across {len(catalog)} families')
+            await browser.close()
+            return 0
         await asyncio.gather(*(run(browser, queue, results, args.local) for _ in range(args.workers)))
         await browser.close()
     for profile, observations in results.items():
@@ -253,5 +388,6 @@ if __name__ == '__main__':
     parser.add_argument('--browser', choices=['chromium', 'firefox', 'webkit', 'edge'], default='chromium')
     parser.add_argument('--workers', type=int, default=4, choices=range(1, 9))
     parser.add_argument('--report', type=Path, help='Optional JSON output with all results')
+    parser.add_argument('--docs-only', action='store_true', help='Check catalog navigation, documentation, and scientific examples')
     args = parser.parse_args()
     raise SystemExit(asyncio.run(audit(args)))

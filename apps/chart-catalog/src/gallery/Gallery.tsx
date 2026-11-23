@@ -6,7 +6,7 @@ import { createInputController, Input } from '@ui-sdk/react/input'
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@ui-sdk/react/tabs'
 import { Toggle } from '@ui-sdk/react/toggle'
 import {
-  ArrowDown, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, BookOpen, ChevronLeft, ChevronRight,
+  ArrowDown, ArrowDownRight, ArrowLeft, ArrowUpRight, Bookmark, BookOpen, ChevronLeft, ChevronRight,
   Code2, Grid2X2, List, Menu, Moon, Search, Star, Sun, X,
 } from 'lucide-react'
 import { examples, galleryOrder, getExample, getFamily, getGroupForFamily, groups } from '../catalog'
@@ -14,14 +14,16 @@ import { ChartPreview } from '../charts/ChartPreview'
 import type { ChartExample } from '../types'
 import { Choices } from '../ui/Choices'
 import { ExampleCode, repositoryUrl } from './ExampleCode'
+import { DocsShell } from './DocsShell'
+import { DocsSectionContent, docSections, docsSectionToc, isDocsSection } from './docs-sections'
 import { FamilyDocumentation } from './FamilyDocumentation'
 import { groupIcons } from './Visuals'
+import { useNearViewport } from './DeferredChart'
 import { FamilySelect } from './FamilySelect'
 import pitantMark from './brand/pitant-icon.svg'
 import pitantWordmark from './brand/pitant-wordmark.svg'
 import pitantWordmarkWhite from './brand/pitant-wordmark-white.svg'
 
-const pageSize = 12
 const catalogTitle = document.title
 const popularFamilies = [
   { id: 'all', label: 'All charts' },
@@ -64,7 +66,8 @@ function getLinkState(): GalleryLink {
   const requestedGroup = params.get('category') ?? 'all'
   const group = groups.some((entry) => entry.id === requestedGroup) ? requestedGroup : 'all'
   const family = getFamily(params.get('family') ?? '')?.id ?? 'all'
-  const docs = getFamily(params.get('docs') ?? '')?.id
+  const requestedDoc = params.get('docs') ?? ''
+  const docs = isDocsSection(requestedDoc) ? requestedDoc : getFamily(requestedDoc)?.id
   const requestedVariant = getExample(params.get('variant') ?? '')
   const variant = requestedVariant && requestedVariant.family === docs ? requestedVariant.id : undefined
   const selectedExample = getExample(params.get('example') ?? '')
@@ -99,20 +102,7 @@ function exampleDocsHref(example: ChartExample) {
 }
 
 function VisibleChart({ example }: { example: ChartExample }) {
-  const host = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    if (!host.current) return
-    if (typeof IntersectionObserver !== 'function') {
-      setVisible(true)
-      return
-    }
-    const observer = new IntersectionObserver(([entry]) => {
-      setVisible(entry.isIntersecting)
-    }, { rootMargin: '220px' })
-    observer.observe(host.current)
-    return () => observer.disconnect()
-  }, [])
+  const [host, visible] = useNearViewport<HTMLDivElement>()
   return <div className="card-plot" ref={host} aria-hidden="true" inert>{visible && <ChartPreview example={example} compact />}</div>
 }
 
@@ -203,7 +193,6 @@ export function Gallery() {
   const [searchController] = useState(createInputController)
   const query = useDeferredValue(search.trim().toLowerCase())
   const [showSaved, setShowSaved] = useState(false)
-  const [page, setPage] = useState(1)
   const [navigationOpen, setNavigationOpen] = useState(false)
   const searchField = useRef<HTMLInputElement>(null)
   const results = useRef<HTMLElement>(null)
@@ -230,7 +219,6 @@ export function Gallery() {
       normalizeLegacyLink(next)
       setLink(next)
       setShowSaved(false)
-      setPage(1)
     }
     normalizeLegacyLink(getLinkState())
     const keyboard = (event: KeyboardEvent) => {
@@ -255,29 +243,30 @@ export function Gallery() {
   const selectedGroup = groups.find((group) => group.id === link.group)
   const selectedFamily = getFamily(link.family)
   const documentedFamily = getFamily(link.docs ?? '')
+  const docSection = docSections.find(({ id }) => id === link.docs)
+  const viewingDocs = Boolean(documentedFamily || docSection)
+  const docTitle = documentedFamily?.name ?? docSection?.title
   useEffect(() => {
-    document.title = documentedFamily ? `${documentedFamily.name} | PITANT Charts` : catalogTitle
-  }, [documentedFamily])
+    document.title = docTitle ? `${docTitle} | PITANT Charts` : catalogTitle
+  }, [docTitle])
   const detail = getExample(link.example)
   const available = selectedFamily ? selectedFamily.examples : galleryOrder
+  const terms = query.split(/\s+/)
   const filtered = available.filter((example) => {
     if (selectedGroup && !selectedGroup.families.includes(example.family)) return false
     if (showSaved && !savedIds.has(example.id)) return false
+    if (!query) return true
     const searchable = `${example.title} ${example.label} ${example.id} ${getFamily(example.family)?.name}`.toLowerCase()
-    return query.split(/\s+/).every((word) => searchable.includes(word))
+    return terms.every((word) => searchable.includes(word))
   })
-  const pages = Math.ceil(filtered.length / pageSize)
-  const currentPage = Math.min(page, Math.max(1, pages))
-  const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-  const showFeature = currentPage === 1 && !query && !showSaved &&
+  const showFeature = !query && !showSaved &&
     (!selectedGroup || ['area', 'bar', 'line'].includes(link.family))
-  const landingFeature = showFeature && !selectedGroup && layout === 'grid' ? visible[0] : undefined
-  const gridExamples = landingFeature ? visible.slice(1) : visible
+  const landingFeature = showFeature && !selectedGroup && layout === 'grid' ? filtered[0] : undefined
+  const gridExamples = landingFeature ? filtered.slice(1) : filtered
 
   function choose(group: string, family = 'all', onlySaved = false) {
     const next: GalleryLink = { group, family, example: '', tab: 'preview' }
     setLink(next)
-    setPage(1)
     setShowSaved(onlySaved)
     setNavigationOpen(false)
     writeLink(next, true)
@@ -294,25 +283,17 @@ export function Gallery() {
     choose(getGroupForFamily(id)?.id ?? 'all', id)
   }
 
-  function browseDocumentedFamily(id: string) {
-    searchController.setValue('')
-    browseFamily(id)
-    requestAnimationFrame(() => {
-      results.current?.scrollIntoView({ block: 'start' })
-      document.getElementById('catalog-title')?.focus({ preventScroll: true })
-    })
-  }
-
-  function showDocumentation(family: string, variant?: string) {
-    if (link.docs === family && link.variant === variant && !link.example) return
-    const next: GalleryLink = { docs: family, variant, group: 'all', family: 'all', example: '', tab: 'preview' }
+  function showDocumentation(pageId: string, variant?: string) {
+    if (link.docs === pageId && link.variant === variant && !link.example) return
+    const next: GalleryLink = { docs: pageId, variant, group: 'all', family: 'all', example: '', tab: 'preview' }
     setLink(next)
     setShowSaved(false)
-    setPage(1)
     setNavigationOpen(false)
     writeLink(next, true)
-    window.scrollTo(0, 0)
-    requestAnimationFrame(() => document.getElementById('family-docs-title')?.focus({ preventScroll: true }))
+    requestAnimationFrame(() => {
+      window.scrollTo(0, 0)
+      document.getElementById('family-docs-title')?.focus({ preventScroll: true })
+    })
   }
 
   function showTab(tab: ExampleTab) {
@@ -326,11 +307,6 @@ export function Gallery() {
       const list = Array.isArray(previous) ? previous : []
       return list.includes(id) ? list.filter((entry) => entry !== id) : [...list, id]
     })
-  }
-
-  function setResultPage(next: number) {
-    setPage(next)
-    results.current?.scrollIntoView({ block: 'start', behavior: 'instant' })
   }
 
   function submitSearch(event: FormEvent) {
@@ -349,26 +325,11 @@ export function Gallery() {
   }
 
   function categoryNavigation() {
-    if (documentedFamily) return (
-      <nav className="documentation-nav" aria-label="Chart documentation">
-        <a className="documentation-entry" href="#" onClick={(event) => followLink(event, browseCatalog)}><ArrowLeft size={15} aria-hidden="true" /> Browse charts</a>
-        {groups.map((group) => (
-          <div key={group.id}>
-            <h2>{group.name}</h2>
-            {group.families.map((id) => (
-              <a key={id} href={`#docs=${id}`} aria-current={id === link.docs ? 'page' : undefined} onClick={(event) => followLink(event, () => showDocumentation(id))}>
-                {getFamily(id)?.name}
-              </a>
-            ))}
-          </div>
-        ))}
-      </nav>
-    )
     return <>
       <nav aria-label="Chart categories">
         <h2>Browse</h2>
         <Button aria-current={link.group === 'all' && !showSaved ? 'page' : undefined} onClick={() => choose('all')}><Grid2X2 size={16} aria-hidden="true" /> <span>All charts</span> <small>{examples.length}</small></Button>
-        <a className="documentation-entry" href="#docs=area" onClick={(event) => followLink(event, () => showDocumentation('area'))}><BookOpen size={16} aria-hidden="true" /> <span>Documentation</span></a>
+        <a className="documentation-entry" href="#docs=introduction" onClick={(event) => followLink(event, () => showDocumentation('introduction'))}><BookOpen size={16} aria-hidden="true" /> <span>Documentation</span></a>
         <Button aria-current={showSaved ? 'page' : undefined} onClick={() => choose('all', 'all', true)}><Bookmark size={16} aria-hidden="true" /> <span>Saved</span> <small>{savedIds.size}</small></Button>
         <h2>Categories</h2>
         {groups.map((group) => {
@@ -383,17 +344,17 @@ export function Gallery() {
 
   return (
     <div className="gallery-app">
-      <a className="skip-link" href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content')?.focus() }}>{documentedFamily ? 'Skip to documentation' : 'Skip to chart catalog'}</a>
+      {!viewingDocs && <a className="skip-link" href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content')?.focus() }}>Skip to chart catalog</a>}
       <header className="site-header">
         <div className="site-header-inner">
-          <Drawer side="start" open={navigationOpen} onOpenChange={setNavigationOpen}>
-            <DrawerTrigger className={`icon-button mobile-menu${documentedFamily ? '' : ' catalog-menu'}`} aria-label={documentedFamily ? 'Open chart documentation' : 'Open chart categories'}><Menu size={19} aria-hidden="true" /></DrawerTrigger>
+          {!viewingDocs && <Drawer side="start" open={navigationOpen} onOpenChange={setNavigationOpen}>
+            <DrawerTrigger className="icon-button mobile-menu catalog-menu" aria-label="Open chart categories"><Menu size={19} aria-hidden="true" /></DrawerTrigger>
             <DrawerBackdrop className="nav-backdrop" />
             <DrawerContent className="nav-drawer" initialFocus="content">
-              <div className="nav-drawer-header"><DrawerTitle>{documentedFamily ? 'Chart documentation' : 'Chart categories'}</DrawerTitle><DrawerClose className="icon-button" aria-label={documentedFamily ? 'Close chart documentation' : 'Close chart categories'}><X size={18} aria-hidden="true" /></DrawerClose></div>
+              <div className="nav-drawer-header"><DrawerTitle>Chart categories</DrawerTitle><DrawerClose className="icon-button" aria-label="Close chart categories"><X size={18} aria-hidden="true" /></DrawerClose></div>
               <div data-drawer-no-drag="">{categoryNavigation()}</div>
             </DrawerContent>
-          </Drawer>
+          </Drawer>}
           <a href="#" className="brand" aria-label="PITANT Charts home" onClick={(event) => followLink(event, browseCatalog)}>
             <img className="brand-mark" src={pitantMark} alt="" width="23" height="17" />
             <img className="brand-wordmark brand-wordmark-light" src={pitantWordmark} alt="" width="77" height="29" />
@@ -401,8 +362,8 @@ export function Gallery() {
             <span className="brand-product">Charts</span>
           </a>
           <nav className="header-nav" aria-label="PITANT Charts sections">
-            <a className="header-link" href="#" aria-current={!documentedFamily ? 'page' : undefined} onClick={(event) => followLink(event, browseCatalog)}>Charts</a>
-            <a className="header-link" href="#docs=area" aria-current={documentedFamily ? 'page' : undefined} onClick={(event) => followLink(event, () => showDocumentation('area'))}>Documentation</a>
+            <a className="header-link" href="#" aria-current={!viewingDocs ? 'page' : undefined} onClick={(event) => followLink(event, browseCatalog)}>Charts</a>
+            <a className="header-link" href="#docs=introduction" aria-current={viewingDocs ? 'page' : undefined} onClick={(event) => followLink(event, () => showDocumentation('introduction'))}>Documentation</a>
           </nav>
           <nav className="header-actions" aria-label="Project links">
             <a className="header-link" href={openSourceHref} aria-label="PITANT Open Source">
@@ -416,14 +377,20 @@ export function Gallery() {
           </nav>
         </div>
       </header>
-      <main id="main-content" tabIndex={-1}>
-        {!documentedFamily && !showSaved && <section className={landingFeature ? 'hero hero--featured' : 'hero'} aria-labelledby="page-title">
+      {documentedFamily ? (
+        <FamilyDocumentation key={documentedFamily.id} family={documentedFamily} variantId={link.variant} onNavigate={showDocumentation} />
+      ) : docSection ? (
+        <DocsShell key={docSection.id} pageId={docSection.id} title={docSection.title} description={docSection.description} toc={docsSectionToc(docSection.id)} onNavigate={showDocumentation}>
+          <DocsSectionContent section={docSection.id} />
+        </DocsShell>
+      ) : <main id="main-content" tabIndex={-1}>
+        {!showSaved && <section className={landingFeature ? 'hero hero--featured' : 'hero'} aria-labelledby="page-title">
           <div className="hero-copy">
             <h1 id="page-title">PITANT Charts</h1>
             <p className="hero-intro">Explore {examples.length} interactive React examples for dashboards, time series, maps, and more.</p>
             <div className="hero-actions">
               <a className="primary-button" href="#catalog" onClick={(event) => { event.preventDefault(); results.current?.scrollIntoView({ block: 'start' }); searchField.current?.focus({ preventScroll: true }) }}>Browse charts <ArrowDown size={16} aria-hidden="true" /></a>
-              <a className="secondary-button" href="#docs=area" onClick={(event) => followLink(event, () => showDocumentation('area'))}>Documentation <BookOpen size={16} aria-hidden="true" /></a>
+              <a className="secondary-button" href="#docs=introduction" onClick={(event) => followLink(event, () => showDocumentation('introduction'))}>Documentation <BookOpen size={16} aria-hidden="true" /></a>
             </div>
           </div>
           {landingFeature && <ExampleCard
@@ -432,10 +399,8 @@ export function Gallery() {
             onDocumentation={() => showDocumentation(landingFeature.family, landingFeature.id)}
           />}
         </section>}
-        <div className={documentedFamily ? 'workspace' : 'workspace workspace--catalog'}>
-          {documentedFamily && <aside className="sidebar">{categoryNavigation()}</aside>}
+        <div className="workspace">
           <div className="gallery-main">
-            {documentedFamily ? <FamilyDocumentation key={documentedFamily.id} family={documentedFamily} variantId={link.variant} onOpenExample={showExample} onBrowseFamily={browseDocumentedFamily} /> : <>
             {!showSaved && <nav className="family-rail" aria-label="Popular chart families">
               {popularFamilies.map(({ id, label }) => {
                 const groupTab = id === 'all' || id === 'scientific'
@@ -451,12 +416,12 @@ export function Gallery() {
               <div className="catalog-heading">
                 <div><h2 id="catalog-title" tabIndex={-1}>{showSaved ? 'Saved charts' : selectedFamily?.name ?? selectedGroup?.name ?? 'All charts'}</h2><p aria-live="polite">{filtered.length} {filtered.length === 1 ? 'example' : 'examples'}</p></div>
                 <form className="filter-tools" onSubmit={submitSearch}>
-                  <div className="search-field"><Search size={17} aria-hidden="true" /><Input controller={searchController} ref={searchField} type="search" aria-label="Search charts" placeholder="Search charts…" value={search} onValueChange={(value) => { setSearch(value); setPage(1) }} />{search ? <Button aria-label="Clear search" onClick={() => { searchController.setValue(''); searchField.current?.focus() }}><X size={15} aria-hidden="true" /></Button> : <kbd aria-hidden="true">/</kbd>}</div>
+                  <div className="search-field"><Search size={17} aria-hidden="true" /><Input controller={searchController} ref={searchField} type="search" aria-label="Search charts" placeholder="Search charts…" value={search} onValueChange={setSearch} />{search ? <Button aria-label="Clear search" onClick={() => { searchController.setValue(''); searchField.current?.focus() }}><X size={15} aria-hidden="true" /></Button> : <kbd aria-hidden="true">/</kbd>}</div>
                   <FamilySelect value={link.family} groups={selectedGroup ? [selectedGroup] : groups} onChange={(id) => choose(id === 'all' ? link.group : getGroupForFamily(id)?.id ?? 'all', id, showSaved)} />
                   <Choices className="segmented layout-toggle" label="Gallery layout" options={layoutChoices} value={layout} onChange={setLayout} />
                 </form>
               </div>
-              {visible.length ? layout === 'grid' ? (
+              {filtered.length ? layout === 'grid' ? (
                 <div className="example-grid">
                   {gridExamples.map((example, index) => (
                     <ExampleCard
@@ -469,7 +434,7 @@ export function Gallery() {
                 </div>
               ) : (
                 <div className="example-list">
-                  {visible.map((example) => (
+                  {filtered.map((example) => (
                     <a className="example-list-row" key={example.id} data-example-id={example.id} href={exampleDocsHref(example)} onClick={(event) => followLink(event, () => showDocumentation(example.family, example.id))}>
                       <span>{example.title}</span><small>{getFamily(example.family)?.name}</small><ArrowUpRight size={17} aria-hidden="true" />
                     </a>
@@ -478,12 +443,10 @@ export function Gallery() {
               ) : (
                 <div className="empty-state"><span>{showSaved && !query ? <Bookmark size={23} /> : <Search size={23} />}</span><h3>{showSaved && !query && !selectedFamily ? 'No saved charts yet' : 'No matching charts'}</h3><p>{showSaved && !query && !selectedFamily ? 'Save an example to find it here later.' : 'Try another search or clear the filters.'}</p><Button className="text-button" onClick={reset}>Browse all charts <ArrowDownRight size={15} aria-hidden="true" /></Button></div>
               )}
-              {pages > 1 && <nav className="pagination" aria-label="Catalog pages"><Button className="text-button" disabled={currentPage <= 1} onClick={() => setResultPage(currentPage - 1)}><ArrowLeft size={15} aria-hidden="true" /> Previous</Button><span>Page {currentPage} of {pages}</span><Button className="text-button" disabled={currentPage >= pages} onClick={() => setResultPage(currentPage + 1)}>Next <ArrowRight size={15} aria-hidden="true" /></Button></nav>}
             </section>
-            </>}
           </div>
         </div>
-      </main>
+      </main>}
       <footer className="catalog-footer">
         <a href={import.meta.env.PROD ? './chart-catalog-source.tgz' : `${repositoryUrl}/tree/main/apps/chart-catalog`}>Source code</a>
         <a href={import.meta.env.PROD ? './LICENSE' : `${repositoryUrl}/blob/main/apps/chart-catalog/LICENSE`}>MPL-2.0 license</a>

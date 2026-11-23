@@ -1,0 +1,46 @@
+.pitant-docs {
+  --fd-banner-height: var(--gallery-header-height);
+  --fd-layout-width: 90rem;
+  --sidebar: var(--gallery-paper);
+  --sidebar-foreground: var(--gallery-ink);
+  --sidebar-border: var(--gallery-rule);
+  --sidebar-accent: var(--gallery-selection);
+  --sidebar-accent-foreground: var(--gallery-selection-text);
+  --sidebar-ring: var(--gallery-accent);
+  --sidebar-primary-foreground: var(--gallery-accent-on);
+  min-height: calc(100dvh - var(--gallery-header-height));
+}
+
+.pitant-docs #nd-sidebar :focus-visible,
+.pitant-docs #nd-page :focus-visible {
+  outline-color: var(--gallery-accent);
+}
+
+.pitant-docs #nd-page > .pitant-docs-title {
+  margin: 0;
+  color: var(--gallery-ink);
+  font-size: clamp(2rem, 3.7vw, 3rem);
+  font-weight: 680;
+  letter-spacing: -.045em;
+  line-height: 1.07;
+}
+
+.pitant-docs #nd-page > .pitant-docs-description {
+  max-width: 63ch;
+  margin: 0;
+  color: var(--gallery-muted);
+  line-height: 1.55;
+}
+
+.pitant-docs .pitant-docs-body {
+  min-width: 0;
+  max-width: none;
+}
+
+.pitant-docs #nd-page :is(section, h1, h2, h3)[id] {
+  scroll-margin-block-start: calc(var(--fd-docs-row-3) + 1.25rem);
+}
+
+.pitant-docs a[href='#nd-page'] {
+  top: calc(var(--gallery-header-height) + .5rem);
+}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Button } from '@ui-sdk/react/button'
+import { Button } from '@/components/ui/button'
 import { Check, Copy } from 'lucide-react'
 import type { ChartExample } from '../types'
 import { scientificExampleSource } from './scientific-examples'
@@ -105,7 +105,7 @@ export function CodeBlock({ language, source, note }: { language: string; source
   }
 
   return (
-    <div className="snippet">
+    <div className="snippet not-prose">
       <div className="snippet-header">
         <span>{language}</span>
         <CopyButton source={source} onUnavailable={selectCode} />

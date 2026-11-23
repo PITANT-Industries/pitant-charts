@@ -4,6 +4,7 @@ import '@fontsource-variable/geist-mono'
 import '@fontsource-variable/hanken-grotesk'
 import './charts.css'
 import './gallery.css'
+import './docs.css'
 import { Gallery } from './gallery/Gallery'
 
 const node = document.getElementById('root')
