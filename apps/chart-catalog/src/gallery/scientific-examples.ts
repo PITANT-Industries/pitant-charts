@@ -3,6 +3,7 @@ import capabilityHistogram from './docs/examples/CapabilityHistogram.tsx?raw'
 import correlationMatrix from './docs/examples/CorrelationMatrix.tsx?raw'
 import individualsControlChart from './docs/examples/IndividualsControlChart.tsx?raw'
 import modeShapes from './docs/examples/ModeShapes.tsx?raw'
+import shaftOrbit from './docs/examples/ShaftOrbit.tsx?raw'
 import spectrogram from './docs/examples/Spectrogram.tsx?raw'
 import spectrum from './docs/examples/Spectrum.tsx?raw'
 import steelDefectCorrelation from './docs/examples/SteelDefectCorrelation.tsx?raw'
@@ -16,6 +17,7 @@ function withCatalogImports(source: string) {
 const scientificExamples = new Map([
   ['campbell-diagram-ottawa', withCatalogImports(campbellDiagram)],
   ['mode-shapes-cantilever', withCatalogImports(modeShapes)],
+  ['shaft-orbit-probes', withCatalogImports(shaftOrbit)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

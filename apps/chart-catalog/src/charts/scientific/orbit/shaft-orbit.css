@@ -1,0 +1,240 @@
+.shaft-orbit {
+  display: grid;
+  gap: .8rem;
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+}
+
+.shaft-orbit[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.shaft-orbit),
+.detail-plot:has(.shaft-orbit) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.orbit-caption strong {
+  font-size: .95rem;
+  font-weight: 650;
+}
+
+.orbit-caption p {
+  margin: .25rem 0 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .875rem;
+  line-height: 1.5;
+}
+
+.orbit-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+.orbit-scenario {
+  display: grid;
+  justify-self: start;
+  gap: .25rem;
+  font-size: .8rem;
+}
+
+.orbit-scenario select {
+  min-block-size: 2.45rem;
+  max-inline-size: 100%;
+  padding-inline: .55rem;
+  color: inherit;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .4rem;
+  background: var(--gallery-surface, var(--card));
+  font: inherit;
+}
+
+.orbit-panels {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  gap: .65rem;
+  min-inline-size: 0;
+}
+
+.orbit-panel {
+  block-size: clamp(15rem, 42cqw, 22rem);
+  min-inline-size: 0;
+  overflow: hidden;
+  border-radius: .6rem;
+  background: #101b26;
+  --orbit-x: #62e8d1;
+  --orbit-y: #f6cb86;
+}
+
+.shaft-orbit[data-compact='true'] .orbit-panels {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.shaft-orbit[data-compact='true'] .orbit-panel {
+  min-block-size: 0;
+  block-size: 100%;
+  background: radial-gradient(ellipse at center, #172837 0%, #101b26 72%);
+}
+
+.orbit-panel svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.orbit-grid {
+  fill: #b6c7d0;
+  font-size: 10px;
+}
+
+.orbit-grid line {
+  stroke: #2b3c49;
+}
+
+.orbit-grid .orbit-zero {
+  stroke: #627990;
+  stroke-dasharray: 3 4;
+}
+
+.orbit-axis-name,
+.orbit-waveform-x,
+.orbit-waveform-y {
+  font-size: 11px;
+  font-weight: 620;
+}
+
+.orbit-trace,
+.orbit-adjacent,
+.orbit-probe-x,
+.orbit-probe-y {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.orbit-adjacent {
+  stroke: #9db4c7;
+  stroke-width: 1.5;
+  opacity: .3;
+}
+
+.orbit-trace {
+  stroke: var(--orbit-x);
+  stroke-width: 2.7;
+}
+
+.orbit-trigger {
+  fill: #101b26;
+  stroke: #f4f8fc;
+  stroke-width: 1.5;
+}
+
+.orbit-direction {
+  fill: var(--orbit-x);
+}
+
+.orbit-focus,
+.orbit-probe-dot-x {
+  fill: var(--orbit-x);
+}
+
+.orbit-probe-x {
+  stroke: var(--orbit-x);
+  stroke-width: 2;
+}
+
+.orbit-probe-y {
+  stroke: var(--orbit-y);
+  stroke-width: 2;
+}
+
+.orbit-waveform-x {
+  fill: var(--orbit-x);
+}
+
+.orbit-waveform-y,
+.orbit-probe-dot-y {
+  fill: var(--orbit-y);
+}
+
+.orbit-phase-guide {
+  stroke: #ccdce7;
+  stroke-dasharray: 3 4;
+}
+
+.orbit-orbit-pick,
+.orbit-waveform-pick {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.orbit-inspector {
+  display: grid;
+  gap: .65rem;
+  padding: .7rem;
+  min-inline-size: 0;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .55rem;
+}
+
+.orbit-inspector output {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .2rem .75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.orbit-inspector output span {
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .8rem;
+}
+
+.orbit-sliders {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .5rem .75rem;
+}
+
+.orbit-sliders label {
+  display: grid;
+  gap: .2rem;
+  min-inline-size: 0;
+  font-size: .8rem;
+}
+
+.orbit-revolution-label {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: .1rem .4rem;
+}
+
+.orbit-revolution-label span {
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-variant-numeric: tabular-nums;
+}
+
+.orbit-sliders input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 1.65rem;
+  margin: 0;
+  accent-color: var(--gallery-accent, var(--primary));
+}
+
+@container (max-width: 37rem) {
+  .orbit-panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .orbit-panel--waveforms {
+    block-size: 13rem;
+  }
+}

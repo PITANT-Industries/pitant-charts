@@ -10,7 +10,7 @@ export const groups: readonly ChartGroup[] = [
   { id: 'processes', name: 'Processes & schedules', families: ['funnel', 'sankey', 'waterfall', 'gantt'] },
   { id: 'hierarchies', name: 'Hierarchies & networks', families: ['sunburst', 'treemap', 'tree', 'network'] },
   { id: 'statistics', name: 'Distributions & statistics', families: ['scatter', 'heatmap', 'uncertainty', 'histogram', 'ridgeline', 'ecdf', 'beeswarm', 'violin', 'box-plot', 'hexbin', 'density'] },
-  { id: 'scientific', name: 'Scientific analysis', families: ['mass-spectrum', 'campbell-diagram', 'mode-shapes', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix', 'process-control'] },
+  { id: 'scientific', name: 'Scientific analysis', families: ['mass-spectrum', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix', 'process-control'] },
   { id: 'maps', name: 'Maps & spatial data', families: ['choropleth', 'bubble-map', 'route-map', 'globe', 'vector-field'] },
   { id: 'tooltips', name: 'Tooltips', families: ['tooltip'] },
 ]
@@ -32,7 +32,7 @@ export function getGroupForFamily(id: string) {
 }
 
 const preferredFamilies = ['line', 'bar', 'pie', 'area', 'radar', 'heatmap', 'gauge', 'sankey', 'choropleth']
-const featuredScientificIds = ['mass-spectrum-cms', 'spectral-waterfall-xrd', 'campbell-diagram-ottawa', 'mode-shapes-cantilever']
+const featuredScientificIds = ['mass-spectrum-cms', 'spectral-waterfall-xrd', 'campbell-diagram-ottawa', 'mode-shapes-cantilever', 'shaft-orbit-probes']
 const preferredExamples = ['line-time-range', 'bar-stacked', 'pie-center', 'area-gradient-fill', ...featuredScientificIds]
 const featured = [...new Set([
   ...preferredExamples.map(getExample).filter((item): item is ChartExample => Boolean(item)),

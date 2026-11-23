@@ -3220,6 +3220,22 @@
     ]
   },
   {
+    "id": "shaft-orbit",
+    "name": "Shaft Orbit Explorer",
+    "url": "https://opensource.pitant.de/charts/#docs=shaft-orbit",
+    "examples": [
+      {
+        "id": "shaft-orbit-probes",
+        "family": "shaft-orbit",
+        "title": "Orthogonal Shaft Displacement",
+        "label": "Simulated X–Y proximity probes",
+        "description": "Compare the shaft’s path and the two probe signals over one revolution in three simulated vibration patterns.",
+        "url": "https://opensource.pitant.de/charts/#example=shaft-orbit-probes",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",
