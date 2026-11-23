@@ -13,6 +13,7 @@ from playwright.async_api import async_playwright, expect
 
 
 CATALOG = Path(__file__).resolve().parents[1] / 'src/catalog-data.json'
+OTTAWA_BEARING_DATASET = re.compile(r'^https://(?:doi\.org/10\.17632/v43hmbwxpm\.2|data\.mendeley\.com/datasets/v43hmbwxpm/2)/?$')
 PROFILES = [
     (f'{size}-{theme}', width, height, theme)
     for size, width, height in [('desktop', 1440, 900), ('mobile', 390, 844)]
@@ -219,7 +220,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
     families = {
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
-        'wavelet-scalogram',
+        'wavelet-scalogram', 'bearing-envelope',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -289,6 +290,16 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=wavelet-scalogram&variant=wavelet-scalogram-bearing'
                 )
+            elif example['family'] == 'bearing-envelope':
+                spectrum = card_plot.locator('svg[data-envelope-spectrum]')
+                await check_envelope_axes(spectrum, 'Order (× shaft frequency)', 'Relative amplitude (dB)')
+                await check_envelope_references(spectrum)
+                await check_compact_figure_bounds(spectrum, 'rect[data-envelope-axis-frame]')
+                await expect(spectrum.locator('path[data-envelope-trace]')).to_have_attribute('d', re.compile(r'^M'))
+                await expect(card_plot.locator('select, [data-envelope-carrier], [data-envelope-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=bearing-envelope&variant=bearing-envelope-ottawa'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -348,6 +359,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'wavelet-scalogram':
                 await check_wavelet_scalogram(plot, touch)
                 code_import = 'WaveletScalogram'
+            elif example['family'] == 'bearing-envelope':
+                await check_bearing_envelope(plot, touch)
+                code_import = 'BearingEnvelope'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -937,9 +951,7 @@ async def check_wavelet_figure(scalogram, compact=False):
 
 async def check_wavelet_scalogram(plot, touch):
     chart = plot.locator('[data-wavelet-scalogram]')
-    await expect(chart.get_by_role('link', name='Dataset', exact=True)).to_have_attribute(
-        'href', re.compile(r'^https://(?:doi\.org/10\.17632/v43hmbwxpm\.2|data\.mendeley\.com/datasets/v43hmbwxpm/2)/?$')
-    )
+    await expect(chart.get_by_role('link', name='Dataset', exact=True)).to_have_attribute('href', OTTAWA_BEARING_DATASET)
     scalogram = chart.locator('svg[data-wavelet-plot]')
     await check_wavelet_figure(scalogram)
     signal = chart.locator('svg[data-wavelet-signal]')
@@ -1010,6 +1022,122 @@ async def check_wavelet_scalogram(plot, touch):
         if (seconds, hz) != (selected_time, selected_hz) or not math.isclose(end - start, float(value), abs_tol=0.001):
             raise RuntimeError(f'Window {value} s should resize the waveform and preserve selection: {seconds} s, {hz} Hz, {end - start} s')
         await expect(trace).not_to_have_attribute('d', previous_trace)
+
+
+async def check_envelope_axes(panel, x_label, y_label):
+    await expect(panel).to_be_visible()
+    await expect(panel.locator('rect[data-envelope-axis-frame]')).to_be_visible()
+    await expect(panel.locator('.scientific-tick').first).to_be_attached()
+    await expect(panel.get_by_text(x_label, exact=True)).to_be_visible()
+    await expect(panel.get_by_text(y_label, exact=True)).to_be_visible()
+
+
+async def check_envelope_references(spectrum):
+    reference = spectrum.locator('[data-envelope-reference]')
+    await expect(reference).to_have_count(3)
+    await expect(spectrum.locator('text').filter(has_text=re.compile(r'\bBPF[IO]\b')).first).to_be_visible()
+    orders = await reference.evaluate_all('references => references.map(ref => Number(ref.dataset.order))')
+    if sorted(orders) != [3.57, 5.43, 10.86]:
+        raise RuntimeError(f'Expected outer race, inner race and second harmonic reference orders, observed {orders}')
+
+
+async def check_bearing_envelope(plot, touch):
+    chart = plot.locator('[data-envelope-chart]')
+    await expect(chart.get_by_role('link', name='Dataset', exact=True)).to_have_attribute('href', OTTAWA_BEARING_DATASET)
+    carrier = chart.locator('svg[data-envelope-carrier]')
+    spectrum = chart.locator('svg[data-envelope-spectrum]')
+    await check_envelope_axes(carrier, 'Carrier frequency (Hz)', 'Relative PSD (dB)')
+    await check_envelope_axes(spectrum, 'Order (× shaft frequency)', 'Relative amplitude (dB)')
+    trace = spectrum.locator('path[data-envelope-trace]')
+    await expect(trace).to_have_attribute('d', re.compile(r'^M'))
+
+    references = chart.get_by_role('checkbox', name='Show reference orders', exact=True)
+    await expect(references).to_be_checked()
+    await check_envelope_references(spectrum)
+    await references.uncheck()
+    await expect(spectrum.locator('[data-envelope-reference]')).to_have_count(0)
+    await references.check()
+    await check_envelope_references(spectrum)
+
+    readout = chart.locator('output[data-envelope-readout]')
+    bearing = chart.get_by_role('combobox', name='Bearing condition', exact=True)
+    band = chart.get_by_role('combobox', name='Demodulation band', exact=True)
+    order = chart.get_by_role('slider', name='Shaft order', exact=True)
+    shading = carrier.locator('rect[data-envelope-band]')
+    await expect(readout).to_be_visible()
+    await expect(shading).to_be_visible()
+
+    async def selected_bin():
+        selected_order, level = map(float, await readout.evaluate("output => [output.dataset.order, output.dataset.level]"))
+        if not math.isfinite(selected_order) or selected_order < 0 or not -65 <= level <= 0:
+            raise RuntimeError(f'Invalid envelope sample: order {selected_order}, relative level {level}')
+        return selected_order, level
+
+    async def active_band():
+        rectangle = await shading.evaluate("""band => {
+          const geometry = band.getBoundingClientRect()
+          return [Number(band.dataset.lowHz), Number(band.dataset.highHz), geometry.left, geometry.right]
+        }""")
+        low, high, left, right = rectangle
+        frame = await carrier.locator('rect[data-envelope-axis-frame]').bounding_box()
+        if not 0 <= low < high or not frame['x'] - 1 <= left < right <= frame['x'] + frame['width'] + 1:
+            raise RuntimeError(f'Demodulation band should be a positive interval within the carrier frame: {rectangle}')
+        return rectangle
+
+    await expect(bearing).to_have_value('inner-race-fault')
+    await expect(band).to_have_value('high-carrier')
+    selected_order, initial_level = await selected_bin()
+    if not math.isclose(selected_order, 5.45) or initial_level != 0:
+        raise RuntimeError(f'The example should open on the measured fault peak: {selected_order} order, {initial_level} dB')
+    first_low, first_high, first_left, first_right = await active_band()
+    if (first_low, first_high) != (3200, 6400):
+        raise RuntimeError(f'Unexpected initial demodulation band: {first_low}–{first_high} Hz')
+    bands = await band.locator('option').evaluate_all('options => options.map(option => option.value)')
+    if set(bands) != {'low-carrier', 'mid-carrier', 'high-carrier'}:
+        raise RuntimeError(f'Expected the three measured demodulation bands, observed {bands}')
+    for value, expected, expected_level in [('low-carrier', (800, 1600), -6.3), ('mid-carrier', (1600, 3200), -8.5)]:
+        previous_trace = await trace.get_attribute('d')
+        await band.select_option(value)
+        low, high, left, right = await active_band()
+        if (low, high) != expected or (left, right) == (first_left, first_right):
+            raise RuntimeError(f'Changing band should move the carrier highlight to {expected}, observed {low}–{high} Hz')
+        shaded_ratio = (right - left) / (first_right - first_left)
+        if not math.isclose(shaded_ratio, (high - low) / (first_high - first_low), rel_tol=0.001):
+            raise RuntimeError('Band shading width should match the selected frequencies on the carrier axis')
+        await expect(trace).not_to_have_attribute('d', previous_trace)
+        next_order, level = await selected_bin()
+        if next_order != selected_order or not math.isclose(level, expected_level, abs_tol=0.05):
+            raise RuntimeError(f'Band {value} should retain the order and report {expected_level} dB, observed {next_order}, {level} dB')
+
+    await band.select_option('high-carrier')
+    conditions = await bearing.locator('option').evaluate_all('options => options.map(option => option.value)')
+    if set(conditions) != {'healthy', 'inner-race-fault'}:
+        raise RuntimeError(f'Expected healthy and fault bearing recordings, observed {conditions}')
+    band_trace = await trace.get_attribute('d')
+    await bearing.select_option('healthy')
+    await expect(trace).not_to_have_attribute('d', band_trace)
+    new_order, level = await selected_bin()
+    if new_order != selected_order or not math.isclose(level, -35.2, abs_tol=0.05):
+        raise RuntimeError(f'The healthy recording should retain the order and report −35.2 dB, observed {new_order}, {level} dB')
+
+    await order.press('Home')
+    first_order, _ = await selected_bin()
+    await order.press('End')
+    last_order, _ = await selected_bin()
+    if not math.isclose(first_order, 0.01666667, abs_tol=1e-8) or not math.isclose(last_order, 15):
+        raise RuntimeError(f'Unexpected measured order grid: {first_order}–{last_order}')
+    target = spectrum.locator('.envelope-plot-pick')
+    await expect(target).to_be_visible()
+    bounds = await target.bounding_box()
+    position = {'x': bounds['width'] * 0.63, 'y': bounds['height'] * 0.5}
+    if touch:
+        await target.tap(position=position)
+    else:
+        await target.click(position=position)
+    picked_order, _ = await selected_bin()
+    expected = first_order + (last_order - first_order) * 0.63
+    if not math.isclose(picked_order, expected, abs_tol=0.2):
+        raise RuntimeError(f'Pointer pick should align with the linear shaft order axis: {picked_order}')
 
 
 async def check_native_scientific(plot, slug, touch):

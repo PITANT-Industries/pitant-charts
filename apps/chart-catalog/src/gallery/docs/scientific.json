@@ -142,6 +142,35 @@
       { "label": "MathWorks, Time-Frequency Analysis and Continuous Wavelet Transform", "href": "https://www.mathworks.com/help/wavelet/ug/time-frequency-analysis-and-continuous-wavelet-transform.html" }
     ]
   },
+  "bearing-envelope": {
+    "summary": "Select a carrier band and inspect the corresponding vibration envelope in shaft orders.",
+    "useWhen": "Explore repeated amplitude modulation in accelerometer recordings, or compare how different carrier bands reveal different repetition rates as a shaft speeds up.",
+    "data": "Supply shared, strictly increasing frequency bins in Hz and shaft-order bins. Define each band with a unique id, a label, and its lower and upper limits in Hz. Each recording supplies a broadbandDb array aligned to frequencyHz and one envelope array aligned to orders per band id. Supply finite relative levels in dB with a common reference for each panel across recordings and bands.",
+    "reading": "Choose a bearing recording and a carrier band. The broadband panel highlights that band in Hz and the envelope panel shows modulation in cycles per shaft revolution. Select an order to read its level. Relative dB scales stay fixed while you compare bands and recordings.",
+    "notes": [
+      "The University of Ottawa example compares the healthy H-A-1 and inner-race fault I-A-1 run-ups. Channel_1 acceleration is low-pass filtered with a Kaiser window (β = 5) and resampled from 200 kHz to 20 kHz. Each analysis uses 60 measured shaft turns starting at the first 2 V rising crossing of the Channel_2 encoder signal after 3.000 s.",
+      "The broadband panel estimates power spectral density with Welch averaging, using 1,024-sample periodic Hann windows, 512 samples of overlap, and removal of each segment mean. It shows 409 positive bins from about 19.53 to 7,988.28 Hz. Carrier bands are 800–1,600, 1,600–3,200, and 3,200–6,400 Hz.",
+      "For each carrier band, apply a forward–reverse Butterworth band-pass filter with order parameter 4 and take the magnitude of the Hilbert analytic signal. A forward–reverse 450 Hz low-pass filter with order parameter 8 limits the envelope before interpolation onto every eighth encoder pulse, giving 128 samples per shaft revolution.",
+      "The envelope order spectrum uses the demeaned signal with a periodic Hann window and amplitude correction for window gain. The display contains 900 positive bins from 1/60 to 15 shaft orders. The broadband level is 10 × log₁₀ of the ratio to the shared peak power spectral density. The envelope level is 20 × log₁₀ of the ratio to the shared peak amplitude across runs and bands. Both displays have a −65 dB floor.",
+      "The ER16K bearing geometry gives expected ball-pass references at 3.57 orders for the outer race (BPFO) and 5.43 orders for the inner race (BPFI), with the second BPFI harmonic at 10.86 orders. The example opens on the inner-race recording in the 3,200–6,400 Hz carrier band at 5.45 orders. These guides are geometric predictions, and interpretation depends on the operating conditions, slip, and sensor response."
+    ],
+    "properties": [
+      { "name": "data", "type": "EnvelopeSpectrumData", "description": "Required. Give the shared frequencyHz and orders axes, carrier bands, recordings, and optional order references." },
+      { "name": "levelDomainDb", "type": "readonly [number, number]", "description": "Set the displayed dB limits for both panels. Their amplitude and PSD references are separate. The measured example uses −65 to 0 dB." },
+      { "name": "initialBandId", "type": "string", "description": "Choose the starting carrier band by ID." },
+      { "name": "initialRunId", "type": "string", "description": "Choose the starting recording by ID." },
+      { "name": "initialOrder", "type": "number", "description": "Start near this shaft order." },
+      { "name": "label", "type": "string", "description": "Describe the sensor, bearing, or test condition for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show only the envelope order spectrum for a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Add the data source, a measurement note, and optional license information." }
+    ],
+    "sources": [
+      { "label": "Huan Huang and Natalie Baddour (2019), University of Ottawa bearing vibration dataset, version 2 (CC BY 4.0)", "href": "https://doi.org/10.17632/v43hmbwxpm.2" },
+      { "label": "Huang and Baddour (2018), bearing test rig and ER16K characteristic frequencies", "href": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6249544/" },
+      { "label": "MathWorks, rolling-element bearing envelope spectra and carrier band selection", "href": "https://www.mathworks.com/help/predmaint/ug/Rolling-Element-Bearing-Fault-Diagnosis.html" },
+      { "label": "SciPy, Hilbert transform and amplitude envelope", "href": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.hilbert.html" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",

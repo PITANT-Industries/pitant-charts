@@ -1,3 +1,4 @@
+import bearingEnvelope from './docs/examples/BearingEnvelopeSpectrum.tsx?raw'
 import campbellDiagram from './docs/examples/CampbellDiagram.tsx?raw'
 import capabilityHistogram from './docs/examples/CapabilityHistogram.tsx?raw'
 import coherencePhase from './docs/examples/CoherencePhase.tsx?raw'
@@ -24,6 +25,7 @@ const scientificExamples = new Map([
   ['frequency-response-servo', withCatalogImports(frequencyResponse)],
   ['coherence-phase-bearing', withCatalogImports(coherencePhase)],
   ['wavelet-scalogram-bearing', withCatalogImports(waveletScalogram)],
+  ['bearing-envelope-ottawa', withCatalogImports(bearingEnvelope)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],
