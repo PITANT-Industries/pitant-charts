@@ -18,6 +18,7 @@ import spectrogram from './docs/examples/Spectrogram.tsx?raw'
 import spectrum from './docs/examples/Spectrum.tsx?raw'
 import steelDefectCorrelation from './docs/examples/SteelDefectCorrelation.tsx?raw'
 import stressStrainComparison from './docs/examples/StressStrainComparison.tsx?raw'
+import ternaryMixtureMap from './docs/examples/TernaryMixtureMap.tsx?raw'
 import waveletScalogram from './docs/examples/WaveletScalogram.tsx?raw'
 import xrdPeakTracker from './docs/examples/XrdPeakTracker.tsx?raw'
 
@@ -44,6 +45,7 @@ const scientificExamples = new Map([
   ['fatigue-sn-measured', withCatalogImports(fatigueSn)],
   ['crack-growth-fatigue', withCatalogImports(crackGrowth)],
   ['binary-phase-diagram-ag-cu', withCatalogImports(binaryPhaseDiagram)],
+  ['ternary-mixture-response', withCatalogImports(ternaryMixtureMap)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

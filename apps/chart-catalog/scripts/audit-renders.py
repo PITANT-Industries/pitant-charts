@@ -222,6 +222,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
+        'ternary-mixture-map',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -374,6 +375,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=binary-phase-diagram&variant=binary-phase-diagram-ag-cu'
                 )
+            elif example['family'] == 'ternary-mixture-map':
+                ternary = card_plot.locator('svg[data-ternary-plot]')
+                await check_ternary_figure(ternary)
+                await check_compact_figure_bounds(ternary, 'path[data-ternary-simplex]')
+                await expect(card_plot.locator('input, select, button, [data-ternary-cursor], [data-ternary-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=ternary-mixture-map&variant=ternary-mixture-response'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -463,6 +472,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'binary-phase-diagram':
                 await check_binary_phase_diagram(plot, touch)
                 code_import = 'BinaryPhaseDiagram'
+            elif example['family'] == 'ternary-mixture-map':
+                await check_ternary_mixture(plot, touch)
+                code_import = 'TernaryMixtureMap'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -2344,6 +2356,195 @@ async def check_binary_phase_diagram(plot, touch):
         test_close(selected_y, 506.25, 'Dragging should update temperature continuously', 4)
         if region != 'two-solids':
             raise RuntimeError(f'Dragging should enter the two-solid region, observed {region}')
+
+
+async def check_ternary_figure(ternary):
+    await expect(ternary).to_be_visible()
+    simplex = ternary.locator('path[data-ternary-simplex]')
+    support = ternary.locator('path[data-ternary-support]')
+    for outline in [simplex, support]:
+        await expect(outline).to_have_attribute('d', re.compile(r'^M'))
+        if await outline.evaluate('outline => outline.getTotalLength()') <= 0:
+            raise RuntimeError('The ternary plot needs a simplex and a measured support boundary')
+    raster = ternary.locator('image[data-ternary-surface]')
+    await expect(raster).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+    if await raster.evaluate('image => getComputedStyle(image).imageRendering') in ('crisp-edges', 'pixelated'):
+        raise RuntimeError('The interpolated ternary surface should use smooth image rendering')
+    await expect(ternary.locator('.scientific-tick').first).to_be_attached()
+    for component, high_percent in [('Slag', 50), ('Fly ash', 80), ('Red mud', 30)]:
+        await expect(ternary.get_by_text(f'{component} {high_percent}%', exact=True)).to_be_visible()
+    colorbar = ternary.locator('[data-ternary-colorbar]')
+    await expect(colorbar.get_by_text('Compressive strength (MPa)', exact=True)).to_be_visible()
+    await expect(colorbar).to_have_attribute('data-min', '65')
+    await expect(colorbar).to_have_attribute('data-max', '115')
+    await expect(colorbar.locator('rect[fill^="url("]')).to_be_visible()
+    await expect(ternary.locator('circle[data-ternary-observation]')).to_have_count(10)
+
+
+async def check_ternary_raster(raster, samples):
+    # Inspect the PNG itself so that a drawn boundary or clip cannot hide extrapolated pixels.
+    image_size, alpha = await raster.evaluate("""async (raster, samples) => {
+      const image = new Image()
+      image.src = raster.getAttribute('href')
+      await image.decode()
+      const canvas = document.createElement('canvas')
+      canvas.width = image.naturalWidth
+      canvas.height = image.naturalHeight
+      const context = canvas.getContext('2d')
+      context.drawImage(image, 0, 0)
+      const [left, top, width, height] = ['x', 'y', 'width', 'height'].map(key => raster[key].baseVal.value)
+      const alpha = samples.map(([x, y]) => {
+        const ix = Math.floor((x - left) / width * canvas.width)
+        const iy = Math.floor((y - top) / height * canvas.height)
+        return context.getImageData(ix, iy, 1, 1).data[3]
+      })
+      return [[canvas.width, canvas.height], alpha]
+    }""", samples)
+    if min(image_size) < 128:
+        raise RuntimeError(f'Expected a dense interpolated ternary raster, observed {image_size}')
+    if alpha[0] <= 0 or alpha[1] != 0:
+        raise RuntimeError(f'Ternary raster must paint inside measured support and remain transparent outside: {alpha}')
+
+
+async def check_ternary_mixture(plot, touch):
+    chart = plot.locator('[data-ternary-mixture]')
+    ternary = chart.locator('svg[data-ternary-plot]')
+    await check_ternary_figure(ternary)
+    simplex = ternary.locator('path[data-ternary-simplex]')
+    marks = ternary.locator('circle[data-ternary-observation]')
+    cursor = ternary.locator('[data-ternary-cursor]')
+    readout = chart.locator('output[data-ternary-readout]')
+    observation = chart.get_by_role('combobox', name='Observation', exact=True)
+    full_view = chart.get_by_role('checkbox', name='Show full composition triangle', exact=True)
+    slag = chart.get_by_role('slider', name='Ground granulated blast-furnace slag', exact=True)
+    ash = chart.get_by_role('slider', name='Fly ash', exact=True)
+    await expect(chart.locator('figcaption a').first).to_have_attribute('href', 'https://doi.org/10.3390/polym18182271')
+    await expect(ternary.get_by_text('Composition (%)', exact=True)).to_be_visible()
+    await expect(cursor).to_be_visible()
+    await expect(readout).to_be_visible()
+    await expect(full_view).not_to_be_checked()
+
+    async def frame():
+        return await simplex.evaluate("""triangle => {
+          const box = triangle.getBBox()
+          const svg = triangle.ownerSVGElement
+          const domain = ['aMin', 'bMin', 'cMin', 'span'].map(key => Number(svg.dataset[key]))
+          return [box.x, box.y, box.width, box.height, ...domain]
+        }""")
+    magnified = await frame()
+    if any(not math.isclose(actual, expected, abs_tol=1e-8) for actual, expected in zip(magnified[4:], [0.2, 0.5, 0, 0.3])):
+        raise RuntimeError(f'The chart should start with the magnified binder composition frame, observed {magnified[4:]}')
+
+    def plot_point(fractions, axes):
+        left, top, width, height, a_min, b_min, c_min, span = axes
+        a, b, c = [(part - minimum) / span for part, minimum in zip(fractions, [a_min, b_min, c_min])]
+        return left + width * (0.5 * a + c), top + height * (b + c)
+
+    def check_fractions(fractions):
+        if not all(math.isfinite(part) and 0 <= part <= 1 for part in fractions) or not math.isclose(sum(fractions), 1, abs_tol=1e-8):
+            raise RuntimeError(f'Ternary fractions must be bounded and sum to one: {fractions}')
+
+    def check_point(coords, fractions, axes):
+        expected = plot_point(fractions, axes)
+        if not all(math.isclose(actual, target, abs_tol=0.5) for actual, target in zip(coords, expected)):
+            raise RuntimeError(f'Ternary point {coords} should align with mixture {fractions}, expected {expected}')
+
+    async def measure():
+        values = await readout.evaluate(
+            "out => ['a', 'b', 'c', 'prediction', 'observed', 'id'].map(key => out.dataset[key])"
+        )
+        fractions = list(map(float, values[:3]))
+        check_fractions(fractions)
+        coords = await cursor.evaluate('mark => [Number(mark.getAttribute("cx")), Number(mark.getAttribute("cy"))]')
+        check_point(coords, fractions, await frame())
+        prediction = float(values[3]) if values[3] not in (None, '') else None
+        observed = float(values[4]) if values[4] not in (None, '') else None
+        return fractions, prediction, observed, values[5]
+
+    samples = await marks.evaluate_all("""marks => marks.map(mark => [
+      mark.dataset.id, ['a', 'b', 'c', 'value'].map(key => Number(mark.dataset[key])),
+      [mark.cx.baseVal.value, mark.cy.baseVal.value],
+    ])""")
+    if len(samples) < 3 or len(set(row[0] for row in samples)) != len(samples):
+        raise RuntimeError('The ternary plot needs distinct observation IDs')
+    for _, (a, b, c, value), coords in samples:
+        check_fractions([a, b, c])
+        check_point(coords, [a, b, c], magnified)
+        if not math.isfinite(value):
+            raise RuntimeError('A ternary observation must retain a finite recorded response')
+
+    default_parts, default_prediction, default_observed, default_id = await measure()
+    if (default_parts, default_observed, default_id) != ([0.30, 0.60, 0.10], 89.0, 'G30F60R10') or (
+        default_prediction is None or not math.isclose(default_prediction, 85.91666667, abs_tol=1e-6)
+    ):
+        raise RuntimeError(f'Unexpected initial measured mixture or fitted response: {default_id}, {default_parts}, {default_observed}, {default_prediction}')
+    for sample in [samples[0], samples[-1]]:
+        sample_id, (*expected_parts, expected_value), _ = sample
+        await observation.select_option(sample_id)
+        parts, prediction, observed, selected_id = await measure()
+        if selected_id != sample_id or parts != expected_parts or observed != expected_value:
+            raise RuntimeError(f'Choosing observation {sample_id} should show the exact recorded fractions and value')
+        if prediction is None or not math.isfinite(prediction):
+            raise RuntimeError(f'The observation {sample_id} should have a finite model response')
+    chosen = await measure()
+    await full_view.check()
+    full_axes = await frame()
+    if full_axes[4:] != [0, 0, 0, 1] or await measure() != chosen:
+        raise RuntimeError('The full simplex should preserve the selected mixture while changing the composition frame')
+    for component in ['Slag', 'Fly ash', 'Red mud']:
+        await expect(ternary.get_by_text(component, exact=True)).to_be_visible()
+
+    interior = [0.30, 0.55, 0.15]
+    exterior = [0.30, 0.45, 0.25]
+    raster = ternary.locator('image[data-ternary-surface]')
+    await expect(raster).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+    await check_ternary_raster(raster, [plot_point(parts, full_axes) for parts in [interior, exterior]])
+
+    async def check_custom(expected_parts, expected_prediction, tolerance=1e-8):
+        parts, prediction, observed, selected_id = await measure()
+        if any(abs(actual - expected) > tolerance for actual, expected in zip(parts, expected_parts)):
+            raise RuntimeError(f'Expected custom fractions {expected_parts}, observed {parts}')
+        if observed is not None or selected_id is not None:
+            raise RuntimeError('A custom composition must not identify an observed response')
+        if expected_prediction is None:
+            if prediction is not None:
+                raise RuntimeError(f'Expected no prediction outside the support, observed {prediction}')
+            await expect(readout).to_contain_text('Outside sampled region')
+        elif prediction is None or not math.isclose(prediction, expected_prediction, abs_tol=0.5 if tolerance > 1e-8 else 1e-6):
+            raise RuntimeError(f'Expected fitted strength {expected_prediction} MPa, observed {prediction}')
+
+    await slag.fill('30')
+    await ash.fill('55')
+    await check_custom(interior, 85.50970819)
+    await ash.press('ArrowRight')
+    stepped_parts, _, _, _ = await measure()
+    if not math.isclose(stepped_parts[1], 0.551, abs_tol=1e-8):
+        raise RuntimeError(f'Keyboard selection should move by 0.1 percentage point: {stepped_parts}')
+    await ash.fill('45')
+    await check_custom(exterior, None)
+    await slag.press('End')
+    await check_custom([1, 0, 0], None)
+
+    hit = ternary.locator('.ternary-pick')
+    await hit.scroll_into_view_if_needed()
+    point = await hit.evaluate("""(hit, [x, y]) => {
+      const box = hit.getBoundingClientRect()
+      const target = new DOMPoint(x, y).matrixTransform(hit.getScreenCTM())
+      return { x: target.x - box.left, y: target.y - box.top }
+    }""", plot_point(interior, full_axes))
+    if touch:
+        await hit.tap(position=point)
+    else:
+        await hit.click(position=point)
+    await check_custom(interior, 85.50970819, tolerance=0.01)
+
+    marker = ternary.locator('circle[data-ternary-observation][data-id="G30F60R10"]')
+    if touch:
+        await marker.tap()
+    else:
+        await marker.click()
+    if await measure() != (default_parts, default_prediction, default_observed, default_id):
+        raise RuntimeError('Clicking a measured mixture should restore its exact recorded and fitted response')
 
 
 async def check_native_scientific(plot, slug, touch):

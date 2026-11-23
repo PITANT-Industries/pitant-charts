@@ -8,11 +8,11 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 67 chart and tooltip families and all 356 public examples', () => {
+test('covers 68 chart and tooltip families and all 357 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()
-  assert.equal(catalog.length, 67)
+  assert.equal(catalog.length, 68)
   for (const family of catalog) {
     assert(!familyIds.has(family.id), `Duplicate family ${family.id}`)
     familyIds.add(family.id)
@@ -44,8 +44,9 @@ test('covers 67 chart and tooltip families and all 356 public examples', () => {
   assert.deepEqual(catalog.find((family) => family.id === 'fatigue-sn')?.examples.map((example) => example.id), ['fatigue-sn-measured'])
   assert.deepEqual(catalog.find((family) => family.id === 'crack-growth')?.examples.map((example) => example.id), ['crack-growth-fatigue'])
   assert.deepEqual(catalog.find((family) => family.id === 'binary-phase-diagram')?.examples.map((example) => example.id), ['binary-phase-diagram-ag-cu'])
-  assert.equal(ids.size, 356)
-  assert.equal(urls.size, 356)
+  assert.deepEqual(catalog.find((family) => family.id === 'ternary-mixture-map')?.examples.map((example) => example.id), ['ternary-mixture-response'])
+  assert.equal(ids.size, 357)
+  assert.equal(urls.size, 357)
 })
 
 test('documents every catalog family exactly once with practical guidance', async () => {
