@@ -31,6 +31,45 @@ test('covers 44 chart families and all 331 reference entries', () => {
   assert.equal(urls.size, 331)
 })
 
+test('documents every catalog family exactly once with practical guidance', async () => {
+  const paths = ['src/gallery/docs/cartesian.json', 'src/gallery/docs/specialized.json']
+  const sources = await Promise.all(paths.map(read))
+  const sections = ['summary', 'useWhen', 'data', 'reading']
+  const fields = new Set([...sections, 'notes'])
+  const documented = new Set()
+
+  for (const [index, source] of sources.entries()) {
+    const families = JSON.parse(source)
+    assert(
+      families && typeof families === 'object' && !Array.isArray(families),
+      `Invalid documentation map in ${paths[index]}`,
+    )
+
+    for (const [id, guide] of Object.entries(families)) {
+      assert(!documented.has(id), `Duplicate documentation for ${id}`)
+      documented.add(id)
+      assert(guide && typeof guide === 'object' && !Array.isArray(guide), `Invalid documentation for ${id}`)
+      assert.deepEqual(new Set(Object.keys(guide)), fields, `Unexpected fields for ${id}`)
+      for (const section of sections) {
+        assert(
+          typeof guide[section] === 'string' && guide[section].trim().length >= 24,
+          `Missing substantive ${section} for ${id}`,
+        )
+      }
+      assert(
+        Array.isArray(guide.notes) && guide.notes.length >= 1 && guide.notes.length <= 2,
+        `Expected one or two notes for ${id}`,
+      )
+      assert(
+        guide.notes.every((note) => typeof note === 'string' && note.trim().length >= 16),
+        `Missing substantive notes for ${id}`,
+      )
+    }
+  }
+
+  assert.deepEqual(documented, new Set(catalog.map((family) => family.id)))
+})
+
 test('each catalog family is routed to exactly one renderer group', () => {
   const groups = chartPreview.match(/export const rendererFamilies = \{([\s\S]+?)\} as const/)?.[1] ?? ''
   const mapped = Array.from(groups.matchAll(/'([^']+)'/g), (match) => match[1])

@@ -1,0 +1,218 @@
+{
+  "area": {
+    "summary": "A filled trace shows how a measurement changes across an ordered interval while keeping its baseline in view.",
+    "useWhen": "Track a volume or level over time, or give forecasts and reference ranges a distinct visual region.",
+    "data": "Supply ordered categories and nullable numeric series, or rows with a label and numeric value. Overlay examples use fields such as forecast, referenceLow, referenceHigh, and highlight.",
+    "reading": "Follow the upper edge for the measurement. Read patterned or shaded bands against their boundary labels and the vertical scale.",
+    "notes": [
+      "Complete increasing ISO dates use elapsed-time spacing in the detailed time-aware examples.",
+      "Set reference bounds and forecast boundaries explicitly when using these variants for your own data."
+    ]
+  },
+  "bar": {
+    "summary": "Bars make quantities comparable through their length from a common baseline.",
+    "useWhen": "Compare totals by product, machine, or shift. Use grouped bars for side-by-side series and stacked bars for contributions to a total.",
+    "data": "Supply categories with named numeric series or rows with label and value. A null sample is unavailable and zero remains a valid value.",
+    "reading": "Compare lengths using the same baseline. In signed stacks, compare positive and negative contributions on their respective sides of zero.",
+    "notes": [
+      "The detailed caller-data model covers all eleven examples.",
+      "Horizontal bars give long category names more room."
+    ]
+  },
+  "line": {
+    "summary": "A line connects ordered observations so direction, rate of change, and interruptions can be inspected.",
+    "useWhen": "Track temperature over a shift, compare multiple signals, or inspect excursions against a threshold.",
+    "data": "Supply categories and named nullable numeric series, or rows with label and value. Some variants use row fields such as low, high, threshold, goal, forecast, or events.",
+    "reading": "Check the time axis before interpreting slope. Inspect missing samples and use a brush or zoom when a dense trace obscures short excursions.",
+    "notes": [
+      "All 41 examples accept caller data. The Large Data example spaces readings by sample index even when labels are ISO dates.",
+      "The Fixed Scale example retains its 0–120 axis."
+    ]
+  },
+  "scatter": {
+    "summary": "A scatter plot places each observation at the intersection of two measurements.",
+    "useWhen": "Look for correlations, clusters, gaps, and outliers in paired readings such as pressure and flow.",
+    "data": "Supply rows with numeric x and y coordinates, with optional group and label. Supplied series use the sample position for x.",
+    "reading": "Read both axes together. In the Jitter example, the horizontal offset separates overlapping marks around their original position.",
+    "notes": [
+      "Most examples use a compatibility renderer with supplied coordinates. Large Data has a separate dense renderer that can show density at wide zoom levels."
+    ]
+  },
+  "candlestick": {
+    "summary": "Each candle summarizes an interval with its opening value, closing value, lowest reading, and highest reading.",
+    "useWhen": "Show how price or another sampled measure moved within consistent time intervals.",
+    "data": "Provide one row per interval with finite open, high, low, and close values. Use a date or category to label each interval.",
+    "reading": "The body spans open to close and the wick spans low to high. Check the color convention and the time interval before comparing candles.",
+    "notes": [
+      "A value-only series derives approximate candle bounds. Supply complete rows when actual highs and lows matter.",
+      "Range and Crosshair illustrate different ways to inspect the same four values."
+    ]
+  },
+  "composed": {
+    "summary": "A composed plot aligns different marks, such as bars and a line, along a shared horizontal axis.",
+    "useWhen": "Compare actuals with a target, or inspect price and volume for the same market interval.",
+    "data": "Supply aligned categories and series in the order used by the chosen example. Price Volume also reads open, high, low, close, and volume from rows.",
+    "reading": "Identify which marks belong to each series and check each vertical axis before comparing changes between measures.",
+    "notes": [
+      "Grouped and Stacked combine bars differently while keeping the overlaid trace.",
+      "Supply each required series explicitly because the compatibility input can retain fixture series if they are omitted."
+    ]
+  },
+  "live-line": {
+    "summary": "A live trace appends incoming measurements to a bounded history so the most recent activity stays in view.",
+    "useWhen": "Watch a changing signal such as a sensor reading or request rate while a process runs.",
+    "data": "Provide a stable liveStream with a subscribe function that returns cleanup. Send timestamped batches in nondecreasing Unix millisecond order. A reading may have a null value.",
+    "reading": "Check the time window and units. Pause the view to inspect an interval while new readings continue to be retained.",
+    "notes": [
+      "Capacity defaults to 4,096 readings.",
+      "Without a supplied stream or data, the gallery uses a simulated trace."
+    ]
+  },
+  "gantt": {
+    "summary": "Horizontal task bars show scheduled start and end dates, and connectors show which work depends on other tasks.",
+    "useWhen": "Plan a build, deployment, or maintenance window with overlapping work and handoffs.",
+    "data": "Supply named task rows with numeric day offsets or ISO calendar dates for start and end. Use dependencies for multiple predecessors and progressPercent for completion percentages.",
+    "reading": "Read duration across the timeline and follow the direction of dependency connectors. Milestones represent specific dates.",
+    "notes": [
+      "Use one date convention for a schedule and give tasks stable IDs when using named dependencies.",
+      "Phase rows can group related tasks and label their timeline bands."
+    ]
+  },
+  "waterfall": {
+    "summary": "Floating bars show how successive gains and losses move a running balance from an opening point to a closing value.",
+    "useWhen": "Explain a budget bridge, cash-flow change, or the drivers of a difference between two totals.",
+    "data": "Supply one numeric series of ordered changes. Aligned rows can mark checkpoints with total or subtotal set to true.",
+    "reading": "Read the endpoints for the running balance and the bar lengths for individual changes. A total bar reads from the baseline.",
+    "notes": [
+      "The detailed gallery view uses fixtures. Check the compatibility plot's scale and number formatting with your own values."
+    ]
+  },
+  "lollipop": {
+    "summary": "A stem and end marker encode a single magnitude for each category with a small visual footprint.",
+    "useWhen": "Compare a list of categories where direct labels and the exact endpoints are helpful.",
+    "data": "Provide categories and one numeric series. Supply precomputed signed differences in percentage points for the Change example.",
+    "reading": "Compare the end markers to the common baseline. Use horizontal orientation when labels need more space.",
+    "notes": [
+      "The detailed gallery rendering uses fixtures. Check the supplied-data view for the selected variant."
+    ]
+  },
+  "dumbbell": {
+    "summary": "Two markers and the line between them show a paired comparison for each category.",
+    "useWhen": "Compare before and after readings, two versions, or actual and target values for the same items.",
+    "data": "Supply categories and two aligned numeric series in the order the endpoints should be read. The compatibility plot draws pairs with two finite values.",
+    "reading": "The markers are the two measurements and the span is their difference. Use the legend to identify the starting and ending values.",
+    "notes": [
+      "Some supplied-data variants retain units and scale conventions from their gallery example."
+    ]
+  },
+  "uncertainty": {
+    "summary": "Intervals around a point estimate show how much uncertainty surrounds a measurement or prediction.",
+    "useWhen": "Compare effects with a forest plot or show upper and lower bounds around a forecast.",
+    "data": "Supply estimates as rows with value, low, and high, plus an optional label. Ribbon examples can also read innerLow and innerHigh.",
+    "reading": "Read the estimate at the center and the uncertainty at the interval endpoints. In a forest plot, check which intervals cross the reference line.",
+    "notes": [
+      "Compute the bounds upstream and specify what confidence or coverage they represent.",
+      "Detailed gallery variants use fixture layouts. Confirm the compatibility view with your own bounds."
+    ]
+  },
+  "bump": {
+    "summary": "A bump chart follows each item's rank across successive periods.",
+    "useWhen": "Show which teams, products, or metrics moved up or down a leaderboard over time.",
+    "data": "Supply period categories and one numeric series per item. The compatibility plot derives ranks from the values at each period.",
+    "reading": "Read positions as ranks. Use the individual values to judge the size of a change between periods.",
+    "notes": [
+      "Use the Ascending example when a smaller value should rank ahead of a larger one.",
+      "The detailed leaderboard layout uses fixtures."
+    ]
+  },
+  "slope": {
+    "summary": "Lines between two endpoints show the direction and size of change for each item.",
+    "useWhen": "Compare two meaningful snapshots, such as latency before and after a rollout.",
+    "data": "Supply two ordered categories and one aligned numeric series per item. Use consistent units for the two values.",
+    "reading": "Read the labeled endpoint values and follow the line for direction. Crossings show changes in relative order.",
+    "notes": [
+      "The Response Time example treats a decrease as an improvement.",
+      "The detailed endpoint layout uses fixtures. Confirm label and unit handling with supplied values."
+    ]
+  },
+  "sparkline": {
+    "summary": "A compact trace places a short history beside a headline metric, table row, or small multiple.",
+    "useWhen": "Show recent direction and volatility where a full chart would take attention away from the primary number.",
+    "data": "Provide ordered categories and named numeric series. Use null for missing readings. The Stat Card example can read rows.previous for a prior-period comparison.",
+    "reading": "Look at direction, gaps, and the latest value. Use a larger plot with an explicit scale when you need exact comparisons.",
+    "notes": [
+      "Synced links sample inspection across multiple traces.",
+      "Range lets the reader narrow the visible history."
+    ]
+  },
+  "heatmap": {
+    "summary": "A calendar heatmap shows how the intensity of a daily measure changes across weeks and months.",
+    "useWhen": "Find recurring activity, quiet periods, and unusually busy days in a count or other nonnegative measure.",
+    "data": "Provide dated rows with date and value, or a numeric series aligned to date categories. The chart sums repeated dates into UTC days.",
+    "reading": "Read the weekday and month for position, then use the legend for intensity. Inspect a cell for its exact date and value.",
+    "notes": [
+      "Negative values are clamped to zero for this calendar model.",
+      "The Scroll example keeps weekday labels visible while moving through the calendar."
+    ]
+  },
+  "diverging": {
+    "summary": "A diverging stack lays opposing responses on either side of a common center.",
+    "useWhen": "Compare the distribution of answers to survey questions that share the same ordered response scale.",
+    "data": "Supply one category per question and one numeric series per response level in scale order. The compatibility plot recognizes a series named Neutral.",
+    "reading": "Compare the shares on either side of the center and check the count behind each percentage in the inspection panel.",
+    "notes": [
+      "The chart normalizes nonnegative counts within each category and splits Neutral across the center when present.",
+      "The detailed survey layout uses fixtures."
+    ]
+  },
+  "stream": {
+    "summary": "A streamgraph uses stacked bands to show changing composition across a sequence.",
+    "useWhen": "Look for the rise and fall of multiple contributors such as traffic sources or production lines.",
+    "data": "Supply ordered categories and numeric series. Missing readings count as zero in the stack and appear as a dash in inspection.",
+    "reading": "Read a band's thickness for its contribution. The moving baseline in the Default view serves the layout. Expand shows each category as 100%.",
+    "notes": [
+      "Use nonnegative quantities when comparing shares in Expand.",
+      "Default and Loading use D3 inside-out order and wiggle stacking."
+    ]
+  },
+  "histogram": {
+    "summary": "A histogram counts how many observations fall within each interval of a numeric scale.",
+    "useWhen": "Find common ranges, tails, or possible groups in measurements such as cycle times.",
+    "data": "Provide raw numeric samples by series or rows with value and an optional group. The compatibility renderer chooses bins across the supplied range.",
+    "reading": "Read the horizontal interval and its vertical frequency. Check the bin widths and group sizes before comparing shapes.",
+    "notes": [
+      "Overlay retains separate series. Stacked shows their combined frequency per interval.",
+      "The gallery uses detailed fixtures for its distribution examples."
+    ]
+  },
+  "ridgeline": {
+    "summary": "Overlapping density curves compare the shapes of several numeric distributions on one horizontal scale.",
+    "useWhen": "Compare where measurements cluster across months, regions, or equipment groups.",
+    "data": "Supply numeric samples per group with series, or rows with value and an optional group. Each group produces its own estimated curve.",
+    "reading": "Compare the location, spread, and number of peaks. Interpret the smooth curve as an estimate of density.",
+    "notes": [
+      "Use the same measurement units across groups.",
+      "The gallery examples use fixture-specific layouts and readouts."
+    ]
+  },
+  "ecdf": {
+    "summary": "An empirical cumulative distribution shows the fraction of observations at or below each value.",
+    "useWhen": "Compare service levels, percentiles, or the share of jobs that meet a time target.",
+    "data": "Supply raw numeric samples per series, or rows with value and an optional group. The compatibility plot sorts the samples before calculating cumulative shares.",
+    "reading": "At a chosen value, read up to the curve to find the share that meets it. Read across from a percentile to find its measured threshold.",
+    "notes": [
+      "Large steps can indicate repeated values.",
+      "The detailed Compare demo shows two distributions over a common scale."
+    ]
+  },
+  "beeswarm": {
+    "summary": "A beeswarm keeps each observation visible by spreading nearby points along a secondary direction.",
+    "useWhen": "Show cluster density and outliers while retaining the individual readings within each group.",
+    "data": "Supply raw numeric samples per series, or rows with value and an optional group. The renderer positions markers from those samples.",
+    "reading": "Read value along the measurement axis. The perpendicular spread separates marks and helps show where observations concentrate.",
+    "notes": [
+      "The Vertical example rotates the measurement axis.",
+      "The detailed gallery uses fixture rendering. Check layout and overlap with your own sample count."
+    ]
+  }
+}

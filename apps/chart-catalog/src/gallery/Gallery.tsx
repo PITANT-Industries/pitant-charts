@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useRef, useState } from 'react'
-import type { FormEvent, ReactNode } from 'react'
+import type { FormEvent, MouseEvent, ReactNode } from 'react'
 import { Button } from '@ui-sdk/react/button'
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '@ui-sdk/react/collapsible'
 import { Drawer, DrawerBackdrop, DrawerClose, DrawerContent, DrawerTitle, DrawerTrigger } from '@ui-sdk/react/drawer'
@@ -7,14 +7,16 @@ import { createInputController, Input } from '@ui-sdk/react/input'
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@ui-sdk/react/tabs'
 import { Toggle } from '@ui-sdk/react/toggle'
 import {
-  ArrowDown, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, Check, ChevronLeft, ChevronRight,
-  ClipboardCheck, Columns2, Code2, Copy, ExternalLink, Grid2X2, List, Menu, Moon, Palette, Search, Sun, X,
+  ArrowDown, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, BookOpen, ChevronLeft, ChevronRight,
+  ClipboardCheck, Columns2, Code2, ExternalLink, Grid2X2, List, Menu, Moon, Palette, Search, Sun, X,
 } from 'lucide-react'
 import { examples, galleryOrder, getExample, getFamily, getGroupForFamily, groups } from '../catalog'
 import { ChartPreview } from '../charts/ChartPreview'
 import type { ChartExample } from '../types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Choices } from '../ui/Choices'
+import { ExampleCode, repositoryUrl } from './ExampleCode'
+import { ExampleNotes, FamilyDocumentation } from './FamilyDocumentation'
 import { groupIcons, HeroChart } from './Visuals'
 import { FamilySelect } from './FamilySelect'
 import { notedCount, ParityOverview, parityNotes } from './ParityOverview'
@@ -26,8 +28,6 @@ import pitantWordmarkWhite from './brand/pitant-wordmark-white.svg'
 
 const pageSize = 12
 const referenceUrl = 'https://www.shadcn.io/charts'
-const repositoryUrl = 'https://github.com/PITANT-Industries/pitant-charts'
-const guideUrl = `${repositoryUrl}/blob/main/apps/chart-catalog/README.md#use-the-react-library`
 const popularFamilies = [
   { id: 'area', label: 'Area' },
   { id: 'bar', label: 'Bar' },
@@ -57,24 +57,27 @@ function usePreference<T>(key: string, fallback: T) {
   return [value, setValue] as const
 }
 
-type ExampleTab = 'preview' | 'compare' | 'code'
-type GalleryLink = { group: string; family: string; example: string; review: ParityFilter | null; tab: ExampleTab }
+type ExampleTab = 'preview' | 'compare' | 'code' | 'notes'
+type GalleryLink = { group: string; family: string; example: string; review: ParityFilter | null; tab: ExampleTab; docs?: string }
 
 function getLinkState(): GalleryLink {
   const params = new URLSearchParams(window.location.hash.slice(1))
   const requestedGroup = params.get('category') ?? 'all'
   const group = groups.some((entry) => entry.id === requestedGroup) ? requestedGroup : 'all'
   const family = getFamily(params.get('family') ?? '')?.id ?? 'all'
-  const example = getExample(params.get('example') ?? '')?.id ?? ''
+  const docs = getFamily(params.get('docs') ?? '')?.id
+  const selectedExample = getExample(params.get('example') ?? '')
+  const example = selectedExample && (!docs || docs === selectedExample.family) ? selectedExample.id : ''
   const review = params.get('review')
   const tab = params.get('view')
-  return { group: family === 'all' ? group : getGroupForFamily(family)?.id ?? 'all', family, example,
-    review: review === 'all' || review === 'documented' || review === 'measured' || review === 'pending' ? review : null,
-    tab: example && (tab === 'compare' || tab === 'code') ? tab : 'preview' }
+  return { group: family === 'all' ? group : getGroupForFamily(family)?.id ?? 'all', family, example, docs,
+    review: !docs && (review === 'all' || review === 'documented' || review === 'measured' || review === 'pending') ? review : null,
+    tab: example && (tab === 'compare' || tab === 'code' || tab === 'notes') ? tab : 'preview' }
 }
 
-function writeLink({ group, family, example, review, tab }: GalleryLink, push = false) {
+function writeLink({ group, family, example, review, tab, docs }: GalleryLink, push = false) {
   const params = new URLSearchParams()
+  if (docs) params.set('docs', docs)
   if (group !== 'all') params.set('category', group)
   if (family !== 'all') params.set('family', family)
   if (example) {
@@ -85,6 +88,12 @@ function writeLink({ group, family, example, review, tab }: GalleryLink, push = 
   const target = `${window.location.pathname}${window.location.search}${params.size ? `#${params}` : ''}`
   if (push) history.pushState(null, '', target)
   else history.replaceState(null, '', target)
+}
+
+function followLink(event: MouseEvent<HTMLAnchorElement>, action: () => void) {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+  event.preventDefault()
+  action()
 }
 
 function VisibleChart({ example }: { example: ChartExample }) {
@@ -105,12 +114,13 @@ function VisibleChart({ example }: { example: ChartExample }) {
   return <div className="card-plot" ref={host}>{visible && <ChartPreview example={example} compact />}</div>
 }
 
-function ExampleCard({ example, saved, review, onOpen, onShowCode, onSave }: {
+function ExampleCard({ example, saved, review, onOpen, onShowCode, onDocumentation, onSave }: {
   example: ChartExample
   saved: boolean
   review: boolean
   onOpen: () => void
   onShowCode: () => void
+  onDocumentation: () => void
   onSave: () => void
 }) {
   const family = getFamily(example.family)
@@ -127,17 +137,22 @@ function ExampleCard({ example, saved, review, onOpen, onShowCode, onSave }: {
       <div className="example-footer">
         <span>{example.label}</span>
         {review && <small className="example-review-state">{parityNotes[example.id] ? 'Notes available' : 'Awaiting notes'}</small>}
-        <ViewCodeButton example={example} onClick={onShowCode} />
+        <ExampleActions example={example} onShowCode={onShowCode} onDocumentation={onDocumentation} />
       </div>
     </Card>
   )
 }
 
-function ViewCodeButton({ example, onClick }: { example: ChartExample; onClick: () => void }) {
+function ExampleActions({ example, onShowCode, onDocumentation }: { example: ChartExample; onShowCode: () => void; onDocumentation: () => void }) {
   return (
-    <Button className="card-code" aria-label={`View code for ${example.title}`} onClick={onClick}>
-      <Code2 size={15} aria-hidden="true" /> View code
-    </Button>
+    <div className="card-actions">
+      <a className="card-code" href={`#docs=${example.family}`} aria-label={`Documentation for ${example.title}`} onClick={(event) => followLink(event, onDocumentation)}>
+        <BookOpen size={14} aria-hidden="true" /> Docs
+      </a>
+      <Button className="card-code" aria-label={`View code for ${example.title}`} onClick={onShowCode}>
+        <Code2 size={15} aria-hidden="true" /> View code
+      </Button>
+    </div>
   )
 }
 
@@ -202,35 +217,14 @@ function ReferenceComparison({ example, theme }: { example: ChartExample; theme:
   )
 }
 
-function ExampleDetail({ example, theme, tab, onTab, saved, onSave, onClose, onExample }: { example: ChartExample; theme: 'light' | 'dark'; tab: ExampleTab; onTab: (tab: ExampleTab) => void; saved: boolean; onSave: () => void; onClose: () => void; onExample: (id: string) => void }) {
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'selected'>('idle')
-  const code = useRef<HTMLElement>(null)
+function ExampleDetail({ example, theme, tab, onTab, saved, onSave, onClose, onExample, onDocumentation }: {
+  example: ChartExample; theme: 'light' | 'dark'; tab: ExampleTab; onTab: (tab: ExampleTab) => void;
+  saved: boolean; onSave: () => void; onClose: () => void; onExample: (id: string) => void; onDocumentation: () => void;
+}) {
   const family = getFamily(example.family)
   const list = family?.examples ?? []
   const previous = list[example.position - 2]
   const next = list[example.position]
-  const snippet = `import { ChartPreview, getExample } from '@pitant/chart-catalog'\nimport '@pitant/chart-catalog/styles.css'\n\nexport function Example() {\n  const example = getExample('${example.id}')\n  if (!example) return null\n\n  return (\n    <div style={{ height: 320 }}>\n      <ChartPreview example={example} />\n    </div>\n  )\n}`
-  useEffect(() => {
-    if (copyStatus === 'idle') return
-    const timeout = window.setTimeout(() => setCopyStatus('idle'), copyStatus === 'copied' ? 1800 : 6000)
-    return () => window.clearTimeout(timeout)
-  }, [copyStatus])
-
-  async function copyCode() {
-    try {
-      await navigator.clipboard.writeText(snippet)
-      setCopyStatus('copied')
-    } catch {
-      const selection = window.getSelection()
-      if (!selection || !code.current) return
-      const range = document.createRange()
-      range.selectNodeContents(code.current)
-      selection.removeAllRanges()
-      selection.addRange(range)
-      setCopyStatus('selected')
-    }
-  }
-
   return (
     <Modal onClose={onClose} labelledBy="example-detail-title" wide={tab === 'compare'}>
       <div className="detail-header">
@@ -243,26 +237,20 @@ function ExampleDetail({ example, theme, tab, onTab, saved, onSave, onClose, onE
             <TabsTab value="preview"><Grid2X2 size={15} aria-hidden="true" /> Preview</TabsTab>
             <TabsTab value="compare"><Columns2 size={15} aria-hidden="true" /> Compare</TabsTab>
             <TabsTab value="code"><Code2 size={16} aria-hidden="true" /> Code</TabsTab>
+            <TabsTab value="notes"><BookOpen size={15} aria-hidden="true" /> Notes</TabsTab>
           </TabsList>
           <Toggle className="text-button" aria-label="Save example" pressed={saved} onPressedChange={onSave}><Bookmark size={16} aria-hidden="true" /><span aria-hidden="true">{saved ? 'Saved' : 'Save'}</span></Toggle>
         </div>
         <TabsPanel value="preview"><div className="detail-plot"><ChartPreview key={example.id} example={example} /></div></TabsPanel>
         <TabsPanel value="compare"><ReferenceComparison example={example} theme={theme} /></TabsPanel>
-        <TabsPanel value="code"><div className="snippet">
-          <div className="snippet-header">
-            <span>React</span>
-            <Button className="text-button" onClick={() => void copyCode()}>
-              {copyStatus === 'copied' ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
-              {copyStatus === 'copied' ? 'Copied' : 'Copy code'}
-            </Button>
-          </div>
-          <p className="code-context">Build the catalog package from source to use this example. <a href={guideUrl}>Integration guide</a></p>
-          <pre><code ref={code}>{snippet}</code></pre>
-          {copyStatus === 'selected' && <p className="code-context" role="status">Code selected. Use your keyboard shortcut to copy it.</p>}
-        </div></TabsPanel>
+        <TabsPanel value="code"><ExampleCode example={example} /></TabsPanel>
+        <TabsPanel value="notes"><ExampleNotes example={example} /></TabsPanel>
       </Tabs>
       <div className="detail-footer">
-        <a href={example.url} target="_blank" rel="noreferrer">Reference preview <ExternalLink size={14} /></a>
+        <div className="detail-links">
+          <a href={`#docs=${example.family}`} onClick={(event) => followLink(event, onDocumentation)}>Chart documentation <BookOpen size={14} aria-hidden="true" /></a>
+          <a href={example.url} target="_blank" rel="noreferrer">Reference preview <ExternalLink size={14} aria-hidden="true" /></a>
+        </div>
         <div className="detail-pagination">
           <Button className="icon-button" disabled={!previous} aria-label="Previous variant" onClick={() => previous && onExample(previous.id)}><ChevronLeft size={19} aria-hidden="true" /></Button>
           <Button className="icon-button" disabled={!next} aria-label="Next variant" onClick={() => next && onExample(next.id)}><ChevronRight size={19} aria-hidden="true" /></Button>
@@ -320,6 +308,10 @@ export function Gallery() {
   const savedIds = new Set(Array.isArray(saved) ? saved : [])
   const selectedGroup = groups.find((group) => group.id === link.group)
   const selectedFamily = getFamily(link.family)
+  const documentedFamily = getFamily(link.docs ?? '')
+  useEffect(() => {
+    document.title = documentedFamily ? `${documentedFamily.name} | PITANT Charts` : 'PITANT Charts'
+  }, [documentedFamily])
   const detail = getExample(link.example)
   const available = selectedFamily ? selectedFamily.examples : galleryOrder
   const filtered = available.filter((example) => {
@@ -352,6 +344,18 @@ export function Gallery() {
     writeLink(next, !link.example && Boolean(id))
   }
 
+  function showDocumentation(family: string) {
+    if (link.docs === family && !link.example) return
+    const next: GalleryLink = { docs: family, group: 'all', family: 'all', example: '', review: null, tab: 'preview' }
+    setLink(next)
+    setShowSaved(false)
+    setPage(1)
+    setNavigationOpen(false)
+    writeLink(next, true)
+    window.scrollTo(0, 0)
+    requestAnimationFrame(() => document.getElementById('family-docs-title')?.focus({ preventScroll: true }))
+  }
+
   function showTab(tab: ExampleTab) {
     const next = { ...link, tab }
     setLink(next)
@@ -380,11 +384,32 @@ export function Gallery() {
     choose('all')
   }
 
+  function browseCatalog() {
+    reset()
+    window.scrollTo(0, 0)
+  }
+
   function categoryNavigation() {
+    if (documentedFamily) return (
+      <nav className="documentation-nav" aria-label="Chart documentation">
+        <a className="documentation-entry" href="#" onClick={(event) => followLink(event, browseCatalog)}><ArrowLeft size={15} aria-hidden="true" /> Browse charts</a>
+        {groups.map((group) => (
+          <div key={group.id}>
+            <h2>{group.name}</h2>
+            {group.families.map((id) => (
+              <a key={id} href={`#docs=${id}`} aria-current={id === link.docs ? 'page' : undefined} onClick={(event) => followLink(event, () => showDocumentation(id))}>
+                {getFamily(id)?.name}
+              </a>
+            ))}
+          </div>
+        ))}
+      </nav>
+    )
     return <>
       <nav aria-label="Chart categories">
         <h2>Browse</h2>
         <Button aria-current={link.group === 'all' && !showSaved && !link.review ? 'page' : undefined} onClick={() => choose('all')}><Grid2X2 size={16} aria-hidden="true" /> <span>All charts</span> <small>{examples.length}</small></Button>
+        <a className="documentation-entry" href="#docs=area" onClick={(event) => followLink(event, () => showDocumentation('area'))}><BookOpen size={16} aria-hidden="true" /> <span>Documentation</span></a>
         <Button aria-current={showSaved ? 'page' : undefined} onClick={() => choose('all', 'all', true)}><Bookmark size={16} aria-hidden="true" /> <span>Saved</span> <small>{savedIds.size}</small></Button>
         <Button aria-current={link.review ? 'page' : undefined} onClick={() => choose('all', 'all', false, 'all')}><ClipboardCheck size={16} aria-hidden="true" /> <span>Parity review</span> <small>{notedCount}</small></Button>
         <h2>Categories</h2>
@@ -401,18 +426,18 @@ export function Gallery() {
 
   return (
     <div className="gallery-app">
-      <a className="skip-link" href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content')?.focus() }}>Skip to chart catalog</a>
+      <a className="skip-link" href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content')?.focus() }}>{documentedFamily ? 'Skip to documentation' : 'Skip to chart catalog'}</a>
       <header className="site-header">
         <div className="site-header-inner">
           <Drawer side="start" open={navigationOpen} onOpenChange={setNavigationOpen}>
-            <DrawerTrigger className="icon-button mobile-menu" aria-label="Open chart categories"><Menu size={21} aria-hidden="true" /></DrawerTrigger>
+            <DrawerTrigger className="icon-button mobile-menu" aria-label={documentedFamily ? 'Open chart documentation' : 'Open chart categories'}><Menu size={21} aria-hidden="true" /></DrawerTrigger>
             <DrawerBackdrop className="nav-backdrop" />
             <DrawerContent className="nav-drawer" initialFocus="content">
-              <div className="nav-drawer-header"><DrawerTitle>Chart categories</DrawerTitle><DrawerClose className="icon-button" aria-label="Close chart categories"><X size={18} aria-hidden="true" /></DrawerClose></div>
+              <div className="nav-drawer-header"><DrawerTitle>{documentedFamily ? 'Chart documentation' : 'Chart categories'}</DrawerTitle><DrawerClose className="icon-button" aria-label={documentedFamily ? 'Close chart documentation' : 'Close chart categories'}><X size={18} aria-hidden="true" /></DrawerClose></div>
               <div data-drawer-no-drag="">{categoryNavigation()}</div>
             </DrawerContent>
           </Drawer>
-          <a href="#" className="brand" aria-label="PITANT Charts home" onClick={(event) => { event.preventDefault(); reset(); window.scrollTo(0, 0) }}>
+          <a href="#" className="brand" aria-label="PITANT Charts home" onClick={(event) => followLink(event, browseCatalog)}>
             <img className="brand-mark" src={pitantMark} alt="" width="23" height="17" />
             <img className="brand-wordmark brand-wordmark-light" src={pitantWordmark} alt="" width="77" height="29" />
             <img className="brand-wordmark brand-wordmark-dark" src={pitantWordmarkWhite} alt="" width="77" height="29" />
@@ -431,13 +456,13 @@ export function Gallery() {
         </div>
       </header>
       <main id="main-content" tabIndex={-1}>
-        {!link.review && <section className="hero" aria-labelledby="page-title">
+        {!link.review && !documentedFamily && <section className="hero" aria-labelledby="page-title">
           <div className="hero-copy">
             <h1 id="page-title">PITANT Charts</h1>
             <p className="hero-intro">Interactive React charts for time series, comparisons, maps, and dashboards. Browse {examples.length} examples and see how each one works.</p>
             <div className="hero-actions">
               <a className="primary-button" href="#catalog" onClick={(event) => { event.preventDefault(); results.current?.scrollIntoView({ block: 'start' }); searchField.current?.focus({ preventScroll: true }) }}>Browse charts <ArrowDown size={16} aria-hidden="true" /></a>
-              <a className="secondary-button" href={guideUrl}>Integration guide <ArrowUpRight size={16} aria-hidden="true" /></a>
+              <a className="secondary-button" href="#docs=area" onClick={(event) => followLink(event, () => showDocumentation('area'))}>Documentation <BookOpen size={16} aria-hidden="true" /></a>
             </div>
           </div>
           <HeroChart />
@@ -445,6 +470,7 @@ export function Gallery() {
         <div className="workspace">
           <aside className="sidebar">{categoryNavigation()}</aside>
           <div className="gallery-main">
+            {documentedFamily ? <FamilyDocumentation key={documentedFamily.id} family={documentedFamily} onOpenExample={showExample} /> : <>
             {link.review && <ParityOverview filter={link.review} onFilter={(filter) => choose(link.group, link.family, false, filter)} onFamily={(group, family) => { choose(group, family, false, link.review); results.current?.scrollIntoView({ block: 'start' }) }} />}
             {!link.review && !showSaved && <nav className="family-rail" aria-label="Popular chart families">
               {popularFamilies.map(({ id, label }) => (
@@ -472,6 +498,7 @@ export function Gallery() {
                       review={Boolean(link.review)}
                       onOpen={() => showExample(example.id)}
                       onShowCode={() => showExample(example.id, 'code')}
+                      onDocumentation={() => showDocumentation(example.family)}
                       onSave={() => toggleSaved(example.id)}
                     />
                   ))}
@@ -483,7 +510,7 @@ export function Gallery() {
                       <Button className="list-main" aria-label={`Open ${example.title}`} onClick={() => showExample(example.id)}>
                         <span>{example.title}</span><small>{getFamily(example.family)?.name}</small><ArrowUpRight size={17} aria-hidden="true" />
                       </Button>
-                      <ViewCodeButton example={example} onClick={() => showExample(example.id, 'code')} />
+                      <ExampleActions example={example} onShowCode={() => showExample(example.id, 'code')} onDocumentation={() => showDocumentation(example.family)} />
                       <Toggle className="icon-button bookmark-button" aria-label={`Save ${example.title}`} pressed={savedIds.has(example.id)} onPressedChange={() => toggleSaved(example.id)}>
                         <Bookmark size={17} aria-hidden="true" />
                       </Toggle>
@@ -495,10 +522,11 @@ export function Gallery() {
               )}
               {pages > 1 && <nav className="pagination" aria-label="Catalog pages"><Button className="text-button" disabled={currentPage <= 1} onClick={() => setResultPage(currentPage - 1)}><ArrowLeft size={15} aria-hidden="true" /> Previous</Button><span>Page {currentPage} of {pages}</span><Button className="text-button" disabled={currentPage >= pages} onClick={() => setResultPage(currentPage + 1)}>Next <ArrowRight size={15} aria-hidden="true" /></Button></nav>}
             </section>
+            </>}
           </div>
         </div>
       </main>
-      {detail && <ExampleDetail example={detail} theme={theme} tab={link.tab} onTab={showTab} saved={savedIds.has(detail.id)} onSave={() => toggleSaved(detail.id)} onClose={() => showExample('')} onExample={showExample} />}
+      {detail && <ExampleDetail example={detail} theme={theme} tab={link.tab} onTab={showTab} saved={savedIds.has(detail.id)} onSave={() => toggleSaved(detail.id)} onClose={() => showExample('')} onExample={showExample} onDocumentation={() => showDocumentation(detail.family)} />}
     </div>
   )
 }

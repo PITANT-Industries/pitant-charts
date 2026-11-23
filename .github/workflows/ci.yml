@@ -88,13 +88,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             browser: chromium
             install-browser: chromium
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             browser: firefox
             install-browser: firefox
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             browser: webkit
             install-browser: webkit
           - os: windows-latest
