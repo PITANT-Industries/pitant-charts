@@ -1,0 +1,191 @@
+.digital-eye {
+  display: grid;
+  gap: .8rem;
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+}
+
+.digital-eye[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.digital-eye),
+.detail-plot:has(.digital-eye) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.eye-plot {
+  block-size: clamp(15rem, 45cqw, 22rem);
+}
+
+.digital-eye[data-compact='true'] .eye-plot {
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.eye-channel {
+  display: grid;
+  justify-self: start;
+  gap: .22rem;
+  font-size: .8rem;
+}
+
+.eye-channel select {
+  min-block-size: 2.3rem;
+  max-inline-size: 100%;
+  padding-inline: .5rem;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .3rem;
+  background: var(--gallery-surface, var(--card));
+  color: inherit;
+  font: inherit;
+}
+
+.eye-trace {
+  fill: none;
+  stroke: #1f5b91;
+  stroke-width: .9px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.eye-threshold {
+  stroke: #767f89;
+}
+
+.eye-sampling-line {
+  stroke: #2f3a44;
+}
+
+.eye-opening,
+.eye-crossing-spread {
+  fill: none;
+  stroke-width: 1.4px;
+}
+
+.eye-opening {
+  stroke: #235c8a;
+}
+
+.eye-crossing-spread {
+  stroke: #934316;
+}
+
+.eye-plot-pick {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.eye-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem .85rem;
+  margin: -.2rem 0 .1rem;
+  padding: 0;
+  list-style: none;
+  font-size: .75rem;
+}
+
+.eye-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.eye-legend li::before {
+  content: '';
+  display: block;
+  inline-size: .9rem;
+  border-block-start: 1px dashed currentColor;
+}
+
+.eye-legend .eye-key-opening::before,
+.eye-legend .eye-key-crossings::before {
+  content: '↕';
+  inline-size: auto;
+  border: 0;
+}
+
+.eye-legend .eye-key-crossings::before {
+  content: '↔';
+}
+
+.eye-inspect {
+  display: grid;
+  gap: .75rem;
+  min-inline-size: 0;
+}
+
+.eye-inspect output {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .6rem;
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.eye-inspect output span {
+  display: grid;
+  align-content: start;
+  gap: .18rem;
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+.eye-inspect output strong {
+  color: var(--gallery-ink, var(--foreground));
+  font-size: .95rem;
+}
+
+.eye-inspect label {
+  display: grid;
+  gap: .2rem;
+  min-inline-size: 0;
+  font-size: .8rem;
+}
+
+.eye-inspect label > span {
+  display: flex;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.eye-inspect label > span span {
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-variant-numeric: tabular-nums;
+}
+
+.eye-inspect input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 1.7rem;
+  margin: 0;
+  accent-color: var(--gallery-accent, var(--primary));
+}
+
+.eye-caption {
+  border-block-start: 1px solid var(--gallery-rule, var(--border));
+  padding-block-start: .6rem;
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.eye-caption p {
+  margin: .2rem 0 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+.eye-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+@container (max-width: 21rem) {
+  .eye-inspect output {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

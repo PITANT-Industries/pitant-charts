@@ -171,6 +171,29 @@
       { "label": "SciPy, Hilbert transform and amplitude envelope", "href": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.hilbert.html" }
     ]
   },
+  "eye-diagram": {
+    "summary": "Overlay symbol intervals to compare voltage margin, crossing jitter, and overshoot in a binary signal.",
+    "useWhen": "Explore where to sample an NRZ signal or compare how channel impairments affect the eye opening.",
+    "data": "Supply strictly increasing time samples in unit intervals (UI), spanning at least 0 to 1 UI, and a positive symbol rate in baud. Each run supplies a unique id, a label, nominal low and high voltage levels in mV, and folded traces whose voltages align to timeUi. For each trace, previousBit labels the bit before 0 UI and bit labels the bit in the central interval.",
+    "reading": "Choose a Channel and use Sampling phase to move the sampling line through the central symbol interval. The eye height updates at the selected phase, which starts at 0.5 UI. The crossing bracket spans the fifth to 95th percentiles of crossing times near the leading symbol boundary.",
+    "notes": [
+      "Each channel simulates one full 127-symbol PRBS7 period at 1 Gbaud with nominal levels of −400 and 400 mV. The 127 folds span −0.5 to 1.5 UI at 64 samples per UI against an ideal clock. At this symbol rate, 1 UI is 1,000 ps.",
+      "The reference channel uses a critically damped second-order response. The impaired channel has lower damping, with 24% of the response delayed by 0.58 UI, larger timing offsets, and more voltage noise. Both channels use periodic and seeded random timing offsets.",
+      "At the selected phase the chart linearly interpolates each trace between sampled voltages. Eye height is the fifth percentile of high-bit voltages minus the 95th percentile of low-bit voltages. A negative height means the two percentile bounds overlap.",
+      "Crossing jitter uses traces with a bit change. For each trace, use the same-direction crossing of the nominal rail midpoint closest to 0 UI within ±0.35 UI, found by linear interpolation. Include only traces with a crossing in that window. RMS jitter is the population root mean square of those crossing times after subtracting their mean, converted to picoseconds using the symbol rate.",
+      "Overshoot reports the greatest excursion above the high rail or below the low rail across the folded traces, as a percentage of the nominal full swing. The lower-rail excursion is undershoot.",
+      "At 0.5 UI the reference and impaired eye heights are about 795 and 364 mV, respectively. The simulations give about 3.5 and 39.6 ps RMS crossing jitter and 0.49% and 8.51% overshoot."
+    ],
+    "properties": [
+      { "name": "data", "type": "EyeDiagramData", "description": "Required. Supply timeUi, symbolRateBaud, and runs. Each run has levelsMv and traces with previousBit, bit, and voltageMv." },
+      { "name": "label", "type": "string", "description": "Describe the signal, sampling clock, or channel for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact eye diagram for a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string }", "description": "Add a source link and a note describing the signal or measurement method." }
+    ],
+    "sources": [
+      { "label": "Tektronix, Anatomy of an Eye Diagram, clock-triggered folding and the receiver decision point", "href": "https://www.tek.com/en/documents/application-note/anatomy-eye-diagram" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",

@@ -3300,6 +3300,22 @@
     ]
   },
   {
+    "id": "eye-diagram",
+    "name": "Digital Eye Diagram",
+    "url": "https://opensource.pitant.de/charts/#docs=eye-diagram",
+    "examples": [
+      {
+        "id": "eye-diagram-nrz",
+        "family": "eye-diagram",
+        "title": "NRZ Signal Eye Diagram",
+        "label": "Simulated 1 Gbaud PRBS7",
+        "description": "Compare the voltage opening, timing spread, and rail excursions of two modeled digital signal channels.",
+        "url": "https://opensource.pitant.de/charts/#example=eye-diagram-nrz",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",
