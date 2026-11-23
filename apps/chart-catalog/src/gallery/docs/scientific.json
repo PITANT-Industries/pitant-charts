@@ -288,6 +288,31 @@
       { "label": "NIST Technical Note 1714, Table 4, engineering stress, engineering strain, and offset yield strength", "href": "https://nvlpubs.nist.gov/nistpubs/TechnicalNotes/NIST.TN.1714.pdf" }
     ]
   },
+  "full-field-strain": {
+    "summary": "Inspect where surface strain localizes during loading and read the force at the selected stage.",
+    "useWhen": "Compare spatial strain maps across a tensile experiment or link a highly strained region to the specimen’s load history.",
+    "data": "Supply shared, strictly increasing xMm and yMm axes. Order frames by stage and give each frame a force in newtons and one strain value in percent per grid site. Order values by y row with x varying fastest. Use null for unavailable samples. Provide a fixed strainDomainPercent and use the same stage coordinates and units in optional forceHistory.",
+    "reading": "Use Frame or select a point on the load history to change the displayed map. Click or tap the field to inspect a grid site. With the field focused, use the arrow keys to move between sites. The point readout gives the original supplied grid value and coordinates.",
+    "notes": [
+      "The example uses the measured TPS_2 digital image correlation test on a T-shaped polyurethane specimen under tensile loading. The map uses undeformed specimen coordinates, with x increasing to the right and y upward. The conversion uses the study’s 21 µm per pixel calibration.",
+      "The chart shows Green–Lagrange strain Eyy derived from measured horizontal and vertical displacements u and v. A centered linear fit over five valid native samples estimates their vertical gradients. Eyy = ((∂u/∂y)² + (1 + ∂v/∂y)² − 1)/2, expressed in percent.",
+      "The 14 maps retain every fifth grid site on each axis, yielding a 39 × 58 lattice at 0.525 mm spacing with 1,189 valid sites per map. The load history uses all 63 loaded frames from 1.0 to 62.9 s. The force rows in force_vfm.csv match the HDF5 loaded frames in order, and elapsed time comes from the frame metadata.",
+      "The colorbar stays fixed at −5% to 70% for this example. Color values beyond the scale use its endpoint colors. The map interpolates colors between four valid neighbors and uses the nearest site in partially masked cells, leaving unavailable sites blank. The probe reads the stored value, rounded in this example to 0.001 percentage point.",
+      "At x = 12.075 mm and y = 23.100 mm, the strain is 40.316% at 45 s under 49.667 N. At 62.9 s it reaches 67.033% under 58.394 N at the same reference coordinate."
+    ],
+    "properties": [
+      { "name": "data", "type": "FullFieldStrainData", "description": "Required. Supply xMm, yMm, componentLabel, stageLabel, an optional stageUnit, a fixed strainDomainPercent, and frames. Add optional forceHistory for a denser load trace." },
+      { "name": "initialStage", "type": "number", "description": "Choose the initial stage to inspect in the supplied stage coordinates." },
+      { "name": "label", "type": "string", "description": "Describe the specimen, strain measure, or experiment for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact strain map for a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Add the data source, an analysis note, and optional license information." }
+    ],
+    "sources": [
+      { "label": "Marcin Nowak et al. (2026), T-shaped polyurethane digital image correlation and force measurements, Zenodo (CC BY 4.0)", "href": "https://doi.org/10.5281/zenodo.18617429" },
+      { "label": "Nowak et al. (2026), Finite-strain identification of hyperelastic polyurethane adhesive using the virtual fields method", "href": "https://www.sciencedirect.com/science/article/pii/S0045794926002609" },
+      { "label": "International Digital Image Correlation Society (2025), A Good Practices Guide for Digital Image Correlation, Edition 2", "href": "https://doi.org/10.32720/idics/gpg.ed2" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",
