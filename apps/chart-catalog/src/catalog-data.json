@@ -3252,6 +3252,22 @@
     ]
   },
   {
+    "id": "coherence-phase",
+    "name": "Coherence and Phase Comparison",
+    "url": "https://opensource.pitant.de/charts/#docs=coherence-phase",
+    "examples": [
+      {
+        "id": "coherence-phase-bearing",
+        "family": "coherence-phase",
+        "title": "Bearing Vibration Coherence",
+        "label": "Measured horizontal bearing acceleration",
+        "description": "Compare coherence and phase between two bearings in baseline and deliberately unbalanced rotor tests.",
+        "url": "https://opensource.pitant.de/charts/#example=coherence-phase-bearing",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",

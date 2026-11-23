@@ -12,6 +12,8 @@ export type { ShaftOrbitData, ShaftOrbitRun } from './charts/scientific/orbit/sh
 export { FrequencyResponse } from './charts/scientific/response/FrequencyResponse'
 export type { FrequencyResponseProps } from './charts/scientific/response/FrequencyResponse'
 export type { FrequencyResponseData, FrequencyResponseSeries } from './charts/scientific/response/frequency-response'
+export { CoherencePhase } from './charts/scientific/coherence/CoherencePhase'
+export type { CoherencePhaseProps, CoherenceData, CoherenceRun } from './charts/scientific/coherence/CoherencePhase'
 export { SpectralWaterfall } from './charts/scientific/waterfall/SpectralWaterfall'
 export type { SpectralWaterfallProps } from './charts/scientific/waterfall/SpectralWaterfall'
 export type { SpectralAxis, SpectralWaterfallAxes, SpectralWaterfallData } from './charts/scientific/waterfall/model'

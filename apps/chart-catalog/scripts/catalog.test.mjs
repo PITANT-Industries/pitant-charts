@@ -8,11 +8,11 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 55 chart and tooltip families and all 344 public examples', () => {
+test('covers 56 chart and tooltip families and all 345 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()
-  assert.equal(catalog.length, 55)
+  assert.equal(catalog.length, 56)
   for (const family of catalog) {
     assert(!familyIds.has(family.id), `Duplicate family ${family.id}`)
     familyIds.add(family.id)
@@ -32,8 +32,9 @@ test('covers 55 chart and tooltip families and all 344 public examples', () => {
   assert.deepEqual(catalog.find((family) => family.id === 'mode-shapes')?.examples.map((example) => example.id), ['mode-shapes-cantilever'])
   assert.deepEqual(catalog.find((family) => family.id === 'shaft-orbit')?.examples.map((example) => example.id), ['shaft-orbit-probes'])
   assert.deepEqual(catalog.find((family) => family.id === 'frequency-response')?.examples.map((example) => example.id), ['frequency-response-servo'])
-  assert.equal(ids.size, 344)
-  assert.equal(urls.size, 344)
+  assert.deepEqual(catalog.find((family) => family.id === 'coherence-phase')?.examples.map((example) => example.id), ['coherence-phase-bearing'])
+  assert.equal(ids.size, 345)
+  assert.equal(urls.size, 345)
 })
 
 test('documents every catalog family exactly once with practical guidance', async () => {
@@ -83,7 +84,7 @@ test('documents every catalog family exactly once with practical guidance', asyn
 test('each catalog family is routed to exactly one renderer group', () => {
   const groups = chartPreview.match(/export const rendererFamilies = \{([\s\S]+?)\} as const/)?.[1] ?? ''
   const mapped = Array.from(groups.matchAll(/'([^']+)'/g), (match) => match[1])
-  assert.equal(mapped.length, 55)
+  assert.equal(mapped.length, 56)
   assert.deepEqual(mapped.sort(), catalog.map((family) => family.id).sort())
 })
 
