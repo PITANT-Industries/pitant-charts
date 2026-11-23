@@ -44,13 +44,14 @@ const sections = [
   { id: 'docs-examples', name: 'Examples' },
 ]
 
-export function FamilyDocumentation({ family, onBrowseFamily, onOpenExample }: {
+export function FamilyDocumentation({ family, variantId, onBrowseFamily, onOpenExample }: {
   family: ChartFamily
+  variantId?: string
   onBrowseFamily: (id: string) => void
   onOpenExample: (example: string, tab: 'preview' | 'code') => void
 }) {
   const doc = documentation[family.id]
-  const featured = family.examples[0]
+  const featured = family.examples.find((example) => example.id === variantId) ?? family.examples[0]
   const extra = extraProperties[family.id]
   const group = getGroupForFamily(family.id)
   const article = useRef<HTMLElement>(null)
@@ -131,7 +132,7 @@ export function FamilyDocumentation({ family, onBrowseFamily, onOpenExample }: {
       <article className="family-docs" aria-labelledby="family-docs-title" ref={article}>
         <section id="docs-preview" aria-labelledby="docs-preview-title">
           <h2 id="docs-preview-title" className="docs-preview-heading" tabIndex={-1}>Preview</h2>
-          <Tabs defaultValue="preview" activation="manual" className="docs-preview">
+          <Tabs key={featured.id} defaultValue="preview" activation="manual" className="docs-preview">
             <div className="docs-preview-toolbar">
               <TabsList className="docs-preview-tabs" aria-label="Documentation example view">
                 <TabsTab value="preview">Preview</TabsTab>
@@ -141,7 +142,7 @@ export function FamilyDocumentation({ family, onBrowseFamily, onOpenExample }: {
             </div>
             <div className="docs-preview-panel">
               <TabsPanel value="preview">
-                <div className="docs-example-plot"><ChartPreview example={featured} /></div>
+                <div className="docs-example-plot" data-example-id={featured.id}><ChartPreview example={featured} /></div>
               </TabsPanel>
               <TabsPanel value="code"><ExampleCode example={featured} /></TabsPanel>
             </div>

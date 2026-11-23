@@ -12,9 +12,8 @@ import {
 import { examples, galleryOrder, getExample, getFamily, getGroupForFamily, groups } from '../catalog'
 import { ChartPreview } from '../charts/ChartPreview'
 import type { ChartExample } from '../types'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Choices } from '../ui/Choices'
-import { CopyExample, ExampleCode, repositoryUrl } from './ExampleCode'
+import { ExampleCode, repositoryUrl } from './ExampleCode'
 import { FamilyDocumentation } from './FamilyDocumentation'
 import { groupIcons } from './Visuals'
 import { FamilySelect } from './FamilySelect'
@@ -57,7 +56,7 @@ function usePreference<T>(key: string, fallback: T) {
 }
 
 type ExampleTab = 'preview' | 'code'
-type GalleryLink = { group: string; family: string; example: string; tab: ExampleTab; docs?: string }
+type GalleryLink = { group: string; family: string; example: string; tab: ExampleTab; docs?: string; variant?: string }
 
 function getLinkState(): GalleryLink {
   const params = new URLSearchParams(window.location.hash.slice(1))
@@ -65,15 +64,18 @@ function getLinkState(): GalleryLink {
   const group = groups.some((entry) => entry.id === requestedGroup) ? requestedGroup : 'all'
   const family = getFamily(params.get('family') ?? '')?.id ?? 'all'
   const docs = getFamily(params.get('docs') ?? '')?.id
+  const requestedVariant = getExample(params.get('variant') ?? '')
+  const variant = requestedVariant && requestedVariant.family === docs ? requestedVariant.id : undefined
   const selectedExample = getExample(params.get('example') ?? '')
   const example = selectedExample && (!docs || docs === selectedExample.family) ? selectedExample.id : ''
   const tab = example && params.get('view') === 'code' ? 'code' : 'preview'
-  return { group: family === 'all' ? group : getGroupForFamily(family)?.id ?? 'all', family, example, docs, tab }
+  return { group: family === 'all' ? group : getGroupForFamily(family)?.id ?? 'all', family, example, docs, variant, tab }
 }
 
-function writeLink({ group, family, example, tab, docs }: GalleryLink, push = false) {
+function writeLink({ group, family, example, tab, docs, variant }: GalleryLink, push = false) {
   const params = new URLSearchParams()
   if (docs) params.set('docs', docs)
+  if (variant) params.set('variant', variant)
   if (group !== 'all') params.set('category', group)
   if (family !== 'all') params.set('family', family)
   if (example) {
@@ -91,7 +93,11 @@ function followLink(event: MouseEvent<HTMLAnchorElement>, action: () => void) {
   action()
 }
 
-function VisibleChart({ example, featured }: { example: ChartExample; featured: boolean }) {
+function exampleDocsHref(example: ChartExample) {
+  return `#${new URLSearchParams({ docs: example.family, variant: example.id })}`
+}
+
+function VisibleChart({ example }: { example: ChartExample }) {
   const host = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
   useEffect(() => {
@@ -106,53 +112,18 @@ function VisibleChart({ example, featured }: { example: ChartExample; featured: 
     observer.observe(host.current)
     return () => observer.disconnect()
   }, [])
-  return <div className="card-plot" ref={host}>{visible && <ChartPreview example={example} compact={!featured} />}</div>
+  return <div className="card-plot" ref={host} aria-hidden="true" inert>{visible && <ChartPreview example={example} compact />}</div>
 }
 
-function ExampleCard({ example, featured, saved, onOpen, onShowCode, onDocumentation, onSave }: {
+function ExampleCard({ example, featured, onDocumentation }: {
   example: ChartExample
   featured: boolean
-  saved: boolean
-  onOpen: () => void
-  onShowCode: () => void
   onDocumentation: () => void
-  onSave: () => void
 }) {
-  const family = getFamily(example.family)
   return (
-    <Card className={featured ? 'example-card example-card--featured' : 'example-card'} data-example-id={example.id}>
-      <CardHeader className="example-header">
-        <div className="example-heading">
-          <CardTitle><Button className="example-title" aria-label={`Open ${example.title}`} onClick={onOpen}>{example.title}</Button></CardTitle>
-          <CardDescription>{family?.name}</CardDescription>
-        </div>
-        <div className="chart-toolbar">
-          <CodeActions example={example} onShowCode={onShowCode} />
-          <Toggle className="icon-button bookmark-button" aria-label={`Save ${example.title}`} pressed={saved} onPressedChange={onSave}><Bookmark size={16} aria-hidden="true" /></Toggle>
-        </div>
-      </CardHeader>
-      <CardContent><VisibleChart example={example} featured={featured} /></CardContent>
-      <div className="example-footer">
-        <span>{example.label}</span>
-        <DocumentationLink example={example} onDocumentation={onDocumentation} />
-      </div>
-    </Card>
-  )
-}
-
-function DocumentationLink({ example, onDocumentation }: { example: ChartExample; onDocumentation: () => void }) {
-  return <a className="card-code" href={`#docs=${example.family}`} aria-label={`Documentation for ${example.title}`} onClick={(event) => followLink(event, onDocumentation)}>
-    <BookOpen size={14} aria-hidden="true" /> Docs
-  </a>
-}
-
-function CodeActions({ example, onShowCode }: { example: ChartExample; onShowCode: () => void }) {
-  return (
-    <div className="code-actions">
-      <CopyExample example={example} onShowCode={onShowCode} />
-      <Button className="card-code card-view-code" aria-label={`View code for ${example.title}`} onClick={onShowCode}>
-        <Code2 size={15} aria-hidden="true" /> <span>View code</span>
-      </Button>
+    <div className={featured ? 'example-card example-card--featured' : 'example-card'} data-example-id={example.id}>
+      <VisibleChart example={example} />
+      <a className="example-card-link" href={exampleDocsHref(example)} aria-label={`Documentation for ${example.title}`} onClick={(event) => followLink(event, onDocumentation)} />
     </div>
   )
 }
@@ -211,7 +182,7 @@ function ExampleDetail({ example, tab, onTab, saved, onSave, onClose, onExample,
       </Tabs>
       <div className="detail-footer">
         <div className="detail-links">
-          <a href={`#docs=${example.family}`} onClick={(event) => followLink(event, onDocumentation)}>Chart documentation <BookOpen size={14} aria-hidden="true" /></a>
+          <a href={exampleDocsHref(example)} onClick={(event) => followLink(event, onDocumentation)}>Chart documentation <BookOpen size={14} aria-hidden="true" /></a>
         </div>
         <div className="detail-pagination">
           <Button className="icon-button" disabled={!previous} aria-label="Previous variant" onClick={() => previous && onExample(previous.id)}><ChevronLeft size={19} aria-hidden="true" /></Button>
@@ -329,9 +300,9 @@ export function Gallery() {
     })
   }
 
-  function showDocumentation(family: string) {
-    if (link.docs === family && !link.example) return
-    const next: GalleryLink = { docs: family, group: 'all', family: 'all', example: '', tab: 'preview' }
+  function showDocumentation(family: string, variant?: string) {
+    if (link.docs === family && link.variant === variant && !link.example) return
+    const next: GalleryLink = { docs: family, variant, group: 'all', family: 'all', example: '', tab: 'preview' }
     setLink(next)
     setShowSaved(false)
     setPage(1)
@@ -456,7 +427,7 @@ export function Gallery() {
         <div className={documentedFamily ? 'workspace' : 'workspace workspace--catalog'}>
           {documentedFamily && <aside className="sidebar">{categoryNavigation()}</aside>}
           <div className="gallery-main">
-            {documentedFamily ? <FamilyDocumentation key={documentedFamily.id} family={documentedFamily} onOpenExample={showExample} onBrowseFamily={browseDocumentedFamily} /> : <>
+            {documentedFamily ? <FamilyDocumentation key={documentedFamily.id} family={documentedFamily} variantId={link.variant} onOpenExample={showExample} onBrowseFamily={browseDocumentedFamily} /> : <>
             {!showSaved && <nav className="family-rail" aria-label="Popular chart families">
               {popularFamilies.map(({ id, label }) => (
                 <Button key={id} aria-pressed={id === 'all' ? link.group === 'all' : link.family === id} onClick={() => browseFamily(id)}>
@@ -480,29 +451,16 @@ export function Gallery() {
                       key={example.id}
                       example={example}
                       featured={showFeature && index === 0}
-                      saved={savedIds.has(example.id)}
-                      onOpen={() => showExample(example.id)}
-                      onShowCode={() => showExample(example.id, 'code')}
-                      onDocumentation={() => showDocumentation(example.family)}
-                      onSave={() => toggleSaved(example.id)}
+                      onDocumentation={() => showDocumentation(example.family, example.id)}
                     />
                   ))}
                 </div>
               ) : (
                 <div className="example-list">
                   {visible.map((example) => (
-                    <div className="example-list-row" key={example.id} data-example-id={example.id}>
-                      <Button className="list-main" aria-label={`Open ${example.title}`} onClick={() => showExample(example.id)}>
-                        <span>{example.title}</span><small>{getFamily(example.family)?.name}</small><ArrowUpRight size={17} aria-hidden="true" />
-                      </Button>
-                      <div className="list-actions">
-                        <DocumentationLink example={example} onDocumentation={() => showDocumentation(example.family)} />
-                        <CodeActions example={example} onShowCode={() => showExample(example.id, 'code')} />
-                      </div>
-                      <Toggle className="icon-button bookmark-button" aria-label={`Save ${example.title}`} pressed={savedIds.has(example.id)} onPressedChange={() => toggleSaved(example.id)}>
-                        <Bookmark size={17} aria-hidden="true" />
-                      </Toggle>
-                    </div>
+                    <a className="example-list-row" key={example.id} data-example-id={example.id} href={exampleDocsHref(example)} onClick={(event) => followLink(event, () => showDocumentation(example.family, example.id))}>
+                      <span>{example.title}</span><small>{getFamily(example.family)?.name}</small><ArrowUpRight size={17} aria-hidden="true" />
+                    </a>
                   ))}
                 </div>
               ) : (
@@ -514,7 +472,7 @@ export function Gallery() {
           </div>
         </div>
       </main>
-      {detail && <ExampleDetail example={detail} tab={link.tab} onTab={showTab} saved={savedIds.has(detail.id)} onSave={() => toggleSaved(detail.id)} onClose={() => showExample('')} onExample={showExample} onDocumentation={() => showDocumentation(detail.family)} />}
+      {detail && <ExampleDetail example={detail} tab={link.tab} onTab={showTab} saved={savedIds.has(detail.id)} onSave={() => toggleSaved(detail.id)} onClose={() => showExample('')} onExample={showExample} onDocumentation={() => showDocumentation(detail.family, detail.id)} />}
     </div>
   )
 }
