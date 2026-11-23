@@ -3,6 +3,7 @@ import campbellDiagram from './docs/examples/CampbellDiagram.tsx?raw'
 import capabilityHistogram from './docs/examples/CapabilityHistogram.tsx?raw'
 import coherencePhase from './docs/examples/CoherencePhase.tsx?raw'
 import correlationMatrix from './docs/examples/CorrelationMatrix.tsx?raw'
+import eyeDiagram from './docs/examples/EyeDiagram.tsx?raw'
 import frequencyResponse from './docs/examples/FrequencyResponse.tsx?raw'
 import individualsControlChart from './docs/examples/IndividualsControlChart.tsx?raw'
 import modeShapes from './docs/examples/ModeShapes.tsx?raw'
@@ -26,6 +27,7 @@ const scientificExamples = new Map([
   ['coherence-phase-bearing', withCatalogImports(coherencePhase)],
   ['wavelet-scalogram-bearing', withCatalogImports(waveletScalogram)],
   ['bearing-envelope-ottawa', withCatalogImports(bearingEnvelope)],
+  ['eye-diagram-nrz', withCatalogImports(eyeDiagram)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

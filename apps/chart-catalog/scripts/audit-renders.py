@@ -220,7 +220,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
     families = {
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
-        'wavelet-scalogram', 'bearing-envelope',
+        'wavelet-scalogram', 'bearing-envelope', 'eye-diagram',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -300,6 +300,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=bearing-envelope&variant=bearing-envelope-ottawa'
                 )
+            elif example['family'] == 'eye-diagram':
+                eye = card_plot.locator('svg[data-eye-plot]')
+                await check_eye_figure(eye)
+                await check_compact_figure_bounds(eye, 'rect[data-eye-axis-frame]')
+                await expect(card_plot.locator('select, [data-eye-readout], [data-eye-sampling-line]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=eye-diagram&variant=eye-diagram-nrz'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -362,6 +370,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'bearing-envelope':
                 await check_bearing_envelope(plot, touch)
                 code_import = 'BearingEnvelope'
+            elif example['family'] == 'eye-diagram':
+                await check_eye_diagram(plot, touch)
+                code_import = 'EyeDiagram'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -1138,6 +1149,102 @@ async def check_bearing_envelope(plot, touch):
     expected = first_order + (last_order - first_order) * 0.63
     if not math.isclose(picked_order, expected, abs_tol=0.2):
         raise RuntimeError(f'Pointer pick should align with the linear shaft order axis: {picked_order}')
+
+
+async def check_eye_figure(eye):
+    await expect(eye).to_be_visible()
+    await expect(eye.locator('rect[data-eye-axis-frame]')).to_be_visible()
+    await expect(eye.locator('.scientific-tick').first).to_be_attached()
+    await expect(eye.get_by_text('Time (UI)', exact=True)).to_be_visible()
+    await expect(eye.get_by_text('Voltage (mV)', exact=True)).to_be_visible()
+    traces = eye.locator('path[data-eye-trace]')
+    await expect(traces.first).to_have_attribute('d', re.compile(r'^M'))
+    await expect(traces.nth(1)).to_have_attribute('d', re.compile(r'^M'))
+
+
+async def check_eye_diagram(plot, touch):
+    chart = plot.locator('[data-eye-diagram]')
+    caption = chart.locator('figcaption')
+    await expect(caption).to_contain_text(re.compile(r'\bsimulat(?:ed|ion)\b', re.I))
+    await expect(caption.locator('a').first).to_have_attribute('href', re.compile(r'^https://(?:[a-z0-9-]+\.)?tek\.com/'))
+    eye = chart.locator('svg[data-eye-plot]')
+    await check_eye_figure(eye)
+    first_trace = eye.locator('path[data-eye-trace]').first
+    sampling = eye.locator('line[data-eye-sampling-line]')
+    opening = eye.locator('path[data-eye-opening]')
+    await expect(sampling).to_be_attached()
+    readout = chart.locator('output[data-eye-readout]')
+    channel = chart.get_by_role('combobox', name='Channel', exact=True)
+    phase = chart.get_by_role('slider', name='Sampling phase', exact=True)
+    await expect(readout).to_be_visible()
+    await expect(channel).to_have_value('reference')
+
+    async def metrics():
+        data = await readout.evaluate(
+            "out => ['phase', 'heightMv', 'jitterUi', 'overshootPercent'].map(key => out.dataset[key])"
+        )
+        selected_phase, height, jitter, overshoot = map(float, data)
+        if not all(map(math.isfinite, (selected_phase, height, jitter, overshoot))) or not (
+            0 <= selected_phase <= 1 and jitter >= 0 and overshoot >= 0
+        ):
+            raise RuntimeError(f'Invalid simulated eye view metrics: {data}')
+        return selected_phase, height, jitter, overshoot
+
+    center, reference_height, reference_jitter, reference_overshoot = await metrics()
+    if center != 0.5 or reference_height <= 0:
+        raise RuntimeError(f'The reference eye should open at the default 0.5 UI phase: {center}, {reference_height} mV')
+    await expect(opening).to_be_visible()
+    initial_trace = await first_trace.get_attribute('d')
+    initial_opening = await opening.get_attribute('d')
+
+    await phase.press('Home')
+    first_phase, edge_height, *_ = await metrics()
+    first_x = float(await sampling.get_attribute('x1'))
+    if first_phase != 0 or edge_height >= 0:
+        raise RuntimeError(f'The eye should be closed at the symbol boundary: {first_phase} UI, {edge_height} mV')
+    await expect(opening).to_have_count(0)
+    await phase.press('End')
+    last_phase, *_ = await metrics()
+    last_x = float(await sampling.get_attribute('x1'))
+    if last_phase != 1 or last_x <= first_x:
+        raise RuntimeError('Keyboard endpoints should span exactly one unit interval')
+
+    target = eye.locator('.eye-plot-pick')
+    await expect(target).to_be_visible()
+    bounds = await target.bounding_box()
+    position = {'x': bounds['width'] * 0.72, 'y': bounds['height'] * 0.5}
+    if touch:
+        await target.tap(position=position)
+    else:
+        await target.click(position=position)
+    picked_phase, picked_height, *_ = await metrics()
+    selected_x = float(await sampling.get_attribute('x1'))
+    if not math.isclose(picked_phase, 0.72, abs_tol=0.015) or not math.isclose(
+        selected_x, first_x + picked_phase * (last_x - first_x), abs_tol=0.5
+    ):
+        raise RuntimeError(f'Pointer selection and plotted sampling line should share the chosen phase: {picked_phase} UI')
+    if picked_height > 0:
+        await expect(opening).not_to_have_attribute('d', initial_opening)
+
+    selected_phase_text = await readout.get_attribute('data-phase')
+    await channel.select_option('impaired')
+    await expect(readout).to_have_attribute('data-phase', selected_phase_text)
+    await expect(first_trace).not_to_have_attribute('d', initial_trace)
+    await phase.fill('0.5')
+    center, impaired_height, impaired_jitter, impaired_overshoot = await metrics()
+    if center != 0.5 or not (0 < impaired_height < reference_height and impaired_jitter > reference_jitter
+                              and impaired_overshoot > reference_overshoot):
+        raise RuntimeError(f'Impairment should reduce eye opening and increase jitter/overshoot at 0.5 UI: '
+                           f'{impaired_height} mV, {impaired_jitter} UI, {impaired_overshoot}%')
+    expected_metrics = [
+        ((reference_height, reference_jitter, reference_overshoot), (795.07866, 0.00349593, 0.49311167)),
+        ((impaired_height, impaired_jitter, impaired_overshoot), (363.54172, 0.03962228, 8.51445402)),
+    ]
+    for actual, expected in expected_metrics:
+        if not all(math.isclose(value, target, abs_tol=tolerance)
+                   for value, target, tolerance in zip(actual, expected, (0.01, 1e-7, 0.001))):
+            raise RuntimeError(f'Expected independently derived metrics {expected}, observed {actual}')
+    await expect(opening).to_be_visible()
 
 
 async def check_native_scientific(plot, slug, touch):
