@@ -22,6 +22,27 @@
       { "label": "Bearing test rig and measurement methods", "href": "https://doi.org/10.1016/j.dib.2018.11.019" }
     ]
   },
+  "mode-shapes": {
+    "summary": "See how a cantilever beam bends in each of its first four natural modes.",
+    "useWhen": "Compare bending patterns, locate vibration nodes, or connect a natural frequency to the shape of the corresponding motion.",
+    "data": "Supply a uniform rectangular beam with length, width, and thickness in metres, Young’s modulus in pascals, and density in kilograms per cubic metre. All values must be positive and finite. The example computes Euler–Bernoulli modes for a 600 × 30 × 3 mm steel strip with a modulus of 200 GPa and a density of 7,850 kg/m³.",
+    "reading": "Choose mode 1–4 to see its calculated natural frequency in Hz. The baseline marks the undeformed beam. Interior nodes stay at zero transverse displacement during the cycle. Read their positions as x/L, measured from the clamp as a fraction of the beam’s length.",
+    "notes": [
+      "The model computes free, undamped bending in the thickness direction. The clamp holds both displacement and slope at zero. The free end has zero bending moment and shear force.",
+      "Inspect 0°, 90°, 180°, and 270° with the phase slider to see quarter-cycle snapshots. Playback shows one cycle in about 2.4 seconds for every mode. The frequency readout reports the model’s natural frequency.",
+      "The displacement scale ranges from 25% to 150% of the default drawing height. The plotted displacement is unitless.",
+      "The example predicts frequencies of 6.79, 42.58, 119.23, and 233.65 Hz. The model assumes a slender beam with small deflections and an ideal clamp.",
+      "For this rectangular section, width cancels out of the ratio of bending stiffness to mass per unit length. Increasing thickness raises the natural frequencies, and increasing length lowers them."
+    ],
+    "properties": [
+      { "name": "beam", "type": "ModeShapeBeam", "description": "Required. Supply lengthM, widthM, thicknessM, youngsModulusPa, and densityKgM3 in SI units." },
+      { "name": "label", "type": "string", "description": "Describe the beam and its boundary conditions for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a chart preview sized for a gallery card." }
+    ],
+    "sources": [
+      { "label": "Arturo Tejada, NASA/CR-2009-215721 (2009), §3.1, equations 14, 17–18 and figure 8", "href": "https://ntrs.nasa.gov/citations/20090021633" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",

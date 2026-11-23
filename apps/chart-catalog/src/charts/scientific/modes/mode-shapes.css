@@ -1,0 +1,220 @@
+.mode-shapes {
+  display: grid;
+  gap: .8rem;
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+}
+
+.mode-shapes[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.mode-shapes),
+.detail-plot:has(.mode-shapes) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.mode-caption strong {
+  font-size: .95rem;
+  font-weight: 650;
+}
+
+.mode-caption p {
+  margin: .25rem 0 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .875rem;
+  line-height: 1.5;
+}
+
+.mode-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+.mode-choices {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .45rem;
+}
+
+.mode-choices button,
+.mode-controls button {
+  min-block-size: 2.6rem;
+  padding: .4rem .65rem;
+  color: inherit;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .4rem;
+  background: var(--gallery-surface, var(--card));
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.mode-choices button {
+  display: grid;
+  gap: .13rem;
+}
+
+.mode-choices button[aria-pressed='true'] {
+  color: var(--gallery-accent, var(--primary));
+  border-color: currentColor;
+  background: color-mix(in srgb, currentColor 8%, var(--gallery-surface, var(--card)));
+}
+
+.mode-choices button span {
+  font-size: .75rem;
+}
+
+.mode-choices button strong {
+  font-variant-numeric: tabular-nums;
+  font-size: .9rem;
+  white-space: nowrap;
+}
+
+.mode-beam {
+  min-inline-size: 0;
+  block-size: clamp(13rem, 43cqw, 19rem);
+  border-radius: .6rem;
+  background: #101c1b;
+  overflow: hidden;
+}
+
+.mode-shapes[data-compact='true'] .mode-beam {
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.mode-beam svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.mode-grid line {
+  stroke: #263a36;
+}
+
+.mode-grid .mode-neutral {
+  stroke: #78948b;
+  stroke-dasharray: 4 4;
+}
+
+.mode-envelope {
+  fill: none;
+  stroke: #82a39a;
+  stroke-width: 1.35;
+  stroke-dasharray: 3 5;
+}
+
+.mode-centerline {
+  fill: none;
+  stroke: #57e6aa;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mode-tip {
+  fill: #b1f8d9;
+}
+
+.mode-node {
+  fill: #101c1b;
+  stroke: #efe0ae;
+  stroke-width: 1.5;
+}
+
+.mode-restraint {
+  stroke: #d0e1db;
+  stroke-width: 2;
+}
+
+.mode-hatch {
+  stroke: #879b96;
+}
+
+.mode-plot-label {
+  fill: #d0e1db;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 560;
+  font-variant-numeric: tabular-nums;
+}
+
+.mode-inspector {
+  display: grid;
+  gap: .8rem;
+  min-inline-size: 0;
+  padding: .75rem;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .55rem;
+}
+
+.mode-inspector output {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .2rem .65rem;
+  font-size: .875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.mode-inspector output span {
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+.mode-controls {
+  display: grid;
+  grid-template-columns: auto repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: .55rem .85rem;
+  font-size: .8rem;
+}
+
+.mode-controls label {
+  display: grid;
+  gap: .2rem;
+  min-inline-size: 0;
+}
+
+.mode-controls label > span {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: .1rem .4rem;
+}
+
+.mode-controls label > span span {
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-variant-numeric: tabular-nums;
+}
+
+.mode-controls input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 1.5rem;
+  margin: 0;
+  accent-color: var(--gallery-accent, var(--primary));
+}
+
+@container (max-width: 33rem) {
+  .mode-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mode-controls button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@container (max-width: 22rem) {
+  .mode-choices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

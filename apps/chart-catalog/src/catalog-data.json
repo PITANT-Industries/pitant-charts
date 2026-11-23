@@ -3204,6 +3204,22 @@
     ]
   },
   {
+    "id": "mode-shapes",
+    "name": "Animated Mode Shapes",
+    "url": "https://opensource.pitant.de/charts/#docs=mode-shapes",
+    "examples": [
+      {
+        "id": "mode-shapes-cantilever",
+        "family": "mode-shapes",
+        "title": "Cantilever Beam Natural Modes",
+        "label": "Calculated bending of a steel strip",
+        "description": "Compare the first four bending modes of a clamped steel strip and watch how the deformation changes through a cycle.",
+        "url": "https://opensource.pitant.de/charts/#example=mode-shapes-cantilever",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",
