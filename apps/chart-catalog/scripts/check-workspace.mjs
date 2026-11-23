@@ -26,7 +26,7 @@ if (process.argv.includes('--pack')) {
     catalog.exports['.'].import,
     catalog.exports['./styles.css'],
   ]
-  for (const path of [...exports, 'LICENSE', 'SOURCE.md', 'src/index.ts', 'THIRD_PARTY_NOTICES.md']) {
+  for (const path of [...exports, 'dist-library/native-chart-source.tgz', 'LICENSE', 'SOURCE.md', 'src/index.ts', 'THIRD_PARTY_NOTICES.md']) {
     assert(files.has(path.replace(/^\.\//, '')), `Missing from catalog package: ${path}`)
   }
   assert([...files].some((path) => path.startsWith('licenses/')), 'Missing catalog licenses')

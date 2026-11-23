@@ -82,15 +82,20 @@ export class Canvas2DRenderContext implements RenderContext {
     ctx.lineCap = options.cap ?? 'butt'
     ctx.lineJoin = options.join ?? 'miter'
 
-    const path = new Path2D()
     const len = buffer.length
-    if (len >= 2) {
-      path.moveTo(buffer[0] as number, buffer[1] as number)
-      for (let i = 2; i < len; i += 2) {
-        path.lineTo(buffer[i] as number, buffer[i + 1] as number)
-      }
+    if (len < 2) return
+    ctx.beginPath()
+    ctx.moveTo(buffer[0] as number, buffer[1] as number)
+    for (let i = 2; i < len; i += 2) {
+      ctx.lineTo(buffer[i] as number, buffer[i + 1] as number)
     }
-    ctx.stroke(path)
+
+    // The current path captures the data transform as it is built.
+    // Apply only the backing-store scale when stroking so width stays in CSS pixels.
+    ctx.save()
+    ctx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0)
+    ctx.stroke()
+    ctx.restore()
   }
 
   drawFill(upper: Float32Array, lower: Float32Array, options: FillOptions): void {

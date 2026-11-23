@@ -1,0 +1,171 @@
+.spectral-waterfall-plot {
+  min-inline-size: 0;
+}
+
+.spectral-waterfall-viewport {
+  position: relative;
+  block-size: clamp(15rem, 48vw, 24rem);
+  min-inline-size: 0;
+  border-radius: .45rem;
+}
+
+.spectral-waterfall-viewport:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.spectral-waterfall-viewport svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: hidden;
+}
+
+.spectral-waterfall-plot[data-compact='true'],
+.spectral-waterfall-plot[data-compact='true'] .spectral-waterfall-viewport {
+  block-size: 100%;
+}
+
+.spectral-waterfall-floor {
+  fill: color-mix(in srgb, var(--chart-1) 5%, var(--card));
+}
+
+.spectral-waterfall-grid,
+.spectral-waterfall-frame {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.spectral-waterfall-viewport text {
+  fill: var(--muted-foreground);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: var(--card);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+
+.spectral-waterfall-viewport .spectral-waterfall-axis-letter {
+  fill: var(--foreground);
+  font-weight: 650;
+}
+
+.spectral-waterfall-ridge {
+  --ridge: var(--chart-1);
+}
+
+.spectral-waterfall-ridge[data-selected='true'] {
+  --ridge: var(--primary);
+}
+
+.spectral-waterfall-fill {
+  fill: color-mix(in srgb, var(--ridge) 13%, transparent);
+}
+
+.spectral-waterfall-trace {
+  fill: none;
+  stroke: var(--ridge);
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.spectral-waterfall-ridge[data-selected='true'] .spectral-waterfall-trace {
+  stroke-width: 2;
+}
+
+.spectral-waterfall-single {
+  fill: var(--ridge);
+}
+
+.spectral-waterfall-point {
+  fill: var(--primary);
+  stroke: var(--card);
+  stroke-width: 1.5;
+}
+
+.spectral-waterfall-axes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem 1.15rem;
+  margin: .15rem .45rem .75rem;
+  color: var(--muted-foreground);
+  font-size: .75rem;
+}
+
+.spectral-waterfall-axes div {
+  display: flex;
+  gap: .3rem;
+}
+
+.spectral-waterfall-axes dt {
+  color: var(--foreground);
+  font-weight: 650;
+}
+
+.spectral-waterfall-axes dd {
+  margin: 0;
+}
+
+.spectral-waterfall-camera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .45rem 1rem;
+  padding: .7rem .45rem;
+  border-block-start: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: .75rem;
+}
+
+.spectral-waterfall-angle {
+  display: grid;
+  gap: .15rem;
+  flex: 1 1 7.5rem;
+  min-inline-size: 0;
+}
+
+.spectral-waterfall-angle input {
+  min-block-size: 1.5rem;
+  inline-size: 100%;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.spectral-waterfall-reset {
+  border: 1px solid var(--border);
+  border-radius: .375rem;
+  background: var(--card);
+  color: var(--card-foreground);
+  font: inherit;
+  min-block-size: 1.9rem;
+  padding: .2rem .6rem;
+  cursor: pointer;
+}
+
+.spectral-waterfall-reset:hover {
+  background: var(--muted);
+}
+
+.spectral-waterfall-instructions {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  margin: -1px;
+  padding: 0;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.spectral-waterfall-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: .875rem;
+}

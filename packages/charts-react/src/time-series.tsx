@@ -956,6 +956,7 @@ function createTimeSeriesLayout(
   width: number,
   height: number,
 ): ChartLayout {
+  const formatX = config.xAxis?.formatValue
   return createChartLayout({
     width,
     height,
@@ -973,7 +974,9 @@ function createTimeSeriesLayout(
       size: 34,
       tickCount: 6,
       ...(config.xAxis?.label !== undefined ? { label: config.xAxis.label } : {}),
-      ...(config.xAxis?.formatValue !== undefined ? { formatValue: config.xAxis.formatValue } : {}),
+      ...(formatX
+        ? { formatValue: (relativeX: number) => formatX(relativeX + renderPlan.xOrigin) }
+        : {}),
     },
     yAxis: {
       visible: true,

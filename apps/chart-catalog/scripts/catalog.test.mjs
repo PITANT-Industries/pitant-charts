@@ -8,11 +8,11 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 44 chart families and all 331 public examples', () => {
+test('covers 49 chart families and all 338 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()
-  assert.equal(catalog.length, 45)
+  assert.equal(catalog.length, 50)
   for (const family of catalog) {
     assert(!familyIds.has(family.id), `Duplicate family ${family.id}`)
     familyIds.add(family.id)
@@ -28,15 +28,14 @@ test('covers 44 chart families and all 331 public examples', () => {
     }
   }
   assert.equal(catalog.find((family) => family.id === 'tooltip').examples.length, 11)
-  assert.equal(ids.size, 331)
-  assert.equal(urls.size, 331)
+  assert.equal(ids.size, 338)
+  assert.equal(urls.size, 338)
 })
 
 test('documents every catalog family exactly once with practical guidance', async () => {
-  const paths = ['src/gallery/docs/cartesian.json', 'src/gallery/docs/specialized.json']
+  const paths = ['src/gallery/docs/cartesian.json', 'src/gallery/docs/specialized.json', 'src/gallery/docs/scientific.json']
   const sources = await Promise.all(paths.map(read))
   const sections = ['summary', 'useWhen', 'data', 'reading']
-  const fields = new Set([...sections, 'notes'])
   const documented = new Set()
 
   for (const [index, source] of sources.entries()) {
@@ -50,7 +49,13 @@ test('documents every catalog family exactly once with practical guidance', asyn
       assert(!documented.has(id), `Duplicate documentation for ${id}`)
       documented.add(id)
       assert(guide && typeof guide === 'object' && !Array.isArray(guide), `Invalid documentation for ${id}`)
-      assert.deepEqual(new Set(Object.keys(guide)), fields, `Unexpected fields for ${id}`)
+      const scientific = paths[index].endsWith('/scientific.json')
+      const fields = [...sections, 'notes', ...(scientific ? ['properties', 'sources'] : [])]
+      assert.deepEqual(new Set(Object.keys(guide)), new Set(fields), `Unexpected fields for ${id}`)
+      if (scientific) {
+        assert(guide.properties.length >= 2 && guide.properties.every(({ name, type, description }) => name && type && description))
+        assert(guide.sources.length && guide.sources.every(({ label, href }) => label && new URL(href).protocol === 'https:'))
+      }
       for (const section of sections) {
         assert(
           typeof guide[section] === 'string' && guide[section].trim().length >= 24,
@@ -58,8 +63,8 @@ test('documents every catalog family exactly once with practical guidance', asyn
         )
       }
       assert(
-        Array.isArray(guide.notes) && guide.notes.length >= 1 && guide.notes.length <= 2,
-        `Expected one or two notes for ${id}`,
+        Array.isArray(guide.notes) && guide.notes.length >= 1 && (scientific || guide.notes.length <= 2),
+        `Unexpected number of notes for ${id}`,
       )
       assert(
         guide.notes.every((note) => typeof note === 'string' && note.trim().length >= 16),
@@ -74,12 +79,12 @@ test('documents every catalog family exactly once with practical guidance', asyn
 test('each catalog family is routed to exactly one renderer group', () => {
   const groups = chartPreview.match(/export const rendererFamilies = \{([\s\S]+?)\} as const/)?.[1] ?? ''
   const mapped = Array.from(groups.matchAll(/'([^']+)'/g), (match) => match[1])
-  assert.equal(mapped.length, 45)
+  assert.equal(mapped.length, 50)
   assert.deepEqual(mapped.sort(), catalog.map((family) => family.id).sort())
 })
 
 test('public pages omit internal review tools and reference links', async () => {
-  const paths = ['src/gallery/Gallery.tsx', 'src/gallery/FamilyDocumentation.tsx', 'src/gallery/docs/cartesian.json', 'src/gallery/docs/specialized.json']
+  const paths = ['src/gallery/Gallery.tsx', 'src/gallery/FamilyDocumentation.tsx', 'src/gallery/docs/cartesian.json', 'src/gallery/docs/specialized.json', 'src/gallery/docs/scientific.json']
   const sources = await Promise.all(paths.map(read))
   const internal = /parity[- ]?(?:review|notes|overview)|checked behavior|reference (?:gallery|preview)|https?:\/\/(?:www\.)?shadcn\.io|<iframe\b/i
   for (const [index, source] of sources.entries()) {

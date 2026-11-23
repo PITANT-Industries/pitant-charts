@@ -6,6 +6,8 @@ on:
     paths:
       - 'apps/chart-catalog/**'
       - 'LICENSE'
+      - 'packages/charts/**'
+      - 'packages/charts-react/**'
       - 'packages/charts-ui/package.json'
       - 'package.json'
       - 'bunfig.toml'
@@ -16,6 +18,8 @@ on:
     paths:
       - 'apps/chart-catalog/**'
       - 'LICENSE'
+      - 'packages/charts/**'
+      - 'packages/charts-react/**'
       - 'packages/charts-ui/package.json'
       - 'package.json'
       - 'bunfig.toml'
@@ -51,6 +55,7 @@ jobs:
           test -f dist/licenses/dependencies/echarts-6.1.0-NOTICE
           tar -xOzf dist/chart-catalog-source.tgz src/index.ts | cmp apps/chart-catalog/src/index.ts -
           tar -xOzf dist/chart-catalog-source.tgz public/pitant-favicon.svg | cmp apps/chart-catalog/public/pitant-favicon.svg -
+          tar -xOzf dist/chart-catalog-source.tgz packages/charts-react/src/spectrum.tsx | cmp packages/charts-react/src/spectrum.tsx -
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:

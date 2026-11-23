@@ -1,0 +1,113 @@
+.scientific-preview {
+  display: grid;
+  min-inline-size: 0;
+  margin: 0;
+}
+
+.scientific-plot {
+  inline-size: 100%;
+  block-size: clamp(17rem, 45vw, 26rem);
+}
+
+.scientific-preview[data-compact='true'],
+.scientific-preview[data-compact='true'] .scientific-plot {
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.scientific-preview[data-dark='true'] .scientific-plot canvas {
+  filter: invert(1);
+}
+
+.scientific-render-status {
+  margin: 1rem;
+  color: var(--muted-foreground);
+}
+
+.scientific-readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: .5rem 1rem;
+  border-block-start: 1px solid var(--border);
+  padding: .8rem .45rem .35rem;
+  font-size: .8125rem;
+}
+
+.scientific-input {
+  display: grid;
+  flex: 1 1 10rem;
+  min-inline-size: 0;
+  gap: .2rem;
+  color: var(--muted-foreground);
+}
+
+.scientific-input input,
+.scientific-input select {
+  inline-size: 100%;
+  min-block-size: 1.75rem;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.scientific-input select {
+  border: 1px solid var(--border);
+  border-radius: .3rem;
+  background: var(--card);
+  color: var(--card-foreground);
+}
+
+.scientific-readout output,
+.scientific-limits {
+  flex-basis: 100%;
+  align-self: center;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.scientific-scale,
+.scientific-preview figcaption {
+  color: var(--muted-foreground);
+  font-size: .8125rem;
+}
+
+.scientific-scale {
+  display: grid;
+  flex: 1 1 100%;
+  max-inline-size: 18rem;
+  gap: .2rem;
+}
+
+.scientific-scale-gradient {
+  display: grid;
+  grid-template-columns: max-content minmax(2rem, 1fr) max-content;
+  align-items: center;
+  gap: .4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.scientific-scale-gradient [aria-hidden='true'] {
+  min-block-size: .375rem;
+  border-radius: .25rem;
+}
+
+.scientific-preview figcaption {
+  padding: .5rem .45rem .35rem;
+  line-height: 1.5;
+}
+
+.scientific-preview figcaption a {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: .15em;
+}
+
+/* Keep the measurement controls and source in view below the plot. */
+.docs-showcase .docs-example-plot:has(.scientific-preview),
+.detail-plot:has(.scientific-preview) {
+  block-size: auto;
+}
+
+:is(.docs-example-plot, .detail-plot):has(.scientific-preview) .chart-preview {
+  block-size: auto;
+}

@@ -1,8 +1,19 @@
+import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { nativeSourceEntries, writeSourceArchive } from './vite.native-source'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'native-chart-source',
+      apply: 'build',
+      writeBundle({ dir }) {
+        if (dir) writeSourceArchive(resolve(dir, 'native-chart-source.tgz'), nativeSourceEntries)
+      },
+    },
+  ],
   build: {
     outDir: 'dist-library',
     lib: {

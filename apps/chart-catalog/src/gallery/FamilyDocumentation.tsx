@@ -5,10 +5,13 @@ import { ArrowUpRight, ChevronRight } from 'lucide-react'
 import { getGroupForFamily } from '../catalog'
 import { ChartPreview } from '../charts/ChartPreview'
 import type { ChartFamily } from '../types'
-import { CodeBlock, ExampleCode, guideUrl, repositoryUrl } from './ExampleCode'
+import { CodeBlock, ExampleCode, guideUrl, repositoryUrl, scientificGuideUrl } from './ExampleCode'
 import cartesianDocs from './docs/cartesian.json'
 import specializedDocs from './docs/specialized.json'
+import scientificDocs from './docs/scientific.json'
 import './documentation.css'
+
+type PropGuide = { name: string; type: string; description: string }
 
 type FamilyGuide = {
   summary: string
@@ -16,16 +19,24 @@ type FamilyGuide = {
   data: string
   reading: string
   notes: string[]
+  properties?: PropGuide[]
+  sources?: { label: string; href: string }[]
 }
 
-const documentation: Record<string, FamilyGuide> = { ...cartesianDocs, ...specializedDocs }
+const documentation: Record<string, FamilyGuide> = { ...cartesianDocs, ...specializedDocs, ...scientificDocs }
 const sourceBuild = `git clone https://github.com/PITANT-Industries/pitant-charts.git
 cd pitant-charts
 bun install --frozen-lockfile
 bun run --filter @pitant/chart-catalog build:library
 cd apps/chart-catalog
 npm pack --ignore-scripts`
-const properties = [
+const nativeSourceBuild = `git clone https://github.com/PITANT-Industries/pitant-charts.git
+cd pitant-charts
+bun install --frozen-lockfile
+bun run build
+npm pack ./packages/charts ./packages/charts-react`
+const nativeInstall = 'npm install "/path/to/pitant-charts-1.0.0.tgz" "/path/to/pitant-charts-react-1.0.0.tgz"'
+const properties: PropGuide[] = [
   { name: 'example', type: 'ChartExample', description: 'Required. Select a registered chart with getExample(id).' },
   { name: 'data', type: 'ChartData', description: 'Optional categories, numeric series, and family-specific rows. Omit it to use the included sample data. See Data and usage for accepted fields.' },
   { name: 'compact', type: 'boolean', description: 'Uses the compact presentation shown in gallery cards.' },
@@ -100,6 +111,8 @@ export function FamilyDocumentation({ family, variantId, onBrowseFamily, onOpenE
   }, [family.id])
 
   if (!doc || !featured) return null
+  const scientific = group?.id === 'scientific' && family.id !== 'spectral-waterfall'
+  const documentedProps = doc.properties ?? [...properties, ...(extra ? [extra] : [])]
 
   return (
     <div className="family-docs-layout docs-showcase">
@@ -151,13 +164,15 @@ export function FamilyDocumentation({ family, variantId, onBrowseFamily, onOpenE
 
         <section id="docs-usage" aria-labelledby="docs-usage-title">
           <h2 id="docs-usage-title" tabIndex={-1}>Installation</h2>
-          <p>Build the catalog from source with Bun. Your app needs React and React DOM 19.2 or a later 19.x version.</p>
+          <p>{scientific
+            ? 'Build the industrial chart packages with Bun. Your app needs React and React DOM 19.'
+            : 'Build the catalog from source with Bun. Your app needs React and React DOM 19.2 or a later 19.x version.'}</p>
           <div className="docs-install-blocks">
-            <CodeBlock language="Build and pack" source={sourceBuild} />
-            <CodeBlock language="Install in your app" source={'npm install "/path/to/pitant-chart-catalog-VERSION.tgz"'}
-              note={<>Use the path to the archive printed by <code>npm pack</code>.</>} />
+            <CodeBlock language="Build and pack" source={scientific ? nativeSourceBuild : sourceBuild} />
+            <CodeBlock language="Install in your app" source={scientific ? nativeInstall : 'npm install "/path/to/pitant-chart-catalog-VERSION.tgz"'}
+              note={<>Use the archive paths printed by <code>npm pack</code>.</>} />
           </div>
-          <p>See the <a href={guideUrl}>integration guide</a> for importing the stylesheet and using a sized chart container.</p>
+          <p>See the <a href={scientific ? scientificGuideUrl : guideUrl}>integration guide</a> for importing the stylesheet and using a sized chart container.</p>
         </section>
 
         <section id="docs-data" aria-labelledby="docs-data-title">
@@ -168,7 +183,9 @@ export function FamilyDocumentation({ family, variantId, onBrowseFamily, onOpenE
             <dt>Reading the chart</dt><dd>{doc.reading}</dd>
           </dl>
           <ul>{doc.notes.map((note) => <li key={note}>{note}</li>)}</ul>
-          <p><a href={`${repositoryUrl}/blob/main/apps/chart-catalog/CALLER_DATA.md`}>Input data by example</a></p>
+          {doc.sources?.length ? (
+            <ul aria-label="Data sources">{doc.sources.map(({ href, label }) => <li key={href}><a href={href}>{label}</a></li>)}</ul>
+          ) : <p><a href={`${repositoryUrl}/blob/main/apps/chart-catalog/CALLER_DATA.md`}>Input data by example</a></p>}
         </section>
 
         <section id="docs-props" aria-labelledby="docs-props-title">
@@ -176,7 +193,7 @@ export function FamilyDocumentation({ family, variantId, onBrowseFamily, onOpenE
           <div className="docs-props">
             <table>
               <thead><tr><th scope="col">Prop</th><th scope="col">Type</th><th scope="col">Usage</th></tr></thead>
-              <tbody>{[...properties, ...(extra ? [extra] : [])].map(({ name, type, description }) => <tr key={name}>
+              <tbody>{documentedProps.map(({ name, type, description }) => <tr key={name}>
                 <th scope="row"><code>{name}</code></th><td><code>{type}</code></td><td>{description}</td>
               </tr>)}</tbody>
             </table>

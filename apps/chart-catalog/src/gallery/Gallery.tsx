@@ -25,6 +25,7 @@ const pageSize = 12
 const catalogTitle = document.title
 const popularFamilies = [
   { id: 'all', label: 'All charts' },
+  { id: 'scientific', label: 'Scientific analysis' },
   { id: 'area', label: 'Area' },
   { id: 'bar', label: 'Bar' },
   { id: 'line', label: 'Line' },
@@ -436,11 +437,15 @@ export function Gallery() {
           <div className="gallery-main">
             {documentedFamily ? <FamilyDocumentation key={documentedFamily.id} family={documentedFamily} variantId={link.variant} onOpenExample={showExample} onBrowseFamily={browseDocumentedFamily} /> : <>
             {!showSaved && <nav className="family-rail" aria-label="Popular chart families">
-              {popularFamilies.map(({ id, label }) => (
-                <Button key={id} aria-pressed={id === 'all' ? link.group === 'all' : link.family === id} onClick={() => browseFamily(id)}>
-                  {label}
-                </Button>
-              ))}
+              {popularFamilies.map(({ id, label }) => {
+                const groupTab = id === 'all' || id === 'scientific'
+                return (
+                  <Button key={id} aria-pressed={groupTab ? link.group === id && link.family === 'all' : link.family === id}
+                    onClick={() => groupTab ? choose(id) : browseFamily(id)}>
+                    {label}
+                  </Button>
+                )
+              })}
             </nav>}
             <section ref={results} id="catalog" className="catalog" aria-labelledby="catalog-title">
               <div className="catalog-heading">

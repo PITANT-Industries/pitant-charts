@@ -3,9 +3,11 @@ import type { ReactNode } from 'react'
 import { Button } from '@ui-sdk/react/button'
 import { Check, Copy } from 'lucide-react'
 import type { ChartExample } from '../types'
+import { scientificExampleSource } from './scientific-examples'
 
 export const repositoryUrl = 'https://github.com/PITANT-Industries/pitant-charts'
 export const guideUrl = `${repositoryUrl}/blob/main/apps/chart-catalog/README.md#use-the-react-library`
+export const scientificGuideUrl = `${repositoryUrl}/blob/main/docs/getting-started.md#install-from-source`
 
 function exampleSnippet(example: ChartExample) {
   return `import { ChartPreview, getExample } from '@pitant/chart-catalog'
@@ -116,6 +118,9 @@ export function CodeBlock({ language, source, note }: { language: string; source
 }
 
 export function ExampleCode({ example }: { example: ChartExample }) {
-  return <CodeBlock key={example.id} language="React" source={exampleSnippet(example)}
-    note={<>Build the catalog package from source to use this example. <a href={guideUrl}>Integration guide</a></>} />
+  const scientific = scientificExampleSource(example.id)
+  return <CodeBlock key={example.id} language="React" source={scientific ?? exampleSnippet(example)}
+    note={scientific && example.family !== 'spectral-waterfall'
+      ? <>Build the industrial chart packages from source to run this example. <a href={scientificGuideUrl}>Installation guide</a></>
+      : <>Build the catalog package from source to use this example. <a href={guideUrl}>Integration guide</a></>} />
 }
