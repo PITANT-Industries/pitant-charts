@@ -265,6 +265,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'mass-spectrum':
                 await check_particle_mass_spectrum(plot)
                 code_import = "getExample('mass-spectrum-cms')"
+            elif slug == 'spectrogram-measured':
+                await check_mauna_loa_spectrogram(plot, touch)
+                code_import = '@pitant/charts-react'
             else:
                 await check_native_scientific(plot, slug, touch)
                 code_import = '@pitant/charts-react'
@@ -298,7 +301,6 @@ async def check_native_scientific(plot, slug, touch):
         await expect(readout).to_contain_text('Pearson r = 1')
     else:
         slider_names = {
-            'spectrogram-measured': 'Window center year',
             'process-control-individuals': 'Observation',
             'process-control-capability': 'Histogram bin',
         }
@@ -317,6 +319,46 @@ async def check_native_scientific(plot, slug, touch):
     else:
         await pick_area.click()
     await expect(selection).not_to_have_attribute('data-x-index', selected_x_index)
+
+
+async def check_mauna_loa_spectrogram(plot, touch):
+    await expect(plot.locator('[data-scientific-ready]')).to_have_count(1, timeout=8000)
+    raster = plot.locator('svg image[data-mauna-loa-raster]')
+    await expect(raster).to_have_count(1)
+    await expect(raster).to_be_visible()
+    await expect(raster).to_have_attribute('href', re.compile(r'^data:image/png;base64,[A-Za-z0-9+/]'))
+    await expect(plot.locator('[data-scientific-axes]')).to_be_visible()
+    selection = plot.locator('[data-scientific-selection]')
+    readout = plot.locator('output')
+    trace = plot.locator('[data-mauna-loa-trace]')
+    await expect(trace).to_be_visible()
+
+    await plot.get_by_role('slider', name='Window center year', exact=True).press('End')
+    await expect(readout).to_have_attribute('data-year', '2016')
+    cycles = [('Six-month cycle', '2', 1.006443), ('Four-month cycle', '3', 0.106317)]
+    for name, frequency, expected_amplitude in cycles:
+        shortcut = plot.get_by_role('button', name=name, exact=True)
+        await shortcut.click()
+        await expect(shortcut).to_have_attribute('aria-pressed', 'true')
+        await expect(readout).to_have_attribute('data-frequency', frequency)
+        await expect(readout).to_have_attribute('data-year', '2016')
+        await expect(trace).to_have_attribute('data-frequency', frequency)
+        amplitude = await readout.get_attribute('data-amplitude')
+        if amplitude is None or not abs(float(amplitude) - expected_amplitude) <= 0.0005:
+            raise RuntimeError(f'{name} amplitude for 2016 should be {expected_amplitude} ppm, observed {amplitude}')
+
+    await plot.get_by_role('slider', name='Frequency bin', exact=True).press('ArrowLeft')
+    await expect(readout).to_have_attribute('data-frequency', '2.875')
+    await expect(trace).to_have_attribute('data-frequency', '2.875')
+    await expect(selection).to_be_visible()
+    await expect(selection).to_have_attribute('data-x-index', '32')
+    pick_area = plot.locator('[data-scientific-pick]')
+    if touch:
+        await pick_area.tap()
+    else:
+        await pick_area.click()
+    await expect(selection).not_to_have_attribute('data-x-index', '32')
+    await expect(readout).not_to_have_attribute('data-year', '2016')
 
 
 async def check_particle_mass_spectrum(plot):

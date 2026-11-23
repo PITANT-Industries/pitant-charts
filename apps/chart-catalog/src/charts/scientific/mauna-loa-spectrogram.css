@@ -1,0 +1,293 @@
+.mauna-loa-spectrogram {
+  --mauna-loa-field: #170e29;
+  --mauna-loa-paper: #f3ded9;
+  --mauna-loa-ember: #ffb568;
+  display: grid;
+  gap: .8rem;
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+}
+
+.mauna-loa-spectrogram[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.mauna-loa-caption {
+  display: grid;
+  gap: .2rem;
+  max-inline-size: 70ch;
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .875rem;
+  line-height: 1.5;
+}
+
+.mauna-loa-caption strong {
+  color: var(--gallery-ink, var(--foreground));
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.mauna-loa-caption p {
+  margin: 0;
+}
+
+.mauna-loa-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .16em;
+}
+
+.mauna-loa-plot {
+  position: relative;
+  block-size: clamp(15rem, 48cqw, 23rem);
+  min-inline-size: 0;
+  overflow: hidden;
+  border-radius: .65rem;
+  background: var(--mauna-loa-field);
+}
+
+.mauna-loa-spectrogram[data-compact='true'] .mauna-loa-plot {
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.mauna-loa-plot svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  font-family: var(--chart-font-family, system-ui, sans-serif);
+  font-variant-numeric: tabular-nums;
+}
+
+.mauna-loa-axis {
+  fill: var(--mauna-loa-paper);
+  font-size: 11px;
+}
+
+.mauna-loa-axis-title {
+  fill: var(--mauna-loa-paper);
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.mauna-loa-band-label {
+  fill: var(--mauna-loa-paper);
+  font-size: 11px;
+  font-weight: 670;
+}
+
+.mauna-loa-band-bg {
+  fill: var(--mauna-loa-field);
+  fill-opacity: .9;
+}
+
+.mauna-loa-selection {
+  fill: none;
+  stroke: #fff4df;
+  stroke-width: 1.5px;
+  filter: drop-shadow(0 0 1px var(--mauna-loa-field));
+  pointer-events: none;
+}
+
+.mauna-loa-selection line {
+  stroke-dasharray: 3 4;
+  stroke-opacity: .75;
+}
+
+.mauna-loa-selection circle {
+  fill: var(--mauna-loa-ember);
+  stroke: var(--mauna-loa-field);
+}
+
+.mauna-loa-pick {
+  fill: transparent;
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.mauna-loa-scale {
+  display: grid;
+  gap: .3rem;
+  padding-inline: .35rem;
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.mauna-loa-scale-bar {
+  min-block-size: .45rem;
+  border-radius: 100vw;
+}
+
+.mauna-loa-scale-ticks {
+  position: relative;
+  min-block-size: 1.1rem;
+}
+
+.mauna-loa-scale-ticks > span {
+  position: absolute;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.mauna-loa-scale-ticks > span:first-child {
+  transform: none;
+}
+
+.mauna-loa-scale-ticks > span:last-child {
+  transform: translateX(-100%);
+}
+
+.mauna-loa-inspector {
+  display: grid;
+  gap: .7rem;
+  min-inline-size: 0;
+  padding: .8rem;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .55rem;
+  background: var(--gallery-surface, var(--card));
+}
+
+.mauna-loa-inspector-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .45rem .8rem;
+}
+
+.mauna-loa-inspector-header output {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .25rem .55rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.mauna-loa-inspector-header output strong {
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.mauna-loa-inspector-header output span {
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .8rem;
+}
+
+.mauna-loa-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+}
+
+.mauna-loa-shortcuts button {
+  min-block-size: 2rem;
+  margin: 0;
+  padding: .25em .65em;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .35rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: .75rem;
+}
+
+.mauna-loa-shortcuts button:hover {
+  border-color: var(--gallery-accent, var(--primary));
+}
+
+.mauna-loa-shortcuts button[aria-pressed='true'] {
+  border-color: var(--gallery-accent, var(--primary));
+  background: var(--gallery-selection, var(--muted));
+  color: var(--gallery-selection-text, var(--foreground));
+  font-weight: 650;
+}
+
+.mauna-loa-shortcuts button:focus-visible,
+.mauna-loa-controls input:focus-visible {
+  outline: 2px solid var(--gallery-accent, var(--primary));
+  outline-offset: .17rem;
+}
+
+.mauna-loa-trace {
+  display: grid;
+  gap: .2rem;
+  min-inline-size: 0;
+  padding-block: .5rem;
+  border-block: 1px solid var(--gallery-rule, var(--border));
+}
+
+.mauna-loa-trace svg {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+}
+
+.mauna-loa-trace-label {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: .15rem .6rem;
+  margin: 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.mauna-loa-trace-line {
+  fill: none;
+  stroke: var(--gallery-accent, var(--primary));
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.mauna-loa-trace-marker {
+  fill: var(--gallery-accent, var(--primary));
+  stroke: var(--gallery-surface, var(--card));
+  stroke-width: 1.5px;
+}
+
+line.mauna-loa-trace-marker {
+  stroke: var(--gallery-accent, var(--primary));
+  stroke-dasharray: 2 3;
+  stroke-opacity: .5;
+}
+
+.mauna-loa-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .35rem .8rem;
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .8rem;
+}
+
+.mauna-loa-controls label {
+  display: grid;
+  gap: .15rem;
+  min-inline-size: 0;
+}
+
+.mauna-loa-controls input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 2rem;
+  margin: 0;
+  accent-color: var(--gallery-accent, var(--primary));
+}
+
+@container (max-width: 19rem) {
+  .mauna-loa-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mauna-loa-axis,
+  .mauna-loa-band-label {
+    font-size: 10px;
+  }
+}

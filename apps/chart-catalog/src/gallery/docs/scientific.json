@@ -37,13 +37,15 @@
     ]
   },
   "spectrogram": {
-    "summary": "See how the frequency content of a measured signal changes over time.",
-    "useWhen": "Compare the strength of recurring frequencies across different parts of a record.",
+    "summary": "Follow Mauna Loa’s annual CO₂ cycle and its weaker harmonics over time.",
+    "useWhen": "Find which frequencies persist across a measured record and which are stronger in particular periods.",
     "data": "Pass sorted time and frequency bin centers, the widths of those bins, and one amplitude per cell. Set valueLayout to match the order of the flattened array.",
-    "reading": "Time runs horizontally and frequency vertically. Use the color scale to read amplitude and compare the same frequency across window centers.",
+    "reading": "Read window center years along the bottom and cycles per year along the vertical axis. Select a cell or cycle button to trace that frequency’s amplitude across windows.",
     "notes": [
-      "The example uses 480 monthly dry-air CO₂ measurements from NOAA's Mauna Loa Observatory, from January 1980 through December 2019. Each tile column shows a 96-month Hann window, stepped by 12 months, with a separate linear trend removed from each window. The plot shows frequencies from 0.25 to 4 cycles per year.",
-      "The time label marks the center of an analysis window. Adjacent columns represent overlapping windows.",
+      "The chart uses 480 NOAA Mauna Loa monthly dry-air CO₂ measurements from January 1980 through December 2019. It shows one-sided peak amplitudes in 31 bins from 0.25 to 4 cycles per year after removing a linear trend and applying a periodic Hann window to each segment.",
+      "The 33 eight-year windows are centered from 1984 through 2016. Each starts one year after the previous window, so adjacent estimates share seven years of observations.",
+      "For smooth color, the heatmap interpolates between neighboring bin-center amplitudes before applying the shifted-log color scale, ln(1 + amplitude / 0.02 ppm). The legend is labeled in ppm. The trace and readout show the original bin amplitudes in ppm.",
+      "Across these windows, the annual cycle ranges from 2.777 to 3.120 ppm, the six-month cycle from 0.763 to 1.006 ppm, and the four-month cycle from 0.041 to 0.179 ppm.",
       "For frequency-major values, the offset is frequencyIndex × timeBins.length + timeIndex. For time-major values, the offset is timeIndex × frequencyBins.length + frequencyIndex."
     ],
     "properties": [
