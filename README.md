@@ -1,11 +1,8 @@
 <p align="center">
-  <a href="http://opensource.pitant.de/">
-    <img src="apps/chart-catalog/src/gallery/brand/pitant-icon.svg" alt="" width="27">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="apps/chart-catalog/src/gallery/brand/pitant-wordmark-white.svg">
-      <img src="apps/chart-catalog/src/gallery/brand/pitant-wordmark.svg" alt="PITANT" width="90">
-    </picture>
-  </a>
+  <a href="http://opensource.pitant.de/"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/pitant-logo-dark.svg">
+    <img src="docs/images/pitant-logo-light.svg" alt="PITANT" width="174" height="30">
+  </picture></a>
 </p>
 
 <h1 align="center">PITANT Charts</h1>
