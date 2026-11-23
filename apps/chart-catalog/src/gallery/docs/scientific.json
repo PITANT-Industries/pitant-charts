@@ -3,7 +3,7 @@
     "summary": "Follow how vibration frequencies and amplitudes change as a shaft speeds up.",
     "useWhen": "Compare bearing run-ups, track harmonics tied to shaft rotation, or find speeds where vibration strengthens at a particular frequency.",
     "data": "Supply at least two nonnegative frequencies in Hz in strictly increasing order. Each run needs a unique id, a label, at least two nonnegative shaft speeds in RPM in strictly increasing order, and one spectrum of finite amplitudes per speed. The amplitude at speed index i and frequency index j is levelsDb[i][j].",
-    "reading": "The heatmap shows shaft speed in RPM along the horizontal axis and vibration frequency in Hz along the vertical axis. Color shows relative amplitude in dB on a scale shared by all runs. Choose a run and select a shaft speed to inspect its complete frequency spectrum.",
+    "reading": "The heatmap shows shaft speed in RPM along the horizontal axis and vibration frequency in Hz along the vertical axis. Both bearing runs share the shaft speed, frequency, and relative amplitude scales. Areas outside the selected run’s measured speed range are blank. Select a shaft speed to inspect its complete spectrum.",
     "notes": [
       "The measured example compares two University of Ottawa run-ups, a healthy bearing (H-A-1) and a bearing with an inner-race fault (I-A-1). The healthy run spans 862–1,420 RPM and the fault run spans 759–1,638 RPM.",
       "Each run supplies 40 nonoverlapping 250 ms windows of 200 kHz accelerometer data. Each window is demeaned and Hann tapered before computing the FFT. The chart shows 100 frequency bins from 4 to 400 Hz. Speed is estimated from encoder pulse timing within each window.",

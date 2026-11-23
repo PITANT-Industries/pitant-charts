@@ -247,8 +247,7 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             await check_chart_output(card_plot)
             await expect(card.locator('button:visible, input:visible, [role="tooltip"]:visible')).to_have_count(0)
             if example['family'] == 'campbell-diagram':
-                await expect(card_plot.locator('[data-campbell-heatmap]')).to_be_visible()
-                await expect(card_plot.locator('[data-campbell-raster]')).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+                await check_campbell_figure(card_plot.locator('[data-campbell-heatmap]'), compact=True)
                 await expect(card_plot.locator('select, output[data-campbell-readout]')).to_have_count(0)
             elif example['family'] == 'mode-shapes':
                 await expect(card_plot.locator('[data-mode-shape-plot]')).to_be_visible()
@@ -313,10 +312,32 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
         await page.close()
 
 
-async def check_campbell_diagram(plot, touch):
-    heatmap = plot.locator('[data-campbell-heatmap]')
+async def check_campbell_figure(heatmap, compact=False):
     await expect(heatmap).to_be_visible()
     await expect(heatmap.locator('[data-campbell-raster]')).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+    await expect(heatmap.locator('rect[data-campbell-axis-frame]')).to_be_visible()
+    await expect(heatmap.locator('.scientific-tick').first).to_be_attached()
+    colorbar = heatmap.locator('[data-campbell-colorbar]')
+    await expect(colorbar.locator('rect[fill^="url("]')).to_be_visible()
+    await expect(colorbar.get_by_text('Relative amplitude (dB)', exact=True)).to_be_visible()
+    await expect(colorbar.get_by_text(re.compile(r'^[−-]60$'))).to_be_visible()
+    await expect(colorbar.get_by_text('0', exact=True)).to_be_visible()
+    await expect(colorbar.locator('text')).to_have_count(4 if compact else 5)
+    clipped_label = await colorbar.evaluate("""bar => {
+      const figure = bar.ownerSVGElement.getBoundingClientRect()
+      return Array.from(bar.querySelectorAll('text')).find(label => {
+        const box = label.getBoundingClientRect()
+        return box.left < figure.left - 1 || box.right > figure.right + 1 ||
+          box.top < figure.top - 1 || box.bottom > figure.bottom + 1
+      })?.textContent
+    }""")
+    if clipped_label:
+        raise RuntimeError(f'The Campbell color scale label {clipped_label!r} extends beyond the figure')
+
+
+async def check_campbell_diagram(plot, touch):
+    heatmap = plot.locator('[data-campbell-heatmap]')
+    await check_campbell_figure(heatmap)
     spectrum = plot.locator('[data-campbell-spectrum]')
     await expect(spectrum).to_be_visible()
     trace = spectrum.locator('[data-campbell-spectrum-path]')
