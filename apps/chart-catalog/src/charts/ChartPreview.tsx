@@ -26,6 +26,7 @@ const FatigueSnPreview = lazy(() => import('./scientific/FatigueSnPreview'))
 const CrackGrowthPreview = lazy(() => import('./scientific/CrackGrowthPreview'))
 const BinaryPhaseDiagramPreview = lazy(() => import('./scientific/BinaryPhaseDiagramPreview'))
 const TernaryMixtureMapPreview = lazy(() => import('./scientific/TernaryMixtureMapPreview'))
+const IndustrialCtViewerPreview = lazy(() => import('./scientific/IndustrialCtViewerPreview'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
 const ParticleMassSpectrum = lazy(() => import('./scientific/particle/ParticleMassSpectrumPreview'))
 const ScientificWaterfall = lazy(() => import('./scientific/waterfall/SpectralWaterfallPreview'))
@@ -52,6 +53,7 @@ export const rendererFamilies = {
   crackGrowth: ['crack-growth'],
   binaryPhaseDiagram: ['binary-phase-diagram'],
   ternaryMixtureMap: ['ternary-mixture-map'],
+  industrialCt: ['industrial-ct'],
   spectrogram: ['spectrogram'],
   scientific: ['spectrum', 'correlation-matrix', 'process-control'],
   statsmaps: ['scatter', 'heatmap', 'uncertainty', 'histogram', 'ridgeline', 'ecdf', 'beeswarm', 'violin', 'box-plot', 'hexbin', 'density', 'choropleth', 'bubble-map', 'route-map', 'globe', 'vector-field'],
@@ -78,6 +80,7 @@ const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.crackGrowth.map((id) => [id, CrackGrowthPreview] as const),
   ...rendererFamilies.binaryPhaseDiagram.map((id) => [id, BinaryPhaseDiagramPreview] as const),
   ...rendererFamilies.ternaryMixtureMap.map((id) => [id, TernaryMixtureMapPreview] as const),
+  ...rendererFamilies.industrialCt.map((id) => [id, IndustrialCtViewerPreview] as const),
   ...rendererFamilies.waterfall.map((id) => [id, ScientificWaterfall] as const),
   ...rendererFamilies.spectrogram.map((id) => [id, MaunaLoaSpectrogram] as const),
   ...rendererFamilies.scientific.map((id) => [id, Scientific] as const),

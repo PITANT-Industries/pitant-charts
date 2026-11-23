@@ -99,7 +99,7 @@ export function FamilyDocumentation({ family, variantId, onNavigate }: {
 
   const otherExamples = family.examples.filter((example) => example.id !== featured.id)
   const toc = otherExamples.length ? [...familyToc, { id: 'docs-examples-title', title: 'Examples' }] : familyToc
-  const scientific = getGroupForFamily(family.id)?.id === 'scientific' && !['spectral-waterfall', 'mass-spectrum', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase', 'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker', 'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram', 'ternary-mixture-map'].includes(family.id)
+  const scientific = getGroupForFamily(family.id)?.id === 'scientific' && !['spectral-waterfall', 'mass-spectrum', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase', 'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker', 'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram', 'ternary-mixture-map', 'industrial-ct'].includes(family.id)
   const extra = extraProperties[family.id]
   const documentedProps = doc.properties ?? [...properties, ...(extra ? [extra] : [])]
 
