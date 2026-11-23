@@ -25,6 +25,7 @@ export default defineConfig({
     },
   ],
   resolve: {
+    dedupe: ['react', 'react-dom'],
     alias: [
       {
         find: '@pitant/charts/styles/tokens.css',
@@ -35,12 +36,6 @@ export default defineConfig({
         replacement: resolve(root, 'packages/charts-react/src/index.ts'),
       },
       { find: '@pitant/charts', replacement: resolve(root, 'packages/charts/src/index.ts') },
-      { find: 'react', replacement: resolve(__dirname, 'node_modules/react') },
-      { find: 'react-dom', replacement: resolve(__dirname, 'node_modules/react-dom') },
-      {
-        find: 'react/jsx-runtime',
-        replacement: resolve(__dirname, 'node_modules/react/jsx-runtime.js'),
-      },
     ],
   },
   server: {

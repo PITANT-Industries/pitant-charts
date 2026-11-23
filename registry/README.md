@@ -3,6 +3,9 @@
 This folder contains the first shadcn-compatible registry blocks for
 `@pitant/charts` and `@pitant/charts-react`.
 
+Registry source files carry MPL-2.0 notices that travel with the components
+when installed. [Licensing and source access](../docs/licensing.md)
+
 ## Items
 
 | Item | Target |
@@ -37,7 +40,10 @@ and building the consumer.
 ## Install Contract
 
 Each block is a client component and assumes the host app already has React.
-The registry item installs `@pitant/charts` and `@pitant/charts-react`.
+The registry item declares `@pitant/charts` and `@pitant/charts-react`. The
+local smoke test verifies installation with workspace archives. For a
+consumer using a source checkout, build and install both industrial archives.
+[Source installation](../docs/getting-started.md#install-from-source)
 
 Import chart tokens once in the host app when PITANT defaults should override
 the built-in CSS variable fallbacks:

@@ -2,6 +2,7 @@
   "name": "@pitant/chart-catalog",
   "version": "0.7.0",
   "private": true,
+  "license": "MPL-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -12,6 +13,12 @@
   },
   "sideEffects": ["**/*.css"],
   "files": [
+    "src",
+    "tsconfig.json",
+    "SOURCE.md",
+    "tsconfig.library.json",
+    "vite.library.config.ts",
+    "LICENSE",
     "dist-library",
     "licenses",
     "THIRD_PARTY_NOTICES.md"

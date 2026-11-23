@@ -80,8 +80,10 @@ bun install --frozen-lockfile
 bun run catalog:dev
 ```
 
-Common workspace commands are `bun run build`, `bun run test`, `bun run typecheck`, and `bun run lint`. See [Contributing](CONTRIBUTING.md), the [architecture overview](ARCHITECTURE.md), and the [changelog](CHANGELOG.md).
+Common workspace commands are `bun run build`, `bun run test`, `bun run typecheck`, and `bun run lint`. [Getting started](docs/getting-started.md) · [Contributing](CONTRIBUTING.md) · [CI and delivery](docs/ci-cd.md) · [Architecture](ARCHITECTURE.md) · [Changelog](CHANGELOG.md)
 
 ## License
 
-The [core engine](packages/charts/LICENSE), [React bindings](packages/charts-react/LICENSE), and [dashboard components](packages/charts-ui/LICENSE) are MIT licensed. See the third-party notices for [PITANT Charts](packages/charts-ui/THIRD_PARTY_NOTICES.md) and the [chart catalog](apps/chart-catalog/THIRD_PARTY_NOTICES.md).
+PITANT-owned source code is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, you can obtain one from [Mozilla](https://mozilla.org/MPL/2.0/).
+
+Earlier MIT distributions retain their original terms. The chart archives include the corresponding source and applicable third-party notices. [License](LICENSE) · [Licensing and source access](docs/licensing.md) · [Catalog notices](apps/chart-catalog/THIRD_PARTY_NOTICES.md) · [Dashboard notices](packages/charts-ui/THIRD_PARTY_NOTICES.md)
