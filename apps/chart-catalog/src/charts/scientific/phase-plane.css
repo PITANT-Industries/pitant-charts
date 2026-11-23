@@ -1,0 +1,185 @@
+.phase-plane {
+  display: grid;
+  gap: .65rem;
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+}
+
+.phase-plane[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.phase-plane),
+.detail-plot:has(.phase-plane) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.phase-portrait {
+  block-size: clamp(16rem, 49cqw, 24rem);
+}
+
+.phase-history {
+  block-size: clamp(11rem, 26cqw, 12rem);
+}
+
+.phase-plane[data-compact='true'] .phase-portrait {
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.phase-y-label[data-short-label='true'] {
+  font-size: 9px;
+}
+
+.phase-zero {
+  stroke: #a0a9b1;
+  stroke-width: 1px;
+  stroke-dasharray: 3 3;
+}
+
+.phase-trace,
+.phase-arrow,
+.phase-field {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.phase-trace {
+  stroke: #245781;
+  stroke-width: 1.55px;
+}
+
+.phase-history-trace {
+  stroke-width: 1.2px;
+}
+
+.phase-arrow {
+  stroke: #153f62;
+  stroke-width: 1.5px;
+}
+
+.phase-field {
+  stroke: #a9b2ba;
+  stroke-width: 1px;
+}
+
+.phase-start,
+.phase-cursor {
+  fill: #fff;
+  stroke: #153f62;
+  stroke-width: 1.35px;
+}
+
+.phase-cursor {
+  fill: #153f62;
+  stroke: #fff;
+  stroke-width: 1.25px;
+}
+
+.phase-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem 1rem;
+  margin: -.2rem 0 .35rem;
+  font-size: .76rem;
+}
+
+.phase-key span,
+.phase-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.phase-key svg {
+  border-radius: 2px;
+  background: #fff;
+}
+
+.phase-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .45rem 1.2rem;
+  font-size: .8rem;
+}
+
+.phase-controls label {
+  min-inline-size: 0;
+}
+
+.phase-controls select {
+  min-inline-size: 0;
+  min-block-size: 2rem;
+  padding-inline: .45rem;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .25rem;
+  background: var(--gallery-surface, var(--card));
+  color: inherit;
+  font: inherit;
+}
+
+.phase-history-pick {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.phase-scrub {
+  display: grid;
+  gap: .15rem;
+  font-size: .8rem;
+}
+
+.phase-controls input,
+.phase-scrub input {
+  margin: 0;
+  accent-color: var(--gallery-accent, var(--primary));
+}
+
+.phase-scrub input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 1.65rem;
+}
+
+.phase-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem 1.5rem;
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-readout span {
+  display: grid;
+  gap: .12rem;
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+.phase-readout strong {
+  color: var(--gallery-ink, var(--foreground));
+  font-size: .92rem;
+}
+
+.phase-caption {
+  padding-block-start: .6rem;
+  border-block-start: 1px solid var(--gallery-rule, var(--border));
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.phase-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+.phase-caption p {
+  margin: .18rem 0 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+}

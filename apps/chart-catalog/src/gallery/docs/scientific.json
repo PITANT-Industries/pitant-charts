@@ -219,6 +219,29 @@
       { "label": "W. J. Riley (2008), Handbook of Frequency Stability Analysis, NIST SP 1065", "href": "https://doi.org/10.6028/NIST.SP.1065" }
     ]
   },
+  "phase-plane": {
+    "summary": "Follow position and velocity together, with the selected state linked to its time in the trajectory.",
+    "useWhen": "Inspect how an oscillator approaches equilibrium, compare trajectories under different damping, or examine the direction of motion in state space.",
+    "data": "Supply labels and units for the position and velocity axes. Give each trajectory a unique ID, a label, and samples with strictly increasing timeSeconds and finite position and velocity values. For a continuous rotation, supply an unwrapped angular position coordinate.",
+    "reading": "Choose a Trajectory and move the Time control or select a point on the linked position history. The main plot shows position horizontally and velocity vertically, with an arrow pointing in the direction of increasing time. The markers identify the same recorded state in both views.",
+    "notes": [
+      "The example uses three recordings of the same 0.607 m pendulum from the Damped Pendulum Dataset. The damping setups are air only, a small paper baffle, and a large paper baffle. The PASCO PS-3220 recordings report angle in radians and angular velocity in radians per second at 100 Hz.",
+      "The excerpts use trials len5_cond1_2, len5_cond2_2, and len5_cond3_1. Time starts at the last recorded zero-velocity sample before the sustained inward swing. Starting angles are 0.553, 0.603, and 0.559 rad. The chart retains every fourth sample through 16 s, for 401 displayed samples per trajectory at 25 Hz.",
+      "For an undriven pendulum, the hanging state at zero angle and zero angular velocity is an equilibrium. With dissipation, the measured loops contract as the motion approaches that state.",
+      "The copyable oscillator example supplies a model for the direction field. Pass acceleration(position, velocity) to draw the rate vector (velocity, acceleration) at each state. Use consistent units, with velocity equal to position units per second and acceleration equal to velocity units per second. Show direction field toggles the model arrows when valid acceleration values are available."
+    ],
+    "properties": [
+      { "name": "data", "type": "PhasePlaneData", "description": "Required. Provide axis labels and units and runs with timeSeconds, position, and velocity samples. A run can supply an acceleration function for the direction field." },
+      { "name": "initialTimeSeconds", "type": "number", "description": "Choose the initial time to inspect, in seconds." },
+      { "name": "label", "type": "string", "description": "Describe the measured state and test condition for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact phase-plane plot for a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Add the source, a measurement or model note, and optional license information." }
+    ],
+    "sources": [
+      { "label": "Enze Xu et al., Damped Pendulum Dataset, measured rotary sensor recordings (Apache-2.0)", "href": "https://github.com/EnzeXu/Damped_Pendulum_Dataset/tree/cbf82673641ecd65e902ad5c38a048387649a2a0" },
+      { "label": "Russ Tedrake, Underactuated Robotics, Chapter 2, The Simple Pendulum", "href": "https://underactuated.csail.mit.edu/pend.html" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",
