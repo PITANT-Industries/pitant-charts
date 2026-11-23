@@ -215,7 +215,10 @@ async def check_docs_navigation(browser, local_url, catalog):
 
 
 async def check_scientific_catalog(browser, local_url, catalog):
-    families = {'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix', 'process-control', 'campbell-diagram'}
+    families = {
+        'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
+        'process-control', 'campbell-diagram', 'mode-shapes',
+    }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
         await check_scientific_profile(browser, local_url, examples, width, height, theme)
@@ -246,6 +249,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card_plot.locator('[data-campbell-heatmap]')).to_be_visible()
                 await expect(card_plot.locator('[data-campbell-raster]')).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
                 await expect(card_plot.locator('select, output[data-campbell-readout]')).to_have_count(0)
+            elif example['family'] == 'mode-shapes':
+                await expect(card_plot.locator('[data-mode-shape-plot]')).to_be_visible()
+                await expect(card_plot.locator('[data-mode-readout]')).to_have_count(0)
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
 
@@ -273,6 +279,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'campbell-diagram':
                 await check_campbell_diagram(plot, touch)
                 code_import = 'CampbellDiagram'
+            elif example['family'] == 'mode-shapes':
+                await check_mode_shapes(plot, touch)
+                code_import = 'ModeShapes'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -346,6 +355,65 @@ async def check_campbell_diagram(plot, touch):
     await speed.press('Home')
     await frequency.press('Home')
     await expect(trace).not_to_have_attribute('d', initial_spectrum)
+
+
+async def check_mode_shapes(plot, touch):
+    chart = plot.locator('[data-mode-shapes]')
+    await expect(chart.locator('[data-mode-shape-plot]')).to_be_visible()
+    deflection = chart.locator('[data-mode-deflection]')
+    await expect(deflection).to_have_attribute('d', re.compile(r'^M'))
+    readout = chart.locator('[data-mode-readout]')
+    await expect(readout).to_be_visible()
+    first_mode = chart.get_by_role('button', name='Mode 1', exact=True)
+    third_mode = chart.get_by_role('button', name='Mode 3', exact=True)
+    phase = chart.get_by_role('slider', name='Oscillation phase', exact=True)
+    scale = chart.get_by_role('slider', name='Deformation scale', exact=True)
+    play = chart.get_by_role('button', name='Play deformation', exact=True)
+    pause = chart.get_by_role('button', name='Pause deformation', exact=True)
+    await expect(play).to_be_visible()
+    await expect(chart.get_by_role('button', name=re.compile(r'^Mode [1-4]$'))).to_have_count(4)
+    await expect(third_mode).to_have_attribute('aria-pressed', 'true')
+    await expect(readout).to_have_attribute('data-mode', '3')
+    initial_frequency = await readout.get_attribute('data-frequency')
+    if initial_frequency is None or not abs(float(initial_frequency) - 119.2323) <= 0.001:
+        raise RuntimeError(f'Mode 3 should have a frequency of 119.2323 Hz, observed {initial_frequency}')
+    initial_deflection = await deflection.get_attribute('d')
+    nodes = chart.locator('[data-mode-node]')
+    initial_nodes = await nodes.count()
+    if touch:
+        await first_mode.tap()
+    else:
+        await first_mode.click()
+    await expect(first_mode).to_have_attribute('aria-pressed', 'true')
+    await expect(third_mode).to_have_attribute('aria-pressed', 'false')
+    await expect(readout).to_have_attribute('data-mode', '1')
+    first_frequency = await readout.get_attribute('data-frequency')
+    if first_frequency is None or not abs(float(first_frequency) - 6.79484) <= 0.001:
+        raise RuntimeError(f'Mode 1 should have a frequency of 6.79484 Hz, observed {first_frequency}')
+    await expect(deflection).not_to_have_attribute('d', initial_deflection)
+    await expect(nodes).not_to_have_count(initial_nodes)
+
+    await scale.press('End')
+    await phase.press('Home')
+    await expect(readout).to_have_attribute('data-phase', '0')
+    start_deflection = await deflection.get_attribute('d')
+    await phase.press('PageUp')
+    await expect(readout).not_to_have_attribute('data-phase', '0')
+    await expect(deflection).not_to_have_attribute('d', start_deflection)
+    scaled_deflection = await deflection.get_attribute('d')
+    scaled_phase = await readout.get_attribute('data-phase')
+    await scale.press('Home')
+    await expect(deflection).not_to_have_attribute('d', scaled_deflection)
+    await expect(readout).to_have_attribute('data-phase', scaled_phase)
+
+    await play.click()
+    await expect(pause).to_be_visible()
+    await expect(readout).not_to_have_attribute('data-phase', scaled_phase)
+    await pause.click()
+    await expect(play).to_be_visible()
+    stopped_phase = await readout.get_attribute('data-phase')
+    await readout.evaluate('() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))')
+    await expect(readout).to_have_attribute('data-phase', stopped_phase)
 
 
 async def check_native_scientific(plot, slug, touch):
