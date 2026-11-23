@@ -3236,6 +3236,22 @@
     ]
   },
   {
+    "id": "frequency-response",
+    "name": "Linked Bode and Nyquist Plots",
+    "url": "https://opensource.pitant.de/charts/#docs=frequency-response",
+    "examples": [
+      {
+        "id": "frequency-response-servo",
+        "family": "frequency-response",
+        "title": "Flexible Servo Loop Response",
+        "label": "Simulated open-loop frequency sweep",
+        "description": "Follow one frequency across Bode magnitude, Bode phase, and the Nyquist curve while comparing two servo loop gains.",
+        "url": "https://opensource.pitant.de/charts/#example=frequency-response-servo",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",

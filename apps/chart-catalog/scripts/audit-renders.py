@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import json
+import math
 import os
 import re
 from pathlib import Path
@@ -217,7 +218,7 @@ async def check_docs_navigation(browser, local_url, catalog):
 async def check_scientific_catalog(browser, local_url, catalog):
     families = {
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
-        'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit',
+        'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -255,6 +256,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'shaft-orbit':
                 await expect(card_plot.locator('svg[data-orbit-plot]')).to_be_visible()
                 await expect(card_plot.locator('select, [data-orbit-waveforms], [data-orbit-readout]')).to_have_count(0)
+            elif example['family'] == 'frequency-response':
+                nyquist = card_plot.locator('svg[data-nyquist-plot]')
+                await expect(nyquist).to_be_visible()
+                await expect(nyquist.locator('path[data-response-trace]')).to_have_attribute('d', re.compile(r'^M'))
+                await expect(card_plot.locator('select, [data-bode-magnitude], [data-bode-phase], [data-response-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=frequency-response&variant=frequency-response-servo'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
 
@@ -288,6 +297,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'shaft-orbit':
                 await check_shaft_orbit(plot, touch)
                 code_import = 'ShaftOrbit'
+            elif example['family'] == 'frequency-response':
+                await check_frequency_response(plot, touch)
+                code_import = 'FrequencyResponse'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -494,6 +506,103 @@ async def check_shaft_orbit(plot, touch):
     await expect(readout).not_to_have_attribute('data-phase', '360')
     await expect(readout).to_have_attribute('data-revolution', '12')
     await expect(readout).to_have_attribute('data-rpm', '1800')
+
+
+async def check_frequency_response(plot, touch):
+    chart = plot.locator('[data-frequency-response]')
+    await expect(chart.locator('figcaption')).to_contain_text(re.compile(r'\bsimulat(?:ed|ion)\b', re.I))
+    magnitude = chart.locator('svg[data-bode-magnitude]')
+    phase = chart.locator('svg[data-bode-phase]')
+    nyquist = chart.locator('svg[data-nyquist-plot]')
+    panels = [magnitude, phase, nyquist]
+    traces = [panel.locator('path[data-response-trace]') for panel in panels]
+    for panel, trace in zip(panels, traces):
+        await expect(panel).to_be_visible()
+        await expect(trace).to_have_attribute('d', re.compile(r'^M'))
+        await expect(panel.locator('[data-response-marker]')).to_be_visible()
+    await expect(nyquist.locator('[data-nyquist-critical]')).to_be_visible()
+
+    readout = chart.locator('output[data-response-readout]')
+    frequency = chart.get_by_role('slider', name='Frequency', exact=True)
+    gain = chart.get_by_role('combobox', name='Loop gain', exact=True)
+    await expect(readout).to_be_visible()
+    await expect(gain).to_have_value('nominal')
+
+    async def linked_sample():
+        attributes = await readout.evaluate(
+            "output => ['frequency', 'magnitude', 'phase', 'real', 'imaginary'].map(key => output.dataset[key])"
+        )
+        for panel in panels:
+            await expect(panel.locator('[data-response-marker]')).to_have_attribute('data-frequency', attributes[0])
+        hz, magnitude_db, phase_deg, real, imaginary = map(float, attributes)
+        if hz <= 0 or not all(map(math.isfinite, (hz, magnitude_db, phase_deg, real, imaginary))):
+            raise RuntimeError(f'Invalid frequency response sample: {attributes}')
+        if not math.isclose(magnitude_db, 20 * math.log10(math.hypot(real, imaginary)), abs_tol=0.001):
+            raise RuntimeError(f'Magnitude does not match the complex sample at {hz} Hz')
+        wrapped_phase = math.degrees(math.atan2(imaginary, real))
+        if abs(math.remainder(phase_deg - wrapped_phase, 360)) > 0.001:
+            raise RuntimeError(f'Phase does not match the complex sample at {hz} Hz')
+        return hz, magnitude_db, phase_deg, real, imaginary
+
+    await frequency.press('Home')
+    first_hz, *_ = await linked_sample()
+    await frequency.press('End')
+    last_hz, _, last_phase, *_ = await linked_sample()
+    if not math.isclose(first_hz, 0.6) or not math.isclose(last_hz, 200):
+        raise RuntimeError(f'Expected fixture frequencies from 0.6 to 200 Hz, observed {first_hz} to {last_hz} Hz')
+    if not math.isclose(last_phase, -255.03, abs_tol=0.01):
+        raise RuntimeError(f'Phase should continue below −180° after the wrap, observed {last_phase}° at {last_hz} Hz')
+
+    async def pick(target, position):
+        if touch:
+            await target.tap(position=position)
+        else:
+            await target.click(position=position)
+
+    bode_picks = [(magnitude, 0.74), (phase, 0.27)]
+    selected_frequencies = []
+    for panel, fraction in bode_picks:
+        target = panel.locator('.response-bode-pick')
+        await expect(target).to_be_visible()
+        bounds = await target.bounding_box()
+        await pick(target, {'x': bounds['width'] * fraction, 'y': bounds['height'] * 0.5})
+        hz, *_ = await linked_sample()
+        selected_frequencies.append(hz)
+    magnitude_hz, phase_hz = selected_frequencies
+    if not first_hz < phase_hz < magnitude_hz < last_hz:
+        raise RuntimeError(f'Bode selections should match their horizontal frequency position: {selected_frequencies}')
+
+    target = nyquist.locator('.response-nyquist-pick')
+    await expect(target).to_be_visible()
+    position = await target.evaluate("""target => {
+      const trace = target.ownerSVGElement.querySelector('[data-response-trace]')
+      const point = trace.getPointAtLength(trace.getTotalLength() * 0.5).matrixTransform(trace.getScreenCTM())
+      const bounds = target.getBoundingClientRect()
+      return { x: point.x - bounds.left, y: point.y - bounds.top }
+    }""")
+    await pick(target, position)
+    hz, nominal_db, nominal_phase, nominal_real, nominal_imaginary = await linked_sample()
+    if not first_hz < hz < last_hz or hz == phase_hz:
+        raise RuntimeError(f'Picking the Nyquist curve should select an interior frequency, observed {hz} Hz')
+
+    nominal_magnitude_path = await traces[0].get_attribute('d')
+    nominal_nyquist_path = await traces[2].get_attribute('d')
+    await gain.select_option('higher-gain')
+    await expect(gain).to_have_value('higher-gain')
+    next_hz, higher_db, higher_phase, higher_real, higher_imaginary = await linked_sample()
+    if next_hz != hz:
+        raise RuntimeError(f'Changing loop gain should preserve the chosen frequency, observed {hz} and {next_hz} Hz')
+    gain_ratio = 0.84 / 0.48
+    expected_db = nominal_db + 20 * math.log10(gain_ratio)
+    if not all((
+        math.isclose(higher_db, expected_db, abs_tol=0.001),
+        math.isclose(higher_phase, nominal_phase, abs_tol=0.001),
+        math.isclose(higher_real, nominal_real * gain_ratio, abs_tol=0.001),
+        math.isclose(higher_imaginary, nominal_imaginary * gain_ratio, abs_tol=0.001),
+    )):
+        raise RuntimeError('Increasing loop gain should scale the complex response and preserve its phase')
+    await expect(traces[0]).not_to_have_attribute('d', nominal_magnitude_path)
+    await expect(traces[2]).not_to_have_attribute('d', nominal_nyquist_path)
 
 
 async def check_native_scientific(plot, slug, touch):
