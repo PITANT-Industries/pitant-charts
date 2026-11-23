@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { MouseEvent } from 'react'
 import { usePlotSize } from '../../usePlotSize'
 import type { ShaftOrbitData, ShaftOrbitRun } from './shaft-orbit-data'
+import '../scientific-figure.css'
 import './shaft-orbit.css'
 
 export interface ShaftOrbitProps {
@@ -33,7 +34,7 @@ function displacementLimit(data: ShaftOrbitData) {
       peak = Math.max(peak, Math.abs(x), Math.abs(y))
     }
   }
-  const target = Math.max(1, peak) * 1.09
+  const target = Math.max(1, peak) * 1.04
   const increment = 10 ** Math.floor(Math.log10(target)) / 2
   const padded = Math.ceil(target / increment) * increment
   return Number.isFinite(padded) ? padded : peak
@@ -98,9 +99,10 @@ function OrbitPlot({ run, revolution, window, limit, displacement, compact, labe
   onPick: (phase: number) => void
 }) {
   const { plot, width, height } = usePlotSize<HTMLDivElement>(compact ? 430 : 380, 330)
-  const size = Math.max(1, Math.min(width - 70, height - 59))
-  const left = Math.max(42, (width - size) / 2 + 6)
-  const top = Math.max(22, (height - size) / 2 - 4)
+  const size = Math.max(1, Math.min(width - 80, height - 68))
+  const left = Math.max(52, (width - size) / 2 + 9)
+  const top = Math.max(26, (height - size) / 2 - 7)
+  const bottom = top + size
   const centerX = left + size / 2
   const centerY = top + size / 2
   const position: PlotPosition = (x, y) => [centerX + (x / limit) * size / 2, centerY - (y / limit) * size / 2]
@@ -120,26 +122,26 @@ function OrbitPlot({ run, revolution, window, limit, displacement, compact, labe
   }
 
   return (
-    <div className="orbit-panel orbit-panel--xy" ref={plot}>
+    <div className="orbit-panel orbit-panel--xy scientific-plot" ref={plot}>
       <svg viewBox={`0 0 ${width} ${height}`} data-orbit-plot="" role="img" aria-label={label}>
-        <g className="orbit-grid" aria-hidden="true">
-          {ticks.map((tick) => {
+        <g className="scientific-axis" aria-hidden="true">
+          <rect className="scientific-frame" data-orbit-axis-frame="" x={left} y={top} width={size} height={size} />
+          <line className="scientific-reference" x1={centerX} x2={centerX} y1={top} y2={bottom} />
+          <line className="scientific-reference" x1={left} x2={left + size} y1={centerY} y2={centerY} />
+          {(compact ? [-1, 0, 1] : ticks).map((tick) => {
             const [x, y] = position(tick * limit, tick * limit)
             return (
               <g key={tick}>
-                <line className={tick === 0 ? 'orbit-zero' : undefined} x1={x} x2={x} y1={top} y2={top + size} />
-                <line className={tick === 0 ? 'orbit-zero' : undefined} x1={left} x2={left + size} y1={y} y2={y} />
-                {(!compact || tick % 1 === 0) && (
-                  <>
-                    <text x={left - 6} y={y + 3} textAnchor="end">{format.format(tick * limit)}</text>
-                    <text x={x} y={top + size + 13} textAnchor="middle">{format.format(tick * limit)}</text>
-                  </>
-                )}
+                <line className="scientific-tick" x1={x} x2={x} y1={bottom} y2={bottom + 4} />
+                <line className="scientific-tick" x1={left - 4} x2={left} y1={y} y2={y} />
+                <text x={left - 8} y={y + 4} textAnchor="end">{format.format(tick * limit)}</text>
+                <text x={x} y={bottom + 17} textAnchor="middle">{format.format(tick * limit)}</text>
               </g>
             )
           })}
-          <text className="orbit-axis-name" x={left} y={top - 7}>Y probe (µm)</text>
-          <text className="orbit-axis-name" x={centerX} y={top + size + 28} textAnchor="middle">X probe (µm)</text>
+          <text className="scientific-panel-title" x={left} y={top - 9}>{compact ? run.label : '(a) Shaft centerline orbit'}</text>
+          <text className="scientific-axis-label" transform={`translate(${left - 38} ${centerY}) rotate(-90)`} textAnchor="middle">Y displacement (µm)</text>
+          <text className="scientific-axis-label" x={centerX} y={bottom + 32} textAnchor="middle">X displacement (µm)</text>
         </g>
         <g aria-hidden="true">
           {nearby.map((index) => (
@@ -167,9 +169,9 @@ function WaveformPlot({ run, window, phase, limit, displacement, onPick }: {
   onPick: (phase: number) => void
 }) {
   const { plot, width, height } = usePlotSize<HTMLDivElement>(460, 330)
-  const left = 39
+  const left = 53
   const right = Math.max(left + 1, width - 20)
-  const top = 34
+  const top = 26
   const bottom = Math.max(top + 1, height - 41)
   const x = (fraction: number) => left + (right - left) * fraction
   const y = (value: number) => (top + bottom) / 2 - (value / limit) * (bottom - top) / 2
@@ -178,32 +180,33 @@ function WaveformPlot({ run, window, phase, limit, displacement, onPick }: {
   const focusX = x(phase / 360)
 
   return (
-    <div className="orbit-panel orbit-panel--waveforms" ref={plot}>
+    <div className="orbit-panel orbit-panel--waveforms scientific-plot" ref={plot}>
       <svg viewBox={`0 0 ${width} ${height}`} data-orbit-waveforms="" role="img"
         aria-label="Aligned X and Y probe waveforms for the selected revolution">
-        <g className="orbit-grid" aria-hidden="true">
+        <g className="scientific-axis" aria-hidden="true">
+          <rect className="scientific-frame" data-orbit-waveform-frame="" x={left} y={top} width={right - left} height={bottom - top} />
+          <line className="scientific-reference" x1={left} x2={right} y1={y(0)} y2={y(0)} />
           {ticks.map((tick) => {
             const height = y(tick * limit)
             return <g key={tick}>
-              <line className={tick === 0 ? 'orbit-zero' : undefined} x1={left} x2={right} y1={height} y2={height} />
-              <text x={left - 5} y={height + 3} textAnchor="end">{format.format(tick * limit)}</text>
+              <line className="scientific-tick" x1={left - 4} x2={left} y1={height} y2={height} />
+              <text x={left - 8} y={height + 4} textAnchor="end">{format.format(tick * limit)}</text>
             </g>
           })}
           {[0, .25, .5, .75, 1].map((fraction) => (
             <g key={fraction}>
-              <line x1={x(fraction)} x2={x(fraction)} y1={top} y2={bottom} />
-              <text x={x(fraction)} y={bottom + 13} textAnchor="middle">{format.format(window.durationMs * fraction)}</text>
+              <line className="scientific-tick" x1={x(fraction)} x2={x(fraction)} y1={bottom} y2={bottom + 4} />
+              <text x={x(fraction)} y={bottom + 17} textAnchor="middle">{format.format(window.durationMs * fraction)}</text>
             </g>
           ))}
-          <text className="orbit-axis-name" x={left} y={17}>Displacement (µm)</text>
-          <text className="orbit-axis-name" x={(left + right) / 2} y={height - 10} textAnchor="middle">Time from trigger (ms)</text>
-          <text className="orbit-waveform-x" x={right - 31} y={17}>X</text>
-          <text className="orbit-waveform-y" x={right - 10} y={17}>Y</text>
+          <text className="scientific-panel-title" x={left} y={17}>(b) Probe waveforms</text>
+          <text className="scientific-axis-label" transform={`translate(13 ${(top + bottom) / 2}) rotate(-90)`} textAnchor="middle">Displacement (µm)</text>
+          <text className="scientific-axis-label" x={(left + right) / 2} y={height - 7} textAnchor="middle">Time from trigger (ms)</text>
         </g>
         <g aria-hidden="true">
           <path className="orbit-probe-x" d={valuePath(run.xUm)} />
           <path className="orbit-probe-y" d={valuePath(run.yUm)} />
-          <line className="orbit-phase-guide" x1={focusX} x2={focusX} y1={top} y2={bottom} />
+          <line className="scientific-reference" x1={focusX} x2={focusX} y1={top} y2={bottom} />
           <circle className="orbit-probe-dot-x" cx={focusX} cy={y(displacement[0])} r={3.4} />
           <circle className="orbit-probe-dot-y" cx={focusX} cy={y(displacement[1])} r={3.4} />
         </g>
@@ -234,12 +237,6 @@ function ShaftOrbitFigure({ data, label, compact, source, limit }: ShaftOrbitPro
 
   return (
     <figure className="shaft-orbit" data-shaft-orbit="" data-compact={compact}>
-      {!compact && source && (
-        <figcaption className="orbit-caption">
-          <strong>{source.label}</strong>
-          <p>{source.description} <a href={source.href}>Orbit method</a></p>
-        </figcaption>
-      )}
       {!compact && data.runs.length > 1 && (
         <label className="orbit-scenario">Signal scenario
           <select value={run.id} onChange={(event) => selectRun(event.currentTarget.value)}>
@@ -248,10 +245,26 @@ function ShaftOrbitFigure({ data, label, compact, source, limit }: ShaftOrbitPro
         </label>
       )}
       <div className="orbit-panels">
-        <OrbitPlot run={run} revolution={revolution} window={window} limit={limit} displacement={displacement}
-          compact={Boolean(compact)} label={`${label}, ${run.label}`} onPick={setPhase} />
-        {!compact && <WaveformPlot run={run} window={window} phase={phase} limit={limit}
-          displacement={displacement} onPick={setPhase} />}
+        <div className="orbit-plot-group">
+          <OrbitPlot run={run} revolution={revolution} window={window} limit={limit} displacement={displacement}
+            compact={Boolean(compact)} label={`${label}, ${run.label}, equal displacement scales in micrometres`} onPick={setPhase} />
+          {!compact && (
+            <ul className="orbit-legend" aria-label="Orbit key">
+              {revolutionCount > 1 && <li className="orbit-key-adjacent">Adjacent turns</li>}
+              <li className="orbit-key-trigger">Turn trigger</li>
+              <li className="orbit-key-sample">Selected sample</li>
+            </ul>
+          )}
+        </div>
+        {!compact && (
+          <div className="orbit-plot-group">
+            <WaveformPlot run={run} window={window} phase={phase} limit={limit} displacement={displacement} onPick={setPhase} />
+            <ul className="orbit-legend" aria-label="Probe key">
+              <li className="orbit-key-x">X probe</li>
+              <li className="orbit-key-y">Y probe</li>
+            </ul>
+          </div>
+        )}
       </div>
       {!compact && (
         <div className="orbit-inspector">
@@ -277,6 +290,12 @@ function ShaftOrbitFigure({ data, label, compact, source, limit }: ShaftOrbitPro
             </label>
           </div>
         </div>
+      )}
+      {!compact && source && (
+        <figcaption className="orbit-caption">
+          <strong>{source.label}</strong>
+          <p>{source.description} <a href={source.href}>Orbit method</a></p>
+        </figcaption>
       )}
     </figure>
   )
