@@ -429,7 +429,7 @@ async def run(browser, queue, results, local_url):
 
 
 async def audit(args):
-    catalog = json.loads(CATALOG.read_text())
+    catalog = json.loads(CATALOG.read_text(encoding='utf-8'))
     examples = [example for family in catalog for example in family['examples']]
     results = {name: {} for name, *_ in PROFILES}
     queue = asyncio.Queue()
