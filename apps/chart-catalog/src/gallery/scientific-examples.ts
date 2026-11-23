@@ -13,6 +13,7 @@ import shaftOrbit from './docs/examples/ShaftOrbit.tsx?raw'
 import spectrogram from './docs/examples/Spectrogram.tsx?raw'
 import spectrum from './docs/examples/Spectrum.tsx?raw'
 import steelDefectCorrelation from './docs/examples/SteelDefectCorrelation.tsx?raw'
+import stressStrainComparison from './docs/examples/StressStrainComparison.tsx?raw'
 import waveletScalogram from './docs/examples/WaveletScalogram.tsx?raw'
 import xrdPeakTracker from './docs/examples/XrdPeakTracker.tsx?raw'
 
@@ -34,6 +35,7 @@ const scientificExamples = new Map([
   ['allan-deviation-stability', withCatalogImports(allanDeviation)],
   ['phase-plane-pendulum', withCatalogImports(phasePlane)],
   ['xrd-peak-tracker-dynic2', withCatalogImports(xrdPeakTracker)],
+  ['stress-strain-heat-treatment', withCatalogImports(stressStrainComparison)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

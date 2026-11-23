@@ -1,0 +1,182 @@
+.stress-strain-comparison {
+  display: grid;
+  gap: .7rem;
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+}
+
+.stress-strain-comparison[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.stress-strain-comparison),
+.detail-plot:has(.stress-strain-comparison) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.stress-overview {
+  block-size: clamp(16rem, 41cqw, 21rem);
+}
+
+.stress-detail {
+  block-size: clamp(15rem, 33cqw, 17rem);
+}
+
+.stress-strain-comparison[data-compact='true'] .stress-overview {
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.stress-strain-comparison[data-compact='true'] .stress-axis-y {
+  font-size: 9px;
+}
+
+.stress-curve,
+.stress-elastic,
+.stress-offset {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.stress-curve {
+  stroke-width: 1.35px;
+}
+
+.stress-curve[data-selected='true'],
+.stress-detail-curve {
+  stroke-width: 1.75px;
+}
+
+.stress-elastic {
+  stroke: #68737d;
+  stroke-width: 1.2px;
+  stroke-dasharray: 2 3;
+}
+
+.stress-offset {
+  stroke: #343d45;
+  stroke-width: 1.2px;
+  stroke-dasharray: 6 3;
+}
+
+.stress-proof,
+.stress-ultimate,
+.stress-endpoint {
+  fill: #fff;
+  stroke: #233541;
+  stroke-width: 1.35px;
+}
+
+.stress-endpoint {
+  fill: #233541;
+  stroke: #fff;
+  stroke-width: 1px;
+}
+
+.stress-condition {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: .45rem;
+  min-inline-size: 0;
+  font-size: .8rem;
+}
+
+.stress-condition select {
+  min-inline-size: 0;
+  min-block-size: 2rem;
+  padding-inline: .48rem;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .25rem;
+  background: var(--gallery-surface, var(--card));
+  color: inherit;
+  font: inherit;
+}
+
+.stress-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .28rem .95rem;
+  margin: -.15rem 0 .35rem;
+  padding: 0;
+  list-style: none;
+  font-size: .76rem;
+}
+
+.stress-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.stress-key svg {
+  border-radius: 2px;
+  background: #fff;
+}
+
+.stress-key-elastic::before,
+.stress-key-offset::before {
+  content: '';
+  inline-size: 1rem;
+  border-block-start: 1px dotted currentColor;
+}
+
+.stress-key-offset::before {
+  border-block-start-style: dashed;
+}
+
+.stress-key-proof::before,
+.stress-key-ultimate::before,
+.stress-key-endpoint::before {
+  content: '';
+  inline-size: .38rem;
+  block-size: .38rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.stress-key-endpoint::before {
+  background: currentColor;
+}
+
+.stress-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem 1.4rem;
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stress-readout span {
+  display: grid;
+  gap: .12rem;
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+.stress-readout strong {
+  color: var(--gallery-ink, var(--foreground));
+  font-size: .92rem;
+}
+
+.stress-caption {
+  padding-block-start: .6rem;
+  border-block-start: 1px solid var(--gallery-rule, var(--border));
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.stress-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+.stress-caption p {
+  margin: .18rem 0 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+}

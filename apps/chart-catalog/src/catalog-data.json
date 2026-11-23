@@ -3364,6 +3364,22 @@
     ]
   },
   {
+    "id": "stress-strain-comparison",
+    "name": "Stress–Strain Comparison",
+    "url": "https://opensource.pitant.de/charts/#docs=stress-strain-comparison",
+    "examples": [
+      {
+        "id": "stress-strain-heat-treatment",
+        "family": "stress-strain-comparison",
+        "title": "EN AW-2618A Tensile Curves After Ageing",
+        "label": "Measured T61 and aged specimens",
+        "description": "Compare the T61 reference with two long-term ageing conditions and inspect the 0.2% proof-stress construction.",
+        "url": "https://opensource.pitant.de/charts/#example=stress-strain-heat-treatment",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",

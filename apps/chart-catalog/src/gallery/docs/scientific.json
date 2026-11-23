@@ -265,6 +265,29 @@
       { "label": "Andrew Fitch and Catherine Dejoie (2021), pseudo-Voigt fits of powder diffraction peak centers and widths, Figure 8", "href": "https://journals.iucr.org/j/issues/2021/04/00/kc5125/" }
     ]
   },
+  "stress-strain-comparison": {
+    "summary": "Compare tensile curves on shared engineering axes and inspect the 0.2% proof-stress construction.",
+    "useWhen": "Compare recorded tensile responses across heat treatments or inspect how an elastic fit defines an offset proof stress.",
+    "data": "Give each curve a unique ID, a label, and finite engineering stress in MPa at strictly increasing engineering strain. Supply strain as a fraction, so 0.002 represents 0.2%. Provide the elastic-fit strain bounds, slope in MPa, and stress intercept in MPa. A zero-based fractureIndex ends the curve at a documented break point.",
+    "reading": "Choose a Condition. The main panel overlays the recorded curves. The detail panel shows the selected curve at low strain, its fitted elastic line, and the parallel line shifted by 0.2% strain. The proof-stress marker sits where the offset line intersects the curve.",
+    "notes": [
+      "The example compares measured EN AW-2618A tensile curves for the T61 reference (ABR5RTzl1) and after 15,000 h of additional ageing at 160 °C (ABR10RTzl1) or 190 °C (ABR8RTzl1). Each test used a DIN 50125 B6 × 30 specimen at 20 °C and a nominal strain rate of 0.0001 s⁻¹ under ISO 6892-1.",
+      "Engineering strain uses the original gauge length and engineering stress divides force by the original cross-sectional area. The figure retains measured points at successive new highs in strain, then selects points by strain bin while preserving the proof-stress bracket, tensile maximum, and last retained point.",
+      "The modulus estimate E is the slope of the elastic fit Eε + b. The example uses ordinary least squares on 0.05–0.15% strain for all three curves. The offset line is E(ε − 0.002) + b. The chart interpolates the first crossing of that line after the fit interval where the curve moves from above to below it.",
+      "The calculated 0.2% proof stresses are about 363, 283, and 249 MPa for T61, 160 °C ageing, and 190 °C ageing, respectively. The corresponding recorded tensile maxima are 428.7, 362.0, and 342.8 MPa. Each endpoint represents the last retained stress–strain sample."
+    ],
+    "properties": [
+      { "name": "data", "type": "StressStrainData", "description": "Required. Give each curve its id, label, points, elasticFit, and optional fractureIndex." },
+      { "name": "label", "type": "string", "description": "Describe the material, test condition, and engineering axes for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact curve comparison for a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Add the data source, a method note, and optional license information." }
+    ],
+    "sources": [
+      { "label": "Philipp von Hartrott and Birgit Skrotzki (2023), EN AW-2618A tensile and elastic properties, Fraunhofer and BAM, Zenodo (CC BY 4.0)", "href": "https://doi.org/10.5281/zenodo.10377164" },
+      { "label": "ASTM E8/E8M-25, Standard Test Methods for Tension Testing of Metallic Materials", "href": "https://store.astm.org/e0008_e0008m-25.html" },
+      { "label": "NIST Technical Note 1714, Table 4, engineering stress, engineering strain, and offset yield strength", "href": "https://nvlpubs.nist.gov/nistpubs/TechnicalNotes/NIST.TN.1714.pdf" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",
