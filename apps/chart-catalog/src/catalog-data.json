@@ -3188,6 +3188,22 @@
     ]
   },
   {
+    "id": "campbell-diagram",
+    "name": "Campbell diagram",
+    "url": "https://opensource.pitant.de/charts/#docs=campbell-diagram",
+    "examples": [
+      {
+        "id": "campbell-diagram-ottawa",
+        "family": "campbell-diagram",
+        "title": "University of Ottawa Bearing Run-Up",
+        "label": "Measured vibration versus shaft speed",
+        "description": "Compare vibration spectra from a healthy bearing and an inner-race fault as shaft speed increases.",
+        "url": "https://opensource.pitant.de/charts/#example=campbell-diagram-ottawa",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",

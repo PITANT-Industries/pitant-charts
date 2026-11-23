@@ -1,4 +1,27 @@
 {
+  "campbell-diagram": {
+    "summary": "Follow how vibration frequencies and amplitudes change as a shaft speeds up.",
+    "useWhen": "Compare bearing run-ups, track harmonics tied to shaft rotation, or find speeds where vibration strengthens at a particular frequency.",
+    "data": "Supply at least two nonnegative frequencies in Hz in strictly increasing order. Each run needs a unique id, a label, at least two nonnegative shaft speeds in RPM in strictly increasing order, and one spectrum of finite amplitudes per speed. The amplitude at speed index i and frequency index j is levelsDb[i][j].",
+    "reading": "The heatmap shows shaft speed in RPM along the horizontal axis and vibration frequency in Hz along the vertical axis. Color shows relative amplitude in dB on a scale shared by all runs. Choose a run and select a shaft speed to inspect its complete frequency spectrum.",
+    "notes": [
+      "The measured example compares two University of Ottawa run-ups, a healthy bearing (H-A-1) and a bearing with an inner-race fault (I-A-1). The healthy run spans 862–1,420 RPM and the fault run spans 759–1,638 RPM.",
+      "Each run supplies 40 nonoverlapping 250 ms windows of 200 kHz accelerometer data. Each window is demeaned and Hann tapered before computing the FFT. The chart shows 100 frequency bins from 4 to 400 Hz. Speed is estimated from encoder pulse timing within each window.",
+      "The strongest amplitude across both runs and the displayed frequency band is the common 0 dB reference. For an amplitude spectrum, use 20 × log₁₀(amplitude / reference amplitude) and apply the same floor across runs.",
+      "The diagonal lines mark shaft orders. Order n occurs at n × RPM / 60 Hz. A ridge that follows an order tracks shaft rotation. A ridge that remains at the same frequency as speed changes can indicate a structural mode.",
+      "The heatmap interpolates between sample centers. The readout and spectrum show original bin values. Keep the windowing, frequency bins, and amplitude reference consistent when comparing runs."
+    ],
+    "properties": [
+      { "name": "data", "type": "CampbellDiagramData", "description": "Required. Shared frequency bins and one or more runs with ascending shaft speeds and a matrix of relative amplitudes in dB." },
+      { "name": "label", "type": "string", "description": "Describe the measured signal and test conditions for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show the heatmap in a compact space such as a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Show a source link, an optional measurement note, and an optional license link." }
+    ],
+    "sources": [
+      { "label": "Huan Huang and Natalie Baddour (2019), University of Ottawa bearing vibration dataset, version 2 (CC BY 4.0)", "href": "https://doi.org/10.17632/v43hmbwxpm.2" },
+      { "label": "Bearing test rig and measurement methods", "href": "https://doi.org/10.1016/j.dib.2018.11.019" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",

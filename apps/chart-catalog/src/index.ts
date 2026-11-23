@@ -1,6 +1,8 @@
 import './charts.css'
 
 export { ChartPreview } from './charts/ChartPreview'
+export { CampbellDiagram } from './charts/scientific/campbell/CampbellDiagram'
+export type { CampbellDiagramData, CampbellDiagramProps, CampbellRun } from './charts/scientific/campbell/CampbellDiagram'
 export { SpectralWaterfall } from './charts/scientific/waterfall/SpectralWaterfall'
 export type { SpectralWaterfallProps } from './charts/scientific/waterfall/SpectralWaterfall'
 export type { SpectralAxis, SpectralWaterfallAxes, SpectralWaterfallData } from './charts/scientific/waterfall/model'
