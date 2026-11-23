@@ -3,7 +3,6 @@ import type { ChartLayout, CorrelationPlannedCell, NumericRange } from '@pitant/
 import {
   CorrelationMatrix,
   Distribution,
-  Spectrogram,
   Spectrum,
   TimeSeries,
 } from '@pitant/charts-react'
@@ -16,7 +15,6 @@ import {
   capabilityFixture,
   correlationFixture,
   processControlFixture,
-  spectrogramFixture,
   spectrumFixture,
   steelCorrelationFixture,
 } from './data'
@@ -25,14 +23,6 @@ import './scientific.css'
 
 type Color = readonly [red: number, green: number, blue: number, alpha: number]
 type ColorStop = { value: number; rgba: Color }
-
-const spectrumGradient: readonly ColorStop[] = [
-  { value: 0, rgba: [0.06, 0.11, 0.2, 1] },
-  { value: 0.25, rgba: [0.14, 0.29, 0.45, 1] },
-  { value: 0.5, rgba: [0.17, 0.55, 0.53, 1] },
-  { value: 0.75, rgba: [0.54, 0.73, 0.38, 1] },
-  { value: 1, rgba: [0.98, 0.88, 0.47, 1] },
-]
 
 const correlationGradient: readonly ColorStop[] = [
   { value: -1, rgba: [0.12, 0.32, 0.64, 1] },
@@ -297,25 +287,6 @@ function SpectrumReadout({ index, setIndex }: Picker) {
   )
 }
 
-function SpectrogramReadout({ x: { index: time, setIndex: setTime }, y: { index: frequency, setIndex: setFrequency } }: PairPicker) {
-  const { data, config } = spectrogramFixture
-  const valueIndex = data.valueLayout === 'time-major'
-    ? time * data.frequencyBins.length + frequency
-    : frequency * data.timeBins.length + time
-  const center = readNumber(data.timeBins[time])
-  const frequencyText = `${readNumber(data.frequencyBins[frequency])} cycles/year`
-  const [min, max] = config.zAxis?.range ?? [0, Math.max(0, ...data.values)]
-
-  return (
-    <div className="scientific-readout">
-      <output>{center} · {frequencyText} · {readNumber(data.values[valueIndex])} ppm amplitude</output>
-      <IndexControl label="Window center year" length={data.timeBins.length} index={time} setIndex={setTime} valueText={center} />
-      <IndexControl label="Frequency bin" length={data.frequencyBins.length} index={frequency} setIndex={setFrequency} valueText={frequencyText} />
-      <ColorScale label="Amplitude (ppm)" min={min} max={max} colors={spectrumGradient} />
-    </div>
-  )
-}
-
 function CorrelationReadout({ data, x: { index: column, setIndex: setColumn }, y: { index: row, setIndex: setRow } }: PairPicker & {
   data: CorrelationMatrixData
 }) {
@@ -389,7 +360,6 @@ const capabilityBinCenters = capabilityFixture.data.binStarts.map(
 )
 const defaultSelections: Record<string, readonly [number, number]> = {
   'spectrum-measured': [nearestIndex(spectrumFixture.data.frequencies, 1), 0],
-  'spectrogram-measured': [0, nearestIndex(spectrogramFixture.data.frequencyBins, 1)],
   'correlation-matrix-measured': [1, 0],
   'correlation-matrix-steel': [1, 0],
   'process-control-individuals': [0, 0],
@@ -413,7 +383,6 @@ function chartConfigs(dark: boolean) {
   const limitInk = nativeColor(dark ? [0.98, 0.52, 0.52, 1] : [0.68, 0.16, 0.16, 1], dark)
   const targetInk = nativeColor(dark ? [0.54, 0.76, 0.52, 1] : [0.14, 0.49, 0.27, 1], dark)
   const spectrum = spectrumFixture.config
-  const spectrogram = spectrogramFixture.config
   const process = processControlFixture.config
   const capability = capabilityFixture.config
 
@@ -424,12 +393,6 @@ function chartConfigs(dark: boolean) {
       yAxis: { ...spectrum.yAxis, ...hiddenNativeLabels, range: [0, Math.ceil(2.2 * spectrumMaximum) / 2] as const },
       series: spectrum.series.map((item) => ({ ...item, rgba: ink })),
       peakMarkers: spectrum.peakMarkers?.map((item) => ({ ...item, rgba: limitInk, labelVisible: false })),
-    },
-    spectrogram: {
-      ...spectrogram,
-      xAxis: { ...spectrogram.xAxis, ...hiddenNativeLabels },
-      yAxis: { ...spectrogram.yAxis, ...hiddenNativeLabels },
-      colorStops: themedStops(spectrumGradient, dark),
     },
     correlation: {
       ...correlationFixture.config,
@@ -497,15 +460,6 @@ export default function ScientificPreview({ example, compact = false, data }: Ch
         {(view) => overlay(view, axes, mark, (frequency) => xPicker.setIndex(nearestIndex(data.frequencies, frequency)))}
       </Spectrum>
       return <Figure {...figure} source={spectrumFixture} chart={chart} axes={axes} controls={<SpectrumReadout {...xPicker} />} />
-    }
-    case 'spectrogram-measured': {
-      const { data, config } = spectrogramFixture
-      const axes = axisLabels(config)
-      const mark = { x: data.timeBins[x], y: data.frequencyBins[y], width: data.timeBinWidth, height: data.frequencyBinWidth, xIndex: x, yIndex: y }
-      const chart = <Spectrogram {...props} data={data} config={configs.spectrogram}>
-        {(view) => overlay(view, axes, mark, (year, frequency) => setSelection([nearestIndex(data.timeBins, year), nearestIndex(data.frequencyBins, frequency)]))}
-      </Spectrogram>
-      return <Figure {...figure} source={spectrogramFixture} chart={chart} axes={axes} controls={<SpectrogramReadout x={xPicker} y={yPicker} />} />
     }
     case 'correlation-matrix-measured':
     case 'correlation-matrix-steel': {
