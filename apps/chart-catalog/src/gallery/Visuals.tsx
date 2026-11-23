@@ -1,6 +1,6 @@
 import {
   Activity, BarChart3, Blocks, Box, ChartNoAxesCombined, GitFork, Globe2,
-  Grid2X2, LineChart, Map, MousePointer2, Network, PieChart, Workflow,
+  FlaskConical, Grid2X2, LineChart, Map, MousePointer2, Network, PieChart, Workflow,
 } from 'lucide-react'
 
 export const groupIcons = {
@@ -11,6 +11,7 @@ export const groupIcons = {
   processes: Workflow,
   hierarchies: Network,
   statistics: Activity,
+  scientific: FlaskConical,
   maps: Globe2,
   tooltips: MousePointer2,
 } as const

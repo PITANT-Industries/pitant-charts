@@ -1,0 +1,79 @@
+{
+  "spectrum": {
+    "summary": "Find recurring frequencies in a measured signal.",
+    "useWhen": "Check for a periodic component or compare dominant frequencies in signals captured at regular intervals.",
+    "data": "Pass precomputed frequency bins as a Float64Array and one amplitude column of equal length per series. Give the frequency and amplitude units in the axis labels.",
+    "reading": "A peak shows a stronger periodic component. A peak at one cycle per year corresponds to an annual cycle.",
+    "notes": [
+      "The example uses 480 monthly dry-air CO₂ measurements from NOAA's Mauna Loa Observatory, from January 1980 through December 2019.",
+      "The example removes a linear trend and applies a periodic Hann window to the full record. It shows one-sided peak amplitude in ppm for frequencies from 0.025 to 4 cycles per year.",
+      "When comparing spectra, keep the sampling rate, window, and amplitude normalization consistent. This chart displays the frequency bins you provide."
+    ],
+    "properties": [
+      { "name": "data", "type": "SpectrumColumnData", "description": "Required. Frequencies and equally sized named columns of precomputed amplitudes." },
+      { "name": "config", "type": "SpectrumConfig", "description": "Required. Match each series field to a column. Set axis units and optionally provide peak markers and frequency bands." },
+      { "name": "ariaLabel", "type": "string", "description": "Describe the measured signal and plot. Use ariaDescribedBy to associate a note about preprocessing." }
+    ],
+    "sources": [
+      { "label": "NOAA Mauna Loa monthly CO₂ data", "href": "https://gml.noaa.gov/data/dataset.php?item=mlo-co2-observatory-monthly" }
+    ]
+  },
+  "spectrogram": {
+    "summary": "See how the frequency content of a measured signal changes over time.",
+    "useWhen": "Compare the strength of recurring frequencies across different parts of a record.",
+    "data": "Pass sorted time and frequency bin centers, the widths of those bins, and one amplitude per cell. Set valueLayout to match the order of the flattened array.",
+    "reading": "Time runs horizontally and frequency vertically. Use the color scale to read amplitude and compare the same frequency across window centers.",
+    "notes": [
+      "The example uses 480 monthly dry-air CO₂ measurements from NOAA's Mauna Loa Observatory, from January 1980 through December 2019. Each tile column shows a 96-month Hann window, stepped by 12 months, with a separate linear trend removed from each window. The plot shows frequencies from 0.25 to 4 cycles per year.",
+      "The time label marks the center of an analysis window. Adjacent columns represent overlapping windows.",
+      "For frequency-major values, the offset is frequencyIndex × timeBins.length + timeIndex. For time-major values, the offset is timeIndex × frequencyBins.length + frequencyIndex."
+    ],
+    "properties": [
+      { "name": "data", "type": "SpectrogramMatrixData", "description": "Required. Bin centers, bin widths, and flattened values in frequency-major or time-major order." },
+      { "name": "config", "type": "SpectrogramConfig", "description": "Required. Set the axis labels, including the color unit, and an explicit zAxis range to compare charts on the same scale." },
+      { "name": "ariaLabel", "type": "string", "description": "Describe the measured signal. Use ariaDescribedBy for the window length, step, and amplitude units." }
+    ],
+    "sources": [
+      { "label": "NOAA Mauna Loa monthly CO₂ data", "href": "https://gml.noaa.gov/data/dataset.php?item=mlo-co2-observatory-monthly" }
+    ]
+  },
+  "correlation-matrix": {
+    "summary": "Compare the strength and direction of linear relationships across measured variables.",
+    "useWhen": "Screen several pairs of quantitative measurements, then follow up with scatter plots and checks for confounding variables.",
+    "data": "Pass variable keys and labels, one precomputed coefficient per cell in a square matrix, and optionally sample counts, missing counts, or a mask. Keep the variable order consistent with the matrix.",
+    "reading": "Pearson r ranges from −1 to 1. The sign gives the direction of linear association and the absolute value gives its strength. Check the sample count before interpreting a cell.",
+    "notes": [
+      "The example uses 342 complete observations from Palmer Penguins, collected from 2007 through 2009. It compares bill length, bill depth, flipper length, and body mass.",
+      "The example pools species. Group differences can drive a pooled coefficient, so inspect within-group associations separately.",
+      "Use the same coefficient definition across cells. Record your missing-data policy and set minSampleCount when small pairs should be flagged."
+    ],
+    "properties": [
+      { "name": "data", "type": "CorrelationMatrixData", "description": "Required. Variables and square values, with optional sampleCounts, missingCounts, and mask arrays aligned to the value layout." },
+      { "name": "config", "type": "CorrelationMatrixConfig", "description": "Required. Set a −1 to 1 color domain for Pearson r and configure cell labels or a minimum sample count." },
+      { "name": "ariaLabel", "type": "string", "description": "Identify the variables and association measure for assistive technology." }
+    ],
+    "sources": [
+      { "label": "Palmer Penguins dataset and citation", "href": "https://allisonhorst.github.io/palmerpenguins/" }
+    ]
+  },
+  "process-control": {
+    "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
+    "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",
+    "data": "For the individuals chart, pass ordered observations and a series of readings to TimeSeries, with precomputed control limits and rule markers in spcTracks. For the histogram, pass ordered bin edges and counts to Distribution, with optional specification and target markers.",
+    "reading": "The individuals chart compares each measurement with a center line and control limits estimated from a baseline. The histogram shows counts per bin and how the readings sit relative to specification limits.",
+    "notes": [
+      "The examples use 195 heat flow meter calibration factors collected by NIST. The source gives the observation order and leaves the calibration factor unit unspecified.",
+      "The individuals example fixes its center and control limits from the first 100 readings. Limits are the baseline mean plus or minus three times the mean moving range divided by 1.128. Observation 189 falls below the lower control limit in the follow-up portion.",
+      "The histogram counts the readings in 14 bins of width 0.01. It shows illustrative specification limits of 9.20 and 9.32 and a target of 9.26. Use approved engineering specifications and assess stability before calculating process capability."
+    ],
+    "properties": [
+      { "name": "data", "type": "TimeSeriesColumnData | DistributionColumnData", "description": "Required. The individuals chart takes an ordered X column and numeric readings. The histogram takes matching binStarts, binEnds, and a count column." },
+      { "name": "config", "type": "TimeSeriesConfig | DistributionConfig", "description": "Required. Supply precomputed spcTracks for TimeSeries or specification and target markers for Distribution." },
+      { "name": "ariaLabel", "type": "string", "description": "Describe the measurement and whether the chart shows process control limits or engineering specification limits." }
+    ],
+    "sources": [
+      { "label": "NIST heat flow meter calibration data", "href": "https://itl.nist.gov/div898/handbook/eda/section4/eda4281.htm" },
+      { "label": "NIST individuals control chart method", "href": "https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc322.htm" }
+    ]
+  }
+}

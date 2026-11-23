@@ -10,7 +10,7 @@
 <p align="center">React charts for dashboards and a WebGPU-first TypeScript engine for industrial time series.</p>
 
 <p align="center">
-  <a href="https://opensource.pitant.de/charts/"><strong>Explore 331 examples</strong></a>
+  <a href="https://opensource.pitant.de/charts/"><strong>Explore 336 examples</strong></a>
   &nbsp;·&nbsp;
   <a href="https://opensource.pitant.de/charts/#docs=area">Component documentation</a>
   &nbsp;·&nbsp;
@@ -31,7 +31,7 @@
 | --- | --- |
 | **Build a dashboard** | [`pitant-charts`](packages/charts-ui/README.md) provides typed line, bar, donut, and sunburst components with Recharts and CSS theme tokens. |
 | **Plot industrial time series** | [`@pitant/charts`](packages/charts/README.md) includes a WebGPU renderer, a Canvas2D fallback, and worker-backed downsampling. [`@pitant/charts-react`](packages/charts-react/README.md) provides React bindings. |
-| **Explore chart types and interactions** | The [interactive catalog](https://opensource.pitant.de/charts/) covers 44 chart families plus Tooltips. The [catalog source guide](apps/chart-catalog/README.md) explains how to build and reuse the examples from `@pitant/chart-catalog`. |
+| **Explore chart types and interactions** | The [interactive catalog](https://opensource.pitant.de/charts/) covers 48 chart families plus Tooltips, including measured-data examples for spectrum, spectrogram, correlation, and process control. The [catalog source guide](apps/chart-catalog/README.md) explains how to build and reuse the examples from `@pitant/chart-catalog`. |
 
 ## Quick start
 

@@ -18,3 +18,9 @@ React and Recharts use MIT. Apache ECharts and Vercel Labs UI SDK use Apache-2.0
 Lucide, TopoJSON Client, and World Atlas use ISC. Geist, Geist Mono, and Hanken Grotesk use OFL-1.1. World Atlas geography is derived from Natural Earth public-domain data.
 
 Some catalog example names and the Line examples’ simulated latency and dense sampling behavior are based on the [shadcn.io React chart gallery](https://www.shadcn.io/charts) and its [Line examples](https://www.shadcn.io/charts/line).
+
+## Scientific datasets
+
+- [NOAA Global Monitoring Laboratory](https://doi.org/10.15138/yaf1-bk21) provides the monthly Mauna Loa CO₂ observations under CC0-1.0.
+- [Palmer Station LTER and Kristen Gorman](https://allisonhorst.github.io/palmerpenguins/) collected the penguin observations. The palmerpenguins data package by Horst, Hill, and Gorman provides the CC0-1.0 snapshot used here.
+- [NIST's Heat Flow Meter case study](https://itl.nist.gov/div898/handbook/eda/section4/eda4281.htm) provides Bob Zarr's calibration-factor measurements.

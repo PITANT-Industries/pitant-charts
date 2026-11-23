@@ -10,6 +10,7 @@ export const groups: readonly ChartGroup[] = [
   { id: 'processes', name: 'Processes & schedules', families: ['funnel', 'sankey', 'waterfall', 'gantt'] },
   { id: 'hierarchies', name: 'Hierarchies & networks', families: ['sunburst', 'treemap', 'tree', 'network'] },
   { id: 'statistics', name: 'Distributions & statistics', families: ['scatter', 'heatmap', 'uncertainty', 'histogram', 'ridgeline', 'ecdf', 'beeswarm', 'violin', 'box-plot', 'hexbin', 'density'] },
+  { id: 'scientific', name: 'Scientific analysis', families: ['spectrum', 'spectrogram', 'correlation-matrix', 'process-control'] },
   { id: 'maps', name: 'Maps & spatial data', families: ['choropleth', 'bubble-map', 'route-map', 'globe', 'vector-field'] },
   { id: 'tooltips', name: 'Tooltips', families: ['tooltip'] },
 ]

@@ -11,27 +11,31 @@
     },
     "./styles.css": "./dist-library/chart-library.css"
   },
-  "sideEffects": ["**/*.css"],
+  "sideEffects": [
+    "**/*.css"
+  ],
   "files": [
     "src",
     "tsconfig.json",
     "SOURCE.md",
     "tsconfig.library.json",
     "vite.library.config.ts",
+    "vite.native-source.ts",
     "LICENSE",
     "dist-library",
     "licenses",
     "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "check": "tsc --noEmit",
+    "dev": "npm run build:native && vite --host 127.0.0.1",
+    "check": "npm run build:native && tsc --noEmit",
     "build": "npm run check && vite build && npm run build:library",
     "build:site": "npm run check && vite build --outDir ../../dist --emptyOutDir",
-    "build:library": "vite build --config vite.library.config.ts && tsc -p tsconfig.library.json",
+    "build:library": "npm run build:native && vite build --config vite.library.config.ts && tsc -p tsconfig.library.json",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --test scripts/catalog.test.mjs",
-    "prepack": "npm run build:library"
+    "prepack": "npm run build:library",
+    "build:native": "bun run --filter @pitant/charts build && bun run --filter @pitant/charts-react build"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
@@ -56,6 +60,8 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@pitant/charts": "workspace:*",
+    "@pitant/charts-react": "workspace:*",
     "@types/d3-contour": "^3.0.6",
     "@types/d3-geo": "^3.1.0",
     "@types/d3-hierarchy": "3.1.7",

@@ -3188,6 +3188,79 @@
     ]
   },
   {
+    "id": "spectrum",
+    "name": "Spectrum",
+    "url": "https://opensource.pitant.de/charts/#docs=spectrum",
+    "examples": [
+      {
+        "id": "spectrum-measured",
+        "family": "spectrum",
+        "title": "Measured Frequency Spectrum",
+        "label": "Frequency peaks in a measured CO₂ series",
+        "description": "Frequency peaks in a measured CO₂ series",
+        "url": "https://opensource.pitant.de/charts/#example=spectrum-measured",
+        "position": 1
+      }
+    ]
+  },
+  {
+    "id": "spectrogram",
+    "name": "Spectrogram",
+    "url": "https://opensource.pitant.de/charts/#docs=spectrogram",
+    "examples": [
+      {
+        "id": "spectrogram-measured",
+        "family": "spectrogram",
+        "title": "Measured Spectrogram",
+        "label": "Frequency content across overlapping time windows",
+        "description": "Frequency content across overlapping time windows",
+        "url": "https://opensource.pitant.de/charts/#example=spectrogram-measured",
+        "position": 1
+      }
+    ]
+  },
+  {
+    "id": "correlation-matrix",
+    "name": "Correlation matrix",
+    "url": "https://opensource.pitant.de/charts/#docs=correlation-matrix",
+    "examples": [
+      {
+        "id": "correlation-matrix-measured",
+        "family": "correlation-matrix",
+        "title": "Measured Correlation Matrix",
+        "label": "Pearson correlation across measured variables",
+        "description": "Pearson correlation across measured variables",
+        "url": "https://opensource.pitant.de/charts/#example=correlation-matrix-measured",
+        "position": 1
+      }
+    ]
+  },
+  {
+    "id": "process-control",
+    "name": "Process control",
+    "url": "https://opensource.pitant.de/charts/#docs=process-control",
+    "examples": [
+      {
+        "id": "process-control-individuals",
+        "family": "process-control",
+        "title": "Individuals Control Chart",
+        "label": "Ordered measurements against baseline control limits",
+        "description": "Ordered measurements against baseline control limits",
+        "url": "https://opensource.pitant.de/charts/#example=process-control-individuals",
+        "position": 1
+      },
+      {
+        "id": "process-control-capability",
+        "family": "process-control",
+        "title": "Capability Histogram",
+        "label": "Measurement distribution against illustrative specification limits",
+        "description": "Measurement distribution against illustrative specification limits",
+        "url": "https://opensource.pitant.de/charts/#example=process-control-capability",
+        "position": 2
+      }
+    ]
+  },
+  {
     "id": "tooltip",
     "name": "Tooltip",
     "url": "https://opensource.pitant.de/charts/#docs=tooltip",
