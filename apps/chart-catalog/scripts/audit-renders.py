@@ -323,6 +323,10 @@ async def check_native_scientific(plot, slug, touch):
 
 async def check_mauna_loa_spectrogram(plot, touch):
     await expect(plot.locator('[data-scientific-ready]')).to_have_count(1, timeout=8000)
+    raster = plot.locator('svg image[data-mauna-loa-raster]')
+    await expect(raster).to_have_count(1)
+    await expect(raster).to_be_visible()
+    await expect(raster).to_have_attribute('href', re.compile(r'^data:image/png;base64,[A-Za-z0-9+/]'))
     await expect(plot.locator('[data-scientific-axes]')).to_be_visible()
     selection = plot.locator('[data-scientific-selection]')
     readout = plot.locator('output')

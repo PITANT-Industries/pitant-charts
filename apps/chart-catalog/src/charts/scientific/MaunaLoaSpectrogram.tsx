@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import type { MouseEvent } from 'react'
 import type { ChartPreviewProps } from '../../types'
 import { usePlotSize } from '../usePlotSize'
@@ -30,20 +30,54 @@ function contrast(amplitude: number) {
   return Math.log1p(amplitude / contrastFloor) / Math.log1p(maximum / contrastFloor)
 }
 
-function tileColor(amplitude: number) {
-  const position = contrast(amplitude) * (palette.length - 1)
-  const index = Math.min(palette.length - 2, Math.floor(position))
-  const fraction = position - index
-  const channels = palette[index].map((channel, i) =>
-    Math.round(channel + (palette[index + 1][i] - channel) * fraction))
-  return `rgb(${channels.join(' ')})`
-}
-
 function amplitudeAt(time: number, frequency: number) {
   return values[time * frequencyBins.length + frequency]
 }
 
-const tileColors = Array.from(values, tileColor)
+function pixelSamples(binCount: number, pixelCount: number) {
+  return Array.from({ length: pixelCount }, (_, pixel) => {
+    const center = (pixel + .5) * binCount / pixelCount - .5
+    const position = Math.min(binCount - 1, Math.max(0, center))
+    const first = Math.floor(position)
+    return { first, next: Math.min(first + 1, binCount - 1), weight: position - first }
+  })
+}
+
+function interpolate(start: number, end: number, weight: number) {
+  return start + (end - start) * weight
+}
+
+function makeHeatmapImage() {
+  const pixelsPerBin = 24
+  const canvas = document.createElement('canvas')
+  canvas.width = timeBins.length * pixelsPerBin
+  canvas.height = frequencyBins.length * pixelsPerBin
+  const context = canvas.getContext('2d')
+  if (!context) return undefined
+
+  const raster = context.createImageData(canvas.width, canvas.height)
+  const timeSamples = pixelSamples(timeBins.length, canvas.width)
+  const frequencySamples = pixelSamples(frequencyBins.length, canvas.height).reverse()
+
+  // Interpolate amplitudes between measured bin centers before applying the color scale.
+  let offset = 0
+  for (const row of frequencySamples) {
+    for (const column of timeSamples) {
+      const lower = interpolate(amplitudeAt(column.first, row.first), amplitudeAt(column.next, row.first), column.weight)
+      const upper = interpolate(amplitudeAt(column.first, row.next), amplitudeAt(column.next, row.next), column.weight)
+      const level = contrast(interpolate(lower, upper, row.weight)) * (palette.length - 1)
+      const index = Math.min(palette.length - 2, Math.floor(level))
+      for (let channel = 0; channel < 3; channel++) {
+        raster.data[offset++] = interpolate(palette[index][channel], palette[index + 1][channel], level - index)
+      }
+      raster.data[offset++] = 255
+    }
+  }
+  context.putImageData(raster, 0, 0)
+  return canvas.toDataURL('image/png')
+}
+
+let heatmapImage: string | undefined
 const gradient = `linear-gradient(to right, ${palette.map((color) => `rgb(${color.join(' ')})`).join(', ')})`
 
 function AmplitudeTrace({ frequency, time, width, left, right }: {
@@ -83,6 +117,10 @@ function SpectrogramFigure({ compact, label }: { compact: boolean; label: string
   const { plot, width, height } = usePlotSize<HTMLDivElement>(compact ? 320 : 700, compact ? 185 : 325)
   const [time, setTime] = useState(0)
   const [frequency, setFrequency] = useState(cycles[0].index)
+  const [image, setImage] = useState(heatmapImage)
+  useEffect(() => {
+    setImage(heatmapImage ??= makeHeatmapImage())
+  }, [])
   const narrow = width < 410
   const left = narrow ? 30 : 43
   const right = Math.max(left + 1, width - (narrow ? 71 : 84))
@@ -110,7 +148,7 @@ function SpectrogramFigure({ compact, label }: { compact: boolean; label: string
   }
 
   return (
-    <figure className="mauna-loa-spectrogram" data-compact={compact} data-scientific-ready="">
+    <figure className="mauna-loa-spectrogram" data-compact={compact} data-scientific-ready={image ? '' : undefined}>
       {!compact && (
         <figcaption className="mauna-loa-caption" id={caption}>
           <strong>NOAA Mauna Loa monthly CO₂</strong>
@@ -120,12 +158,8 @@ function SpectrogramFigure({ compact, label }: { compact: boolean; label: string
       <div className="mauna-loa-plot" ref={plot}>
         <svg viewBox={`0 0 ${width} ${height}`} data-mauna-loa-heatmap=""
           role="img" aria-label={label} aria-describedby={compact ? undefined : caption}>
-          <g shapeRendering="crispEdges">
-            {tileColors.map((color, index) => (
-              <rect key={index} x={x(Math.floor(index / frequencyBins.length))} y={y(index % frequencyBins.length)}
-                width={tileWidth} height={tileHeight} fill={color} />
-            ))}
-          </g>
+          {image && <image data-mauna-loa-raster="" href={image} x={left} y={top}
+            width={right - left} height={bottom - top} preserveAspectRatio="none" />}
           <g data-scientific-axes="">
             <text className="mauna-loa-axis-title" x={left} y={20}>Frequency (cycles/year)</text>
             {frequencyTicks.map((value) => (
@@ -151,7 +185,7 @@ function SpectrogramFigure({ compact, label }: { compact: boolean; label: string
             <>
               <g className="mauna-loa-selection" data-scientific-selection="" data-x-index={time} data-y-index={frequency}>
                 <line x1={x(time + .5)} x2={x(time + .5)} y1={top} y2={bottom} />
-                <rect x={x(time)} y={y(frequency)} width={tileWidth} height={tileHeight} fill="none" />
+                <circle cx={x(time + .5)} cy={y(frequency) + tileHeight / 2} r={3.5} />
               </g>
               <rect className="mauna-loa-pick" data-scientific-pick="" x={left} y={top}
                 width={right - left} height={bottom - top} fill="transparent" onClick={selectTile} />
