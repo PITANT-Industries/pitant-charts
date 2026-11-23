@@ -3,7 +3,9 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, searchForWorkspaceRoot } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { nativeSourceEntries, writeSourceArchive } from './vite.native-source'
+import { writePublicRegistry } from './vite.public-registry'
 
 const fontPackages = [
   '@fontsource-variable/geist',
@@ -17,12 +19,14 @@ const sourceFiles = [
   'public',
   'scripts',
   'index.html',
+  'components.json',
   'package.json',
   'tsconfig.json',
   'tsconfig.library.json',
   'vite.config.ts',
   'vite.library.config.ts',
   'vite.native-source.ts',
+  'vite.public-registry.ts',
   'LICENSE',
   'SOURCE.md',
   'README.md',
@@ -35,6 +39,7 @@ export default defineConfig({
   base: './',
   plugins: [
     react(),
+    tailwindcss(),
     {
       name: 'catalog-source-and-licenses',
       apply: 'build',
@@ -44,12 +49,14 @@ export default defineConfig({
           cpSync(resolve(catalogDirectory, file), resolve(dir, file))
         }
         cpSync(new URL('./licenses', import.meta.url), resolve(dir, 'licenses'), { recursive: true })
+        writePublicRegistry(dir)
         writeSourceArchive(resolve(dir, 'chart-catalog-source.tgz'), [
-          '-C', catalogDirectory, ...sourceFiles, ...nativeSourceEntries,
+          '-C', catalogDirectory, ...sourceFiles, ...nativeSourceEntries, 'registry.json', 'registry',
         ])
       },
     },
   ],
+  resolve: { alias: { '@': resolve(catalogDirectory, 'src') } },
   server: {
     fs: {
       // Bun can link font packages from its global store.

@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://opensource.pitant.de/charts/"><strong>Explore 338 examples</strong></a>
   &nbsp;·&nbsp;
-  <a href="https://opensource.pitant.de/charts/#docs=area">Component documentation</a>
+  <a href="https://opensource.pitant.de/charts/#docs=introduction">Documentation</a>
   &nbsp;·&nbsp;
   <a href="#quick-start">Quick start</a>
   &nbsp;·&nbsp;
