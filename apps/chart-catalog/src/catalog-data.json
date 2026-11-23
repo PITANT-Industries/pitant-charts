@@ -3508,6 +3508,22 @@
     ]
   },
   {
+    "id": "hyperspectral-cube",
+    "name": "Hyperspectral Cube",
+    "url": "https://opensource.pitant.de/charts/#docs=hyperspectral-cube",
+    "examples": [
+      {
+        "id": "hyperspectral-cube-cuprite",
+        "family": "hyperspectral-cube",
+        "title": "Cuprite Reflectance Cube",
+        "label": "NASA/JPL AVIRIS, 1995",
+        "description": "Inspect measured spectral bands and RGB composites, and compare the spectra of individual pixels and selected regions.",
+        "url": "https://opensource.pitant.de/charts/#example=hyperspectral-cube-cuprite",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",

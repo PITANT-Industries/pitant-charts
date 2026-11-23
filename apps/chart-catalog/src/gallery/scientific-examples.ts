@@ -12,6 +12,7 @@ import eyeDiagram from './docs/examples/EyeDiagram.tsx?raw'
 import fatigueSn from './docs/examples/FatigueSn.tsx?raw'
 import frequencyResponse from './docs/examples/FrequencyResponse.tsx?raw'
 import fullFieldStrain from './docs/examples/FullFieldStrain.tsx?raw'
+import hyperspectralCube from './docs/examples/HyperspectralCube.tsx?raw'
 import individualsControlChart from './docs/examples/IndividualsControlChart.tsx?raw'
 import industrialCtViewer from './docs/examples/IndustrialCtViewer.tsx?raw'
 import modeShapes from './docs/examples/ModeShapes.tsx?raw'
@@ -52,6 +53,7 @@ const scientificExamples = new Map([
   ['industrial-ct-porosity', withCatalogImports(industrialCtViewer)],
   ['cad-scan-deviation-registered', withCatalogImports(cadScanDeviation)],
   ['cie-chromaticity-gamuts', withCatalogImports(cieChromaticityDiagram)],
+  ['hyperspectral-cube-cuprite', withCatalogImports(hyperspectralCube)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],
