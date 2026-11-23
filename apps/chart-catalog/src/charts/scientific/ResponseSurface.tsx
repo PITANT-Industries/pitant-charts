@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { ResponseContourMap } from './ResponseContourMap'
 import { ResponseSection } from './ResponseSection'
 import { ResponseViewport } from './ResponseViewport'
 import { analyseResponseSurface, responseAxisLabel, responseContains, responsePosition, responseSection } from './response-surface-model'
@@ -97,7 +98,12 @@ function SurfaceFigure({ data, label, compact = false, source, analysis }: Respo
       {!compact && <>
         <div className="response-detail">
           <div className="response-surface-panel">
-            <div className="response-panel-title"><b>B</b> Section through the surface</div>
+            <div className="response-panel-title"><b>B</b> Contour map</div>
+            <ResponseContourMap data={data} bounds={analysis.bounds} mesh={analysis.mesh} hull={analysis.hull} range={analysis.fitRange}
+              axis={axis} interval={interval} selected={marker} trial={trial} choose={choose} chooseTrial={chooseTrial} />
+          </div>
+          <div className="response-surface-panel">
+            <div className="response-panel-title"><b>C</b> Section through the surface</div>
             <ResponseSection data={data} bounds={analysis.bounds} axis={axis} position={position} interval={interval}
               section={section} selected={marker} trial={trial} choose={(value) => choose(responsePosition(axis, position, value))}
               chooseTrial={chooseTrial} />
@@ -129,7 +135,8 @@ function SurfaceFigure({ data, label, compact = false, source, analysis }: Respo
           </output>
         </div>
         <figcaption className="response-caption">
-          {data.trials.length > 0 && <p>Open circles show observed trials. Vertical segments show the difference between observed and fitted responses.</p>}
+          <p>The dashed line on the contour map marks the active section. {data.trials.length > 0 &&
+            'Open circles show observed trials. Vertical segments show the difference between observed and fitted responses.'}</p>
           {source && <p>
             <a href={source.href}>{source.label}</a>
             {source.license && (source.licenseUrl ? <> · <a href={source.licenseUrl}>{source.license}</a></> : ` · ${source.license}`)}

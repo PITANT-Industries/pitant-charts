@@ -3541,12 +3541,95 @@ async def check_compact_response_surface(card_plot):
     }""")
     if clipped:
         raise RuntimeError(f'The compact response surface must fit the gallery card: {clipped}')
-    await expect(chart.locator('input, select, button, [data-response-section], [data-response-readout]')).to_have_count(0)
+    await expect(chart.locator(
+        'input, select, button, [data-response-map], [data-response-section], [data-response-readout]'
+    )).to_have_count(0)
+
+
+async def check_response_map_geometry(contour_map, predict):
+    await expect(contour_map).to_be_visible()
+    await expect(contour_map.locator('rect[data-response-map-frame]')).to_be_visible()
+    await expect(contour_map.get_by_text('Heating temperature (°C)', exact=True)).to_be_visible()
+    await expect(contour_map.get_by_text('Heating time (min)', exact=True)).to_be_visible()
+    await expect(contour_map.get_by_text('Sphericity (%)', exact=True)).to_be_visible()
+    await expect(contour_map.locator('path[data-response-map-domain]')).to_have_attribute('d', re.compile(r'^M'))
+    levels, bands, covered, uncovered = await contour_map.evaluate("""svg => {
+      const frame = svg.querySelector('[data-response-map-frame]')
+      const pick = svg.querySelector('[data-response-map-pick]')
+      const [xMin, xMax, yMin, yMax] = ['xMin', 'xMax', 'yMin', 'yMax'].map(key => Number(pick.dataset[key]))
+      const [x, y, width, height] = ['x', 'y', 'width', 'height'].map(key => frame[key].baseVal.value)
+      const fromFrame = frame.getCTM()
+      const toFrame = fromFrame.inverse()
+      const factor = ({ x: px, y: py }) => [
+        xMin + (xMax - xMin) * (px - x) / width,
+        yMax - (yMax - yMin) * (py - y) / height,
+      ]
+      const levels = Array.from(svg.querySelectorAll('path[data-response-map-contour]'), path => {
+        const length = path.getTotalLength()
+        const matrix = path.getCTM()
+        return [Number(path.dataset.level), Array.from({ length: 25 }, (_, i) =>
+          factor(path.getPointAtLength(length * i / 24).matrixTransform(matrix).matrixTransform(toFrame))
+        )]
+      })
+      const paths = Array.from(svg.querySelectorAll('path[data-response-map-band]'))
+      const bands = paths.map(path => [Number(path.dataset.low), Number(path.dataset.high), getComputedStyle(path).fill])
+      const bandAt = ([xf, yf]) => {
+        const local = new DOMPoint(x + width * (xf - xMin) / (xMax - xMin), y + height * (yMax - yf) / (yMax - yMin))
+        const screen = local.matrixTransform(fromFrame)
+        return paths.flatMap((path, index) => path.isPointInFill(screen.matrixTransform(path.getCTM().inverse())) ? [index] : [])
+      }
+      return [levels, bands, [[67, 31], [59, 27], [94, 30]].map(point => [...point, bandAt(point)]),
+        [[41, 6], [99, 59]].map(bandAt)]
+    }""")
+    if len(levels) < 4 or len(bands) != len(levels) + 1 or len({band[2] for band in bands}) != len(bands):
+        raise RuntimeError('The fitted surface map must draw distinct filled response bands separated by isolines')
+    if any(not low < high or color == 'none' for low, high, color in bands) or any(
+        not math.isclose(level, bands[index][1], abs_tol=1e-8)
+        or not math.isclose(level, bands[index + 1][0], abs_tol=1e-8)
+        for index, (level, _) in enumerate(levels)
+    ):
+        raise RuntimeError('Response bands and isolines must use the same strictly ordered fitted thresholds')
+    hull = [(40, 32.5), (49, 13.1), (70, 5), (91, 13.1), (100, 32.5), (91, 52), (70, 60), (49, 52)]
+    for level, points in levels:
+        for x, y in points:
+            if any(
+                (bx - ax) * (y - ay) - (by - ay) * (x - ax) < -0.25
+                for (ax, ay), (bx, by) in zip(hull, hull[1:] + hull[:1])
+            ):
+                raise RuntimeError(f'Response isoline {level} leaves the tested factor hull at {(x, y)}')
+            if not math.isclose(predict(x, y), level, abs_tol=0.02):
+                raise RuntimeError(f'Response isoline {level} must approximate the fitted value at {(x, y)}')
+    for x, y, indices in covered:
+        fitted = predict(x, y)
+        if len(indices) != 1 or not bands[indices[0]][0] - 0.02 <= fitted <= bands[indices[0]][1] + 0.02:
+            raise RuntimeError(f'Experiment point {(x, y)} must use the color band for fitted response {fitted}')
+    if any(uncovered):
+        raise RuntimeError('Unsampled factor corners must be outside the visible response fills')
+    legend, map_view = await contour_map.evaluate("""async svg => {
+      await document.fonts.ready
+      await new Promise(resolve => requestAnimationFrame(resolve))
+      const frame = svg.getBoundingClientRect()
+      const values = [...svg.querySelectorAll('g.scientific-axis > text[y]')]
+      const baseline = Math.max(...values.map(label => Number(label.getAttribute('y'))))
+      const legend = values.filter(label => Number(label.getAttribute('y')) === baseline).map(label => {
+        const box = label.getBoundingClientRect()
+        return [Number(label.textContent), box.left, box.right]
+      })
+      return [legend, [frame.left, frame.right]]
+    }""")
+    if len(legend) < 2 or any(
+        value_left >= value_right or end_left + 1 > start_right
+        for (value_left, _, end_left), (value_right, start_right, _) in zip(legend, legend[1:])
+    ) or any(start < map_view[0] - 1 or end > map_view[1] + 1 for _, start, end in legend):
+        raise RuntimeError(f'Fitted response scale labels must be ordered, legible, and fit the chart: {legend}')
 
 
 async def check_response_surface(plot, touch):
     chart = plot.locator('[data-response-surface]')
     viewport = chart.locator('canvas[data-response-viewport]')
+    contour_map = chart.locator('svg[data-response-map]')
+    map_probe = contour_map.locator('[data-response-map-probe]')
+    map_pick = contour_map.locator('rect[data-response-map-pick]')
     section = chart.locator('svg[data-response-section]')
     trace = section.locator('path[data-response-section-path]')
     marker = section.locator('circle[data-response-section-marker]')
@@ -3591,6 +3674,13 @@ async def check_response_surface(plot, touch):
         coordinates = await marker.evaluate("mark => ['x','y','fitted'].map(key => Number(mark.dataset[key]))")
         if any(not math.isclose(actual, expected, abs_tol=1e-8) for actual, expected in zip(coordinates, [x, y, fit])):
             raise RuntimeError('Section marker and readout must represent the same fitted response')
+        await expect(contour_map).to_have_attribute('data-axis', axis)
+        map_position = float(await contour_map.get_attribute('data-position'))
+        map_coordinates = await map_probe.evaluate("mark => ['x','y','fitted'].map(key => Number(mark.dataset[key]))")
+        if any(not math.isclose(actual, expected, abs_tol=1e-8) for actual, expected in zip(
+            [map_position, *map_coordinates], [plane, x, y, fit]
+        )):
+            raise RuntimeError('Contour probe, section plane and readout must remain synchronized')
         error = await section.evaluate("""svg => {
           const path = svg.querySelector('[data-response-section-path]')
           const mark = svg.querySelector('[data-response-section-marker]')
@@ -3674,6 +3764,12 @@ async def check_response_surface(plot, touch):
     initial = await check_fit()
     if initial[:2] != (70, 32.5) or initial[3:] != ('x', 70, None, None, None):
         raise RuntimeError(f'Expected initial prediction at 70 °C and 32.5 min: {initial}')
+    await check_response_map_geometry(contour_map, predict)
+    await expect(map_probe).to_be_visible()
+    await expect(map_pick).to_have_attribute('tabindex', '0')
+    for dimension, lower, upper in [('x', '40', '100'), ('y', '5', '60')]:
+        await expect(map_pick).to_have_attribute(f'data-{dimension}-min', lower)
+        await expect(map_pick).to_have_attribute(f'data-{dimension}-max', upper)
     initial_angles = await angles()
     start_image = await image()
     await pick(rotate_right)
@@ -3748,6 +3844,76 @@ async def check_response_surface(plot, touch):
         next_yaw, next_pitch = await angles()
         if next_yaw <= yaw or next_pitch >= pitch or await check_fit() != prediction:
             raise RuntimeError('Dragging the surface should rotate both axes without changing the fitted point')
+
+    async def map_offset(x, y):
+        box = await map_pick.bounding_box()
+        return {'x': box['width'] * (x - 40) / 60, 'y': box['height'] * (60 - y) / 55}
+
+    async def map_section_points():
+        return await contour_map.evaluate("""svg => {
+          const frame = svg.querySelector('[data-response-map-frame]')
+          const line = svg.querySelector('[data-response-map-section]')
+          const [x, y, width, height] = ['x', 'y', 'width', 'height'].map(key => frame[key].baseVal.value)
+          return [1, 2].map(index => [
+            40 + 60 * (line['x' + index].baseVal.value - x) / width,
+            60 - 55 * (line['y' + index].baseVal.value - y) / height,
+          ])
+        }""")
+
+    await trial.select_option('run-11')
+    await check_trial('run-11', 70, 32.5, 98.7)
+    await expect(contour_map.locator('circle[data-response-map-trial]')).to_have_count(9)
+    await expect(contour_map.locator('circle[data-response-map-trial][data-id="run-11"]')).to_be_visible()
+    await pick(contour_map.locator('circle[data-response-map-trial][data-id="run-03"]'))
+    await check_trial('run-03', 49, 52, 96.6)
+    await pick(map_pick, await map_offset(60, 25))
+    map_prediction = await check_fit()
+    if map_prediction[3] != 'y' or map_prediction[5:] != (None, None, None) or not all(
+        math.isclose(actual, expected, abs_tol=0.5) for actual, expected in zip(map_prediction[:2], [60, 25])
+    ):
+        raise RuntimeError(f'Picking a contour location must update both factors and leave trial mode: {map_prediction}')
+    section_points = sorted(await map_section_points())
+    lower, upper = [float(await target.get_attribute(f'data-{end}')) for end in ('min', 'max')]
+    if any(
+        not math.isclose(x, expected, abs_tol=0.01) or not math.isclose(y, map_prediction[1], abs_tol=0.01)
+        for (x, y), expected in zip(section_points, [lower, upper])
+    ):
+        raise RuntimeError('The displayed section line must follow the fixed heating time within its sampled interval')
+    await pick(map_pick, await map_offset(42, 7))
+    if await check_fit() != map_prediction:
+        raise RuntimeError('Picking an unsampled contour corner must leave the selection unchanged')
+
+    await fixed.select_option('x')
+    await map_pick.press('ArrowRight')
+    await map_pick.press('ArrowUp')
+    key_prediction = await check_fit()
+    if key_prediction[3] != 'x' or not all(
+        math.isclose(actual, expected, abs_tol=1e-8)
+        for actual, expected in zip(key_prediction[:2], [map_prediction[0] + 0.6, map_prediction[1] + 0.55])
+    ):
+        raise RuntimeError(f'Contour keys must nudge both factors in their calibrated coordinates: {key_prediction}')
+    section_points = sorted(await map_section_points())
+    lower, upper = [float(await target.get_attribute(f'data-{end}')) for end in ('min', 'max')]
+    if any(
+        not math.isclose(y, expected, abs_tol=0.01) or not math.isclose(x, key_prediction[0], abs_tol=0.01)
+        for (x, y), expected in zip(section_points, [lower, upper])
+    ):
+        raise RuntimeError('Changing fixed factor must rotate the linked section line and clip it to the new interval')
+
+    if not touch:
+        await map_pick.scroll_into_view_if_needed()
+        box = await map_pick.bounding_box()
+        start, end = await map_offset(61, 26), await map_offset(80, 42)
+        mouse = map_pick.page.mouse
+        await mouse.move(box['x'] + start['x'], box['y'] + start['y'])
+        await mouse.down()
+        await mouse.move(box['x'] + end['x'], box['y'] + end['y'], steps=5)
+        try:
+            dragged = await check_fit()
+            if not all(math.isclose(actual, expected, abs_tol=0.5) for actual, expected in zip(dragged[:2], [80, 42])):
+                raise RuntimeError(f'Dragging the contour map must continuously translate the section: {dragged}')
+        finally:
+            await mouse.up()
 
 
 async def check_native_scientific(plot, slug, touch):

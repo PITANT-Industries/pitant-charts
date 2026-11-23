@@ -1,21 +1,13 @@
 import { useEffect, useId, useMemo, useRef } from 'react'
 import type { PointerEvent } from 'react'
 import { usePlotSize } from '../usePlotSize'
+import { responseColor, responseColors } from './response-surface-model'
 import type { ResponseBounds, ResponsePosition, ResponseSurfaceData, ResponseTriangle, ResponseTrial, ResponseVertex } from './response-surface-model'
 
 export type SurfaceCamera = { yaw: number; pitch: number }
 export const responsePitch = (pitch: number) => Math.max(.08, Math.min(1.48, pitch))
 type ScreenPoint = { x: number; y: number; depth: number }
-const colors = [[38, 63, 113], [45, 107, 149], [69, 151, 148], [162, 188, 107], [247, 215, 131]] as const
 const numberFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2, useGrouping: false })
-
-function responseColor(value: number, [min, max]: readonly [number, number]) {
-  const index = max === min ? 2 : Math.min(4, Math.max(0, (value - min) / (max - min) * 4))
-  const start = Math.min(3, Math.floor(index))
-  const rgb = colors[start].map((channel, channelIndex) =>
-    Math.round(channel + ((colors[start + 1][channelIndex] - channel) * (index - start))))
-  return `rgb(${rgb.join(',')})`
-}
 
 function projectSurface(bounds: ResponseBounds, mesh: readonly ResponseTriangle[], trials: readonly ResponseTrial[],
   width: number, height: number, camera: SurfaceCamera, compact: boolean) {
@@ -78,7 +70,7 @@ function ResponseScale({ range, unit }: { range: readonly [number, number]; unit
     <svg className="response-scale" data-response-scale="" data-min={min} data-max={max}
       viewBox="0 0 64 150" role="img" aria-label={`Fitted response from ${numberFormat.format(min)} to ${numberFormat.format(max)} ${unit ?? ''}`}>
       <defs><linearGradient id={id} x1="0" y1="1" x2="0" y2="0">
-        {colors.map((color, index) => <stop key={index} offset={index / (colors.length - 1)} stopColor={`rgb(${color.join(',')})`} />)}
+        {responseColors.map((color, index) => <stop key={index} offset={index / (responseColors.length - 1)} stopColor={`rgb(${color.join(',')})`} />)}
       </linearGradient></defs>
       <g className="scientific-axis">
         <text x="4" y="11">{unit || 'Fit'}</text>

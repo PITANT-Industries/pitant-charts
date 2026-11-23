@@ -1,20 +1,8 @@
 import { usePlotSize } from '../usePlotSize'
-import { responseAxisLabel } from './response-surface-model'
+import { responseAxisLabel, responseTicks } from './response-surface-model'
 import type { ResponseBounds, ResponseFactor, ResponseSurfaceData, ResponseTrial, ResponseVertex } from './response-surface-model'
 
 const format = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 5 })
-
-function axisTicks(min: number, max: number, target: number) {
-  const rough = (max - min) / target
-  const magnitude = 10 ** Math.floor(Math.log10(rough))
-  const step = magnitude * ([1, 2, 2.5, 5, 10].find((value) => value * magnitude >= rough) ?? 10)
-  if (!Number.isFinite(step) || step <= 0) return [min, max]
-  const first = Math.ceil(min / step)
-  const last = Math.floor(max / step)
-  return last > first
-    ? Array.from({ length: last - first + 1 }, (_, index) => (first + index) * step)
-    : [min, max]
-}
 
 interface ResponseSectionProps {
   data: ResponseSurfaceData
@@ -75,13 +63,13 @@ export function ResponseSection({ data, bounds, axis, position, interval, sectio
         role="group" aria-label={`${responseLabel} by ${axisLabel} at ${fixedLabel} ${format.format(position)}`}>
         <rect className="scientific-frame" data-response-frame="" x={left} y={top} width={plotWidth} height={plotHeight} />
         <g className="scientific-axis" aria-hidden="true">
-          {axisTicks(xmin, xmax, Math.max(2, Math.floor(plotWidth / 53))).map((value) => (
+          {responseTicks(xmin, xmax, Math.max(2, Math.floor(plotWidth / 53))).map((value) => (
             <g key={value}>
               <line className="scientific-tick" x1={x(value)} x2={x(value)} y1={bottom} y2={bottom + 5} />
               <text x={x(value)} y={bottom + 18} textAnchor="middle">{format.format(value)}</text>
             </g>
           ))}
-          {axisTicks(ymin, ymax, Math.max(2, Math.floor(plotHeight / 33))).map((value) => (
+          {responseTicks(ymin, ymax, Math.max(2, Math.floor(plotHeight / 33))).map((value) => (
             <g key={value}>
               <line className="scientific-tick" x1={left - 5} x2={left} y1={y(value)} y2={y(value)} />
               <text x={left - 8} y={y(value) + 4} textAnchor="end">{format.format(value)}</text>
