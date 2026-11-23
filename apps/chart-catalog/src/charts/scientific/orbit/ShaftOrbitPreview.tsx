@@ -7,7 +7,7 @@ const galleryOrbits = { runs: [secondOrder, synchronous, subsynchronous] }
 
 const source = {
   label: 'Simulated orthogonal displacement probes',
-  description: 'Twelve turns at 1,800 RPM. The diamond marks the once-per-turn trigger, and faint traces show neighboring turns.',
+  description: 'Twelve turns at 1,800 rpm, sampled at 5,760 Hz. Each probe signal is centered over the complete simulated record.',
   href: 'https://ntrs.nasa.gov/citations/19860020731',
 }
 

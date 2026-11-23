@@ -256,8 +256,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                     'href', '#docs=mode-shapes&variant=mode-shapes-cantilever'
                 )
             elif example['family'] == 'shaft-orbit':
-                await expect(card_plot.locator('svg[data-orbit-plot]')).to_be_visible()
+                await check_shaft_orbit_figure(card_plot.locator('svg[data-orbit-plot]'), compact=True)
                 await expect(card_plot.locator('select, [data-orbit-waveforms], [data-orbit-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=shaft-orbit&variant=shaft-orbit-probes'
+                )
             elif example['family'] == 'frequency-response':
                 nyquist = card_plot.locator('svg[data-nyquist-plot]')
                 await expect(nyquist).to_be_visible()
@@ -487,15 +490,52 @@ async def check_mode_shapes(plot, touch):
     await expect(readout).to_have_attribute('data-phase', stopped_phase)
 
 
+async def check_shaft_orbit_figure(orbit, compact=False):
+    await expect(orbit).to_be_visible()
+    frame = orbit.locator('rect[data-orbit-axis-frame]')
+    await expect(frame).to_be_visible()
+    await expect(orbit.locator('.scientific-tick').first).to_be_attached()
+    await expect(orbit.get_by_text('X displacement (µm)', exact=True)).to_be_visible()
+    await expect(orbit.get_by_text('Y displacement (µm)', exact=True)).to_be_visible()
+    await expect(orbit.locator('[data-orbit-trigger]')).to_be_visible()
+    bounds = await frame.bounding_box()
+    if not math.isclose(bounds['width'], bounds['height'], abs_tol=0.5):
+        raise RuntimeError(f'The equal-scale orbit frame should be square, observed {bounds["width"]} × {bounds["height"]}')
+    if compact:
+        clipped = await orbit.evaluate("""async figure => {
+          await document.fonts.ready
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+          const cardBounds = figure.closest('.card-plot').getBoundingClientRect()
+          const figureBounds = figure.getBoundingClientRect()
+          const fits = (box, bounds) => box.left >= bounds.left - 1 && box.top >= bounds.top - 1 &&
+            box.right <= bounds.right + 1 && box.bottom <= bounds.bottom + 1
+          const marks = figure.querySelectorAll('rect[data-orbit-axis-frame], text')
+          return [figure, ...marks].filter(mark => {
+            const box = mark.getBoundingClientRect()
+            return !fits(box, cardBounds) || (mark !== figure && !fits(box, figureBounds))
+          }).map(mark => mark.matches('text') ? mark.textContent : mark.localName)
+        }""")
+        if clipped:
+            raise RuntimeError(f'Compact orbit marks extend beyond the visible card plot: {clipped}')
+
+
 async def check_shaft_orbit(plot, touch):
     chart = plot.locator('[data-shaft-orbit]')
     await expect(chart.locator('figcaption')).to_contain_text(re.compile(r'\bsimulat(?:ed|ion)\b', re.I))
     orbit = chart.locator('svg[data-orbit-plot]')
-    await expect(orbit).to_be_visible()
+    await check_shaft_orbit_figure(orbit)
     waveforms = chart.locator('svg[data-orbit-waveforms]')
     await expect(waveforms).to_be_visible()
+    await expect(waveforms.locator('rect[data-orbit-waveform-frame]')).to_be_visible()
+    await expect(waveforms.locator('.scientific-tick').first).to_be_attached()
+    await expect(waveforms.get_by_text('Displacement (µm)', exact=True)).to_be_visible()
+    await expect(waveforms.get_by_text('Time from trigger (ms)', exact=True)).to_be_visible()
+    probe_key = chart.get_by_role('list', name='Probe key', exact=True)
+    await expect(probe_key).to_be_visible()
+    await expect(probe_key.get_by_role('listitem')).to_have_text(['X probe', 'Y probe'])
+    orbit_key = chart.get_by_role('list', name='Orbit key', exact=True)
+    await expect(orbit_key.get_by_text('Turn trigger', exact=True)).to_be_visible()
     await expect(chart.locator('canvas')).to_have_count(0)
-    await expect(chart.locator('[data-orbit-trigger]').first).to_be_visible()
     trace = orbit.locator('[data-orbit-path]').first
     await expect(trace).to_have_attribute('d', re.compile(r'^M'))
     readout = chart.locator('output[data-orbit-readout]')
@@ -557,6 +597,9 @@ async def check_shaft_orbit(plot, touch):
     else:
         await target.click(position=position)
     await expect(readout).not_to_have_attribute('data-phase', '360')
+    selected_phase = float(await readout.get_attribute('data-phase'))
+    if not math.isclose(selected_phase, 252, abs_tol=2):
+        raise RuntimeError(f'Picking 70% of the trace window should select approximately 252°, observed {selected_phase}°')
     await expect(readout).to_have_attribute('data-revolution', '12')
     await expect(readout).to_have_attribute('data-rpm', '1800')
 

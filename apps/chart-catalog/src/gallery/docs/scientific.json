@@ -48,13 +48,13 @@
     "summary": "Follow the motion of a rotating shaft in two perpendicular probe signals.",
     "useWhen": "Compare the shape of an orbit across test runs, or check which part of each probe waveform produces a loop or turn in the path.",
     "data": "Give each run a unique ID, a label, a positive sample rate in Hz, and equal-length X and Y arrays of finite displacement values in µm. Both channels must share a sampling clock. Supply at least two strictly increasing, zero-based integer trigger indices inside the arrays. Each trigger marks the same shaft angle one revolution apart.",
-    "reading": "Select a run and a revolution, then move the phase control. The orbit plots X displacement horizontally and Y displacement vertically. The linked markers show the same instant on the orbit and on both probe waveforms, whose time axis starts at the first trigger in the selected turn.",
+    "reading": "Select a run and a revolution, then move the phase control. In the orbit, X displacement is horizontal and Y displacement is vertical. Both axes use equal physical scales in µm and the same limits across runs. The paired waveforms show X as a solid line and Y as a dashed line on the same time grid, in milliseconds from the trigger.",
     "notes": [
       "The three simulated runs span 12 revolutions at 1,800 RPM (30 Hz), sampled at 5,760 Hz. The first shows a 30 Hz ellipse. The other two add a 60 Hz second harmonic (2×) or a 13.8 Hz subsynchronous component (0.46×). That lower-frequency component changes the orbit between turns.",
       "Each simulated channel is centered by subtracting its mean over the 12 complete turns.",
-      "At 0°, the marker sits on the first trigger in the selected turn. At 360°, it reaches the next trigger. Between triggers, the chart assumes constant speed and linearly interpolates between adjacent probe samples. The waveform reports elapsed time in milliseconds.",
-      "The reported RPM is 60 times the sample rate divided by the number of samples between adjacent triggers. Keep the probe orientation and sign conventions consistent across runs to compare orbit shape and direction.",
-      "Both orbit axes use the same displacement scale. The displacement ranges stay fixed across runs so changes in plotted size reflect changes in the signals."
+      "The solid navy orbit shows the selected revolution and dashed orbits show neighboring turns. The arrow points in the direction of motion as time advances. The open diamond marks the once-per-revolution trigger, and the hollow circle shows the point linked to both waveforms.",
+      "At 0°, the selected point sits on the first trigger in the selected turn. At 360°, it reaches the next trigger. Between triggers, the chart assumes constant speed and linearly interpolates between adjacent probe samples.",
+      "The reported RPM is 60 times the sample rate divided by the number of samples between adjacent triggers. Keep the probe orientation and sign conventions consistent across runs to compare orbit shape and direction."
     ],
     "properties": [
       { "name": "data", "type": "ShaftOrbitData", "description": "Required. Supply one or more runs, each with id, label, sampleRateHz, xUm, yUm, and triggerSamples." },
@@ -63,7 +63,8 @@
       { "name": "source", "type": "{ label: string, href: string, description?: string }", "description": "Add a link and a note describing the input data or the plotting method." }
     ],
     "sources": [
-      { "label": "Agnes Muszynska (1985), Orbits: Computer Simulation, NASA Lewis Research Center proceedings", "href": "https://ntrs.nasa.gov/citations/19860020731" }
+      { "label": "Agnes Muszynska (1985), Orbits: Computer Simulation, NASA Lewis Research Center proceedings", "href": "https://ntrs.nasa.gov/citations/19860020731" },
+      { "label": "Siemens Simcenter, Orbit Plots, sections 1.4–1.5 on probe geometry and the once-per-turn trigger", "href": "https://community.sw.siemens.com/articles/en_US/Knowledge/Orbit-Plots" }
     ]
   },
   "frequency-response": {
