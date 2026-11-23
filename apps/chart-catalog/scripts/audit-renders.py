@@ -81,7 +81,7 @@ async def check_gallery_documentation(browser, local_url, example):
 
 
 async def check_scientific_catalog(browser, local_url, catalog):
-    families = {'spectrum', 'spectrogram', 'correlation-matrix', 'process-control'}
+    families = {'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix', 'process-control'}
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     page = await browser.new_page(viewport={'width': 390, 'height': 844}, reduced_motion='reduce')
     try:
@@ -100,8 +100,12 @@ async def check_scientific_catalog(browser, local_url, catalog):
             await page.wait_for_url(f'{local_url}#{fragment}', timeout=8000)
             preview = page.locator('#docs-preview')
             plot = preview.locator(f'.docs-example-plot[data-example-id="{slug}"]')
-            await plot.locator('canvas').first.wait_for(state='visible', timeout=8000)
-            await expect(plot.locator('[data-scientific-ready]')).to_have_count(1, timeout=8000)
+            waterfall = example['family'] == 'spectral-waterfall'
+            if waterfall:
+                await check_spectral_waterfall(plot, slug)
+            else:
+                await plot.locator('canvas').first.wait_for(state='visible', timeout=8000)
+                await expect(plot.locator('[data-scientific-ready]')).to_have_count(1, timeout=8000)
             await expect(page.get_by_role('list', name='Data sources')).to_be_visible()
             if slug == 'spectrum-measured':
                 await plot.get_by_role('slider', name='Frequency bin').press('Home')
@@ -110,10 +114,39 @@ async def check_scientific_catalog(browser, local_url, catalog):
                 await plot.get_by_role('combobox', name='Column variable').select_option('0')
                 await expect(plot.locator('output')).to_contain_text('Pearson r = 1')
             await preview.get_by_role('tab', name='Code', exact=True).click(timeout=8000)
-            await expect(preview.locator('pre code')).to_contain_text('@pitant/charts-react')
+            await expect(preview.locator('pre code')).to_contain_text('SpectralWaterfall' if waterfall else '@pitant/charts-react')
             await expect(preview.get_by_role('button', name='Copy code', exact=True)).to_be_visible()
     finally:
         await page.close()
+
+
+async def check_spectral_waterfall(plot, slug):
+    ridges = plot.locator('[data-waterfall-ridge]')
+    await ridges.first.wait_for(state='attached', timeout=8000)
+    azimuth = plot.get_by_role('slider', name='Azimuth')
+    initial_azimuth = await azimuth.input_value()
+    await azimuth.press('ArrowRight')
+    await expect(azimuth).not_to_have_value(initial_azimuth)
+    await plot.get_by_role('button', name='Reset view').click()
+    await expect(azimuth).to_have_value(initial_azimuth)
+
+    await plot.get_by_role('slider', name='Scan', exact=True).press('Home')
+    await plot.get_by_role('slider', name='Spectral bin').press('Home')
+    readout = plot.locator('[data-spectral-measurement]')
+    await expect(readout).to_have_attribute('data-scan-index', '0')
+    await expect(readout).to_have_attribute('data-bin-index', '0')
+    await expect(readout).to_contain_text('10.91 K' if slug.endswith('-xrd') else '1984')
+    await expect(plot.locator('[data-spectral-view="spectrum"] [data-spectral-selection]')).to_be_visible()
+
+    intensity = await readout.get_attribute('data-intensity')
+    await plot.get_by_role('tab', name='Heatmap').click()
+    heatmap = plot.locator('[data-spectral-view="heatmap"] svg')
+    await expect(heatmap).to_be_visible()
+    await expect(readout).to_have_attribute('data-intensity', intensity)
+    await heatmap.press('ArrowRight')
+    await expect(readout).to_have_attribute('data-bin-index', '1')
+    await plot.get_by_role('tab', name='3D Waterfall').click()
+    await expect(plot.locator('[data-waterfall-selected-bin="1"]')).to_be_visible()
 
 
 async def run(browser, queue, results, local_url):

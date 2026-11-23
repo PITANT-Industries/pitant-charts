@@ -37,6 +37,27 @@
       { "label": "NOAA Mauna Loa monthly CO₂ data", "href": "https://gml.noaa.gov/data/dataset.php?item=mlo-co2-observatory-monthly" }
     ]
   },
+  "spectral-waterfall": {
+    "summary": "Compare spectra across measured time windows or experimental conditions in a linked 3D waterfall, heatmap, and selected spectrum.",
+    "useWhen": "Follow peak shifts or changes in intensity across an ordered series, such as the same material measured at different temperatures.",
+    "data": "Pass strictly increasing spectralBins and scanValues in their original units. Supply one intensity per scan and bin in scan-major order. Use NaN for a missing measurement.",
+    "reading": "Rotate the waterfall to see how peaks develop. Click a plotted point or use the Scan and Spectral bin controls to read the original value. The heatmap and selected spectrum follow the same scan and bin.",
+    "notes": [
+      "The frequency example reuses the Mauna Loa spectrogram values from the NOAA monthly record. Each scan is a 96-month analysis window and the depth axis shows its center year.",
+      "The materials example includes 16 measured DyNiC₂ diffraction scans from 10.91 to 294.11 K. It keeps the reported intensity values in a 5–5.5° diffraction-angle window.",
+      "The displayed spacing follows the supplied coordinates. If input scans use different spectral grids, align them to a shared grid before supplying the matrix and document the alignment method."
+    ],
+    "properties": [
+      { "name": "data", "type": "SpectralWaterfallData", "description": "Required. Spectral positions, scan coordinates, and flattened intensity values. The value at scan i and bin j is values[i × spectralBins.length + j]." },
+      { "name": "axes", "type": "SpectralWaterfallAxes", "description": "Required. Labels and optional units for the spectral, scan, and intensity axes." },
+      { "name": "source", "type": "{ label: string; href: string }", "description": "Optional source citation displayed with the interactive figure." },
+      { "name": "description", "type": "string", "description": "Optional description of the dataset, preprocessing, and measurement context." }
+    ],
+    "sources": [
+      { "label": "NOAA Mauna Loa monthly CO₂ data", "href": "https://gml.noaa.gov/data/dataset.php?item=mlo-co2-observatory-monthly" },
+      { "label": "Adeel Zafar, temperature-resolved diffraction data", "href": "https://doi.org/10.7910/DVN/ACPWBG" }
+    ]
+  },
   "correlation-matrix": {
     "summary": "Compare the strength and direction of linear relationships across measured variables.",
     "useWhen": "Screen several pairs of quantitative measurements, then follow up with scatter plots and checks for confounding variables.",

@@ -8,11 +8,11 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 48 chart families and all 336 public examples', () => {
+test('covers 49 chart families and all 338 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()
-  assert.equal(catalog.length, 49)
+  assert.equal(catalog.length, 50)
   for (const family of catalog) {
     assert(!familyIds.has(family.id), `Duplicate family ${family.id}`)
     familyIds.add(family.id)
@@ -28,8 +28,8 @@ test('covers 48 chart families and all 336 public examples', () => {
     }
   }
   assert.equal(catalog.find((family) => family.id === 'tooltip').examples.length, 11)
-  assert.equal(ids.size, 336)
-  assert.equal(urls.size, 336)
+  assert.equal(ids.size, 338)
+  assert.equal(urls.size, 338)
 })
 
 test('documents every catalog family exactly once with practical guidance', async () => {
@@ -79,7 +79,7 @@ test('documents every catalog family exactly once with practical guidance', asyn
 test('each catalog family is routed to exactly one renderer group', () => {
   const groups = chartPreview.match(/export const rendererFamilies = \{([\s\S]+?)\} as const/)?.[1] ?? ''
   const mapped = Array.from(groups.matchAll(/'([^']+)'/g), (match) => match[1])
-  assert.equal(mapped.length, 49)
+  assert.equal(mapped.length, 50)
   assert.deepEqual(mapped.sort(), catalog.map((family) => family.id).sort())
 })
 

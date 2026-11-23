@@ -3220,6 +3220,31 @@
     ]
   },
   {
+    "id": "spectral-waterfall",
+    "name": "Spectral waterfall",
+    "url": "https://opensource.pitant.de/charts/#docs=spectral-waterfall",
+    "examples": [
+      {
+        "id": "spectral-waterfall-co2",
+        "family": "spectral-waterfall",
+        "title": "3D Frequency Waterfall",
+        "label": "Mauna Loa CO₂ amplitude by frequency and window",
+        "description": "Mauna Loa CO₂ amplitude by frequency and window",
+        "url": "https://opensource.pitant.de/charts/#example=spectral-waterfall-co2",
+        "position": 1
+      },
+      {
+        "id": "spectral-waterfall-xrd",
+        "family": "spectral-waterfall",
+        "title": "3D X-ray Diffraction Waterfall",
+        "label": "Temperature-resolved DyNiC₂ diffraction",
+        "description": "Temperature-resolved DyNiC₂ diffraction",
+        "url": "https://opensource.pitant.de/charts/#example=spectral-waterfall-xrd",
+        "position": 2
+      }
+    ]
+  },
+  {
     "id": "correlation-matrix",
     "name": "Correlation matrix",
     "url": "https://opensource.pitant.de/charts/#docs=correlation-matrix",

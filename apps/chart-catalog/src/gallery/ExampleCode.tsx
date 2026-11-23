@@ -120,7 +120,7 @@ export function CodeBlock({ language, source, note }: { language: string; source
 export function ExampleCode({ example }: { example: ChartExample }) {
   const scientific = scientificExampleSource(example.id)
   return <CodeBlock key={example.id} language="React" source={scientific ?? exampleSnippet(example)}
-    note={scientific
+    note={scientific && example.family !== 'spectral-waterfall'
       ? <>Build the industrial chart packages from source to run this example. <a href={scientificGuideUrl}>Installation guide</a></>
       : <>Build the catalog package from source to use this example. <a href={guideUrl}>Integration guide</a></>} />
 }

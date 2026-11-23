@@ -1,0 +1,113 @@
+.spectral-waterfall {
+  display: grid;
+  min-inline-size: 0;
+  margin: 0;
+  gap: .75rem;
+  color: var(--foreground);
+}
+
+.spectral-waterfall[data-compact='true'] {
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.docs-showcase .docs-example-plot:has(.spectral-waterfall), .detail-plot:has(.spectral-waterfall) {
+  block-size: auto;
+  overflow: visible;
+}
+
+.waterfall-tabs, .waterfall-tabs [role='tabpanel'] {
+  min-inline-size: 0;
+}
+
+.waterfall-view-toggle {
+  display: inline-flex;
+  inline-size: max-content;
+  max-inline-size: 100%;
+  margin: 0 .45rem .35rem;
+  gap: .2rem;
+  padding: .2rem;
+  border: 1px solid var(--border);
+  border-radius: .5rem;
+  background: var(--card);
+}
+
+.waterfall-view-toggle [role='tab'] {
+  padding: .4rem .65rem;
+  border: 0;
+  border-radius: .35rem;
+  background: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: .8125rem;
+  cursor: pointer;
+}
+
+.waterfall-view-toggle [aria-selected='true'] {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.waterfall-readout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .65rem 1rem;
+  padding: .75rem .45rem;
+  border-block: 1px solid var(--border);
+  font-size: .8125rem;
+}
+
+.waterfall-readout label {
+  display: grid;
+  min-inline-size: 0;
+  gap: .25rem;
+  color: var(--muted-foreground);
+}
+
+.waterfall-readout input {
+  inline-size: 100%;
+  min-block-size: 1.75rem;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.waterfall-readout output {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .65rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.waterfall-readout output > span {
+  display: grid;
+  gap: .2rem;
+  overflow-wrap: anywhere;
+}
+
+.waterfall-readout output span > span,
+.spectral-waterfall figcaption {
+  color: var(--muted-foreground);
+}
+
+.waterfall-readout output strong {
+  font-weight: 625;
+}
+
+.spectral-waterfall figcaption {
+  padding: .25rem .45rem .4rem;
+  font-size: .8125rem;
+  line-height: 1.5;
+}
+
+.spectral-waterfall figcaption a {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: .15em;
+}
+
+@media (max-width: 460px) {
+  .waterfall-readout output {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

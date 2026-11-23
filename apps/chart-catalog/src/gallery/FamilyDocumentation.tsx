@@ -111,7 +111,7 @@ export function FamilyDocumentation({ family, variantId, onBrowseFamily, onOpenE
   }, [family.id])
 
   if (!doc || !featured) return null
-  const scientific = group?.id === 'scientific'
+  const scientific = group?.id === 'scientific' && family.id !== 'spectral-waterfall'
   const documentedProps = doc.properties ?? [...properties, ...(extra ? [extra] : [])]
 
   return (

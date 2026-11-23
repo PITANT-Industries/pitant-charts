@@ -24,3 +24,4 @@ Some catalog example names and the Line examples’ simulated latency and dense 
 - [NOAA Global Monitoring Laboratory](https://doi.org/10.15138/yaf1-bk21) provides the monthly Mauna Loa CO₂ observations under CC0-1.0.
 - [Palmer Station LTER and Kristen Gorman](https://allisonhorst.github.io/palmerpenguins/) collected the penguin observations. The palmerpenguins data package by Horst, Hill, and Gorman provides the CC0-1.0 snapshot used here.
 - [NIST's Heat Flow Meter case study](https://itl.nist.gov/div898/handbook/eda/section4/eda4281.htm) provides Bob Zarr's calibration-factor measurements.
+- [Adeel Zafar's diffraction data](https://doi.org/10.7910/DVN/ACPWBG) supplies the DyNiC₂ temperature series from Harvard Dataverse V1 under CC0-1.0.

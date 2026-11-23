@@ -11,7 +11,7 @@ The Bun version comes from `packageManager` in the root `package.json`. The work
 | [Chart catalog](../.github/workflows/chart-catalog.yml) | Push to `main` or pull request targeting `main` with catalog or shared build changes | Version alignment, catalog tests, production builds, and validation of the archive. A push to `main` uploads `chart-catalog-site-<commit>` from `dist/`. |
 | [Publish industrial packages](../.github/workflows/publish.yml) | Manual dispatch or a published GitHub Release with an `industrial-v<version>` tag | Release and registry smoke checks. A manual run defaults to npm dry-run. A real publish checks the tag against both industrial package manifests and uses the repository’s `NPM_TOKEN` to publish with provenance. |
 
-GitHub-hosted runners use `PITANT_BENCH_PROFILE=ci`. Local performance verification uses the strict profile by default. The catalog browser audit covers all 336 examples at desktop and mobile widths in light and dark themes.
+GitHub-hosted runners use `PITANT_BENCH_PROFILE=ci`. Local performance verification uses the strict profile by default. The catalog browser audit covers all 338 examples at desktop and mobile widths in light and dark themes.
 
 ## Reproduce checks locally
 
