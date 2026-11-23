@@ -194,6 +194,31 @@
       { "label": "Tektronix, Anatomy of an Eye Diagram, clock-triggered folding and the receiver decision point", "href": "https://www.tek.com/en/documents/application-note/anatomy-eye-diagram" }
     ]
   },
+  "allan-deviation": {
+    "summary": "Compare the stability of a measured quantity across different averaging times.",
+    "useWhen": "Inspect clock frequency or inertial-sensor noise over short and long averaging intervals.",
+    "data": "Supply the name of the measured quantity and its unit if applicable. Give each curve a unique ID, a label, and points ordered by strictly increasing averaging time. Each point needs a positive finite tauSeconds and deviation for the logarithmic axes. Add pairs when the number of contributing overlapping terms is available.",
+    "reading": "The horizontal axis is averaging time τ in seconds and the vertical axis is Allan deviation in the quantity’s units. Both axes are logarithmic. Choose a Recording, then use Averaging time or the plot to read deviation and the overlapping pair count when supplied. Lower deviation indicates more stable averages at that timescale.",
+    "notes": [
+      "The example uses 44,002 synchronized phase samples, one second apart, from the NIST optical-clock and 10 GHz microwave comparison. Convert recorded phase φ in radians to time error x = φ/(2πν), using the experiment’s 259 THz optical reference and 10 GHz microwave reference. Convert the recorded microwave values from milliradians first.",
+      "The difference curve uses the sample-by-sample microwave time error minus optical time error. It describes the paired recordings, both of which compare two devices. Nakamura et al. report their separate optical-to-microwave transfer measurement in the paper.",
+      "Overlapping Allan deviation compares adjacent averages of duration τ. Start successive pairs one sample apart. For this one-second time-error data, τ = m seconds and each contributing value is (x[i + 2m] − 2x[i + m] + x[i])/τ. The deviation is the square root of one half the mean square of the N − 2m terms. The example spans 1–10,000 s.",
+      "At τ = 100 s the optical and microwave deviations are about 2.86 × 10⁻¹⁷ and 2.87 × 10⁻¹⁷. Their matched-record difference has deviation 3.45 × 10⁻¹⁸. Each estimate uses 43,802 overlapping terms, which share input samples. Confidence intervals depend on the effective degrees of freedom, the noise process, and the averaging factor.",
+      "Show reference slopes adds ideal power-law guides on the log–log plot. White frequency modulation (FM) has slope −½, flicker FM has slope 0, and random-walk FM has slope +½. Compare the surrounding points and the record length when interpreting a measured slope."
+    ],
+    "properties": [
+      { "name": "data", "type": "AllanDeviationData", "description": "Required. Provide quantity, an optional unit, and curves with tauSeconds, deviation, and optional pairs at each point." },
+      { "name": "initialTauSeconds", "type": "number", "description": "Choose the initial averaging time to inspect, in seconds." },
+      { "name": "label", "type": "string", "description": "Describe the measured quantity and test condition for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact stability plot for a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Add the data source, an analysis note, and optional license information." }
+    ],
+    "sources": [
+      { "label": "Takuma Nakamura et al. (2020), NIST optical and microwave clock phase recordings", "href": "https://doi.org/10.18434/M32206" },
+      { "label": "Nakamura et al. (2020), Coherent Optical Clock Down-Conversion, Science 368, 889–892", "href": "https://doi.org/10.1126/science.abb2473" },
+      { "label": "W. J. Riley (2008), Handbook of Frequency Stability Analysis, NIST SP 1065", "href": "https://doi.org/10.6028/NIST.SP.1065" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",

@@ -3316,6 +3316,22 @@
     ]
   },
   {
+    "id": "allan-deviation",
+    "name": "Allan Deviation",
+    "url": "https://opensource.pitant.de/charts/#docs=allan-deviation",
+    "examples": [
+      {
+        "id": "allan-deviation-stability",
+        "family": "allan-deviation",
+        "title": "Optical and Microwave Frequency Stability",
+        "label": "Measured NIST clock phase records",
+        "description": "Compare overlapping Allan deviation for the optical and 10 GHz microwave measurements and their matched-record difference.",
+        "url": "https://opensource.pitant.de/charts/#example=allan-deviation-stability",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",

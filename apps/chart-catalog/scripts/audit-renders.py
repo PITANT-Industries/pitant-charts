@@ -220,7 +220,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
     families = {
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
-        'wavelet-scalogram', 'bearing-envelope', 'eye-diagram',
+        'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -308,6 +308,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=eye-diagram&variant=eye-diagram-nrz'
                 )
+            elif example['family'] == 'allan-deviation':
+                allan = card_plot.locator('svg[data-allan-plot]')
+                await check_allan_figure(allan, compact=True)
+                await check_compact_figure_bounds(allan, 'rect[data-allan-axis-frame]')
+                await expect(card_plot.locator('select, [data-allan-readout], [data-allan-cursor]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=allan-deviation&variant=allan-deviation-stability'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -373,6 +381,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'eye-diagram':
                 await check_eye_diagram(plot, touch)
                 code_import = 'EyeDiagram'
+            elif example['family'] == 'allan-deviation':
+                await check_allan_deviation(plot, touch)
+                code_import = 'AllanDeviation'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -1245,6 +1256,92 @@ async def check_eye_diagram(plot, touch):
                    for value, target, tolerance in zip(actual, expected, (0.01, 1e-7, 0.001))):
             raise RuntimeError(f'Expected independently derived metrics {expected}, observed {actual}')
     await expect(opening).to_be_visible()
+
+
+async def check_allan_figure(allan, compact=False):
+    await expect(allan).to_be_visible()
+    await expect(allan.locator('rect[data-allan-axis-frame]')).to_be_visible()
+    await expect(allan.locator('.scientific-tick').first).to_be_attached()
+    await expect(allan.get_by_text('Averaging time, τ (s)', exact=True)).to_be_visible()
+    label = 'Allan deviation' if compact else 'Overlapping Allan deviation'
+    await expect(allan.get_by_text(re.compile(rf'^{label}, σᵧ\(τ\)(?: \(.+\))?$'))).to_be_visible()
+    traces = allan.locator('path[data-allan-trace]')
+    await expect(traces).to_have_count(3)
+    await expect(traces.first).to_have_attribute('d', re.compile(r'^M'))
+
+
+async def check_allan_deviation(plot, touch):
+    chart = plot.locator('[data-allan-deviation]')
+    await expect(chart.locator('figcaption a').first).to_have_attribute(
+        'href', re.compile(r'^https://doi\.org/10\.18434/M32206/?$', re.I)
+    )
+    allan = chart.locator('svg[data-allan-plot]')
+    await check_allan_figure(allan)
+    reference = allan.locator('[data-allan-reference]')
+    slopes = chart.get_by_role('checkbox', name='Show reference slopes', exact=True)
+    await expect(slopes).to_be_checked()
+    await expect(reference).to_have_count(3)
+    shown_slopes = await reference.evaluate_all('lines => lines.map(line => Number(line.dataset.slope))')
+    if sorted(shown_slopes) != [-0.5, 0, 0.5]:
+        raise RuntimeError(f'Expected the three logarithmic reference slopes, observed {shown_slopes}')
+    await slopes.uncheck()
+    await expect(reference).to_have_count(0)
+    await slopes.check()
+    await expect(reference).to_have_count(3)
+
+    readout = chart.locator('output[data-allan-readout]')
+    averaging = chart.get_by_role('slider', name='Averaging time', exact=True)
+    cursor = allan.locator('circle[data-allan-cursor]')
+    await expect(readout).to_be_visible()
+    await expect(cursor).to_be_visible()
+
+    async def selection():
+        data = await readout.evaluate("out => ['tau', 'deviation', 'pairs'].map(key => out.dataset[key])")
+        tau, deviation, pairs = map(float, data)
+        if not all(map(math.isfinite, (tau, deviation, pairs))) or not (tau > 0 and deviation > 0 and pairs > 0 and pairs.is_integer()):
+            raise RuntimeError(f'Invalid Allan deviation sample: {data}')
+        return tau, deviation, pairs
+
+    await averaging.press('Home')
+    first_tau, first_deviation, first_pairs = await selection()
+    left, first_y = [float(await cursor.get_attribute(key)) for key in ('cx', 'cy')]
+    await averaging.press('End')
+    last_tau, last_deviation, last_pairs = await selection()
+    right, last_y = [float(await cursor.get_attribute(key)) for key in ('cx', 'cy')]
+    if (first_tau, first_pairs, last_tau, last_pairs) != (1, 44000, 10000, 24002) or not left < right:
+        raise RuntimeError(f'Unexpected NIST averaging endpoints and pair counts: {first_tau}, {first_pairs}, {last_tau}, {last_pairs}')
+
+    recording = chart.get_by_role('combobox', name='Recording', exact=True)
+    await expect(recording).to_have_value('optical')
+    point = allan.locator('circle[data-allan-point][data-curve="optical"][data-tau="100"]')
+    await expect(point).to_be_visible()
+    tau, deviation, pairs = map(float, await point.evaluate("point => [point.dataset.tau, point.dataset.deviation, point.dataset.pairs]"))
+    if pairs != 43802 or not math.isclose(deviation, 2.858125499849438e-17, rel_tol=1e-9):
+        raise RuntimeError(f'Unexpected measured optical beat at 100 s: {deviation} from {pairs} pairs')
+    x, y = [float(await point.get_attribute(key)) for key in ('cx', 'cy')]
+    expected_x = left + (right - left) * math.log(tau / first_tau) / math.log(last_tau / first_tau)
+    expected_y = first_y + (last_y - first_y) * math.log(deviation / first_deviation) / math.log(last_deviation / first_deviation)
+    if not math.isclose(x, expected_x, abs_tol=0.5) or not math.isclose(y, expected_y, abs_tol=0.5):
+        raise RuntimeError(f'The Allan point should follow a log scale on both axes: observed ({x}, {y}), expected ({expected_x}, {expected_y})')
+
+    target = allan.locator('.allan-plot-pick')
+    await expect(target).to_be_visible()
+    bounds = await target.bounding_box()
+    point_bounds = await point.bounding_box()
+    position = {'x': point_bounds['x'] + point_bounds['width'] * 0.5 - bounds['x'], 'y': bounds['height'] * 0.5}
+    if touch:
+        await target.tap(position=position)
+    else:
+        await target.click(position=position)
+    if await selection() != (tau, deviation, pairs):
+        raise RuntimeError('Pointer selection should report the deviation and pair count of the plotted averaging time')
+
+    for curve_id, expected in [('microwave', 2.86930895664297e-17), ('residual', 3.454429003013355e-18)]:
+        await recording.select_option(curve_id)
+        await expect(cursor).to_have_attribute('data-curve', curve_id)
+        selected_tau, selected_deviation, selected_pairs = await selection()
+        if (selected_tau, selected_pairs) != (100, 43802) or not math.isclose(selected_deviation, expected, rel_tol=1e-9):
+            raise RuntimeError(f'Unexpected measured {curve_id} at shared 100 s: {selected_tau}, {selected_deviation}, {selected_pairs}')
 
 
 async def check_native_scientific(plot, slug, touch):

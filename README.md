@@ -10,7 +10,7 @@
 <p align="center">React charts for dashboards and a WebGPU-first TypeScript engine for industrial time series.</p>
 
 <p align="center">
-  <a href="https://opensource.pitant.de/charts/"><strong>Explore 348 examples</strong></a>
+  <a href="https://opensource.pitant.de/charts/"><strong>Explore 349 examples</strong></a>
   &nbsp;·&nbsp;
   <a href="https://opensource.pitant.de/charts/#docs=introduction">Documentation</a>
   &nbsp;·&nbsp;
