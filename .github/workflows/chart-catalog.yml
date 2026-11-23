@@ -5,16 +5,20 @@ on:
     branches: [main]
     paths:
       - 'apps/chart-catalog/**'
+      - 'LICENSE'
       - 'packages/charts-ui/package.json'
       - 'package.json'
+      - 'bunfig.toml'
       - 'bun.lock'
       - '.github/workflows/chart-catalog.yml'
   pull_request:
     branches: [main]
     paths:
       - 'apps/chart-catalog/**'
+      - 'LICENSE'
       - 'packages/charts-ui/package.json'
       - 'package.json'
+      - 'bunfig.toml'
       - 'bun.lock'
       - '.github/workflows/chart-catalog.yml'
 
@@ -33,12 +37,26 @@ jobs:
         with:
           bun-version: 1.4.4
       - run: bun install --frozen-lockfile
+      - run: bun run catalog:site
       - working-directory: apps/chart-catalog
         run: |
           node scripts/check-workspace.mjs
           bun run test
-          bun run build
+          bun run build:library
           node scripts/check-workspace.mjs --pack
+      - name: Verify catalog distribution
+        run: |
+          cmp apps/chart-catalog/LICENSE dist/LICENSE
+          cmp apps/chart-catalog/THIRD_PARTY_NOTICES.md dist/THIRD_PARTY_NOTICES.md
+          test -f dist/licenses/dependencies/echarts-6.1.0-NOTICE
+          tar -xOzf dist/chart-catalog-source.tgz src/index.ts | cmp apps/chart-catalog/src/index.ts -
+          tar -xOzf dist/chart-catalog-source.tgz public/pitant-favicon.svg | cmp apps/chart-catalog/public/pitant-favicon.svg -
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          name: chart-catalog-site-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
 
   edge-catalog:
     runs-on: windows-latest

@@ -479,6 +479,11 @@ export function Gallery() {
           </div>
         </div>
       </main>
+      <footer className="catalog-footer">
+        <a href={import.meta.env.PROD ? './chart-catalog-source.tgz' : `${repositoryUrl}/tree/main/apps/chart-catalog`}>Source code</a>
+        <a href={import.meta.env.PROD ? './LICENSE' : `${repositoryUrl}/blob/main/apps/chart-catalog/LICENSE`}>MPL-2.0 license</a>
+        <a href={import.meta.env.PROD ? './THIRD_PARTY_NOTICES.md' : `${repositoryUrl}/blob/main/apps/chart-catalog/THIRD_PARTY_NOTICES.md`}>Third-party notices</a>
+      </footer>
       {detail && <ExampleDetail example={detail} tab={link.tab} onTab={showTab} saved={savedIds.has(detail.id)} onSave={() => toggleSaved(detail.id)} onClose={() => showExample('')} onExample={showExample} onDocumentation={() => showDocumentation(detail.family, detail.id)} />}
     </div>
   )

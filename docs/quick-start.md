@@ -7,8 +7,18 @@ adapters, or test harnesses that own the canvas lifecycle.
 
 ## Install
 
+Build both industrial packages and create local archives from the repository root.
+
 ```sh
-bun add @pitant/charts @pitant/charts-react
+bun install --frozen-lockfile
+bun run build
+npm pack ./packages/charts ./packages/charts-react
+```
+
+In your React app, install both archives from the same build.
+
+```sh
+bun add /path/to/pitant-charts/pitant-charts-1.0.0.tgz /path/to/pitant-charts/pitant-charts-react-1.0.0.tgz
 ```
 
 Import PITANT chart tokens once in the application shell:
@@ -109,6 +119,7 @@ public packages.
 Run:
 
 ```sh
+bun run build
 bun run docs:dev
 ```
 

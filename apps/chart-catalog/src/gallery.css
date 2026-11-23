@@ -160,6 +160,9 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 .example-list-row small { color: var(--muted-foreground); font-size: 11px; }
 .pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 24px; }
 .pagination span { color: var(--muted-foreground); font-size: 12px; }
+.catalog-footer { display: flex; flex-wrap: wrap; gap: 4px 18px; max-width: var(--gallery-max); margin-inline: auto; padding: 12px var(--gallery-gutter) 16px; border-block-start: 1px solid var(--gallery-rule); font-size: 12px; }
+.catalog-footer a { display: inline-flex; align-items: center; min-block-size: 32px; color: var(--gallery-muted); text-decoration: underline; text-underline-offset: .2em; }
+.catalog-footer a:hover { color: var(--gallery-accent); }
 .text-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; background: var(--card); color: var(--foreground); font-size: 12px; font-weight: 530; }
 .text-button:not(:disabled):hover { background: var(--muted); }
 .empty-state { display: grid; min-height: 270px; place-items: center; align-content: center; gap: 10px; border: 1px dashed var(--border); border-radius: 12px; color: var(--muted-foreground); background: var(--card); text-align: center; padding: 15px; }

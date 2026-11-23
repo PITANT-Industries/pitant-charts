@@ -65,4 +65,8 @@ bun run catalog:build
 node apps/chart-catalog/scripts/check-workspace.mjs --pack
 ```
 
-Use `bun run catalog:site` to build the deployable `dist` directory. See the [third-party notices](THIRD_PARTY_NOTICES.md) for attribution and license terms.
+Use `bun run catalog:site` to build the deployable `dist` directory. The catalog footer links to the corresponding source archive and license. [Live catalog](https://opensource.pitant.de/charts/) · [CI and delivery](../../docs/ci-cd.md#deliver-the-chart-catalog)
+
+## Source and license
+
+PITANT-owned source is available under MPL-2.0. The package includes the library source and build configuration. [License](LICENSE) · [Source access](SOURCE.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
