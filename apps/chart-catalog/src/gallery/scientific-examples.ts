@@ -1,5 +1,6 @@
 import allanDeviation from './docs/examples/AllanDeviation.tsx?raw'
 import bearingEnvelope from './docs/examples/BearingEnvelopeSpectrum.tsx?raw'
+import binaryPhaseDiagram from './docs/examples/BinaryPhaseDiagram.tsx?raw'
 import campbellDiagram from './docs/examples/CampbellDiagram.tsx?raw'
 import capabilityHistogram from './docs/examples/CapabilityHistogram.tsx?raw'
 import coherencePhase from './docs/examples/CoherencePhase.tsx?raw'
@@ -42,6 +43,7 @@ const scientificExamples = new Map([
   ['full-field-strain-tensile', withCatalogImports(fullFieldStrain)],
   ['fatigue-sn-measured', withCatalogImports(fatigueSn)],
   ['crack-growth-fatigue', withCatalogImports(crackGrowth)],
+  ['binary-phase-diagram-ag-cu', withCatalogImports(binaryPhaseDiagram)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

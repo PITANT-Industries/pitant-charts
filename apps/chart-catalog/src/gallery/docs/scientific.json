@@ -363,6 +363,34 @@
       { "label": "ASTM E647-24, measurement of fatigue crack growth rates", "href": "https://store.astm.org/standards/e647" }
     ]
   },
+  "binary-phase-diagram": {
+    "summary": "Explore how the equilibrium phases of a two-component material change with composition and temperature.",
+    "useWhen": "Read liquidus, solidus, and solvus boundaries, follow a fixed-composition cooling path, and calculate fractions in a two-phase field.",
+    "data": "Provide two distinct component names, the composition unit (at. % or wt. % of the second component), a temperature domain in °C, a eutectic temperature and three compositions, and six boundary branches. Each branch needs at least two samples with composition from 0 to 100 and strictly increasing temperatures within the display domain. On each side, join the liquidus and solidus at the corresponding pure-component melting point. Each solvus spans the display minimum to the eutectic. Match every branch at the eutectic temperature to its corresponding eutectic composition.",
+    "reading": "The horizontal axis gives the overall percentage of the second component and the vertical axis gives temperature. Click or drag the point on the figure, or use Composition and Temperature. Follow the vertical path to see which fields the alloy enters on cooling. In a two-phase field, the ends of the horizontal tie line show the compositions of the two phases. Use Go to eutectic to select the exact invariant temperature and liquid composition.",
+    "notes": [
+      "The liquidus separates fully liquid material from liquid plus solid. The solidus marks the limit of fully solid material. A solvus marks the composition limit of a solid solution.",
+      "For a bulk composition x₀ between tie-line endpoints xₗ and xᵣ, the fraction of the left phase is (xᵣ − x₀)/(xᵣ − xₗ) and the fraction of the right phase is (x₀ − xₗ)/(xᵣ − xₗ). With atomic percent these are mole fractions on an atom basis. With weight percent they are mass fractions.",
+      "Between the solid endpoints of the invariant eutectic line, three equilibrium phase compositions are fixed. Bulk composition and temperature provide too little information to determine three phase fractions. The diagram represents equilibrium at the specified pressure. Rates of solidification and diffusion require a kinetic model.",
+      "The Ag–Cu example uses the Moon et al. thermodynamic assessment from Hallstedt’s SGTE collection. ORCHID calculated the equilibrium boundaries with pycalphad 0.11.2 at 1 atm. The figure converts kelvin to °C and Cu mole fraction to atomic percent. Tie-line endpoints are linearly interpolated from the published boundary samples.",
+      "The calculated eutectic is at 779.13 °C. The Ag-rich solid, liquid, and Cu-rich solid compositions there are 13.274, 40.254, and 95.460 at. % Cu. The separate NIST Ag–Cu calculation reports a liquid eutectic composition of 28.41 wt. % Cu using its own assessment.",
+      "At 20 at. % Cu and 850 °C, the Ag-rich solid contains about 9.08 at. % Cu and the liquid about 21.62 at. % Cu. The lever rule gives about 87.1% liquid on a mole basis."
+    ],
+    "properties": [
+      { "name": "data", "type": "BinaryPhaseDiagramData", "description": "Required. Supply components, compositionUnit, temperatureDomain, eutectic, and branches for a binary eutectic diagram." },
+      { "name": "label", "type": "string", "description": "Describe the system and plot for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact phase diagram for a gallery card." },
+      { "name": "initialComposition", "type": "number", "description": "Set the starting bulk composition as a percentage of the second component." },
+      { "name": "initialTemperatureC", "type": "number", "description": "Set the starting temperature in degrees Celsius." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Credit the thermodynamic assessment or dataset and link its license where available." }
+    ],
+    "sources": [
+      { "label": "Arróyave, Saal, and Shin (2026), ORCHID-Diagrams, version 2026.10 (CC BY 4.0)", "href": "https://doi.org/10.5281/zenodo.23735859" },
+      { "label": "Hallstedt (2025), The SGTE collection of binary datasets", "href": "https://publications.rwth-aachen.de/record/1011611?ln=en" },
+      { "label": "Moon et al. (2000), experimental and thermodynamic assessment of Sn–Ag–Cu solder alloys", "href": "https://www.nist.gov/publications/experimental-and-thermodynamic-assessment-sn-ag-cu-solder-alloys" },
+      { "label": "NIST, calculated Ag–Cu phase diagram and invariant compositions by mass", "href": "https://www.metallurgy.nist.gov/phase/solder/agcu.html" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",

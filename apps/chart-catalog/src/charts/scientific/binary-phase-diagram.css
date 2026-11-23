@@ -1,0 +1,203 @@
+.binary-phase-diagram {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .7rem;
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+}
+
+.binary-phase-diagram[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.binary-phase-diagram),
+.detail-plot:has(.binary-phase-diagram) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.alloy-plot {
+  block-size: clamp(16rem, 48cqw, 24rem);
+}
+
+.binary-phase-diagram[data-compact='true'] .alloy-plot {
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.alloy-grid {
+  stroke: #e7ebee;
+  stroke-width: 1px;
+}
+
+.alloy-boundary {
+  fill: none;
+  stroke: #28343d;
+  stroke-width: 1.45px;
+  stroke-linejoin: round;
+}
+
+.alloy-region {
+  fill: #3b4852;
+  font-weight: 500;
+  paint-order: stroke fill;
+  stroke: #fff;
+  stroke-width: 2px;
+  stroke-linejoin: round;
+}
+
+.alloy-eutectic {
+  stroke: #677682;
+  stroke-dasharray: 4 3;
+}
+
+.alloy-eutectic-point {
+  fill: #fff;
+  stroke: #293841;
+  stroke-width: 1.35px;
+}
+
+.alloy-cooling {
+  stroke: #285f86;
+  stroke-width: 1.15px;
+  stroke-dasharray: 5 3;
+}
+
+.alloy-tie-line {
+  stroke: #9c482d;
+  stroke-width: 1.65px;
+}
+
+.alloy-tie-end {
+  fill: #fff;
+  stroke: #9c482d;
+  stroke-width: 1.25px;
+}
+
+.alloy-cursor {
+  fill: #285f86;
+  stroke: #fff;
+  stroke-width: 1.25px;
+}
+
+.alloy-plot-pick {
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.alloy-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem .95rem;
+  margin: -.1rem 0 .25rem;
+  padding: 0;
+  list-style: none;
+  font-size: .76rem;
+}
+
+.alloy-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.alloy-key li::before {
+  content: '';
+  inline-size: .9rem;
+  border-block-start: 1px solid currentColor;
+}
+
+.alloy-key .alloy-key-path::before {
+  border-color: #285f86;
+  border-block-start-style: dashed;
+}
+
+.alloy-key .alloy-key-tie::before {
+  border-color: #9c482d;
+}
+
+.alloy-key .alloy-key-eutectic::before {
+  inline-size: .4rem;
+  block-size: .4rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.alloy-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: .55rem 1rem;
+  min-inline-size: 0;
+  font-size: .8rem;
+}
+
+.alloy-controls label {
+  display: grid;
+  gap: .15rem;
+  min-inline-size: 0;
+}
+
+.alloy-controls input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 1.6rem;
+  margin: 0;
+  accent-color: var(--gallery-accent, var(--primary));
+}
+
+.alloy-controls button {
+  justify-self: start;
+  min-block-size: 2rem;
+  padding: .25rem .55rem;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .25rem;
+  background: var(--gallery-surface, var(--card));
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.alloy-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem 1.3rem;
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.alloy-readout span {
+  display: grid;
+  gap: .12rem;
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+.alloy-readout strong {
+  color: var(--gallery-ink, var(--foreground));
+  font-size: .92rem;
+}
+
+.alloy-caption {
+  padding-block-start: .6rem;
+  border-block-start: 1px solid var(--gallery-rule, var(--border));
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.alloy-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+.alloy-caption p {
+  margin: .18rem 0 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+@container (max-width: 32rem) {
+  .alloy-controls { grid-template-columns: minmax(0, 1fr); }
+}

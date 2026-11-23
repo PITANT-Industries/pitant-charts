@@ -221,7 +221,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
-        'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth',
+        'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -366,6 +366,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=crack-growth&variant=crack-growth-fatigue'
                 )
+            elif example['family'] == 'binary-phase-diagram':
+                diagram = card_plot.locator('svg[data-phase-diagram]')
+                await check_binary_phase_figure(diagram)
+                await check_compact_figure_bounds(diagram, 'rect[data-phase-diagram-frame]')
+                await expect(card_plot.locator('input, button, .alloy-plot-pick, [data-alloy-cooling], [data-alloy-cursor], [data-alloy-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=binary-phase-diagram&variant=binary-phase-diagram-ag-cu'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -452,6 +460,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'crack-growth':
                 await check_crack_growth(plot, touch)
                 code_import = 'CrackGrowth'
+            elif example['family'] == 'binary-phase-diagram':
+                await check_binary_phase_diagram(plot, touch)
+                code_import = 'BinaryPhaseDiagram'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -2160,6 +2171,179 @@ async def check_crack_growth(plot, touch):
     if not math.isclose(picked_k, 27.02276940331986) or not math.isclose(picked_rate, 8.85838e-5):
         raise RuntimeError(f'Unexpected final S460 measurement: {picked_k}, {picked_rate}')
     await check_fit()
+
+
+async def check_alloy_guide_line(locator):
+    await expect(locator).to_be_attached()
+    painted = await locator.evaluate("""line => {
+      const { stroke, strokeWidth, visibility } = getComputedStyle(line)
+      return stroke !== 'none' && parseFloat(strokeWidth) > 0 && visibility === 'visible' && line.getTotalLength() > 0
+    }""")
+    if not painted:
+        raise RuntimeError('Expected a visible stroked line in the equilibrium figure')
+
+
+async def check_binary_phase_figure(diagram):
+    await expect(diagram).to_be_visible()
+    await expect(diagram.locator('rect[data-phase-diagram-frame]')).to_be_visible()
+    await expect(diagram.locator('.scientific-tick').first).to_be_attached()
+    await expect(diagram.get_by_text('Composition (at. % Cu)', exact=True)).to_be_visible()
+    await expect(diagram.get_by_text('Temperature (°C)', exact=True)).to_be_visible()
+    boundaries = diagram.locator('path[data-alloy-boundary]')
+    await expect(boundaries).to_have_count(6)
+    boundary_paths = await boundaries.evaluate_all(
+        "paths => paths.map(path => [path.dataset.boundary, path.getAttribute('d'), path.getTotalLength()])"
+    )
+    if len({entry[0] for entry in boundary_paths}) != 6 or any(
+        not path_data.startswith('M') or not math.isfinite(length) or length <= 0
+        for _, path_data, length in boundary_paths
+    ):
+        raise RuntimeError(f'Expected six assessed Ag–Cu boundary branches, observed {boundary_paths}')
+    eutectic = diagram.locator('line[data-alloy-eutectic]')
+    await check_alloy_guide_line(eutectic)
+    await expect(eutectic).to_have_attribute('data-temperature', '779.13')
+
+
+async def check_binary_phase_diagram(plot, touch):
+    chart = plot.locator('[data-binary-phase-diagram]')
+    await expect(chart.locator('figcaption a').first).to_have_attribute(
+        'href', re.compile(r'^https://(?:doi\.org/10\.5281/zenodo\.|zenodo\.org/records/)23735859/?$')
+    )
+    diagram = chart.locator('svg[data-phase-diagram]')
+    await check_binary_phase_figure(diagram)
+    frame = diagram.locator('rect[data-phase-diagram-frame]')
+    cursor = diagram.locator('circle[data-alloy-cursor]')
+    tie_line = diagram.locator('line[data-alloy-tie-line]')
+    cooling = diagram.locator('line[data-alloy-cooling]')
+    readout = chart.locator('output[data-alloy-readout]')
+    composition = chart.get_by_role('slider', name='Composition', exact=True)
+    temperature = chart.get_by_role('slider', name='Temperature', exact=True)
+    await expect(readout).to_be_visible()
+    await expect(cursor).to_be_visible()
+    await check_alloy_guide_line(cooling)
+    await expect(composition).to_have_attribute('step', '0.1')
+    await expect(temperature).to_have_attribute('step', '0.1')
+    x_domain = (0, 100)
+    y_domain = (300, 1125)
+    for slider, (minimum, maximum) in [(composition, x_domain), (temperature, y_domain)]:
+        await expect(slider).to_have_attribute('min', str(minimum))
+        await expect(slider).to_have_attribute('max', str(maximum))
+
+    def test_close(actual, expected, message, tolerance=0.05):
+        if not math.isclose(actual, expected, abs_tol=tolerance):
+            raise RuntimeError(f'{message}: observed {actual}, expected {expected}')
+
+    async def selection():
+        values = await readout.evaluate(
+            "out => ['composition', 'temperature', 'region', 'leftFraction', 'rightFraction'].map(key => out.dataset[key])"
+        )
+        selected_x, selected_y = map(float, values[:2])
+        test_close(float(await composition.input_value()), selected_x, 'Composition slider and readout should agree')
+        test_close(float(await temperature.input_value()), selected_y, 'Temperature slider and readout should agree')
+        left, top, width, height = await frame.evaluate(
+            "rect => ['x', 'y', 'width', 'height'].map(key => rect[key].baseVal.value)"
+        )
+        cx, cy = await cursor.evaluate("circle => [circle.cx.baseVal.value, circle.cy.baseVal.value]")
+        test_close(cx, left + width * selected_x / 100, 'Cursor x should match atomic percent copper', 0.5)
+        expected_y = top + height * (y_domain[1] - selected_y) / (y_domain[1] - y_domain[0])
+        test_close(cy, expected_y, 'Cursor y should match temperature', 0.5)
+        cool_x1, cool_x2, cool_y1, cool_y2 = await cooling.evaluate(
+            "line => ['x1', 'x2', 'y1', 'y2'].map(key => line[key].baseVal.value)"
+        )
+        for x in [cool_x1, cool_x2]:
+            test_close(x, cx, 'The cooling path should follow the selected composition at all temperatures', 0.5)
+        test_close(cool_y1, top, 'Cooling path should start at the top of the plot', 0.5)
+        test_close(cool_y2, top + height, 'Cooling path should span the full temperature domain', 0.5)
+        return selected_x, selected_y, values[2], values[3:]
+
+    async def set_point(requested_x, requested_y, region):
+        await composition.fill(str(requested_x))
+        await temperature.fill(str(requested_y))
+        await expect(readout).to_have_attribute('data-region', region)
+        observed_x, observed_y, _, fractions = await selection()
+        test_close(observed_x, requested_x, 'Unexpected selected alloy composition')
+        test_close(observed_y, requested_y, 'Unexpected selected alloy temperature')
+        return fractions
+
+    initial_x, initial_y, initial_region, _ = await selection()
+    if (initial_x, initial_y, initial_region) != (20, 850, 'left-liquid'):
+        raise RuntimeError('The assessed Ag–Cu example should open with a selected solid–liquid tie line')
+    for x, y, region in [(50, 1100, 'liquid'), (2, 650, 'left-solid'), (99, 650, 'right-solid')]:
+        if await set_point(x, y, region) != [None, None]:
+            raise RuntimeError(f'No lever-rule fractions apply to the single phase in {region}')
+        await expect(tie_line).to_have_count(0)
+
+    for x, y, region, endpoints in [
+        (20, 850, 'left-liquid', (9.0775147219, 21.6165790622)),
+        (85, 900, 'right-liquid', (70.9717258602, 95.6304162042)),
+        (50, 650, 'two-solids', (7.120995, 97.880975)),
+    ]:
+        fractions = list(map(float, await set_point(x, y, region)))
+        expected_right = (x - endpoints[0]) / (endpoints[1] - endpoints[0])
+        test_close(fractions[0], 1 - expected_right, f'Unexpected left phase fraction in {region}', 0.0002)
+        test_close(fractions[1], expected_right, f'Unexpected right phase fraction in {region}', 0.0002)
+        await check_alloy_guide_line(tie_line)
+        tie_x1, tie_x2, tie_y1, tie_y2 = await tie_line.evaluate(
+            "line => ['x1', 'x2', 'y1', 'y2'].map(key => line[key].baseVal.value)"
+        )
+        left, width = await frame.evaluate("rect => [rect.x.baseVal.value, rect.width.baseVal.value]")
+        cx, cy = await cursor.evaluate("circle => [circle.cx.baseVal.value, circle.cy.baseVal.value]")
+        for side, drawn_endpoint, actual_endpoint in zip(['left', 'right'], [tie_x1, tie_x2], endpoints):
+            test_close(float(await tie_line.get_attribute(f'data-{side}')), actual_endpoint, f'Incorrect {side} tie endpoint in {region}', 0.001)
+            test_close(drawn_endpoint, left + width * actual_endpoint / 100, f'Misplaced tie endpoint in {region}', 0.5)
+        if not tie_x1 < cx < tie_x2:
+            raise RuntimeError(f'Overall composition should lie between the endpoints in {region}')
+        test_close(tie_y1, cy, 'The tie line should cross the selected temperature', 0.5)
+        test_close(tie_y2, cy, 'The tie line should run horizontally at constant temperature', 0.5)
+
+    await composition.press('ArrowRight')
+    await temperature.press('ArrowUp')
+    selected_x, selected_y, region, _ = await selection()
+    test_close(selected_x, 50.1, 'Composition keyboard step did not move by 0.1 at. % Cu', 0.001)
+    test_close(selected_y, 650.1, 'Temperature keyboard step did not move by 0.1 °C', 0.001)
+    if region != 'two-solids':
+        raise RuntimeError(f'Keyboard step should remain in the two-solid region, observed {region}')
+
+    eutectic_button = chart.get_by_role('button', name='Go to eutectic', exact=True)
+    if touch:
+        await eutectic_button.tap()
+    else:
+        await eutectic_button.press('Enter')
+    invariant_x, invariant_y, region, fractions = await selection()
+    test_close(invariant_x, 40.254, 'Unexpected assessed eutectic composition', 0.000001)
+    test_close(invariant_y, 779.13, 'Unexpected assessed eutectic temperature', 0.000001)
+    if region != 'eutectic' or fractions != [None, None]:
+        raise RuntimeError(f'Phase fractions must remain undetermined at the three-phase eutectic, observed {region} and {fractions}')
+    await expect(tie_line).to_have_count(0)
+    await expect(readout).to_contain_text('Undetermined at this invariant')
+    invariant_line = diagram.locator('line[data-alloy-eutectic]')
+    test_close(float(await invariant_line.get_attribute('y1')), float(await cursor.get_attribute('cy')), 'Eutectic cursor should align with the invariant isotherm', 0.5)
+
+    target = diagram.locator('.alloy-plot-pick')
+    await target.scroll_into_view_if_needed()
+    bounds = await target.bounding_box()
+    position = {'x': bounds['width'] * 0.7, 'y': bounds['height'] * 0.1}
+    if touch:
+        await target.tap(position=position)
+    else:
+        await target.click(position=position)
+    selected_x, selected_y, region, _ = await selection()
+    test_close(selected_x, 70, 'Pointer should move composition along the horizontal axis', 0.75)
+    test_close(selected_y, 1042.5, 'Pointer should move temperature along the vertical axis', 4)
+    if region != 'liquid':
+        raise RuntimeError(f'Pointer choice should enter the liquid region, observed {region}')
+    if not touch:
+        bounds = await target.bounding_box()
+        mouse = diagram.page.mouse
+        await mouse.move(bounds['x'] + bounds['width'] * 0.7, bounds['y'] + bounds['height'] * 0.1)
+        await mouse.down()
+        await mouse.move(bounds['x'] + bounds['width'] * 0.3, bounds['y'] + bounds['height'] * 0.75, steps=5)
+        await mouse.up()
+        selected_x, selected_y, region, _ = await selection()
+        test_close(selected_x, 30, 'Dragging should update composition continuously', 0.75)
+        test_close(selected_y, 506.25, 'Dragging should update temperature continuously', 4)
+        if region != 'two-solids':
+            raise RuntimeError(f'Dragging should enter the two-solid region, observed {region}')
 
 
 async def check_native_scientific(plot, slug, touch):
