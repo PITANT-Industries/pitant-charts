@@ -15,10 +15,6 @@ export const groupIcons = {
   tooltips: MousePointer2,
 } as const
 
-export function BrandMark() {
-  return <span className="brand-mark" aria-hidden="true"><BarChart3 size={19} strokeWidth={2.2} /></span>
-}
-
 export function HeroChart() {
   const bars = [24, 39, 33, 56, 49, 77, 64, 92, 82, 115, 101, 138, 119, 153, 132, 163, 145]
   return (

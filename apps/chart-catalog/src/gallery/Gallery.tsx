@@ -15,14 +15,28 @@ import { ChartPreview } from '../charts/ChartPreview'
 import type { ChartExample } from '../types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Choices } from '../ui/Choices'
-import { BrandMark, groupIcons, HeroChart } from './Visuals'
+import { groupIcons, HeroChart } from './Visuals'
 import { FamilySelect } from './FamilySelect'
 import { notedCount, ParityOverview, parityNotes } from './ParityOverview'
 import type { ParityFilter } from './ParityOverview'
 import { comparisonPlot } from './comparison-plot'
+import pitantMark from './brand/pitant-icon.svg'
+import pitantWordmark from './brand/pitant-wordmark.svg'
+import pitantWordmarkWhite from './brand/pitant-wordmark-white.svg'
 
 const pageSize = 12
 const referenceUrl = 'https://www.shadcn.io/charts'
+const repositoryUrl = 'https://github.com/PITANT-Industries/pitant-charts'
+const guideUrl = `${repositoryUrl}/blob/main/apps/chart-catalog/README.md#use-the-react-library`
+const popularFamilies = [
+  { id: 'area', label: 'Area' },
+  { id: 'bar', label: 'Bar' },
+  { id: 'line', label: 'Line' },
+  { id: 'pie', label: 'Pie' },
+  { id: 'scatter', label: 'Scatter' },
+  { id: 'heatmap', label: 'Heatmap' },
+  { id: 'tooltip', label: 'Tooltips' },
+]
 const layoutChoices = [
   { value: 'grid', label: <Grid2X2 size={17} aria-hidden="true" />, ariaLabel: 'Grid view' },
   { value: 'list', label: <List size={18} aria-hidden="true" />, ariaLabel: 'List view' },
@@ -91,7 +105,14 @@ function VisibleChart({ example }: { example: ChartExample }) {
   return <div className="card-plot" ref={host}>{visible && <ChartPreview example={example} compact />}</div>
 }
 
-function ExampleCard({ example, saved, review, onOpen, onSave }: { example: ChartExample; saved: boolean; review: boolean; onOpen: () => void; onSave: () => void }) {
+function ExampleCard({ example, saved, review, onOpen, onShowCode, onSave }: {
+  example: ChartExample
+  saved: boolean
+  review: boolean
+  onOpen: () => void
+  onShowCode: () => void
+  onSave: () => void
+}) {
   const family = getFamily(example.family)
   return (
     <Card className="example-card" data-example-id={example.id}>
@@ -106,8 +127,17 @@ function ExampleCard({ example, saved, review, onOpen, onSave }: { example: Char
       <div className="example-footer">
         <span>{example.label}</span>
         {review && <small className="example-review-state">{parityNotes[example.id] ? 'Notes available' : 'Awaiting notes'}</small>}
+        <ViewCodeButton example={example} onClick={onShowCode} />
       </div>
     </Card>
+  )
+}
+
+function ViewCodeButton({ example, onClick }: { example: ChartExample; onClick: () => void }) {
+  return (
+    <Button className="card-code" aria-label={`View code for ${example.title}`} onClick={onClick}>
+      <Code2 size={15} aria-hidden="true" /> View code
+    </Button>
   )
 }
 
@@ -173,17 +203,33 @@ function ReferenceComparison({ example, theme }: { example: ChartExample; theme:
 }
 
 function ExampleDetail({ example, theme, tab, onTab, saved, onSave, onClose, onExample }: { example: ChartExample; theme: 'light' | 'dark'; tab: ExampleTab; onTab: (tab: ExampleTab) => void; saved: boolean; onSave: () => void; onClose: () => void; onExample: (id: string) => void }) {
-  const [copied, setCopied] = useState(false)
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'selected'>('idle')
+  const code = useRef<HTMLElement>(null)
   const family = getFamily(example.family)
   const list = family?.examples ?? []
   const previous = list[example.position - 2]
   const next = list[example.position]
   const snippet = `import { ChartPreview, getExample } from '@pitant/chart-catalog'\nimport '@pitant/chart-catalog/styles.css'\n\nexport function Example() {\n  const example = getExample('${example.id}')\n  if (!example) return null\n\n  return (\n    <div style={{ height: 320 }}>\n      <ChartPreview example={example} />\n    </div>\n  )\n}`
   useEffect(() => {
-    if (!copied) return
-    const timeout = window.setTimeout(() => setCopied(false), 1800)
+    if (copyStatus === 'idle') return
+    const timeout = window.setTimeout(() => setCopyStatus('idle'), copyStatus === 'copied' ? 1800 : 6000)
     return () => window.clearTimeout(timeout)
-  }, [copied])
+  }, [copyStatus])
+
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(snippet)
+      setCopyStatus('copied')
+    } catch {
+      const selection = window.getSelection()
+      if (!selection || !code.current) return
+      const range = document.createRange()
+      range.selectNodeContents(code.current)
+      selection.removeAllRanges()
+      selection.addRange(range)
+      setCopyStatus('selected')
+    }
+  }
 
   return (
     <Modal onClose={onClose} labelledBy="example-detail-title" wide={tab === 'compare'}>
@@ -203,8 +249,16 @@ function ExampleDetail({ example, theme, tab, onTab, saved, onSave, onClose, onE
         <TabsPanel value="preview"><div className="detail-plot"><ChartPreview key={example.id} example={example} /></div></TabsPanel>
         <TabsPanel value="compare"><ReferenceComparison example={example} theme={theme} /></TabsPanel>
         <TabsPanel value="code"><div className="snippet">
-          <div className="snippet-header"><span>React</span><Button className="text-button" onClick={async () => { try { await navigator.clipboard.writeText(snippet); setCopied(true) } catch { setCopied(false) } }}>{copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}{copied ? 'Copied' : 'Copy code'}</Button></div>
-          <pre><code>{snippet}</code></pre>
+          <div className="snippet-header">
+            <span>React</span>
+            <Button className="text-button" onClick={() => void copyCode()}>
+              {copyStatus === 'copied' ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+              {copyStatus === 'copied' ? 'Copied' : 'Copy code'}
+            </Button>
+          </div>
+          <p className="code-context">Build the catalog package from source to use this example. <a href={guideUrl}>Integration guide</a></p>
+          <pre><code ref={code}>{snippet}</code></pre>
+          {copyStatus === 'selected' && <p className="code-context" role="status">Code selected. Use your keyboard shortcut to copy it.</p>}
         </div></TabsPanel>
       </Tabs>
       <div className="detail-footer">
@@ -231,6 +285,7 @@ export function Gallery() {
   const [navigationOpen, setNavigationOpen] = useState(false)
   const searchField = useRef<HTMLInputElement>(null)
   const results = useRef<HTMLElement>(null)
+  const openSourceHref = window.location.pathname.endsWith('/charts/') ? '../' : 'https://opensource.pitant.de/'
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -290,8 +345,9 @@ export function Gallery() {
     writeLink(next, true)
   }
 
-  function showExample(id: string) {
-    const next: GalleryLink = { ...link, example: id, tab: link.example && id ? link.tab : 'preview' }
+  function showExample(id: string, tab?: ExampleTab) {
+    const currentTab = link.example && id ? link.tab : 'preview'
+    const next: GalleryLink = { ...link, example: id, tab: tab ?? currentTab }
     setLink(next)
     writeLink(next, !link.example && Boolean(id))
   }
@@ -356,46 +412,92 @@ export function Gallery() {
               <div data-drawer-no-drag="">{categoryNavigation()}</div>
             </DrawerContent>
           </Drawer>
-          <a href="#" className="brand" onClick={(event) => { event.preventDefault(); reset(); window.scrollTo(0, 0) }}><BrandMark /><span>Chart Library</span></a>
-          <div className="header-actions">
-            <a className="header-link" href="#review=all" onClick={(event) => { event.preventDefault(); choose('all', 'all', false, 'all'); window.scrollTo(0, 0) }}>Component index <ArrowRight size={14} /></a>
+          <a href="#" className="brand" aria-label="PITANT Charts home" onClick={(event) => { event.preventDefault(); reset(); window.scrollTo(0, 0) }}>
+            <img className="brand-mark" src={pitantMark} alt="" width="23" height="17" />
+            <img className="brand-wordmark brand-wordmark-light" src={pitantWordmark} alt="" width="77" height="29" />
+            <img className="brand-wordmark brand-wordmark-dark" src={pitantWordmarkWhite} alt="" width="77" height="29" />
+            <span className="brand-product">Charts</span>
+          </a>
+          <nav className="header-actions" aria-label="Project links">
+            <a className="header-link" href={openSourceHref} aria-label="PITANT Open Source">
+              <ArrowLeft size={15} aria-hidden="true" /> <span className="header-link-text">Open source</span>
+            </a>
+            <a className="header-link" href={repositoryUrl} aria-label="PITANT Charts on GitHub">
+              <span className="header-link-text">GitHub</span> <ArrowUpRight size={15} aria-hidden="true" />
+            </a>
             <span className="header-rule" />
             <Toggle className="icon-button" aria-label="Dark theme" pressed={theme === 'dark'} onPressedChange={(pressed) => setTheme(pressed ? 'dark' : 'light')}>{theme === 'dark' ? <Sun size={19} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}</Toggle>
-          </div>
+          </nav>
         </div>
       </header>
-      <div className="workspace">
-        <aside className="sidebar">{categoryNavigation()}</aside>
-        <main className="gallery-main" id="main-content" tabIndex={-1}>
-          {link.review ? <ParityOverview filter={link.review} onFilter={(filter) => choose(link.group, link.family, false, filter)} onFamily={(group, family) => { choose(group, family, false, link.review); results.current?.scrollIntoView({ block: 'start' }) }} /> : <section className="hero" aria-labelledby="page-title">
-            <div className="hero-copy">
-              <p className="hero-eyebrow"><span /> REACT COMPONENTS</p>
-              <h1 id="page-title">Chart library</h1>
-              <p className="hero-intro">Explore 331 variations across 44 chart families and tooltips.</p>
-              <a className="primary-button" href="#catalog" onClick={(event) => { event.preventDefault(); results.current?.scrollIntoView({ block: 'start' }); searchField.current?.focus({ preventScroll: true }) }}>Browse charts <ArrowDown size={16} /></a>
+      <main id="main-content" tabIndex={-1}>
+        {!link.review && <section className="hero" aria-labelledby="page-title">
+          <div className="hero-copy">
+            <h1 id="page-title">PITANT Charts</h1>
+            <p className="hero-intro">Interactive React charts for time series, comparisons, maps, and dashboards. Browse {examples.length} examples and see how each one works.</p>
+            <div className="hero-actions">
+              <a className="primary-button" href="#catalog" onClick={(event) => { event.preventDefault(); results.current?.scrollIntoView({ block: 'start' }); searchField.current?.focus({ preventScroll: true }) }}>Browse charts <ArrowDown size={16} aria-hidden="true" /></a>
+              <a className="secondary-button" href={guideUrl}>Integration guide <ArrowUpRight size={16} aria-hidden="true" /></a>
             </div>
-            <HeroChart />
-          </section>}
-          <section ref={results} id="catalog" className="catalog" aria-labelledby="catalog-title">
-            <div className="catalog-heading">
-              <div><h2 id="catalog-title">{showSaved ? 'Saved charts' : selectedFamily?.name ?? selectedGroup?.name ?? (link.review === 'documented' ? 'Variants with notes' : link.review === 'measured' ? 'Variants with measured plot sizing' : link.review === 'pending' ? 'Variants awaiting notes' : 'All charts')}</h2><p aria-live="polite">{filtered.length} {filtered.length === 1 ? 'example' : 'examples'}</p></div>
-              <form className="filter-tools" onSubmit={submitSearch}>
-                <div className="search-field"><Search size={17} aria-hidden="true" /><Input controller={searchController} ref={searchField} type="search" aria-label="Search charts" placeholder={link.review ? 'Search charts and notes…' : 'Search charts…'} value={search} onValueChange={(value) => { setSearch(value); setPage(1) }} />{search ? <Button aria-label="Clear search" onClick={() => { searchController.setValue(''); searchField.current?.focus() }}><X size={15} aria-hidden="true" /></Button> : <kbd aria-hidden="true">/</kbd>}</div>
-                <FamilySelect value={link.family} groups={selectedGroup && !link.review ? [selectedGroup] : groups} onChange={(id) => choose(id === 'all' ? link.review ? 'all' : link.group : getGroupForFamily(id)?.id ?? 'all', id, showSaved, link.review)} />
-                <Choices className="segmented layout-toggle" label="Gallery layout" options={layoutChoices} value={layout} onChange={setLayout} />
-              </form>
-            </div>
-            {visible.length ? layout === 'grid' ? (
-              <div className="example-grid">{visible.map((example) => <ExampleCard key={example.id} example={example} saved={savedIds.has(example.id)} review={Boolean(link.review)} onOpen={() => showExample(example.id)} onSave={() => toggleSaved(example.id)} />)}</div>
-            ) : (
-              <div className="example-list">{visible.map((example) => <div className="example-list-row" key={example.id} data-example-id={example.id}><Button className="list-main" aria-label={`Open ${example.title}`} onClick={() => showExample(example.id)}><span>{example.title}</span><small>{getFamily(example.family)?.name}</small><ArrowUpRight size={17} aria-hidden="true" /></Button><Toggle className="icon-button bookmark-button" aria-label={`Save ${example.title}`} pressed={savedIds.has(example.id)} onPressedChange={() => toggleSaved(example.id)}><Bookmark size={17} aria-hidden="true" /></Toggle></div>)}</div>
-            ) : (
-              <div className="empty-state"><span>{showSaved && !query ? <Bookmark size={23} /> : <Search size={23} />}</span><h3>{showSaved && !query && !selectedFamily ? 'No saved charts yet' : 'No matching charts'}</h3><p>{showSaved && !query && !selectedFamily ? 'Save an example to find it here later.' : 'Try another search or clear the filters.'}</p><Button className="text-button" onClick={reset}>Browse all charts <ArrowDownRight size={15} aria-hidden="true" /></Button></div>
-            )}
-            {pages > 1 && <nav className="pagination" aria-label="Catalog pages"><Button className="text-button" disabled={currentPage <= 1} onClick={() => setResultPage(currentPage - 1)}><ArrowLeft size={15} aria-hidden="true" /> Previous</Button><span>Page {currentPage} of {pages}</span><Button className="text-button" disabled={currentPage >= pages} onClick={() => setResultPage(currentPage + 1)}>Next <ArrowRight size={15} aria-hidden="true" /></Button></nav>}
-          </section>
-        </main>
-      </div>
+          </div>
+          <HeroChart />
+        </section>}
+        <div className="workspace">
+          <aside className="sidebar">{categoryNavigation()}</aside>
+          <div className="gallery-main">
+            {link.review && <ParityOverview filter={link.review} onFilter={(filter) => choose(link.group, link.family, false, filter)} onFamily={(group, family) => { choose(group, family, false, link.review); results.current?.scrollIntoView({ block: 'start' }) }} />}
+            {!link.review && !showSaved && <nav className="family-rail" aria-label="Popular chart families">
+              {popularFamilies.map(({ id, label }) => (
+                <Button key={id} aria-pressed={link.family === id} onClick={() => choose(getGroupForFamily(id)?.id ?? 'all', id)}>
+                  {label}
+                </Button>
+              ))}
+            </nav>}
+            <section ref={results} id="catalog" className="catalog" aria-labelledby="catalog-title">
+              <div className="catalog-heading">
+                <div><h2 id="catalog-title">{showSaved ? 'Saved charts' : selectedFamily?.name ?? selectedGroup?.name ?? (link.review === 'documented' ? 'Variants with notes' : link.review === 'measured' ? 'Variants with measured plot sizing' : link.review === 'pending' ? 'Variants awaiting notes' : 'All charts')}</h2><p aria-live="polite">{filtered.length} {filtered.length === 1 ? 'example' : 'examples'}</p></div>
+                <form className="filter-tools" onSubmit={submitSearch}>
+                  <div className="search-field"><Search size={17} aria-hidden="true" /><Input controller={searchController} ref={searchField} type="search" aria-label="Search charts" placeholder={link.review ? 'Search charts and notes…' : 'Search charts…'} value={search} onValueChange={(value) => { setSearch(value); setPage(1) }} />{search ? <Button aria-label="Clear search" onClick={() => { searchController.setValue(''); searchField.current?.focus() }}><X size={15} aria-hidden="true" /></Button> : <kbd aria-hidden="true">/</kbd>}</div>
+                  <FamilySelect value={link.family} groups={selectedGroup && !link.review ? [selectedGroup] : groups} onChange={(id) => choose(id === 'all' ? link.review ? 'all' : link.group : getGroupForFamily(id)?.id ?? 'all', id, showSaved, link.review)} />
+                  <Choices className="segmented layout-toggle" label="Gallery layout" options={layoutChoices} value={layout} onChange={setLayout} />
+                </form>
+              </div>
+              {visible.length ? layout === 'grid' ? (
+                <div className="example-grid">
+                  {visible.map((example) => (
+                    <ExampleCard
+                      key={example.id}
+                      example={example}
+                      saved={savedIds.has(example.id)}
+                      review={Boolean(link.review)}
+                      onOpen={() => showExample(example.id)}
+                      onShowCode={() => showExample(example.id, 'code')}
+                      onSave={() => toggleSaved(example.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="example-list">
+                  {visible.map((example) => (
+                    <div className="example-list-row" key={example.id} data-example-id={example.id}>
+                      <Button className="list-main" aria-label={`Open ${example.title}`} onClick={() => showExample(example.id)}>
+                        <span>{example.title}</span><small>{getFamily(example.family)?.name}</small><ArrowUpRight size={17} aria-hidden="true" />
+                      </Button>
+                      <ViewCodeButton example={example} onClick={() => showExample(example.id, 'code')} />
+                      <Toggle className="icon-button bookmark-button" aria-label={`Save ${example.title}`} pressed={savedIds.has(example.id)} onPressedChange={() => toggleSaved(example.id)}>
+                        <Bookmark size={17} aria-hidden="true" />
+                      </Toggle>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state"><span>{showSaved && !query ? <Bookmark size={23} /> : <Search size={23} />}</span><h3>{showSaved && !query && !selectedFamily ? 'No saved charts yet' : 'No matching charts'}</h3><p>{showSaved && !query && !selectedFamily ? 'Save an example to find it here later.' : 'Try another search or clear the filters.'}</p><Button className="text-button" onClick={reset}>Browse all charts <ArrowDownRight size={15} aria-hidden="true" /></Button></div>
+              )}
+              {pages > 1 && <nav className="pagination" aria-label="Catalog pages"><Button className="text-button" disabled={currentPage <= 1} onClick={() => setResultPage(currentPage - 1)}><ArrowLeft size={15} aria-hidden="true" /> Previous</Button><span>Page {currentPage} of {pages}</span><Button className="text-button" disabled={currentPage >= pages} onClick={() => setResultPage(currentPage + 1)}>Next <ArrowRight size={15} aria-hidden="true" /></Button></nav>}
+            </section>
+          </div>
+        </div>
+      </main>
       {detail && <ExampleDetail example={detail} theme={theme} tab={link.tab} onTab={showTab} saved={savedIds.has(detail.id)} onSave={() => toggleSaved(detail.id)} onClose={() => showExample('')} onExample={showExample} />}
     </div>
   )
