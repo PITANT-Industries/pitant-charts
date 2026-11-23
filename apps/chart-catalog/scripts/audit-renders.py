@@ -217,7 +217,7 @@ async def check_docs_navigation(browser, local_url, catalog):
 async def check_scientific_catalog(browser, local_url, catalog):
     families = {
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
-        'process-control', 'campbell-diagram', 'mode-shapes',
+        'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -252,6 +252,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'mode-shapes':
                 await expect(card_plot.locator('[data-mode-shape-plot]')).to_be_visible()
                 await expect(card_plot.locator('[data-mode-readout]')).to_have_count(0)
+            elif example['family'] == 'shaft-orbit':
+                await expect(card_plot.locator('svg[data-orbit-plot]')).to_be_visible()
+                await expect(card_plot.locator('select, [data-orbit-waveforms], [data-orbit-readout]')).to_have_count(0)
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
 
@@ -282,6 +285,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'mode-shapes':
                 await check_mode_shapes(plot, touch)
                 code_import = 'ModeShapes'
+            elif example['family'] == 'shaft-orbit':
+                await check_shaft_orbit(plot, touch)
+                code_import = 'ShaftOrbit'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -414,6 +420,80 @@ async def check_mode_shapes(plot, touch):
     stopped_phase = await readout.get_attribute('data-phase')
     await readout.evaluate('() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))')
     await expect(readout).to_have_attribute('data-phase', stopped_phase)
+
+
+async def check_shaft_orbit(plot, touch):
+    chart = plot.locator('[data-shaft-orbit]')
+    await expect(chart.locator('figcaption')).to_contain_text(re.compile(r'\bsimulat(?:ed|ion)\b', re.I))
+    orbit = chart.locator('svg[data-orbit-plot]')
+    await expect(orbit).to_be_visible()
+    waveforms = chart.locator('svg[data-orbit-waveforms]')
+    await expect(waveforms).to_be_visible()
+    await expect(chart.locator('canvas')).to_have_count(0)
+    await expect(chart.locator('[data-orbit-trigger]').first).to_be_visible()
+    trace = orbit.locator('[data-orbit-path]').first
+    await expect(trace).to_have_attribute('d', re.compile(r'^M'))
+    readout = chart.locator('output[data-orbit-readout]')
+    await expect(readout).to_be_visible()
+    await expect(readout).to_have_attribute('data-rpm', '1800')
+    for axis in ['x', 'y']:
+        await expect(readout).to_have_attribute(f'data-{axis}', re.compile(r'^-?\d+(?:\.\d+)?(?:e[+-]?\d+)?$', re.I))
+    scenario = chart.get_by_role('combobox', name='Signal scenario', exact=True)
+    revolution = chart.get_by_role('slider', name='Revolution', exact=True)
+    phase = chart.get_by_role('slider', name='Shaft phase', exact=True)
+    await expect(scenario).to_have_value('synchronous')
+    options = await scenario.locator('option').evaluate_all('(options) => options.map(option => option.value)')
+    if len(options) != 3 or set(options) != {'synchronous', 'second-order', 'subsynchronous'}:
+        raise RuntimeError(f'The shaft orbit should offer three signal scenarios, observed {options}')
+
+    probe_coordinates = '(output) => [output.dataset.x, output.dataset.y]'
+    await expect(readout).to_have_attribute('data-phase', '0')
+    synchronous_trace = await trace.get_attribute('d')
+    synchronous_point = await readout.evaluate(probe_coordinates)
+    await phase.press('PageUp')
+    await expect(readout).not_to_have_attribute('data-phase', '0')
+    await scenario.select_option('second-order')
+    await expect(scenario).to_have_value('second-order')
+    await expect(readout).to_have_attribute('data-revolution', '1')
+    await expect(readout).to_have_attribute('data-phase', '0')
+    await expect(trace).not_to_have_attribute('d', synchronous_trace)
+    if await readout.evaluate(probe_coordinates) == synchronous_point:
+        raise RuntimeError('The synchronous and second-order scenarios should show distinct probe readings')
+
+    second_order_trace = await trace.get_attribute('d')
+    await scenario.select_option('subsynchronous')
+    await expect(scenario).to_have_value('subsynchronous')
+    await expect(trace).not_to_have_attribute('d', second_order_trace)
+    await phase.press('PageUp')
+    selected_phase = await readout.get_attribute('data-phase')
+    first_revolution_trace = await trace.get_attribute('d')
+    first_revolution_point = await readout.evaluate(probe_coordinates)
+    await revolution.press('End')
+    await expect(readout).to_have_attribute('data-revolution', '12')
+    await expect(readout).to_have_attribute('data-phase', selected_phase)
+    await expect(trace).not_to_have_attribute('d', first_revolution_trace)
+    if await readout.evaluate(probe_coordinates) == first_revolution_point:
+        raise RuntimeError('At fixed phase the subsynchronous orbit should vary across revolutions')
+
+    last_revolution_trace = await trace.get_attribute('d')
+    last_revolution_point = await readout.evaluate(probe_coordinates)
+    await phase.press('End')
+    await expect(readout).to_have_attribute('data-phase', '360')
+    await expect(trace).to_have_attribute('d', last_revolution_trace)
+    if await readout.evaluate(probe_coordinates) == last_revolution_point:
+        raise RuntimeError('Changing shaft phase should move the selected probe point')
+
+    target = waveforms.locator('.orbit-waveform-pick')
+    await expect(target).to_be_visible()
+    bounds = await target.bounding_box()
+    position = {'x': bounds['width'] * 0.7, 'y': bounds['height'] * 0.5}
+    if touch:
+        await target.tap(position=position)
+    else:
+        await target.click(position=position)
+    await expect(readout).not_to_have_attribute('data-phase', '360')
+    await expect(readout).to_have_attribute('data-revolution', '12')
+    await expect(readout).to_have_attribute('data-rpm', '1800')
 
 
 async def check_native_scientific(plot, slug, touch):
