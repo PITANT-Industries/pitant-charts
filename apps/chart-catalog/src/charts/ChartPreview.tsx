@@ -28,6 +28,7 @@ const BinaryPhaseDiagramPreview = lazy(() => import('./scientific/BinaryPhaseDia
 const TernaryMixtureMapPreview = lazy(() => import('./scientific/TernaryMixtureMapPreview'))
 const IndustrialCtViewerPreview = lazy(() => import('./scientific/IndustrialCtViewerPreview'))
 const CadScanDeviationPreview = lazy(() => import('./scientific/CadScanDeviationPreview'))
+const CieChromaticityDiagramPreview = lazy(() => import('./scientific/CieChromaticityDiagramPreview'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
 const ParticleMassSpectrum = lazy(() => import('./scientific/particle/ParticleMassSpectrumPreview'))
 const ScientificWaterfall = lazy(() => import('./scientific/waterfall/SpectralWaterfallPreview'))
@@ -56,6 +57,7 @@ export const rendererFamilies = {
   ternaryMixtureMap: ['ternary-mixture-map'],
   industrialCt: ['industrial-ct'],
   cadScanDeviation: ['cad-scan-deviation'],
+  cieChromaticity: ['cie-chromaticity'],
   spectrogram: ['spectrogram'],
   scientific: ['spectrum', 'correlation-matrix', 'process-control'],
   statsmaps: ['scatter', 'heatmap', 'uncertainty', 'histogram', 'ridgeline', 'ecdf', 'beeswarm', 'violin', 'box-plot', 'hexbin', 'density', 'choropleth', 'bubble-map', 'route-map', 'globe', 'vector-field'],
@@ -84,6 +86,7 @@ const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.ternaryMixtureMap.map((id) => [id, TernaryMixtureMapPreview] as const),
   ...rendererFamilies.industrialCt.map((id) => [id, IndustrialCtViewerPreview] as const),
   ...rendererFamilies.cadScanDeviation.map((id) => [id, CadScanDeviationPreview] as const),
+  ...rendererFamilies.cieChromaticity.map((id) => [id, CieChromaticityDiagramPreview] as const),
   ...rendererFamilies.waterfall.map((id) => [id, ScientificWaterfall] as const),
   ...rendererFamilies.spectrogram.map((id) => [id, MaunaLoaSpectrogram] as const),
   ...rendererFamilies.scientific.map((id) => [id, Scientific] as const),

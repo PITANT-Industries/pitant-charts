@@ -3492,6 +3492,22 @@
     ]
   },
   {
+    "id": "cie-chromaticity",
+    "name": "CIE Chromaticity Diagram",
+    "url": "https://opensource.pitant.de/charts/#docs=cie-chromaticity",
+    "examples": [
+      {
+        "id": "cie-chromaticity-gamuts",
+        "family": "cie-chromaticity",
+        "title": "Display Gamut Comparison",
+        "label": "sRGB, Display P3, and Rec. 2020",
+        "description": "Compare standardized RGB gamuts against the CIE spectral locus in CIE 1931 xy and CIE 1976 u′v′ coordinates.",
+        "url": "https://opensource.pitant.de/charts/#example=cie-chromaticity-gamuts",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",
