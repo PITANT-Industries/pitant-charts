@@ -527,6 +527,26 @@ describe('useTimeSeries', () => {
     expect(result.current.renderPlan.xRelativeRange).toEqual([0, 10])
   })
 
+  it('formats custom axis labels with original x values before and after zoom', () => {
+    const config: TimeSeriesConfig = {
+      ...CONFIG,
+      xAxis: { ...CONFIG.xAxis, formatValue: (value) => `Sample ${value}` },
+    }
+    const { result } = renderHook(() =>
+      useTimeSeries({ config, data: DATA, containerRef: fakeContainerRef(800) }),
+    )
+
+    expect(result.current.layout.xTicks[0]).toMatchObject({ value: 0, label: 'Sample 1000' })
+    expect(result.current.layout.xTicks.at(-1)).toMatchObject({ value: 20, label: 'Sample 1020' })
+
+    act(() => {
+      result.current.setVisibleRange([1010, 1020])
+    })
+
+    expect(result.current.layout.xTicks[0]).toMatchObject({ value: 0, label: 'Sample 1010' })
+    expect(result.current.layout.xTicks.at(-1)).toMatchObject({ value: 10, label: 'Sample 1020' })
+  })
+
   it('append preserves missing fields as gaps', () => {
     const { result } = renderHook(() => {
       const containerRef = useRef<ChartContainerRef | null>(null)
