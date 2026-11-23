@@ -1,12 +1,15 @@
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@ui-sdk/react/button'
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@ui-sdk/react/tabs'
-import { ArrowUpRight, Code2, Grid2X2 } from 'lucide-react'
+import { ArrowUpRight, ChevronRight } from 'lucide-react'
+import { getGroupForFamily } from '../catalog'
 import { ChartPreview } from '../charts/ChartPreview'
 import type { ChartExample, ChartFamily } from '../types'
 import { CodeBlock, ExampleCode, guideUrl, repositoryUrl } from './ExampleCode'
 import { parityNotes } from './ParityOverview'
 import cartesianDocs from './docs/cartesian.json'
 import specializedDocs from './docs/specialized.json'
+import './documentation.css'
 
 type FamilyNotes = {
   summary: string
@@ -57,52 +60,118 @@ export function ExampleNotes({ example }: { example: ChartExample }) {
   )
 }
 
-export function FamilyDocumentation({ family, onOpenExample }: {
+export function FamilyDocumentation({ family, onBrowseFamily, onOpenExample }: {
   family: ChartFamily
+  onBrowseFamily: (id: string) => void
   onOpenExample: (example: string, tab: 'preview' | 'code' | 'notes') => void
 }) {
   const doc = documentation[family.id]
   const featured = family.examples[0]
   const extra = extraProperties[family.id]
+  const group = getGroupForFamily(family.id)
+  const article = useRef<HTMLElement>(null)
+  const [activeSection, setActiveSection] = useState<string>(sections[0].id)
+
+  useEffect(() => {
+    const content = article.current
+    if (!content) return
+    const targets = Array.from(content.querySelectorAll<HTMLElement>(':scope > section[id]'))
+    const header = document.querySelector('.site-header')
+    let frame = 0
+
+    function updateActiveSection() {
+      frame = 0
+      const cutoff = (header?.getBoundingClientRect().bottom ?? 0) + 28
+      let active = targets[0]?.id ?? sections[0].id
+      for (const target of targets) {
+        if (target.getBoundingClientRect().top > cutoff) break
+        active = target.id
+      }
+      if (Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight - 1) {
+        const focusedTarget = targets.find((target) => target.querySelector('h2') === document.activeElement)
+        const focusedTop = focusedTarget?.getBoundingClientRect().top ?? -1
+        active = focusedTarget && focusedTop >= cutoff - 28 && focusedTop < window.innerHeight
+          ? focusedTarget.id
+          : targets.at(-1)?.id ?? active
+      }
+      setActiveSection(active)
+    }
+
+    function scheduleUpdate() {
+      if (!frame) frame = window.requestAnimationFrame(updateActiveSection)
+    }
+
+    const resize = new ResizeObserver(scheduleUpdate)
+    resize.observe(content)
+    window.addEventListener('scroll', scheduleUpdate, { passive: true })
+    window.addEventListener('resize', scheduleUpdate)
+    scheduleUpdate()
+    return () => {
+      resize.disconnect()
+      window.removeEventListener('scroll', scheduleUpdate)
+      window.removeEventListener('resize', scheduleUpdate)
+      window.cancelAnimationFrame(frame)
+    }
+  }, [family.id])
+
   if (!doc || !featured) return null
 
   return (
-    <div className="family-docs-layout">
+    <div className="family-docs-layout docs-showcase">
+      <header className="docs-header">
+        <div className="docs-header-links">
+          <nav aria-label="Breadcrumb" className="docs-breadcrumb">
+            <a href={`#category=${group?.id ?? 'all'}&family=${family.id}`} onClick={(event) => {
+              if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return
+              event.preventDefault()
+              onBrowseFamily(family.id)
+            }}>Charts</a>
+            {group && <><ChevronRight size={13} aria-hidden="true" /><span>{group.name}</span></>}
+          </nav>
+          <a className="docs-source-link" href={`${repositoryUrl}/tree/main/apps/chart-catalog`} aria-label="Catalog source">Source <ArrowUpRight size={14} aria-hidden="true" /></a>
+        </div>
+        <h1 id="family-docs-title" tabIndex={-1}>{family.name}</h1>
+        <p>{doc.summary}</p>
+      </header>
       <nav className="docs-jump" aria-label="On this page">
         <p>On this page</p>
-        {sections.map(({ id, name }) => <button type="button" key={id} onClick={() => {
-          const section = document.getElementById(id)
-          section?.querySelector('h2')?.focus({ preventScroll: true })
-          section?.scrollIntoView({ block: 'start' })
-        }}>{name}</button>)}
+        {sections.map(({ id, name }) => (
+          <button aria-current={activeSection === id ? 'location' : undefined} type="button" key={id} onClick={() => {
+            const section = document.getElementById(id)
+            section?.querySelector('h2')?.focus({ preventScroll: true })
+            section?.scrollIntoView({ block: 'start' })
+            setActiveSection(id)
+          }}>{name}</button>
+        ))}
       </nav>
-      <article className="family-docs" aria-labelledby="family-docs-title">
-        <header className="docs-header">
-          <h1 id="family-docs-title" tabIndex={-1}>{family.name}</h1>
-          <p>{doc.summary}</p>
-          <a href={`${repositoryUrl}/tree/main/apps/chart-catalog`}>Catalog source <ArrowUpRight size={15} aria-hidden="true" /></a>
-        </header>
-
+      <article className="family-docs" aria-labelledby="family-docs-title" ref={article}>
         <section id="docs-preview" aria-labelledby="docs-preview-title">
-          <h2 id="docs-preview-title" tabIndex={-1}>Preview</h2>
+          <h2 id="docs-preview-title" className="docs-preview-heading" tabIndex={-1}>Preview</h2>
           <Tabs defaultValue="preview" activation="manual" className="docs-preview">
-            <TabsList className="segmented" aria-label="Documentation example view">
-              <TabsTab value="preview"><Grid2X2 size={15} aria-hidden="true" /> Preview</TabsTab>
-              <TabsTab value="code"><Code2 size={15} aria-hidden="true" /> Code</TabsTab>
-            </TabsList>
-            <TabsPanel value="preview">
-              <div className="docs-example-plot"><ChartPreview example={featured} /></div>
-            </TabsPanel>
-            <TabsPanel value="code"><ExampleCode example={featured} /></TabsPanel>
+            <div className="docs-preview-toolbar">
+              <TabsList className="docs-preview-tabs" aria-label="Documentation example view">
+                <TabsTab value="preview">Preview</TabsTab>
+                <TabsTab value="code">Code</TabsTab>
+              </TabsList>
+              {featured.title.toLowerCase() !== family.name.toLowerCase() && <span className="docs-preview-label">{featured.title}</span>}
+            </div>
+            <div className="docs-preview-panel">
+              <TabsPanel value="preview">
+                <div className="docs-example-plot"><ChartPreview example={featured} /></div>
+              </TabsPanel>
+              <TabsPanel value="code"><ExampleCode example={featured} /></TabsPanel>
+            </div>
           </Tabs>
         </section>
 
         <section id="docs-usage" aria-labelledby="docs-usage-title">
           <h2 id="docs-usage-title" tabIndex={-1}>Installation</h2>
-          <p>Build the catalog from source and pack it into a local tarball. The package requires React and React DOM 19.2 or a later 19.x version.</p>
-          <CodeBlock language="Shell" source={sourceBuild} />
-          <p>In your app’s directory, install the tarball using the path to the file named by <code>npm pack</code>.</p>
-          <CodeBlock language="Shell" source={'npm install "/path/to/pitant-chart-catalog-VERSION.tgz"'} />
+          <p>Build the catalog from source with Bun. Your app needs React and React DOM 19.2 or a later 19.x version.</p>
+          <div className="docs-install-blocks">
+            <CodeBlock language="Build and pack" source={sourceBuild} />
+            <CodeBlock language="Install in your app" source={'npm install "/path/to/pitant-chart-catalog-VERSION.tgz"'}
+              note={<>Use the path to the archive printed by <code>npm pack</code>.</>} />
+          </div>
           <p>See the <a href={guideUrl}>integration guide</a> for importing the stylesheet and using a sized chart container.</p>
         </section>
 

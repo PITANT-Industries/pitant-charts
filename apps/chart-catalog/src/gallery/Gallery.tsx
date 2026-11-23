@@ -8,16 +8,16 @@ import { Tabs, TabsList, TabsPanel, TabsTab } from '@ui-sdk/react/tabs'
 import { Toggle } from '@ui-sdk/react/toggle'
 import {
   ArrowDown, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, BookOpen, ChevronLeft, ChevronRight,
-  ClipboardCheck, Columns2, Code2, ExternalLink, Grid2X2, List, Menu, Moon, Palette, Search, Sun, X,
+  ClipboardCheck, Columns2, Code2, ExternalLink, Grid2X2, List, Menu, Moon, Palette, Search, Star, Sun, X,
 } from 'lucide-react'
 import { examples, galleryOrder, getExample, getFamily, getGroupForFamily, groups } from '../catalog'
 import { ChartPreview } from '../charts/ChartPreview'
 import type { ChartExample } from '../types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Choices } from '../ui/Choices'
-import { ExampleCode, repositoryUrl } from './ExampleCode'
+import { CopyExample, ExampleCode, repositoryUrl } from './ExampleCode'
 import { ExampleNotes, FamilyDocumentation } from './FamilyDocumentation'
-import { groupIcons, HeroChart } from './Visuals'
+import { groupIcons } from './Visuals'
 import { FamilySelect } from './FamilySelect'
 import { notedCount, ParityOverview, parityNotes } from './ParityOverview'
 import type { ParityFilter } from './ParityOverview'
@@ -29,10 +29,13 @@ import pitantWordmarkWhite from './brand/pitant-wordmark-white.svg'
 const pageSize = 12
 const referenceUrl = 'https://www.shadcn.io/charts'
 const popularFamilies = [
+  { id: 'all', label: 'All charts' },
   { id: 'area', label: 'Area' },
   { id: 'bar', label: 'Bar' },
   { id: 'line', label: 'Line' },
   { id: 'pie', label: 'Pie' },
+  { id: 'radar', label: 'Radar' },
+  { id: 'radial', label: 'Radial' },
   { id: 'scatter', label: 'Scatter' },
   { id: 'heatmap', label: 'Heatmap' },
   { id: 'tooltip', label: 'Tooltips' },
@@ -96,7 +99,7 @@ function followLink(event: MouseEvent<HTMLAnchorElement>, action: () => void) {
   action()
 }
 
-function VisibleChart({ example }: { example: ChartExample }) {
+function VisibleChart({ example, featured }: { example: ChartExample; featured: boolean }) {
   const host = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
   useEffect(() => {
@@ -111,11 +114,12 @@ function VisibleChart({ example }: { example: ChartExample }) {
     observer.observe(host.current)
     return () => observer.disconnect()
   }, [])
-  return <div className="card-plot" ref={host}>{visible && <ChartPreview example={example} compact />}</div>
+  return <div className="card-plot" ref={host}>{visible && <ChartPreview example={example} compact={!featured} />}</div>
 }
 
-function ExampleCard({ example, saved, review, onOpen, onShowCode, onDocumentation, onSave }: {
+function ExampleCard({ example, featured, saved, review, onOpen, onShowCode, onDocumentation, onSave }: {
   example: ChartExample
+  featured: boolean
   saved: boolean
   review: boolean
   onOpen: () => void
@@ -125,38 +129,45 @@ function ExampleCard({ example, saved, review, onOpen, onShowCode, onDocumentati
 }) {
   const family = getFamily(example.family)
   return (
-    <Card className="example-card" data-example-id={example.id}>
+    <Card className={featured ? 'example-card example-card--featured' : 'example-card'} data-example-id={example.id}>
       <CardHeader className="example-header">
         <div className="example-heading">
           <CardTitle><Button className="example-title" aria-label={`Open ${example.title}`} onClick={onOpen}>{example.title}</Button></CardTitle>
           <CardDescription>{family?.name}</CardDescription>
         </div>
-        <Toggle className="icon-button bookmark-button" aria-label={`Save ${example.title}`} pressed={saved} onPressedChange={onSave}><Bookmark size={17} aria-hidden="true" /></Toggle>
+        <div className="chart-toolbar">
+          <CodeActions example={example} onShowCode={onShowCode} />
+          <Toggle className="icon-button bookmark-button" aria-label={`Save ${example.title}`} pressed={saved} onPressedChange={onSave}><Bookmark size={16} aria-hidden="true" /></Toggle>
+        </div>
       </CardHeader>
-      <CardContent><VisibleChart example={example} /></CardContent>
+      <CardContent><VisibleChart example={example} featured={featured} /></CardContent>
       <div className="example-footer">
         <span>{example.label}</span>
         {review && <small className="example-review-state">{parityNotes[example.id] ? 'Notes available' : 'Awaiting notes'}</small>}
-        <ExampleActions example={example} onShowCode={onShowCode} onDocumentation={onDocumentation} />
+        <DocumentationLink example={example} onDocumentation={onDocumentation} />
       </div>
     </Card>
   )
 }
 
-function ExampleActions({ example, onShowCode, onDocumentation }: { example: ChartExample; onShowCode: () => void; onDocumentation: () => void }) {
+function DocumentationLink({ example, onDocumentation }: { example: ChartExample; onDocumentation: () => void }) {
+  return <a className="card-code" href={`#docs=${example.family}`} aria-label={`Documentation for ${example.title}`} onClick={(event) => followLink(event, onDocumentation)}>
+    <BookOpen size={14} aria-hidden="true" /> Docs
+  </a>
+}
+
+function CodeActions({ example, onShowCode }: { example: ChartExample; onShowCode: () => void }) {
   return (
-    <div className="card-actions">
-      <a className="card-code" href={`#docs=${example.family}`} aria-label={`Documentation for ${example.title}`} onClick={(event) => followLink(event, onDocumentation)}>
-        <BookOpen size={14} aria-hidden="true" /> Docs
-      </a>
-      <Button className="card-code" aria-label={`View code for ${example.title}`} onClick={onShowCode}>
-        <Code2 size={15} aria-hidden="true" /> View code
+    <div className="code-actions">
+      <CopyExample example={example} onShowCode={onShowCode} />
+      <Button className="card-code card-view-code" aria-label={`View code for ${example.title}`} onClick={onShowCode}>
+        <Code2 size={15} aria-hidden="true" /> <span>View code</span>
       </Button>
     </div>
   )
 }
 
-function Modal({ children, onClose, labelledBy, wide }: { children: ReactNode; onClose: () => void; labelledBy: string; wide?: boolean }) {
+function Modal({ children, onClose, labelledBy, variant }: { children: ReactNode; onClose: () => void; labelledBy: string; variant: ExampleTab }) {
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     const element = dialog.current
@@ -172,7 +183,7 @@ function Modal({ children, onClose, labelledBy, wide }: { children: ReactNode; o
     }
   }, [])
   return (
-    <dialog ref={dialog} className={`dialog${wide ? ' dialog--wide' : ''}`} closedby="any" aria-labelledby={labelledBy} onClose={(event) => { if (!event.currentTarget.open) onClose() }} onClick={(event) => {
+    <dialog ref={dialog} className={`dialog dialog--${variant}`} closedby="any" aria-labelledby={labelledBy} onClose={(event) => { if (!event.currentTarget.open) onClose() }} onClick={(event) => {
       const element = event.currentTarget
       if ('closedBy' in HTMLDialogElement.prototype || event.target !== element) return
       const bounds = element.getBoundingClientRect()
@@ -226,7 +237,7 @@ function ExampleDetail({ example, theme, tab, onTab, saved, onSave, onClose, onE
   const previous = list[example.position - 2]
   const next = list[example.position]
   return (
-    <Modal onClose={onClose} labelledBy="example-detail-title" wide={tab === 'compare'}>
+    <Modal onClose={onClose} labelledBy="example-detail-title" variant={tab}>
       <div className="detail-header">
         <div><p>{family?.name} <span>·</span> {example.position} of {list.length}</p><h2 id="example-detail-title">{example.title}</h2></div>
         <Button className="icon-button close-button" aria-label="Close preview" onClick={onClose}><X size={20} aria-hidden="true" /></Button>
@@ -327,6 +338,8 @@ export function Gallery() {
   const pages = Math.ceil(filtered.length / pageSize)
   const currentPage = Math.min(page, Math.max(1, pages))
   const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const showFeature = currentPage === 1 && !query && !showSaved && !link.review &&
+    (!selectedGroup || ['area', 'bar', 'line'].includes(link.family))
 
   function choose(group: string, family = 'all', onlySaved = false, review: ParityFilter | null = null) {
     const next: GalleryLink = { group, family, example: '', review, tab: 'preview' }
@@ -342,6 +355,19 @@ export function Gallery() {
     const next: GalleryLink = { ...link, example: id, tab: tab ?? currentTab }
     setLink(next)
     writeLink(next, !link.example && Boolean(id))
+  }
+
+  function browseFamily(id: string) {
+    choose(getGroupForFamily(id)?.id ?? 'all', id)
+  }
+
+  function browseDocumentedFamily(id: string) {
+    searchController.setValue('')
+    browseFamily(id)
+    requestAnimationFrame(() => {
+      results.current?.scrollIntoView({ block: 'start' })
+      document.getElementById('catalog-title')?.focus({ preventScroll: true })
+    })
   }
 
   function showDocumentation(family: string) {
@@ -430,7 +456,7 @@ export function Gallery() {
       <header className="site-header">
         <div className="site-header-inner">
           <Drawer side="start" open={navigationOpen} onOpenChange={setNavigationOpen}>
-            <DrawerTrigger className="icon-button mobile-menu" aria-label={documentedFamily ? 'Open chart documentation' : 'Open chart categories'}><Menu size={21} aria-hidden="true" /></DrawerTrigger>
+            <DrawerTrigger className={`icon-button mobile-menu${documentedFamily ? '' : ' catalog-menu'}`} aria-label={documentedFamily ? 'Open chart documentation' : 'Open chart categories'}><Menu size={19} aria-hidden="true" /></DrawerTrigger>
             <DrawerBackdrop className="nav-backdrop" />
             <DrawerContent className="nav-drawer" initialFocus="content">
               <div className="nav-drawer-header"><DrawerTitle>{documentedFamily ? 'Chart documentation' : 'Chart categories'}</DrawerTitle><DrawerClose className="icon-button" aria-label={documentedFamily ? 'Close chart documentation' : 'Close chart categories'}><X size={18} aria-hidden="true" /></DrawerClose></div>
@@ -443,12 +469,16 @@ export function Gallery() {
             <img className="brand-wordmark brand-wordmark-dark" src={pitantWordmarkWhite} alt="" width="77" height="29" />
             <span className="brand-product">Charts</span>
           </a>
+          <nav className="header-nav" aria-label="PITANT Charts sections">
+            <a className="header-link" href="#" aria-current={!documentedFamily ? 'page' : undefined} onClick={(event) => followLink(event, browseCatalog)}>Charts</a>
+            <a className="header-link" href="#docs=area" aria-current={documentedFamily ? 'page' : undefined} onClick={(event) => followLink(event, () => showDocumentation('area'))}>Documentation</a>
+          </nav>
           <nav className="header-actions" aria-label="Project links">
             <a className="header-link" href={openSourceHref} aria-label="PITANT Open Source">
               <ArrowLeft size={15} aria-hidden="true" /> <span className="header-link-text">Open source</span>
             </a>
-            <a className="header-link" href={repositoryUrl} aria-label="PITANT Charts on GitHub">
-              <span className="header-link-text">GitHub</span> <ArrowUpRight size={15} aria-hidden="true" />
+            <a className="header-link star-link" href={repositoryUrl} aria-label="Star PITANT Charts on GitHub" title="Star PITANT Charts on GitHub">
+              <Star size={15} aria-hidden="true" /> <span className="header-link-text">Star on GitHub</span><span className="star-short" aria-hidden="true">Star</span>
             </a>
             <span className="header-rule" />
             <Toggle className="icon-button" aria-label="Dark theme" pressed={theme === 'dark'} onPressedChange={(pressed) => setTheme(pressed ? 'dark' : 'light')}>{theme === 'dark' ? <Sun size={19} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}</Toggle>
@@ -456,32 +486,31 @@ export function Gallery() {
         </div>
       </header>
       <main id="main-content" tabIndex={-1}>
-        {!link.review && !documentedFamily && <section className="hero" aria-labelledby="page-title">
+        {!link.review && !documentedFamily && !showSaved && <section className="hero" aria-labelledby="page-title">
           <div className="hero-copy">
             <h1 id="page-title">PITANT Charts</h1>
-            <p className="hero-intro">Interactive React charts for time series, comparisons, maps, and dashboards. Browse {examples.length} examples and see how each one works.</p>
+            <p className="hero-intro">Explore {examples.length} interactive React examples for dashboards, time series, maps, and more.</p>
             <div className="hero-actions">
               <a className="primary-button" href="#catalog" onClick={(event) => { event.preventDefault(); results.current?.scrollIntoView({ block: 'start' }); searchField.current?.focus({ preventScroll: true }) }}>Browse charts <ArrowDown size={16} aria-hidden="true" /></a>
               <a className="secondary-button" href="#docs=area" onClick={(event) => followLink(event, () => showDocumentation('area'))}>Documentation <BookOpen size={16} aria-hidden="true" /></a>
             </div>
           </div>
-          <HeroChart />
         </section>}
-        <div className="workspace">
-          <aside className="sidebar">{categoryNavigation()}</aside>
+        <div className={documentedFamily ? 'workspace' : 'workspace workspace--catalog'}>
+          {documentedFamily && <aside className="sidebar">{categoryNavigation()}</aside>}
           <div className="gallery-main">
-            {documentedFamily ? <FamilyDocumentation key={documentedFamily.id} family={documentedFamily} onOpenExample={showExample} /> : <>
+            {documentedFamily ? <FamilyDocumentation key={documentedFamily.id} family={documentedFamily} onOpenExample={showExample} onBrowseFamily={browseDocumentedFamily} /> : <>
             {link.review && <ParityOverview filter={link.review} onFilter={(filter) => choose(link.group, link.family, false, filter)} onFamily={(group, family) => { choose(group, family, false, link.review); results.current?.scrollIntoView({ block: 'start' }) }} />}
             {!link.review && !showSaved && <nav className="family-rail" aria-label="Popular chart families">
               {popularFamilies.map(({ id, label }) => (
-                <Button key={id} aria-pressed={link.family === id} onClick={() => choose(getGroupForFamily(id)?.id ?? 'all', id)}>
+                <Button key={id} aria-pressed={id === 'all' ? link.group === 'all' : link.family === id} onClick={() => browseFamily(id)}>
                   {label}
                 </Button>
               ))}
             </nav>}
             <section ref={results} id="catalog" className="catalog" aria-labelledby="catalog-title">
               <div className="catalog-heading">
-                <div><h2 id="catalog-title">{showSaved ? 'Saved charts' : selectedFamily?.name ?? selectedGroup?.name ?? (link.review === 'documented' ? 'Variants with notes' : link.review === 'measured' ? 'Variants with measured plot sizing' : link.review === 'pending' ? 'Variants awaiting notes' : 'All charts')}</h2><p aria-live="polite">{filtered.length} {filtered.length === 1 ? 'example' : 'examples'}</p></div>
+                <div><h2 id="catalog-title" tabIndex={-1}>{showSaved ? 'Saved charts' : selectedFamily?.name ?? selectedGroup?.name ?? (link.review === 'documented' ? 'Variants with notes' : link.review === 'measured' ? 'Variants with measured plot sizing' : link.review === 'pending' ? 'Variants awaiting notes' : 'All charts')}</h2><p aria-live="polite">{filtered.length} {filtered.length === 1 ? 'example' : 'examples'}</p></div>
                 <form className="filter-tools" onSubmit={submitSearch}>
                   <div className="search-field"><Search size={17} aria-hidden="true" /><Input controller={searchController} ref={searchField} type="search" aria-label="Search charts" placeholder={link.review ? 'Search charts and notes…' : 'Search charts…'} value={search} onValueChange={(value) => { setSearch(value); setPage(1) }} />{search ? <Button aria-label="Clear search" onClick={() => { searchController.setValue(''); searchField.current?.focus() }}><X size={15} aria-hidden="true" /></Button> : <kbd aria-hidden="true">/</kbd>}</div>
                   <FamilySelect value={link.family} groups={selectedGroup && !link.review ? [selectedGroup] : groups} onChange={(id) => choose(id === 'all' ? link.review ? 'all' : link.group : getGroupForFamily(id)?.id ?? 'all', id, showSaved, link.review)} />
@@ -490,10 +519,11 @@ export function Gallery() {
               </div>
               {visible.length ? layout === 'grid' ? (
                 <div className="example-grid">
-                  {visible.map((example) => (
+                  {visible.map((example, index) => (
                     <ExampleCard
                       key={example.id}
                       example={example}
+                      featured={showFeature && index === 0}
                       saved={savedIds.has(example.id)}
                       review={Boolean(link.review)}
                       onOpen={() => showExample(example.id)}
@@ -510,7 +540,10 @@ export function Gallery() {
                       <Button className="list-main" aria-label={`Open ${example.title}`} onClick={() => showExample(example.id)}>
                         <span>{example.title}</span><small>{getFamily(example.family)?.name}</small><ArrowUpRight size={17} aria-hidden="true" />
                       </Button>
-                      <ExampleActions example={example} onShowCode={() => showExample(example.id, 'code')} onDocumentation={() => showDocumentation(example.family)} />
+                      <div className="list-actions">
+                        <DocumentationLink example={example} onDocumentation={() => showDocumentation(example.family)} />
+                        <CodeActions example={example} onShowCode={() => showExample(example.id, 'code')} />
+                      </div>
                       <Toggle className="icon-button bookmark-button" aria-label={`Save ${example.title}`} pressed={savedIds.has(example.id)} onPressedChange={() => toggleSaved(example.id)}>
                         <Bookmark size={17} aria-hidden="true" />
                       </Toggle>
