@@ -391,6 +391,31 @@
       { "label": "NIST, calculated Ag–Cu phase diagram and invariant compositions by mass", "href": "https://www.metallurgy.nist.gov/phase/solder/agcu.html" }
     ]
   },
+  "ternary-mixture-map": {
+    "summary": "Compare observed three-component mixtures with a fitted response surface over the sampled composition range.",
+    "useWhen": "Explore a mixture experiment in which three proportions share a common basis and sum to 100%.",
+    "data": "Provide three component names ordered top, bottom left, bottom right. Each observation needs a unique ID, three fractions from 0 to 1 that sum to 1, and a finite response. Supply at least three non-collinear compositions, the response name and unit, fitted model coefficients, and a color domain in the response units. Use shortComponents to abbreviate names on the plot.",
+    "reading": "In the full triangle each corner represents 100% of one component. Moving parallel to the opposite edge keeps that component’s proportion constant. For a narrow sampled range, the initial view zooms in using the smallest sampled proportion of each component and reports actual percentages. Select Show full composition triangle to see the full 0–100% axes. Click the triangle to inspect a composition. Click a marker or use Observation to compare measured and fitted responses. The first two composition controls determine the third fraction as the remaining percentage.",
+    "notes": [
+      "The model uses fractions on the 0–1 scale. Pass coefficients in the order of terms [a, b, c, ab, ac, bc] for a Scheffé quadratic. Add the abc coefficient in the seventh slot for a special cubic. Estimate the coefficients from your data before passing them to the chart.",
+      "Color shows the fitted response, with contours tracing equal fitted values. The color and fitted readout are available inside the convex hull, the smallest convex region enclosing the sampled compositions. The hull describes the range of compositions. Prediction uncertainty is a separate estimate.",
+      "The example uses the ten binder compositions and mean uniaxial compressive strengths published by Xu et al. in Tables 2 and 3. The axes show mass percentages of three dry binder ingredients, ground granulated blast-furnace slag, fly ash, and red mud. The water-to-binder ratio and other constituents were fixed. Strength was measured on 50 mm by 100 mm cylinders after 28 days of curing.",
+      "The displayed Scheffé quadratic is an unweighted least-squares fit to the ten reported means. Its in-sample RMSE is 2.48 MPa. In leave-one-out cross-validation on these ten mixtures, adding the special cubic term increased RMSE from 10.73 to 13.06 MPa.",
+      "Select G30F60R10 to compare the measured mean of 89.0 MPa with the fitted value of 85.92 MPa at 30% slag, 60% fly ash, and 10% red mud."
+    ],
+    "properties": [
+      { "name": "data", "type": "TernaryMixtureData", "description": "Required. Provide components, responseLabel, responseUnit, measured observations, model coefficients, and colorDomain." },
+      { "name": "label", "type": "string", "description": "Describe the experiment and response for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact mixture map for a gallery card." },
+      { "name": "initialFractions", "type": "readonly [number, number, number]", "description": "Set the starting composition in the order of the components, with fractions that sum to 1." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Credit the measurements and describe which mixture design and fit the example uses." }
+    ],
+    "sources": [
+      { "label": "Xu et al. (2026), Mechanical Properties of Engineered Geopolymer Composites, Tables 2–3 (CC BY 4.0)", "href": "https://www.mdpi.com/2073-4360/18/18/2271" },
+      { "label": "NIST/SEMATECH Engineering Statistics Handbook, simplex-lattice mixture models", "href": "https://www.itl.nist.gov/div898/handbook/pri/section5/pri542.htm" },
+      { "label": "NIST/SEMATECH Engineering Statistics Handbook, simplex-centroid mixture designs", "href": "https://www.itl.nist.gov/div898/handbook/pri/section5/pri543.htm" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",

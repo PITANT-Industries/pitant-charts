@@ -3444,6 +3444,22 @@
     ]
   },
   {
+    "id": "ternary-mixture-map",
+    "name": "Ternary Mixture Map",
+    "url": "https://opensource.pitant.de/charts/#docs=ternary-mixture-map",
+    "examples": [
+      {
+        "id": "ternary-mixture-response",
+        "family": "ternary-mixture-map",
+        "title": "Geopolymer Compressive Strength",
+        "label": "Measured 28-day strengths and fitted response",
+        "description": "Compare measured compressive strengths across ten geopolymer mixtures of slag, fly ash, and red mud, with a quadratic fit over the sampled compositions.",
+        "url": "https://opensource.pitant.de/charts/#example=ternary-mixture-response",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",
