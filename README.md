@@ -1,75 +1,99 @@
-# PITANT Charts
+<p align="center">
+  <a href="http://opensource.pitant.de/">
+    <img src="apps/chart-catalog/src/gallery/brand/pitant-icon.svg" alt="" width="27">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="apps/chart-catalog/src/gallery/brand/pitant-wordmark-white.svg">
+      <img src="apps/chart-catalog/src/gallery/brand/pitant-wordmark.svg" alt="PITANT" width="90">
+    </picture>
+  </a>
+</p>
 
-SciChart replacement for Pitant Systems: a WebGPU-first TypeScript charting
-library for scientific and industrial time-series visualization.
+<h1 align="center">PITANT Charts</h1>
 
-**Layer:** Layer 6 - UX  
-**Status:** active build  
-**Role:** Chart primitives for historian trends, industrial telemetry, anomaly
-overlays, SPC workflows, and future scientific chart packs.
+<p align="center">React charts for dashboards and a WebGPU-first TypeScript engine for industrial time series.</p>
 
-Part of the PITANT Plant-Physics OS polyrepo. See
-[pitant-contracts](https://github.com/PITANT-Industries/pitant-contracts) for
-the cross-repo binding surface.
+<p align="center">
+  <a href="http://opensource.pitant.de/charts/"><strong>Explore 331 examples</strong></a>
+  &nbsp;·&nbsp;
+  <a href="http://opensource.pitant.de/charts/#docs=area">Component documentation</a>
+  &nbsp;·&nbsp;
+  <a href="#quick-start">Quick start</a>
+</p>
 
-## Dashboard charts
+<p align="center">
+  <a href="http://opensource.pitant.de/charts/">
+    <img src="docs/images/catalog-preview.png" alt="Four examples from the PITANT Charts catalog showing a time-range line chart, stacked bars, a donut with a center total, and a gradient area chart">
+  </a>
+</p>
 
-The [`pitant-charts` package](packages/charts-ui/README.md) provides typed React line, bar, donut, and sunburst components for application dashboards. It includes an optional Warpdrive Day and Night theme and shares the same CSS series tokens as the industrial engine.
+## Choose a starting point
 
-The [chart catalog](apps/chart-catalog/README.md) contains 331 browsable examples and tracks their parity with the shadcn.io React reference. Run `bun run catalog:dev` after installing the workspace dependencies.
+| Use case | Start here |
+| --- | --- |
+| **Build a dashboard** | [`pitant-charts`](packages/charts-ui/README.md) provides typed line, bar, donut, and sunburst components with Recharts and CSS theme tokens. |
+| **Plot industrial time series** | [`@pitant/charts`](packages/charts/README.md) includes a WebGPU renderer, a Canvas2D fallback, and worker-backed downsampling. [`@pitant/charts-react`](packages/charts-react/README.md) provides React bindings. |
+| **Explore chart types and interactions** | The [interactive catalog](http://opensource.pitant.de/charts/) covers 44 chart families plus Tooltips. The [catalog source guide](apps/chart-catalog/README.md) explains how to build and reuse the examples from `@pitant/chart-catalog`. |
 
-## Industrial charts
+## Quick start
 
-- **WebGPU primary renderer** with Canvas2D fallback
-- **Zero runtime dependencies** - tree-shakeable ESM
-- **Web Worker data engine** with min-max LOD pyramid for million-point datasets
-- **React 19 bindings** via `@pitant/charts-react`
+Build a dashboard chart with the `pitant-charts` package. You’ll need [Bun](https://bun.com/) to pack it from source and React and React DOM 19.2 or a later 19.x version in your app.
 
-## Packages
-
-| Package | Description |
-|---|---|
-| `@pitant/charts` | Core library - renderers, data engine, view transform |
-| `@pitant/charts-react` | React 19 bindings for the industrial engine |
-| `pitant-charts` | React dashboard charts with Recharts and shared theme tokens |
-| `@pitant/chart-catalog` | Private React chart library, gallery, and parity tracker |
-| `apps/benchmark` | Performance benchmark harness |
-
-## Quick Start
-
-```bash
-bun install
-bun run build
-bun run test
+```sh
+git clone https://github.com/PITANT-Industries/pitant-charts.git
+cd pitant-charts
+bun install --frozen-lockfile
+cd packages/charts-ui
+bun pm pack
 ```
 
-## Development
+From your React app, run `bun add /path/to/pitant-charts-0.7.0.tgz` with the path to the archive printed by `bun pm pack`.
 
-```bash
-bun run dev          # Watch mode
-bun run typecheck    # TypeScript check
-bun run lint         # Biome lint + format check
-bun run lint:fix     # Auto-fix lint issues
-bun run test:watch   # Vitest watch mode
-bun run test:coverage # Coverage report
+```tsx
+import { LineChart } from 'pitant-charts'
+import 'pitant-charts/styles.css'
+
+const orders = [
+  { month: 'Jan', orders: 28 },
+  { month: 'Feb', orders: 41 },
+  { month: 'Mar', orders: 35 },
+]
+
+export function OrdersChart() {
+  return (
+    <LineChart
+      label="Monthly orders"
+      data={orders}
+      category={row => row.month}
+      series={[{ name: 'Orders', value: row => row.orders }]}
+    />
+  )
+}
 ```
 
-## Architecture
+See the [dashboard component API and theme guide](packages/charts-ui/README.md) for the other components and styling options. For industrial charts, see the [core and React integration examples](docs/examples/README.md).
 
-```
-Data Engine (Worker) -> Layout Engine -> Render Backend -> <canvas>
-  LOD pyramid             axes/grid        WebGPU / Canvas2D
+## Develop locally
+
+Run from the repository root.
+
+```sh
+bun install --frozen-lockfile
+bun run catalog:dev
 ```
 
-## Planning Docs
+Common workspace commands are `bun run build`, `bun run test`, `bun run typecheck`, and `bun run lint`. See [Contributing](CONTRIBUTING.md), the [architecture overview](ARCHITECTURE.md), and the [changelog](CHANGELOG.md).
+
+<details>
+<summary>Project planning and engineering references</summary>
 
 - [Project definition](project.md)
-- [Architecture](ARCHITECTURE.md)
 - [Architecture planning catalog](docs/architecture/README.md)
-- [Canonical roadmap](docs/ROADMAP.md)
+- [Roadmap](docs/ROADMAP.md)
 - [Detailed phase plans](plan/00-master-plan.md)
 - [Current session state](SESSION.md)
 
+</details>
+
 ## License
 
-MIT
+The [core engine](packages/charts/LICENSE), [React bindings](packages/charts-react/LICENSE), and [dashboard components](packages/charts-ui/LICENSE) are MIT licensed. See the third-party notices for [PITANT Charts](packages/charts-ui/THIRD_PARTY_NOTICES.md) and the [chart catalog](apps/chart-catalog/THIRD_PARTY_NOTICES.md).
