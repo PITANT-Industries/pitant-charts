@@ -8,6 +8,7 @@ export type RendererType = 'webgpu' | 'canvas2d'
  */
 export interface LineOptions {
   color: readonly [r: number, g: number, b: number, a: number]
+  /** Stroke width in CSS pixels. */
   width: number
   cap?: 'butt' | 'round'
   join?: 'miter' | 'round'
