@@ -4,6 +4,7 @@ import binaryPhaseDiagram from './docs/examples/BinaryPhaseDiagram.tsx?raw'
 import cadScanDeviation from './docs/examples/CadScanDeviation.tsx?raw'
 import campbellDiagram from './docs/examples/CampbellDiagram.tsx?raw'
 import capabilityHistogram from './docs/examples/CapabilityHistogram.tsx?raw'
+import cieChromaticityDiagram from './docs/examples/CieChromaticityDiagram.tsx?raw'
 import coherencePhase from './docs/examples/CoherencePhase.tsx?raw'
 import correlationMatrix from './docs/examples/CorrelationMatrix.tsx?raw'
 import crackGrowth from './docs/examples/CrackGrowth.tsx?raw'
@@ -50,6 +51,7 @@ const scientificExamples = new Map([
   ['ternary-mixture-response', withCatalogImports(ternaryMixtureMap)],
   ['industrial-ct-porosity', withCatalogImports(industrialCtViewer)],
   ['cad-scan-deviation-registered', withCatalogImports(cadScanDeviation)],
+  ['cie-chromaticity-gamuts', withCatalogImports(cieChromaticityDiagram)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

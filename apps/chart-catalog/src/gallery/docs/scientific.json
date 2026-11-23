@@ -470,6 +470,32 @@
       { "label": "NIST, improving fitting of CAD to measured 3D point clouds", "href": "https://www.nist.gov/publications/improving-fitting-cad-3d-point-cloud-acquired-line-sight-sensor" }
     ]
   },
+  "cie-chromaticity": {
+    "summary": "Compare display gamuts and probe chromaticity in two coordinate systems using the CIE 1931 standard observer.",
+    "useWhen": "Compare standardized or measured display primaries, check whether a chromaticity lies within a gamut, or quantify how much of a reference gamut a second gamut covers.",
+    "data": "Supply at least three spectral-locus samples in increasing wavelength order, each with a wavelength in nanometers and its CIE 1931 xy coordinates. Give each gamut a unique ID, a label, and at least three non-collinear primaries in xy. The chart uses their convex hull. An optional white point must lie within its gamut. Supply initialPoint and initialGamuts to set the starting probe and comparison.",
+    "reading": "Use Coordinate space to switch between CIE 1931 xy and CIE 1976 u′v′. Choose Reference gamut and Comparison gamut to set the two regions. Click within the diagram’s visible chromaticity boundary to probe a point. With the plot focused, use the arrow keys to move by 0.005 in the active coordinates, or hold Shift to move by 0.025. The example starts at D65 and reports whether the probe lies in each gamut.",
+    "notes": [
+      "The spectral locus is the curved boundary of monochromatic stimuli for the CIE 1931 2° standard observer. The straight line of purples joins its endpoints and describes mixtures of long- and short-wavelength light.",
+      "For CIE 1976 u′v′, let D = 3 − 2x + 12y. Then u′ = 4x/D and v′ = 9y/D. Switching spaces changes the plotted coordinates of the same chromaticity.",
+      "Coverage is the area common to both gamut polygons divided by the area of the reference polygon in the selected coordinate space. The comparison percentage uses the comparison polygon as the denominator. Switching coordinate spaces can change both percentages. This is a two-dimensional chromaticity area. Assessing color volume also requires a brightness or lightness dimension.",
+      "The example uses 471 published CIE locus samples from 360 to 830 nm in 1 nm steps. The three standardized gamuts are sRGB, Display P3, and Rec. 2020 (ITU-R BT.2020). Their D65 white point is (0.3127, 0.3290) in xy and approximately (0.19783, 0.46832) in u′v′.",
+      "Set Display P3 as Reference gamut and sRGB as Comparison gamut to see about 73.72% coverage in xy and 79.64% in u′v′. With the two gamuts reversed, Display P3 covers 100% of sRGB in both coordinate spaces. With Display P3 as the reference and Rec. 2020 as the comparison, coverage rounds to 99.98% in both spaces.",
+      "The diagram’s background uses illustrative sRGB colors. Use the locus, gamut boundaries, and coordinate readout for comparison."
+    ],
+    "properties": [
+      { "name": "data", "type": "CieChromaticityData", "description": "Required. Provide the spectral locus and any gamut primary and white-point coordinates in CIE 1931 xy. Use initialGamuts and initialPoint to set the starting state." },
+      { "name": "label", "type": "string", "description": "Describe the plotted chromaticities and gamuts for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact diagram for a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description: string, license?: string, licenseUrl?: string }", "description": "Credit the spectral-locus data and link its license." }
+    ],
+    "sources": [
+      { "label": "CIE (2019), CIE 1931 chromaticity coordinates of spectrum loci, 2° observer (CC BY-SA 4.0)", "href": "https://doi.org/10.25039/CIE.DS.mifmy4x4" },
+      { "label": "CIE International Lighting Vocabulary, CIE 1976 uniform chromaticity scale", "href": "https://cie.co.at/eilvterm/17-23-073" },
+      { "label": "W3C CSS Color 4, sRGB and Display P3 primary chromaticities", "href": "https://www.w3.org/TR/css-color/#predefined" },
+      { "label": "ITU-R BT.2020-2, primaries and reference white for UHD television", "href": "https://www.itu.int/rec/R-REC-BT.2020-2-201510-I/en" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",

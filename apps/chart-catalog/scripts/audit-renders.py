@@ -222,7 +222,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
-        'ternary-mixture-map', 'industrial-ct', 'cad-scan-deviation',
+        'ternary-mixture-map', 'industrial-ct', 'cad-scan-deviation', 'cie-chromaticity',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -393,6 +393,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=cad-scan-deviation&variant=cad-scan-deviation-registered'
                 )
+            elif example['family'] == 'cie-chromaticity':
+                cie = card_plot.locator('svg[data-cie-diagram]')
+                await check_cie_figure(cie, 'xy')
+                await check_compact_figure_bounds(cie, 'rect[data-cie-frame]')
+                await expect(card_plot.locator('select, input, button, [data-cie-selected], [data-cie-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=cie-chromaticity&variant=cie-chromaticity-gamuts'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -491,6 +499,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'cad-scan-deviation':
                 await check_cad_scan(plot, touch)
                 code_import = 'CadScanDeviation'
+            elif example['family'] == 'cie-chromaticity':
+                await check_cie_chromaticity(plot, touch)
+                code_import = 'CieChromaticityDiagram'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -3028,6 +3039,237 @@ async def check_cad_scan(plot, touch):
         if next_yaw <= yaw or next_pitch >= pitch:
             raise RuntimeError('Dragging the registered scan should rotate both viewing axes')
         await check_point(positive)
+
+
+async def cie_frame(figure):
+    frame = figure.locator('rect[data-cie-frame]')
+    return await frame.evaluate("""rect => [
+      ...['x', 'y', 'width', 'height'].map(key => rect[key].baseVal.value),
+      ...['xMax', 'yMax'].map(key => Number(rect.dataset[key] ?? rect.ownerSVGElement.dataset[key])),
+    ]""")
+
+
+async def check_cie_figure(figure, space):
+    await expect(figure).to_be_visible()
+    await expect(figure).to_have_attribute('data-space', space)
+    await expect(figure.locator('rect[data-cie-frame]')).to_be_visible()
+    await expect(figure.locator('.scientific-tick').first).to_be_attached()
+    labels = ('x', 'y') if space == 'xy' else ('u′', 'v′')
+    for label in labels:
+        await expect(figure.get_by_text(label, exact=True)).to_be_visible()
+    left, top, width, height, x_max, y_max = await cie_frame(figure)
+    domain = (0.8, 0.9) if space == 'xy' else (0.65, 0.65)
+    if (x_max, y_max) != domain or not math.isclose(width / x_max, height / y_max, rel_tol=1e-5):
+        raise RuntimeError(f'Chromaticity axes should use equal coordinate units over the expected domains: {(width, height, x_max, y_max)}')
+    for stroke in ('path[data-cie-spectral-locus]', 'path[data-cie-purple-line]'):
+        path = figure.locator(stroke)
+        await expect(path).to_have_attribute('d', re.compile(r'^M'))
+        if await path.evaluate('mark => mark.getTotalLength()') <= 0:
+            raise RuntimeError(f'Missing CIE outline geometry on {stroke}')
+    locus = figure.locator('path[data-cie-spectral-locus]')
+    wavelength_nodes = (await locus.get_attribute('d')).removeprefix('M').split('L')
+    if len(wavelength_nodes) != 471:
+        raise RuntimeError(f'Expected all 471 official CIE points at 1 nm from 360 to 830 nm, observed {len(wavelength_nodes)}')
+    observed = list(map(float, wavelength_nodes[550 - 360].split(',')))
+    x, y = (0.3016, 0.69231) if space == 'xy' else cie_uv(0.3016, 0.69231)
+    expected = [left + width * x / x_max, top + height * (1 - y / y_max)]
+    if any(not math.isclose(value, anchor, abs_tol=0.5) for value, anchor in zip(observed, expected)):
+        raise RuntimeError(f'The 550 nm CIE locus sample is misplaced: {observed}, expected {expected}')
+    await expect(figure.locator('path[data-cie-white]')).to_be_visible()
+    for polygon in ('[data-cie-gamut="reference"]', '[data-cie-gamut="comparison"]', '[data-cie-overlap]'):
+        await expect(figure.locator(f'polygon{polygon}')).to_be_visible()
+    raster = figure.locator('image[data-cie-field]')
+    await expect(raster).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+    raster_size, clipped, colors = await raster.evaluate(r"""async raster => {
+      const image = new Image()
+      image.src = raster.getAttribute('href')
+      await image.decode()
+      const { naturalWidth: width, naturalHeight: height } = image
+      const buffer = document.createElement('canvas')
+      buffer.width = width
+      buffer.height = height
+      const ctx = buffer.getContext('2d')
+      ctx.drawImage(image, 0, 0)
+      const { data } = ctx.getImageData(0, 0, width, height)
+      const colors = new Set()
+      for (let i = 0; i < data.length; i += 4) if (data[i + 3] > 0) {
+        const [r, g, b] = data.subarray(i, i + 3)
+        colors.add(((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4))
+      }
+      const clip = [raster, raster.parentElement].map(mark => mark.getAttribute('clip-path')).find(Boolean)
+      const id = clip?.match(/url\(#([^)]*)\)/)?.[1]
+      const constraint = id && raster.ownerDocument.getElementById(id)
+      const locus = raster.ownerSVGElement.querySelector('[data-cie-spectral-locus]').getAttribute('d')
+      return [[width, height], constraint?.querySelector('path')?.getAttribute('d') === locus + 'Z', colors.size]
+    }""")
+    expected_size = [320, 360 if space == 'xy' else 320]
+    if raster_size != expected_size or not clipped or colors < 32:
+        raise RuntimeError(f'Expected a dense chromaticity raster clipped to the spectral locus: {raster_size}, {clipped}, {colors}')
+
+
+def cie_uv(x, y):
+    denominator = 3 - 2 * x + 12 * y
+    return 4 * x / denominator, 9 * y / denominator
+
+
+def cie_polygon_area(points):
+    return abs(math.fsum(a[0] * b[1] - a[1] * b[0] for a, b in zip(points, points[1:] + points[:1]))) / 2
+
+
+async def check_cie_chromaticity(plot, touch):
+    chart = plot.locator('[data-cie-chromaticity]')
+    figure = chart.locator('svg[data-cie-diagram]')
+    space_control = chart.get_by_role('combobox', name='Coordinate space', exact=True)
+    ref_control = chart.get_by_role('combobox', name='Reference gamut', exact=True)
+    cmp_control = chart.get_by_role('combobox', name='Comparison gamut', exact=True)
+    readout = chart.locator('output[data-cie-readout]')
+    selected = figure.locator('circle[data-cie-selected]')
+    target = figure.locator('rect[data-cie-pick]')
+    primaries = {
+        'srgb': [(0.64, 0.33), (0.30, 0.60), (0.15, 0.06)],
+        'display-p3': [(0.68, 0.32), (0.265, 0.69), (0.15, 0.06)],
+        'rec2020': [(0.708, 0.292), (0.170, 0.797), (0.131, 0.046)],
+    }
+    await check_cie_figure(figure, 'xy')
+    await expect(chart.locator('figcaption a').first).to_have_attribute('href', 'https://doi.org/10.25039/CIE.DS.mifmy4x4')
+    await expect(readout).to_be_visible()
+    await expect(selected).to_be_visible()
+    await expect(space_control).to_have_value('xy')
+    await expect(ref_control).to_have_value('srgb')
+    await expect(cmp_control).to_have_value('display-p3')
+
+    async def check_areas(space, ref_id, cmp_id):
+        attributes = await readout.evaluate("""out => [
+          ...['referenceArea', 'comparisonArea', 'intersectionArea', 'coverage', 'comparisonCoverage'].map(key => Number(out.dataset[key])),
+          out.dataset.reference, out.dataset.comparison,
+        ]""")
+        reference, comparison, overlap, coverage, reverse_coverage, actual_ref, actual_cmp = attributes
+        if (actual_ref, actual_cmp) != (ref_id, cmp_id):
+            raise RuntimeError(f'Selected gamut identifiers do not match the readout: {attributes}')
+        standard_areas = []
+        for gamut in (ref_id, cmp_id):
+            coordinates = primaries[gamut]
+            if space == 'uv':
+                coordinates = [cie_uv(x, y) for x, y in coordinates]
+            standard_areas.append(cie_polygon_area(coordinates))
+        if {ref_id, cmp_id} == {'display-p3', 'rec2020'}:
+            # The near-nested primaries still clip a small portion of Display P3.
+            expected_overlap = 0.15196971562126144 if space == 'xy' else 0.08146188240816035
+        else:
+            expected_overlap = min(standard_areas)
+        expected_coverage = expected_overlap / standard_areas[0]
+        expected = [*standard_areas, expected_overlap, expected_coverage, expected_overlap / standard_areas[1]]
+        if not (0 <= coverage <= 1 and 0 <= reverse_coverage <= 1) or not all(
+            math.isclose(actual, anchor, abs_tol=1e-8) for actual, anchor in zip(attributes[:5], expected)
+        ):
+            raise RuntimeError(f'Unexpected {space} gamut areas or directional coverage: {attributes[:5]}, expected {expected}')
+        _, _, width, height, x_max, y_max = await cie_frame(figure)
+        scale = (width / x_max) * (height / y_max)
+        names = ['[data-cie-gamut="reference"]', '[data-cie-gamut="comparison"]', '[data-cie-overlap]']
+        for selector, physical_area in zip(names, (reference, comparison, overlap)):
+            vertices = await figure.locator(f'polygon{selector}').evaluate(
+                'mark => Array.from(mark.points, vertex => [vertex.x, vertex.y])'
+            )
+            if not math.isclose(cie_polygon_area(vertices) / scale, physical_area, abs_tol=1e-4):
+                raise RuntimeError(f'Drawn {selector} polygon must match its {space} geometric area')
+        return reference, comparison, overlap, coverage, reverse_coverage
+
+    async def selection(space):
+        x, y, u, v, in_reference, in_comparison = await readout.evaluate("""out => [
+          ...['x', 'y', 'u', 'v'].map(key => Number(out.dataset[key])),
+          out.dataset.inReference, out.dataset.inComparison,
+        ]""")
+        if not (0 <= x <= 1 and 0 <= y <= 1 and x + y <= 1) or not all(
+            math.isclose(actual, expected, abs_tol=1e-9) for actual, expected in zip([u, v], cie_uv(x, y))
+        ):
+            raise RuntimeError(f'The selected chromaticity should retain consistent xy and u′v′ coordinates: {x}, {y}, {u}, {v}')
+        mx, my, cx, cy = await selected.evaluate("""mark => [
+          Number(mark.dataset.x), Number(mark.dataset.y), mark.cx.baseVal.value, mark.cy.baseVal.value,
+        ]""")
+        if (mx, my) != (x, y):
+            raise RuntimeError('Marker and readout should preserve the same canonical xy point')
+        left, top, width, height, x_max, y_max = await cie_frame(figure)
+        horizontal, vertical = (x, y) if space == 'xy' else (u, v)
+        if not math.isclose(cx, left + width * horizontal / x_max, abs_tol=0.5) or not math.isclose(
+            cy, top + height * (1 - vertical / y_max), abs_tol=0.5
+        ):
+            raise RuntimeError(f'Selection marker should project onto the {space} coordinates')
+        return x, y, in_reference, in_comparison
+
+    white = await selection('xy')
+    if white != (0.3127, 0.329, 'true', 'true'):
+        raise RuntimeError(f'Expected D65 at the startup white point inside both standard gamuts: {white}')
+    xy_areas = await check_areas('xy', 'srgb', 'display-p3')
+    await space_control.select_option('uv')
+    await check_cie_figure(figure, 'uv')
+    if await selection('uv') != white:
+        raise RuntimeError('Switching to CIE u′v′ should preserve the D65 canonical xy coordinates')
+    uv_areas = await check_areas('uv', 'srgb', 'display-p3')
+    if math.isclose(uv_areas[0], xy_areas[0], abs_tol=1e-4):
+        raise RuntimeError('The plotted area should be recomputed in CIE u′v′ coordinates')
+    await ref_control.select_option('display-p3')
+    await cmp_control.select_option('rec2020')
+    near_coverage = (await check_areas('uv', 'display-p3', 'rec2020'))[3]
+    if not 0.999 < near_coverage < 1:
+        raise RuntimeError('The near-contained Display P3 polygon should retain its narrow non-overlap in u′v′')
+    await ref_control.select_option('rec2020')
+    await cmp_control.select_option('srgb')
+    uv_coverage = (await check_areas('uv', 'rec2020', 'srgb'))[3]
+    if not 0 < uv_coverage < 1 or await selection('uv') != white:
+        raise RuntimeError('Changing gamut roles should preserve D65 and report directional coverage')
+    await space_control.select_option('xy')
+    await expect(figure).to_have_attribute('data-space', 'xy')
+    await check_areas('xy', 'rec2020', 'srgb')
+    await ref_control.select_option('srgb')
+    await cmp_control.select_option('display-p3')
+
+    async def pick(x, y):
+        await target.scroll_into_view_if_needed()
+        bounds = await target.bounding_box()
+        _, _, _, _, x_max, y_max = await cie_frame(figure)
+        position = {'x': bounds['width'] * x / x_max, 'y': bounds['height'] * (1 - y / y_max)}
+        if touch:
+            await target.tap(position=position)
+        else:
+            await target.click(position=position)
+
+    if touch:
+        await target.scroll_into_view_if_needed()
+        bounds = await target.bounding_box()
+        await target.dispatch_event('pointerdown', {
+            'pointerType': 'touch',
+            'clientX': bounds['x'] + bounds['width'] * 0.28 / 0.8,
+            'clientY': bounds['y'] + bounds['height'] * (1 - 0.64 / 0.9),
+        })
+        await target.dispatch_event('pointercancel', {'pointerType': 'touch'})
+        if await selection('xy') != white:
+            raise RuntimeError('Beginning a touch scroll over the plot should preserve the selected chromaticity')
+    await pick(0.28, 0.64)
+    picked = await selection('xy')
+    if not math.isclose(picked[0], 0.28, abs_tol=0.005) or not math.isclose(picked[1], 0.64, abs_tol=0.005) or (
+        picked[2:] != ('false', 'true')
+    ):
+        raise RuntimeError(f'Pointer pick should select the P3-only green; observed {picked}')
+    await pick(0.75, 0.7)
+    if await selection('xy') != picked:
+        raise RuntimeError('A point outside the spectral boundary should leave the selection unchanged')
+
+    await expect(target).to_have_attribute('tabindex', '0')
+    await target.press('ArrowRight')
+    moved = await selection('xy')
+    if moved[0] <= picked[0] or not math.isclose(moved[1], picked[1], abs_tol=1e-9):
+        raise RuntimeError(f'Right arrow should increase the horizontal chromaticity while preserving the vertical coordinate: {moved}')
+    await space_control.select_option('uv')
+    await expect(figure).to_have_attribute('data-space', 'uv')
+    if any(not math.isclose(actual, expected, abs_tol=1e-9) for actual, expected in zip(
+        (await selection('uv'))[:2], moved[:2]
+    )):
+        raise RuntimeError('A manually selected chromaticity should remain invariant when coordinates change')
+    u, v = cie_uv(*moved[:2])
+    await target.press('ArrowRight')
+    new_u, new_v = cie_uv(*(await selection('uv'))[:2])
+    if not math.isclose(new_u, u + 0.005, abs_tol=1e-9) or not math.isclose(new_v, v, abs_tol=1e-9):
+        raise RuntimeError('Right arrow should move by 0.005 along the active u′ axis and preserve v′')
 
 
 async def check_native_scientific(plot, slug, touch):
