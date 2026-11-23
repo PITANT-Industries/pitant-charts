@@ -21,7 +21,7 @@
 
 <p align="center">
   <a href="http://opensource.pitant.de/charts/">
-    <img src="docs/images/catalog-preview.png" alt="Four examples from the PITANT Charts catalog showing a time-range line chart, stacked bars, a donut with a center total, and a gradient area chart">
+    <img src="apps/chart-catalog/public/catalog-preview.png" alt="Four examples from the PITANT Charts catalog showing a time-range line chart, stacked bars, a donut with a center total, and a gradient area chart">
   </a>
 </p>
 
