@@ -9,7 +9,7 @@ import {
   ArrowDown, ArrowDownRight, ArrowLeft, ArrowUpRight, Bookmark, BookOpen, ChevronLeft, ChevronRight,
   Code2, Grid2X2, List, Menu, Moon, Search, Star, Sun, X,
 } from 'lucide-react'
-import { examples, galleryOrder, getExample, getFamily, getGroupForFamily, groups } from '../catalog'
+import { examples, galleryOrder, getExample, getFamily, getGroupForFamily, groups, scientificGalleryOrder } from '../catalog'
 import { ChartPreview } from '../charts/ChartPreview'
 import type { ChartExample } from '../types'
 import { Choices } from '../ui/Choices'
@@ -106,13 +106,15 @@ function VisibleChart({ example }: { example: ChartExample }) {
   return <div className="card-plot" ref={host} aria-hidden="true" inert>{visible && <ChartPreview example={example} compact />}</div>
 }
 
-function ExampleCard({ example, featured, onDocumentation }: {
+function ExampleCard({ example, featured, showTitle = false, onDocumentation }: {
   example: ChartExample
   featured: boolean
+  showTitle?: boolean
   onDocumentation: () => void
 }) {
   return (
     <div className={featured ? 'example-card example-card--featured' : 'example-card'} data-example-id={example.id}>
+      {showTitle && <span className="example-card-title" aria-hidden="true">{example.title}</span>}
       <VisibleChart example={example} />
       <a className="example-card-link" href={exampleDocsHref(example)} aria-label={`Documentation for ${example.title}`} onClick={(event) => followLink(event, onDocumentation)} />
     </div>
@@ -241,6 +243,8 @@ export function Gallery() {
 
   const savedIds = new Set(Array.isArray(saved) ? saved : [])
   const selectedGroup = groups.find((group) => group.id === link.group)
+  const scientificCategory = selectedGroup?.id === 'scientific'
+  const CatalogTitle = scientificCategory ? 'h1' : 'h2'
   const selectedFamily = getFamily(link.family)
   const documentedFamily = getFamily(link.docs ?? '')
   const docSection = docSections.find(({ id }) => id === link.docs)
@@ -250,7 +254,7 @@ export function Gallery() {
     document.title = docTitle ? `${docTitle} | PITANT Charts` : catalogTitle
   }, [docTitle])
   const detail = getExample(link.example)
-  const available = selectedFamily ? selectedFamily.examples : galleryOrder
+  const available = selectedFamily?.examples ?? (scientificCategory ? scientificGalleryOrder : galleryOrder)
   const terms = query.split(/\s+/)
   const filtered = available.filter((example) => {
     if (selectedGroup && !selectedGroup.families.includes(example.family)) return false
@@ -270,6 +274,7 @@ export function Gallery() {
     setShowSaved(onlySaved)
     setNavigationOpen(false)
     writeLink(next, true)
+    if (group === 'scientific' && !scientificCategory) requestAnimationFrame(() => window.scrollTo(0, 0))
   }
 
   function showExample(id: string, tab?: ExampleTab) {
@@ -384,7 +389,7 @@ export function Gallery() {
           <DocsSectionContent section={docSection.id} />
         </DocsShell>
       ) : <main id="main-content" tabIndex={-1}>
-        {!showSaved && <section className={landingFeature ? 'hero hero--featured' : 'hero'} aria-labelledby="page-title">
+        {!showSaved && !scientificCategory && <section className={landingFeature ? 'hero hero--featured' : 'hero'} aria-labelledby="page-title">
           <div className="hero-copy">
             <h1 id="page-title">PITANT Charts</h1>
             <p className="hero-intro">Explore {examples.length} interactive React examples for dashboards, time series, maps, and more.</p>
@@ -414,7 +419,7 @@ export function Gallery() {
             </nav>}
             <section ref={results} id="catalog" className="catalog" aria-labelledby="catalog-title">
               <div className="catalog-heading">
-                <div><h2 id="catalog-title" tabIndex={-1}>{showSaved ? 'Saved charts' : selectedFamily?.name ?? selectedGroup?.name ?? 'All charts'}</h2><p aria-live="polite">{filtered.length} {filtered.length === 1 ? 'example' : 'examples'}</p></div>
+                <div><CatalogTitle id="catalog-title" tabIndex={-1}>{showSaved ? 'Saved charts' : selectedFamily?.name ?? selectedGroup?.name ?? 'All charts'}</CatalogTitle><p aria-live="polite">{filtered.length} {filtered.length === 1 ? 'example' : 'examples'}</p></div>
                 <form className="filter-tools" onSubmit={submitSearch}>
                   <div className="search-field"><Search size={17} aria-hidden="true" /><Input controller={searchController} ref={searchField} type="search" aria-label="Search charts" placeholder="Search charts…" value={search} onValueChange={setSearch} />{search ? <Button aria-label="Clear search" onClick={() => { searchController.setValue(''); searchField.current?.focus() }}><X size={15} aria-hidden="true" /></Button> : <kbd aria-hidden="true">/</kbd>}</div>
                   <FamilySelect value={link.family} groups={selectedGroup ? [selectedGroup] : groups} onChange={(id) => choose(id === 'all' ? link.group : getGroupForFamily(id)?.id ?? 'all', id, showSaved)} />
@@ -422,12 +427,13 @@ export function Gallery() {
                 </form>
               </div>
               {filtered.length ? layout === 'grid' ? (
-                <div className="example-grid">
+                <div className={`example-grid${scientificCategory ? ' example-grid--scientific' : ''}`}>
                   {gridExamples.map((example, index) => (
                     <ExampleCard
                       key={example.id}
                       example={example}
                       featured={showFeature && !landingFeature && index === 0}
+                      showTitle={scientificCategory}
                       onDocumentation={() => showDocumentation(example.family, example.id)}
                     />
                   ))}

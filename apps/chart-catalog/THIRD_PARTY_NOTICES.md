@@ -24,5 +24,7 @@ Some catalog example names and the Line examples’ simulated latency and dense 
 
 - [NOAA Global Monitoring Laboratory](https://doi.org/10.15138/yaf1-bk21) provides the monthly Mauna Loa CO₂ observations under CC0-1.0.
 - [Palmer Station LTER and Kristen Gorman](https://allisonhorst.github.io/palmerpenguins/) collected the penguin observations. The palmerpenguins data package by Horst, Hill, and Gorman provides the CC0-1.0 snapshot used here.
+- [Steel Plates Faults](https://doi.org/10.24432/C5J88N) by M. Buscema, S. Terzi, and W. Tastle (2010), UCI Machine Learning Repository, is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The example adapts four feature columns across 1,941 records to compute a Pearson correlation matrix.
 - [NIST's Heat Flow Meter case study](https://itl.nist.gov/div898/handbook/eda/section4/eda4281.htm) provides Bob Zarr's calibration-factor measurements.
 - [Adeel Zafar's diffraction data](https://doi.org/10.7910/DVN/ACPWBG) supplies the DyNiC₂ temperature series from Harvard Dataverse V1 under CC0-1.0.
+- [CMS Run2010B dimuon events](https://doi.org/10.7483/OPENDATA.CMS.CB8H.MFFA) by Thomas McCauley (2014), CERN Open Data Portal, is released under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). The example counts the 100,000 published invariant mass values into a histogram.

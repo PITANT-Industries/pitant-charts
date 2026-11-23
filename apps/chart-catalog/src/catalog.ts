@@ -10,7 +10,7 @@ export const groups: readonly ChartGroup[] = [
   { id: 'processes', name: 'Processes & schedules', families: ['funnel', 'sankey', 'waterfall', 'gantt'] },
   { id: 'hierarchies', name: 'Hierarchies & networks', families: ['sunburst', 'treemap', 'tree', 'network'] },
   { id: 'statistics', name: 'Distributions & statistics', families: ['scatter', 'heatmap', 'uncertainty', 'histogram', 'ridgeline', 'ecdf', 'beeswarm', 'violin', 'box-plot', 'hexbin', 'density'] },
-  { id: 'scientific', name: 'Scientific analysis', families: ['spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix', 'process-control'] },
+  { id: 'scientific', name: 'Scientific analysis', families: ['mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix', 'process-control'] },
   { id: 'maps', name: 'Maps & spatial data', families: ['choropleth', 'bubble-map', 'route-map', 'globe', 'vector-field'] },
   { id: 'tooltips', name: 'Tooltips', families: ['tooltip'] },
 ]
@@ -32,7 +32,8 @@ export function getGroupForFamily(id: string) {
 }
 
 const preferredFamilies = ['line', 'bar', 'pie', 'area', 'radar', 'heatmap', 'gauge', 'sankey', 'choropleth']
-const preferredExamples = ['line-time-range', 'bar-stacked', 'pie-center', 'area-gradient-fill']
+const featuredScientificIds = ['mass-spectrum-cms', 'spectral-waterfall-xrd']
+const preferredExamples = ['line-time-range', 'bar-stacked', 'pie-center', 'area-gradient-fill', ...featuredScientificIds]
 const featured = [...new Set([
   ...preferredExamples.map(getExample).filter((item): item is ChartExample => Boolean(item)),
   ...preferredFamilies.map((id) => getFamily(id)?.examples[0]).filter((item): item is ChartExample => Boolean(item)),
@@ -41,3 +42,11 @@ const featured = [...new Set([
 const featuredIds = new Set(featured.map((example) => example.id))
 
 export const galleryOrder = [...featured, ...examples.filter((example) => !featuredIds.has(example.id))]
+
+export const scientificGalleryOrder = [
+  ...featuredScientificIds.flatMap((id) => {
+    const example = getExample(id)
+    return example ? [example] : []
+  }),
+  ...galleryOrder.filter(({ id, family }) => !featuredScientificIds.includes(id) && getGroupForFamily(family)?.id === 'scientific'),
+]

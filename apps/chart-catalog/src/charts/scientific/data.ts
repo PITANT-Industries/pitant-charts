@@ -11,13 +11,18 @@ import type {
   TimeSeriesConfig,
 } from '@pitant/charts-react'
 import measurements from './measurements.json'
+import steelMeasurements from './steel-measurements.json'
 
-interface Fixture<Data, Config> {
-  data: Data
-  config: Config
+export interface MeasuredSource {
   sourceLabel: string
   sourceUrl: string
   description: string
+  license?: { name: string; url: string }
+}
+
+interface Fixture<Data, Config> extends MeasuredSource {
+  data: Data
+  config: Config
 }
 
 // The numeric snapshots in measurements.json retain source order and precision.
@@ -147,12 +152,6 @@ const penguins = measurements.penguinMeasurements
 const completePenguins = penguins.filter(
   (row): row is number[] => row.every((value) => value !== null),
 )
-const centeredMeasurements = penguinVariables.map((_, column) => {
-  const observations = completePenguins.map((row) => row[column])
-  const center = mean(observations)
-  return observations.map((value) => value - center)
-})
-
 function pearson(left: readonly number[], right: readonly number[]) {
   let covariance = 0
   let leftVariance = 0
@@ -166,21 +165,53 @@ function pearson(left: readonly number[], right: readonly number[]) {
   return covariance / Math.sqrt(leftVariance * rightVariance)
 }
 
-const correlationValues = Float64Array.from(centeredMeasurements.flatMap(
-  (left, row) => centeredMeasurements.map((right, column) => row === column ? 1 : pearson(left, right)),
-))
+function correlationData(
+  variables: CorrelationMatrixData['variables'],
+  rows: readonly (readonly number[])[],
+  missingCount = 0,
+): CorrelationMatrixData {
+  const centeredColumns = variables.map((_, column) => {
+    const observations = rows.map((row) => row[column])
+    const center = mean(observations)
+    return observations.map((value) => value - center)
+  })
+  const values = Float64Array.from(centeredColumns.flatMap(
+    (left, row) => centeredColumns.map((right, column) => row === column ? 1 : pearson(left, right)),
+  ))
+
+  return {
+    variables,
+    values,
+    sampleCounts: new Uint16Array(values.length).fill(rows.length),
+    missingCounts: new Uint16Array(values.length).fill(missingCount),
+    valueLayout: 'row-major',
+  }
+}
+
+const correlationConfig: CorrelationMatrixConfig = {
+  includeDiagonal: true,
+  labels: { visible: true },
+  valueRange: [-1, 1],
+}
+
 export const correlationFixture: Fixture<CorrelationMatrixData, CorrelationMatrixConfig> = {
   sourceLabel: 'Palmer Station LTER via palmerpenguins',
   sourceUrl: 'https://allisonhorst.github.io/palmerpenguins/',
   description: 'Pearson correlations across four measurements for 342 complete records from three penguin species. Two incomplete records were excluded.',
-  data: {
-    variables: penguinVariables,
-    values: correlationValues,
-    sampleCounts: new Uint16Array(correlationValues.length).fill(completePenguins.length),
-    missingCounts: new Uint16Array(correlationValues.length).fill(penguins.length - completePenguins.length),
-    valueLayout: 'row-major',
-  },
-  config: { includeDiagonal: true, labels: { visible: true }, valueRange: [-1, 1] },
+  data: correlationData(penguinVariables, completePenguins, penguins.length - completePenguins.length),
+  config: correlationConfig,
+}
+
+// Four unscaled features from Faults.NNA in source order. All records are complete.
+const steelLabels = ['Defect area', 'X perimeter', 'Y perimeter', 'Thickness']
+const steelVariables = steelMeasurements.columns.map((key, index) => ({ key, label: steelLabels[index] }))
+export const steelCorrelationFixture: Fixture<CorrelationMatrixData, CorrelationMatrixConfig> = {
+  sourceLabel: 'UCI Steel Plates Faults',
+  sourceUrl: steelMeasurements.doi,
+  description: 'Pearson correlations for defect area, X and Y perimeter, and plate thickness across all 1,941 records. Dataset by M. Buscema, S. Terzi, and W. Tastle (2010).',
+  license: steelMeasurements.license,
+  data: correlationData(steelVariables, steelMeasurements.rows),
+  config: correlationConfig,
 }
 
 // Bob Zarr, NIST, ZARR13 heat-flow meter calibration, January 1990. All 195

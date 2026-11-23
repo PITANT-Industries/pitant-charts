@@ -4,9 +4,11 @@
 
 .spectral-waterfall-viewport {
   position: relative;
-  block-size: clamp(15rem, 48vw, 24rem);
+  block-size: clamp(14rem, 64cqw, 23rem);
   min-inline-size: 0;
-  border-radius: .45rem;
+  border: 1px solid var(--border);
+  border-radius: .55rem;
+  background: color-mix(in srgb, var(--card) 76%, var(--muted));
 }
 
 .spectral-waterfall-viewport:focus-visible {
@@ -21,13 +23,29 @@
   overflow: hidden;
 }
 
+.spectral-waterfall-viewport[tabindex='0'] svg {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
 .spectral-waterfall-plot[data-compact='true'],
 .spectral-waterfall-plot[data-compact='true'] .spectral-waterfall-viewport {
   block-size: 100%;
 }
 
+.spectral-waterfall-plot[data-compact='true'] .spectral-waterfall-viewport {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
 .spectral-waterfall-floor {
-  fill: color-mix(in srgb, var(--chart-1) 5%, var(--card));
+  fill: color-mix(in srgb, var(--chart-1) 7%, var(--card));
+}
+
+.spectral-waterfall-floor-edge {
+  fill: none;
+  stroke: color-mix(in srgb, var(--chart-1) 28%, var(--border));
 }
 
 .spectral-waterfall-grid,
@@ -42,7 +60,7 @@
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   paint-order: stroke;
-  stroke: var(--card);
+  stroke: color-mix(in srgb, var(--card) 76%, var(--muted));
   stroke-width: 2.5px;
   stroke-linejoin: round;
 }
@@ -53,27 +71,31 @@
 }
 
 .spectral-waterfall-ridge {
-  --ridge: var(--chart-1);
-}
-
-.spectral-waterfall-ridge[data-selected='true'] {
-  --ridge: var(--primary);
+  --ridge: color-mix(in srgb, var(--chart-1) 80%, var(--foreground));
 }
 
 .spectral-waterfall-fill {
-  fill: color-mix(in srgb, var(--ridge) 13%, transparent);
+  fill: color-mix(in srgb, var(--ridge) 9%, transparent);
 }
 
 .spectral-waterfall-trace {
   fill: none;
   stroke: var(--ridge);
-  stroke-width: 1.1;
+  stroke-width: 1.25;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 
-.spectral-waterfall-ridge[data-selected='true'] .spectral-waterfall-trace {
-  stroke-width: 2;
+.spectral-waterfall-selection {
+  fill: none;
+  stroke: var(--gallery-accent, var(--primary));
+  stroke-width: 2.3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.spectral-waterfall-plot[data-compact='true'] .spectral-waterfall-trace {
+  stroke-width: 1.5;
 }
 
 .spectral-waterfall-single {
@@ -81,7 +103,7 @@
 }
 
 .spectral-waterfall-point {
-  fill: var(--primary);
+  fill: var(--gallery-accent, var(--primary));
   stroke: var(--card);
   stroke-width: 1.5;
 }
@@ -89,10 +111,10 @@
 .spectral-waterfall-axes {
   display: flex;
   flex-wrap: wrap;
-  gap: .35rem 1.15rem;
-  margin: .15rem .45rem .75rem;
+  gap: .25rem .85rem;
+  margin: .45rem .15rem .7rem;
   color: var(--muted-foreground);
-  font-size: .75rem;
+  font-size: .8125rem;
 }
 
 .spectral-waterfall-axes div {
@@ -110,28 +132,40 @@
 }
 
 .spectral-waterfall-camera {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) max-content;
   align-items: end;
-  gap: .45rem 1rem;
-  padding: .7rem .45rem;
+  gap: .3rem .9rem;
+  padding: .65rem .15rem .15rem;
   border-block-start: 1px solid var(--border);
   color: var(--muted-foreground);
-  font-size: .75rem;
+  font-size: .8125rem;
 }
 
 .spectral-waterfall-angle {
   display: grid;
   gap: .15rem;
-  flex: 1 1 7.5rem;
   min-inline-size: 0;
 }
 
+.spectral-waterfall-angle > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .25rem;
+}
+
+.spectral-waterfall-angle small {
+  color: var(--foreground);
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .spectral-waterfall-angle input {
-  min-block-size: 1.5rem;
+  min-block-size: 2rem;
   inline-size: 100%;
   margin: 0;
-  accent-color: var(--primary);
+  accent-color: var(--gallery-accent, var(--primary));
 }
 
 .spectral-waterfall-reset {
@@ -140,7 +174,7 @@
   background: var(--card);
   color: var(--card-foreground);
   font: inherit;
-  min-block-size: 1.9rem;
+  min-block-size: 2.25rem;
   padding: .2rem .6rem;
   cursor: pointer;
 }
@@ -168,4 +202,15 @@
   margin: 0;
   color: var(--muted-foreground);
   font-size: .875rem;
+}
+
+@container (max-width: 270px) {
+  .spectral-waterfall-camera {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .spectral-waterfall-reset {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
 }

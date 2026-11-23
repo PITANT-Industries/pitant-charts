@@ -57,8 +57,9 @@ const familyToc = [
 
 function ExamplePlot({ example, deferred }: { example: ChartExample; deferred: boolean }) {
   const [host, visible] = useNearViewport<HTMLDivElement>()
+  const scientific = getGroupForFamily(example.family)?.id === 'scientific'
   return (
-    <div className="docs-example-plot not-prose" data-example-id={example.id} ref={deferred ? host : undefined}>
+    <div className={`docs-example-plot not-prose${scientific ? ' docs-example-plot--scientific' : ''}`} data-example-id={example.id} ref={deferred ? host : undefined}>
       {(!deferred || visible) && <ChartPreview example={example} />}
     </div>
   )
@@ -98,7 +99,7 @@ export function FamilyDocumentation({ family, variantId, onNavigate }: {
 
   const otherExamples = family.examples.filter((example) => example.id !== featured.id)
   const toc = otherExamples.length ? [...familyToc, { id: 'docs-examples-title', title: 'Examples' }] : familyToc
-  const scientific = getGroupForFamily(family.id)?.id === 'scientific' && family.id !== 'spectral-waterfall'
+  const scientific = getGroupForFamily(family.id)?.id === 'scientific' && !['spectral-waterfall', 'mass-spectrum'].includes(family.id)
   const extra = extraProperties[family.id]
   const documentedProps = doc.properties ?? [...properties, ...(extra ? [extra] : [])]
 

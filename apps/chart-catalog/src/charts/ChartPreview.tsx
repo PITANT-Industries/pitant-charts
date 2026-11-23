@@ -9,12 +9,14 @@ const StatsMaps = lazy(() => import('./statsmaps'))
 const DenseLine = lazy(() => import('./cartesian/LineLargeDetail'))
 const DenseScatter = lazy(() => import('./statsmaps/dense-scatter/DenseScatter'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
+const ParticleMassSpectrum = lazy(() => import('./scientific/particle/ParticleMassSpectrumPreview'))
 const ScientificWaterfall = lazy(() => import('./scientific/waterfall/SpectralWaterfallPreview'))
 
 export const rendererFamilies = {
   cartesian: ['line', 'area', 'live-line', 'sparkline', 'candlestick', 'stream', 'bar', 'diverging', 'composed', 'lollipop', 'dumbbell', 'bump', 'slope', 'waterfall', 'gantt'],
   polarflow: ['pie', 'ring', 'radial', 'gauge', 'waffle', 'marimekko', 'funnel', 'sankey', 'sunburst', 'treemap', 'tree', 'network', 'radar', 'tooltip'],
   waterfall: ['spectral-waterfall'],
+  particle: ['mass-spectrum'],
   scientific: ['spectrum', 'spectrogram', 'correlation-matrix', 'process-control'],
   statsmaps: ['scatter', 'heatmap', 'uncertainty', 'histogram', 'ridgeline', 'ecdf', 'beeswarm', 'violin', 'box-plot', 'hexbin', 'density', 'choropleth', 'bubble-map', 'route-map', 'globe', 'vector-field'],
 } as const
@@ -22,6 +24,7 @@ export const rendererFamilies = {
 const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.cartesian.map((id) => [id, Cartesian] as const),
   ...rendererFamilies.polarflow.map((id) => [id, PolarFlow] as const),
+  ...rendererFamilies.particle.map((id) => [id, ParticleMassSpectrum] as const),
   ...rendererFamilies.waterfall.map((id) => [id, ScientificWaterfall] as const),
   ...rendererFamilies.scientific.map((id) => [id, Scientific] as const),
   ...rendererFamilies.statsmaps.map((id) => [id, StatsMaps] as const),

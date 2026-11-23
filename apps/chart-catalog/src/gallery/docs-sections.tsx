@@ -327,6 +327,7 @@ function Changelog() {
       <GuideHeading section="changelog" id="chart-catalog" />
       <ul>
         <li>Component guides cover installation, caller data, React props, and interactive examples.</li>
+        <li>The <a href="#docs=mass-spectrum">CERN dimuon mass spectrum</a> shows 100,000 measured events. <a href="#docs=correlation-matrix&variant=correlation-matrix-steel">Steel surface defect correlations</a> use 1,941 records from UCI.</li>
         <li><a href="#docs=spectral-waterfall">Spectral Waterfall</a> combines a 3D spectrum history with a selected spectrum and heatmap. Its examples use frequency data from the Mauna Loa CO₂ record and temperature-resolved X-ray diffraction of DyNiC₂.</li>
         <li><a href="#docs=spectrum">Spectrum</a>, <a href="#docs=spectrogram">Spectrogram</a>, <a href="#docs=correlation-matrix">Correlation Matrix</a>, and <a href="#docs=process-control">Process Control</a> have domain data examples.</li>
       </ul>

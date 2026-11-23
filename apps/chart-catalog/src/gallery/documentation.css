@@ -65,6 +65,16 @@
   overflow: auto;
 }
 
+.docs-example-plot--scientific {
+  height: auto;
+  min-height: var(--docs-preview-height);
+  overflow: visible;
+}
+
+.docs-example-plot--scientific .chart-preview {
+  height: auto;
+}
+
 .docs-example-plot [data-line-detail='line-time-range'] {
   block-size: 100%;
 }
