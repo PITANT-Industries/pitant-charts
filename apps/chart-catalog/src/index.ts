@@ -20,6 +20,8 @@ export { BearingEnvelopeSpectrum } from './charts/scientific/envelope/BearingEnv
 export type { BearingEnvelopeSpectrumProps, EnvelopeSpectrumData, EnvelopeBand, EnvelopeReference, EnvelopeRun } from './charts/scientific/envelope/BearingEnvelopeSpectrum'
 export { EyeDiagram } from './charts/scientific/eye/EyeDiagram'
 export type { EyeDiagramProps, EyeDiagramData, EyeRun, EyeTrace } from './charts/scientific/eye/EyeDiagram'
+export { AllanDeviation } from './charts/scientific/AllanDeviation'
+export type { AllanDeviationProps, AllanDeviationData, AllanDeviationCurve, AllanDeviationPoint } from './charts/scientific/AllanDeviation'
 export { SpectralWaterfall } from './charts/scientific/waterfall/SpectralWaterfall'
 export type { SpectralWaterfallProps } from './charts/scientific/waterfall/SpectralWaterfall'
 export type { SpectralAxis, SpectralWaterfallAxes, SpectralWaterfallData } from './charts/scientific/waterfall/model'

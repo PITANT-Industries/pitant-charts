@@ -17,6 +17,7 @@ const CoherencePhasePreview = lazy(() => import('./scientific/coherence/Coherenc
 const WaveletScalogramPreview = lazy(() => import('./scientific/wavelet/WaveletScalogramPreview'))
 const BearingEnvelopeSpectrumPreview = lazy(() => import('./scientific/envelope/BearingEnvelopeSpectrumPreview'))
 const EyeDiagramPreview = lazy(() => import('./scientific/eye/EyeDiagramPreview'))
+const AllanDeviationPreview = lazy(() => import('./scientific/AllanDeviationPreview'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
 const ParticleMassSpectrum = lazy(() => import('./scientific/particle/ParticleMassSpectrumPreview'))
 const ScientificWaterfall = lazy(() => import('./scientific/waterfall/SpectralWaterfallPreview'))
@@ -34,6 +35,7 @@ export const rendererFamilies = {
   wavelet: ['wavelet-scalogram'],
   envelope: ['bearing-envelope'],
   eye: ['eye-diagram'],
+  allan: ['allan-deviation'],
   spectrogram: ['spectrogram'],
   scientific: ['spectrum', 'correlation-matrix', 'process-control'],
   statsmaps: ['scatter', 'heatmap', 'uncertainty', 'histogram', 'ridgeline', 'ecdf', 'beeswarm', 'violin', 'box-plot', 'hexbin', 'density', 'choropleth', 'bubble-map', 'route-map', 'globe', 'vector-field'],
@@ -51,6 +53,7 @@ const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.wavelet.map((id) => [id, WaveletScalogramPreview] as const),
   ...rendererFamilies.envelope.map((id) => [id, BearingEnvelopeSpectrumPreview] as const),
   ...rendererFamilies.eye.map((id) => [id, EyeDiagramPreview] as const),
+  ...rendererFamilies.allan.map((id) => [id, AllanDeviationPreview] as const),
   ...rendererFamilies.waterfall.map((id) => [id, ScientificWaterfall] as const),
   ...rendererFamilies.spectrogram.map((id) => [id, MaunaLoaSpectrogram] as const),
   ...rendererFamilies.scientific.map((id) => [id, Scientific] as const),

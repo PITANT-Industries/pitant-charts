@@ -1,3 +1,4 @@
+import allanDeviation from './docs/examples/AllanDeviation.tsx?raw'
 import bearingEnvelope from './docs/examples/BearingEnvelopeSpectrum.tsx?raw'
 import campbellDiagram from './docs/examples/CampbellDiagram.tsx?raw'
 import capabilityHistogram from './docs/examples/CapabilityHistogram.tsx?raw'
@@ -28,6 +29,7 @@ const scientificExamples = new Map([
   ['wavelet-scalogram-bearing', withCatalogImports(waveletScalogram)],
   ['bearing-envelope-ottawa', withCatalogImports(bearingEnvelope)],
   ['eye-diagram-nrz', withCatalogImports(eyeDiagram)],
+  ['allan-deviation-stability', withCatalogImports(allanDeviation)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],
