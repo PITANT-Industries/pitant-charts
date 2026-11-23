@@ -1,0 +1,214 @@
+.xrd-peak-tracker {
+  display: grid;
+  gap: .7rem;
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+}
+
+.xrd-peak-tracker[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.xrd-peak-tracker),
+.detail-plot:has(.xrd-peak-tracker) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.xrd-profile {
+  block-size: clamp(15.5rem, 46cqw, 22rem);
+}
+
+.xrd-peak-tracker[data-compact='true'] .xrd-profile {
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.xrd-peak-tracker[data-compact='true'] .xrd-y-label {
+  font-size: 9px;
+}
+
+.xrd-window,
+.xrd-fit,
+.xrd-fwhm,
+.xrd-measurement-trace,
+.xrd-trend-line {
+  fill: none;
+  stroke-linejoin: round;
+}
+
+.xrd-window,
+.xrd-fit {
+  stroke: #9e382c;
+  stroke-width: 1.4px;
+}
+
+.xrd-fwhm {
+  stroke: #28313a;
+  stroke-width: 1.2px;
+}
+
+.xrd-measurement-trace {
+  stroke: #303941;
+  stroke-width: .9px;
+}
+
+.xrd-bin {
+  fill: #fff;
+  stroke: #41494f;
+  stroke-width: .9px;
+}
+
+.xrd-trends {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .65rem;
+}
+
+.xrd-trend {
+  block-size: 10.25rem;
+}
+
+.xrd-trend-line {
+  stroke: #245781;
+  stroke-width: 1.3px;
+}
+
+.xrd-trend-point {
+  fill: #fff;
+  stroke: #245781;
+  stroke-width: 1.1px;
+}
+
+.xrd-trend-cursor {
+  fill: #245781;
+  stroke: #fff;
+  stroke-width: 1px;
+}
+
+.xrd-profile-pick,
+.xrd-trend-pick {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.xrd-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: .45rem;
+  font-size: .8rem;
+}
+
+.xrd-choice select {
+  min-block-size: 2rem;
+  padding-inline: .48rem;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .25rem;
+  background: var(--gallery-surface, var(--card));
+  color: inherit;
+  font: inherit;
+}
+
+.xrd-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1rem;
+  margin: -.15rem 0 .35rem;
+  padding: 0;
+  list-style: none;
+  font-size: .76rem;
+}
+
+.xrd-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.xrd-key li::before {
+  content: '';
+  inline-size: 1.05rem;
+  border-block-start: 1px solid currentColor;
+}
+
+.xrd-key .xrd-key-fit::before {
+  border-color: #9e382c;
+}
+
+.xrd-key .xrd-key-measured::before {
+  inline-size: .38rem;
+  block-size: .38rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.xrd-key .xrd-key-background::before {
+  border-block-start-style: dashed;
+}
+
+.xrd-key .xrd-key-width::before {
+  content: '↔';
+  inline-size: auto;
+  border: 0;
+}
+
+.xrd-temperature {
+  display: grid;
+  gap: .15rem;
+  font-size: .8rem;
+}
+
+.xrd-temperature input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 1.65rem;
+  margin: 0;
+  accent-color: var(--gallery-accent, var(--primary));
+}
+
+.xrd-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem 1.3rem;
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.xrd-readout span {
+  display: grid;
+  gap: .12rem;
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+.xrd-readout strong {
+  color: var(--gallery-ink, var(--foreground));
+  font-size: .92rem;
+}
+
+.xrd-caption {
+  padding-block-start: .6rem;
+  border-block-start: 1px solid var(--gallery-rule, var(--border));
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.xrd-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+.xrd-caption p {
+  margin: .18rem 0 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+@container (max-width: 36rem) {
+  .xrd-trends {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

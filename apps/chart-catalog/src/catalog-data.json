@@ -3348,6 +3348,22 @@
     ]
   },
   {
+    "id": "xrd-peak-tracker",
+    "name": "XRD Peak Tracker",
+    "url": "https://opensource.pitant.de/charts/#docs=xrd-peak-tracker",
+    "examples": [
+      {
+        "id": "xrd-peak-tracker-dynic2",
+        "family": "xrd-peak-tracker",
+        "title": "DyNiC₂ X-ray Diffraction Peak Tracker",
+        "label": "Measured temperature-resolved diffraction",
+        "description": "Follow fitted peak position, width, and height across temperatures in measured DyNiC₂ diffraction scans.",
+        "url": "https://opensource.pitant.de/charts/#example=xrd-peak-tracker-dynic2",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",

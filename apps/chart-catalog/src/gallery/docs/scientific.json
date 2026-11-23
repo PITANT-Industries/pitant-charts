@@ -242,6 +242,29 @@
       { "label": "Russ Tedrake, Underactuated Robotics, Chapter 2, The Simple Pendulum", "href": "https://underactuated.csail.mit.edu/pend.html" }
     ]
   },
+  "xrd-peak-tracker": {
+    "summary": "Inspect a diffraction peak fit and follow its center, width, and height across temperatures.",
+    "useWhen": "Compare how an observed feature shifts, broadens, or changes height in temperature-resolved diffraction scans.",
+    "data": "Supply a shared, strictly increasing angleDeg axis in degrees 2θ. Provide scans in increasing temperature order in kelvin, with one finite intensity value per angle. Give each peak a unique ID, a label, a fixed window in degrees 2θ, and one fit per scan in the same order. Use null when a fit is unavailable.",
+    "reading": "Choose a Peak and move the Temperature control. The profile shows measured sample markers, a fitted curve over the fixed window, and its linear background. The bracket marks the full width at half maximum (FWHM). Three aligned temperature plots follow the fitted center, FWHM, and peak height above background.",
+    "notes": [
+      "The example uses 16 measured DyNiC₂ synchrotron X-ray diffraction scans from 10.91 to 294.11 K. The scans share 163 samples from about 5.002 to 5.500° 2θ. The fixed windows are 5.157–5.247°, 5.252–5.322°, and 5.324–5.407° and identify observed features by angle.",
+      "Bounded, unweighted least squares fits a pseudo-Voigt peak, a Gaussian–Lorentzian mixture with a shared center and width, plus a linear background. The background intercept is defined at the fitted center. Height is the fitted peak contribution above that background, in arbitrary intensity units (a.u.). FWHM measures the separation of the points at half that height above the local background.",
+      "The fit tries starting Lorentzian fractions of 0.1, 0.5, and 0.9. Among converged solutions with finite parameters and center, width, and height away from their bounds, it selects the smallest sum of squared intensity residuals. The example retains all 48 fits. An unavailable fit appears as a gap in the temperature trends.",
+      "For the feature near 5.36°, the fitted center changes from 5.36450° at 10.91 K to 5.34403° at 294.11 K. The fitted width changes from 0.01875° to 0.02561°. Inspect the measured markers, fitted curve, and root-mean-square intensity residual to assess each local fit."
+    ],
+    "properties": [
+      { "name": "data", "type": "XrdPeakData", "description": "Required. Give angleDeg, scans with temperatureK and intensity, and peaks with fixed windowDeg boundaries and aligned fits." },
+      { "name": "initialTemperatureK", "type": "number", "description": "Choose the initial scan to inspect by temperature in kelvin." },
+      { "name": "label", "type": "string", "description": "Describe the diffraction experiment for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact peak profile for a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Add the data source and optional method and license information." }
+    ],
+    "sources": [
+      { "label": "Adeel Zafar (2025), temperature-resolved DyNiC₂ diffraction data, Harvard Dataverse V1 (CC0 1.0)", "href": "https://doi.org/10.7910/DVN/ACPWBG" },
+      { "label": "Andrew Fitch and Catherine Dejoie (2021), pseudo-Voigt fits of powder diffraction peak centers and widths, Figure 8", "href": "https://journals.iucr.org/j/issues/2021/04/00/kc5125/" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",
