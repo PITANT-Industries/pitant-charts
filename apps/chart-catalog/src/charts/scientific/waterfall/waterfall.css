@@ -3,15 +3,17 @@
   min-inline-size: 0;
   margin: 0;
   gap: .75rem;
+  container-type: inline-size;
   color: var(--foreground);
 }
 
 .spectral-waterfall[data-compact='true'] {
   block-size: 100%;
   min-block-size: 0;
+  container-type: normal;
 }
 
-.docs-showcase .docs-example-plot:has(.spectral-waterfall), .detail-plot:has(.spectral-waterfall) {
+.detail-plot:has(.spectral-waterfall) {
   block-size: auto;
   overflow: visible;
 }
@@ -22,9 +24,9 @@
 
 .waterfall-view-toggle {
   display: inline-flex;
-  inline-size: max-content;
+  flex-wrap: wrap;
   max-inline-size: 100%;
-  margin: 0 .45rem .35rem;
+  margin-block-end: .55rem;
   gap: .2rem;
   padding: .2rem;
   border: 1px solid var(--border);
@@ -33,7 +35,8 @@
 }
 
 .waterfall-view-toggle [role='tab'] {
-  padding: .4rem .65rem;
+  min-block-size: 2.5rem;
+  padding: .4rem .6rem;
   border: 0;
   border-radius: .35rem;
   background: transparent;
@@ -44,17 +47,25 @@
 }
 
 .waterfall-view-toggle [aria-selected='true'] {
-  background: var(--muted);
-  color: var(--foreground);
+  background: var(--gallery-selection, var(--muted));
+  color: var(--gallery-selection-text, var(--foreground));
+  font-weight: 650;
 }
 
 .waterfall-readout {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: .65rem 1rem;
-  padding: .75rem .45rem;
-  border-block: 1px solid var(--border);
+  gap: .7rem;
+  padding: .8rem;
+  border: 1px solid var(--border);
+  border-radius: .55rem;
+  background: color-mix(in srgb, var(--card) 70%, var(--muted));
   font-size: .8125rem;
+}
+
+.waterfall-selection-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .55rem .85rem;
 }
 
 .waterfall-readout label {
@@ -66,23 +77,24 @@
 
 .waterfall-readout input {
   inline-size: 100%;
-  min-block-size: 1.75rem;
+  min-block-size: 2rem;
   margin: 0;
-  accent-color: var(--primary);
+  accent-color: var(--gallery-accent, var(--primary));
 }
 
 .waterfall-readout output {
-  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: .65rem;
+  gap: .55rem .85rem;
+  padding-block-end: .65rem;
+  border-block-end: 1px solid var(--border);
   font-variant-numeric: tabular-nums;
 }
 
 .waterfall-readout output > span {
   display: grid;
   gap: .2rem;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .waterfall-readout output span > span,
@@ -91,11 +103,13 @@
 }
 
 .waterfall-readout output strong {
-  font-weight: 625;
+  color: var(--foreground);
+  font-size: clamp(.875rem, 3.6cqw, 1.15rem);
+  font-weight: 650;
 }
 
 .spectral-waterfall figcaption {
-  padding: .25rem .45rem .4rem;
+  padding: 0 .15rem .25rem;
   font-size: .8125rem;
   line-height: 1.5;
 }
@@ -106,8 +120,17 @@
   text-underline-offset: .15em;
 }
 
-@media (max-width: 460px) {
-  .waterfall-readout output {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@container (max-width: 300px) {
+  .waterfall-view-toggle {
+    display: flex;
+  }
+
+  .waterfall-view-toggle [role='tab'] {
+    flex: 1 0 auto;
+    padding-inline: .45rem;
+  }
+
+  .waterfall-readout {
+    padding: .65rem;
   }
 }

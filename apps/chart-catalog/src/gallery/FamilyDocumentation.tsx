@@ -57,8 +57,9 @@ const familyToc = [
 
 function ExamplePlot({ example, deferred }: { example: ChartExample; deferred: boolean }) {
   const [host, visible] = useNearViewport<HTMLDivElement>()
+  const scientific = getGroupForFamily(example.family)?.id === 'scientific'
   return (
-    <div className="docs-example-plot not-prose" data-example-id={example.id} ref={deferred ? host : undefined}>
+    <div className={`docs-example-plot not-prose${scientific ? ' docs-example-plot--scientific' : ''}`} data-example-id={example.id} ref={deferred ? host : undefined}>
       {(!deferred || visible) && <ChartPreview example={example} />}
     </div>
   )

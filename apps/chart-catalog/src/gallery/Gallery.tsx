@@ -241,6 +241,8 @@ export function Gallery() {
 
   const savedIds = new Set(Array.isArray(saved) ? saved : [])
   const selectedGroup = groups.find((group) => group.id === link.group)
+  const scientificCategory = selectedGroup?.id === 'scientific'
+  const CatalogTitle = scientificCategory ? 'h1' : 'h2'
   const selectedFamily = getFamily(link.family)
   const documentedFamily = getFamily(link.docs ?? '')
   const docSection = docSections.find(({ id }) => id === link.docs)
@@ -270,6 +272,7 @@ export function Gallery() {
     setShowSaved(onlySaved)
     setNavigationOpen(false)
     writeLink(next, true)
+    if (group === 'scientific' && !scientificCategory) requestAnimationFrame(() => window.scrollTo(0, 0))
   }
 
   function showExample(id: string, tab?: ExampleTab) {
@@ -384,7 +387,7 @@ export function Gallery() {
           <DocsSectionContent section={docSection.id} />
         </DocsShell>
       ) : <main id="main-content" tabIndex={-1}>
-        {!showSaved && <section className={landingFeature ? 'hero hero--featured' : 'hero'} aria-labelledby="page-title">
+        {!showSaved && !scientificCategory && <section className={landingFeature ? 'hero hero--featured' : 'hero'} aria-labelledby="page-title">
           <div className="hero-copy">
             <h1 id="page-title">PITANT Charts</h1>
             <p className="hero-intro">Explore {examples.length} interactive React examples for dashboards, time series, maps, and more.</p>
@@ -414,7 +417,7 @@ export function Gallery() {
             </nav>}
             <section ref={results} id="catalog" className="catalog" aria-labelledby="catalog-title">
               <div className="catalog-heading">
-                <div><h2 id="catalog-title" tabIndex={-1}>{showSaved ? 'Saved charts' : selectedFamily?.name ?? selectedGroup?.name ?? 'All charts'}</h2><p aria-live="polite">{filtered.length} {filtered.length === 1 ? 'example' : 'examples'}</p></div>
+                <div><CatalogTitle id="catalog-title" tabIndex={-1}>{showSaved ? 'Saved charts' : selectedFamily?.name ?? selectedGroup?.name ?? 'All charts'}</CatalogTitle><p aria-live="polite">{filtered.length} {filtered.length === 1 ? 'example' : 'examples'}</p></div>
                 <form className="filter-tools" onSubmit={submitSearch}>
                   <div className="search-field"><Search size={17} aria-hidden="true" /><Input controller={searchController} ref={searchField} type="search" aria-label="Search charts" placeholder="Search charts…" value={search} onValueChange={setSearch} />{search ? <Button aria-label="Clear search" onClick={() => { searchController.setValue(''); searchField.current?.focus() }}><X size={15} aria-hidden="true" /></Button> : <kbd aria-hidden="true">/</kbd>}</div>
                   <FamilySelect value={link.family} groups={selectedGroup ? [selectedGroup] : groups} onChange={(id) => choose(id === 'all' ? link.group : getGroupForFamily(id)?.id ?? 'all', id, showSaved)} />
@@ -422,7 +425,7 @@ export function Gallery() {
                 </form>
               </div>
               {filtered.length ? layout === 'grid' ? (
-                <div className="example-grid">
+                <div className={`example-grid${scientificCategory ? ' example-grid--scientific' : ''}`}>
                   {gridExamples.map((example, index) => (
                     <ExampleCard
                       key={example.id}

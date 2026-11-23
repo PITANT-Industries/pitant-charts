@@ -217,13 +217,27 @@ async def check_docs_navigation(browser, local_url, catalog):
 async def check_scientific_catalog(browser, local_url, catalog):
     families = {'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix', 'process-control'}
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
-    page = await browser.new_page(viewport={'width': 390, 'height': 844}, reduced_motion='reduce')
+    for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
+        await check_scientific_profile(browser, local_url, examples, width, height, theme)
+
+
+async def check_scientific_profile(browser, local_url, examples, width, height, theme):
+    touch = width < 768
+    page = await browser.new_page(viewport={'width': width, 'height': height}, has_touch=touch, reduced_motion='reduce')
     try:
         await page.goto(local_url, wait_until='domcontentloaded', timeout=20000)
+        if theme == 'dark':
+            await page.get_by_role('button', name='Dark theme').click()
         rail = page.get_by_role('navigation', name='Popular chart families')
         await rail.get_by_role('button', name='Scientific analysis').click(timeout=8000)
         await page.wait_for_url(f'{local_url}#category=scientific', timeout=8000)
-        await expect(page.locator('.example-grid .example-card-link')).to_have_count(len(examples))
+        grid = page.locator('.example-grid--scientific')
+        await expect(grid.locator('.example-card-link')).to_have_count(len(examples))
+        for example in examples:
+            card = grid.locator(f'.example-card[data-example-id="{example["id"]}"]')
+            await card.scroll_into_view_if_needed()
+            await check_chart_output(card.locator('.card-plot[inert]'))
+            await expect(card.locator('button:visible, input:visible, [role="tooltip"]:visible')).to_have_count(0)
         await page.get_by_role('link', name=f'Documentation for {examples[0]["title"]}', exact=True).click(timeout=8000)
 
         for index, example in enumerate(examples):
@@ -235,18 +249,52 @@ async def check_scientific_catalog(browser, local_url, catalog):
             preview = page.locator('#docs-preview')
             plot = preview.locator(f'.docs-example-plot[data-example-id="{slug}"]')
             waterfall = example['family'] == 'spectral-waterfall'
+            await check_chart_output(plot)
+            if not waterfall:
+                await expect(plot.locator('[data-scientific-ready]')).to_have_count(1, timeout=8000)
+                await expect(plot.locator('[data-scientific-axes]')).to_be_visible()
+                selection = plot.locator('[data-scientific-selection]')
+                await expect(selection).to_have_attribute('data-x-index', re.compile(r'^\d+$'))
+                previous_x_index = await selection.get_attribute('data-x-index')
+            await expect(plot.locator('figcaption')).to_be_visible()
+            if await plot.evaluate('el => el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1'):
+                raise RuntimeError(f'{theme} {width}px {slug}: chart, controls, and source must fit the preview')
+            if await plot.evaluate("el => ['auto', 'scroll'].includes(getComputedStyle(el).overflowY)"):
+                raise RuntimeError(f'{slug} must use page scrolling for its preview')
             if waterfall:
                 await check_spectral_waterfall(plot, slug)
-            else:
-                await plot.locator('canvas').first.wait_for(state='visible', timeout=8000)
-                await expect(plot.locator('[data-scientific-ready]')).to_have_count(1, timeout=8000)
             await expect(page.get_by_role('list', name='Data sources')).to_be_visible()
             if slug == 'spectrum-measured':
                 await plot.get_by_role('slider', name='Frequency bin').press('Home')
                 await expect(plot.locator('output')).to_contain_text('0.025 cycles/year')
             elif slug == 'correlation-matrix-measured':
+                coefficients = plot.locator('[data-scientific-coefficient]')
+                await expect(coefficients).to_have_count(16)
+                await expect(coefficients.filter(has_text=re.compile(r'^1\.00$'))).to_have_count(4)
                 await plot.get_by_role('combobox', name='Column variable').select_option('0')
                 await expect(plot.locator('output')).to_contain_text('Pearson r = 1')
+            elif not waterfall:
+                slider_names = {
+                    'spectrogram-measured': 'Window center year',
+                    'process-control-individuals': 'Observation',
+                    'process-control-capability': 'Histogram bin',
+                }
+                readout = plot.locator('output')
+                previous_readout = await readout.inner_text()
+                slider = plot.get_by_role('slider', name=slider_names[slug], exact=True)
+                at_end = await slider.input_value() == await slider.get_attribute('max')
+                await slider.press('Home' if at_end else 'End')
+                await expect(readout).not_to_have_text(previous_readout)
+            if not waterfall:
+                await expect(selection).to_be_visible()
+                await expect(selection).not_to_have_attribute('data-x-index', previous_x_index)
+                selected_x_index = await selection.get_attribute('data-x-index')
+                pick_area = plot.locator('[data-scientific-pick]')
+                if touch:
+                    await pick_area.tap()
+                else:
+                    await pick_area.click()
+                await expect(selection).not_to_have_attribute('data-x-index', selected_x_index)
             await preview.get_by_role('tab', name='Code', exact=True).click(timeout=8000)
             await expect(preview.locator('pre code')).to_contain_text('SpectralWaterfall' if waterfall else '@pitant/charts-react')
             await expect(preview.get_by_role('button', name='Copy code', exact=True)).to_be_visible()
@@ -257,6 +305,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
 async def check_spectral_waterfall(plot, slug):
     ridges = plot.locator('[data-waterfall-ridge]')
     await ridges.first.wait_for(state='attached', timeout=8000)
+    await expect(plot.locator('dl[aria-label="Plot axes"]')).to_be_visible()
     azimuth = plot.get_by_role('slider', name='Azimuth')
     initial_azimuth = await azimuth.input_value()
     await azimuth.press('ArrowRight')
@@ -270,6 +319,7 @@ async def check_spectral_waterfall(plot, slug):
     await expect(readout).to_have_attribute('data-scan-index', '0')
     await expect(readout).to_have_attribute('data-bin-index', '0')
     await expect(readout).to_contain_text('10.91 K' if slug.endswith('-xrd') else '1984')
+    await plot.get_by_role('tab', name='Spectrum', exact=True).click()
     await expect(plot.locator('[data-spectral-view="spectrum"] [data-spectral-selection]')).to_be_visible()
 
     intensity = await readout.get_attribute('data-intensity')

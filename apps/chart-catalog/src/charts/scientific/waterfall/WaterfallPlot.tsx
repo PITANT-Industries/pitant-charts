@@ -18,7 +18,7 @@ type Point = readonly [number, number]
 type Camera = { azimuth: number; elevation: number }
 type Project = (spectral: number, scan: number, intensity: number) => Point
 
-const initialCamera = { azimuth: 30, elevation: 25 }
+const initialCamera = { azimuth: 32, elevation: 27 }
 const labels = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 4, useGrouping: false })
 
 function tickLabel(value: number) {
@@ -48,8 +48,8 @@ function projection(width: number, height: number, camera: Camera, compact: bool
   const verticalZ = -0.74 * Math.cos(elevation)
   const xSpan = horizontalX - horizontalY
   const ySpan = verticalX + verticalY - verticalZ
-  const marginX = compact ? 8 : Math.min(56, width * 0.19)
-  const marginY = compact ? 6 : 25
+  const marginX = compact ? 9 : Math.min(56, width * .22)
+  const marginY = compact ? 9 : 24
   const scale = Math.max(1, Math.min((width - marginX * 2) / xSpan, (height - marginY * 2) / ySpan))
   const originX = (width - xSpan * scale) / 2 - horizontalY * scale
   const originY = (height - ySpan * scale) / 2 - verticalZ * scale
@@ -123,7 +123,8 @@ function scene(
   const spectral = axisExtent(data.spectralBins)
   const scan = axisExtent(data.scanValues)
   const widthInBins = data.spectralBins.length
-  const scanIndexes = sampledScans(data.scanValues.length, compact ? 18 : 72, compact ? undefined : selection.scanIndex)
+  const scanLimit = compact ? 10 : width < 440 ? 16 : 28
+  const scanIndexes = sampledScans(data.scanValues.length, scanLimit, selection.scanIndex)
   const bucketSize = Math.max(1, Math.ceil(widthInBins / Math.max(32, Math.floor(width / 2))))
   return scanIndexes.map((scanIndex) => {
     const selected = !compact && selection.scanIndex === scanIndex
@@ -145,7 +146,7 @@ function scene(
       const fill = `${line} L ${pointText(project(last, depth, 0))} L ${pointText(project(first, depth, 0))} Z`
       return { line, fill, samples }
     })
-    return { scanIndex, selected, lines }
+    return { scanIndex, selected, opacity: .48 + .42 * depth, lines }
   })
 }
 
@@ -161,6 +162,8 @@ function PlotFrame({ project, compact }: { project: Project; compact: boolean })
   return (
     <g aria-hidden="true">
       <polygon className="spectral-waterfall-floor" points={floor.map(pointText).join(' ')} />
+      <path className="spectral-waterfall-floor-edge"
+        d={`M ${pointText(floor[1])} L ${pointText(floor[2])} L ${pointText(floor[3])} L ${pointText(floor[0])}`} />
       {!compact && (
         <>
           <path className="spectral-waterfall-frame"
@@ -175,10 +178,11 @@ function PlotFrame({ project, compact }: { project: Project; compact: boolean })
   )
 }
 
-function PlotAxes({ data, project, intensity }: {
+function PlotAxes({ data, project, intensity, narrow }: {
   data: SpectralWaterfallData
   project: Project
   intensity: Extent
+  narrow: boolean
 }) {
   const [xLabelX, xLabelY] = project(1, 1, 0)
   const [yLabelX, yLabelY] = project(0, 1, 0)
@@ -192,7 +196,7 @@ function PlotAxes({ data, project, intensity }: {
         const [x, y] = project(ratio, 1, 0)
         return <text key={ratio} x={x} y={y + 15} textAnchor="middle">{label}</text>
       })}
-      {valuesAtTicks(axisExtent(data.scanValues), guidePositions).map(({ ratio, label }) => {
+      {valuesAtTicks(axisExtent(data.scanValues), narrow ? [0, 1] : guidePositions).map(({ ratio, label }) => {
         const [x, y] = project(0, ratio, 0)
         return <text key={ratio} x={x - 6} y={y + 2} textAnchor="end">{label}</text>
       })}
@@ -262,9 +266,9 @@ export function WaterfallPlot({ data, axes, selection, onSelect, compact = false
           {intensity && (
             <>
               <PlotFrame project={project} compact={compact} />
-              {ridges.map(({ scanIndex, selected, lines }) => (
+              {ridges.map(({ scanIndex, selected, opacity, lines }) => (
                 <g key={scanIndex} className="spectral-waterfall-ridge"
-                  data-waterfall-ridge={scanIndex} data-selected={selected}>
+                  data-waterfall-ridge={scanIndex} data-selected={selected} opacity={selected ? 1 : opacity}>
                   {lines.map(({ line, fill, samples }) => (
                     <g key={samples[0].binIndex}>
                       {samples.length > 1 ? (
@@ -278,7 +282,9 @@ export function WaterfallPlot({ data, axes, selection, onSelect, compact = false
                   ))}
                 </g>
               ))}
-              {!compact && <PlotAxes data={data} project={project} intensity={intensity} />}
+              {activeRidge && activeRidge.lines.map(({ line, samples }) =>
+                samples.length > 1 && <path key={samples[0].binIndex} d={line} className="spectral-waterfall-selection" />)}
+              {!compact && <PlotAxes data={data} project={project} intensity={intensity} narrow={width < 440} />}
               {!missing && activePoint && <circle className="spectral-waterfall-point"
                 data-waterfall-selected-bin={selection.binIndex} data-waterfall-selected-scan={selection.scanIndex}
                 cx={activePoint.point[0]} cy={activePoint.point[1]} r={4} />}
@@ -292,20 +298,20 @@ export function WaterfallPlot({ data, axes, selection, onSelect, compact = false
           <p className="spectral-waterfall-instructions" id={instructions}>
             Use left and right arrows for spectral bins. Use up and down arrows for scans.
           </p>
-          <dl className="spectral-waterfall-axes">
+          <dl className="spectral-waterfall-axes" aria-label="Plot axes">
             <div><dt>X</dt><dd>{axisTitle(axes.spectral)}</dd></div>
             <div><dt>Y</dt><dd>{axisTitle(axes.scan)}</dd></div>
             <div><dt>Z</dt><dd>{axisTitle(axes.intensity)}</dd></div>
           </dl>
-          <div className="spectral-waterfall-camera">
+          <div className="spectral-waterfall-camera" role="group" aria-label="Plot orientation">
             <label className="spectral-waterfall-angle">
-              <span>Azimuth</span>
+              <span>Azimuth <small aria-hidden="true">{camera.azimuth}°</small></span>
               <input type="range" min={12} max={66} value={camera.azimuth}
                 aria-valuetext={`${camera.azimuth} degrees`}
                 onChange={(event) => setCamera({ ...camera, azimuth: event.currentTarget.valueAsNumber })} />
             </label>
             <label className="spectral-waterfall-angle">
-              <span>Elevation</span>
+              <span>Elevation <small aria-hidden="true">{camera.elevation}°</small></span>
               <input type="range" min={14} max={62} value={camera.elevation}
                 aria-valuetext={`${camera.elevation} degrees`}
                 onChange={(event) => setCamera({ ...camera, elevation: event.currentTarget.valueAsNumber })} />

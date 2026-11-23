@@ -116,7 +116,7 @@ button:disabled { cursor: default; opacity: .42; }
 .family-rail :focus-visible, .site-header :focus-visible, .hero :focus-visible { outline-color: var(--gallery-accent); }
 .catalog { scroll-margin-top: calc(var(--gallery-header-height) + 16px); }
 .catalog-heading { margin: 0 0 16px; min-height: 49px; display: flex; align-items: end; justify-content: space-between; gap: 18px; }
-.catalog-heading h2 { margin: 0 0 5px; font-size: clamp(1.45rem, 2.4vw, 2rem); font-weight: 690; letter-spacing: -.034em; text-transform: none; line-height: 1.12; }
+.catalog-heading :is(h1, h2) { margin: 0 0 5px; font-size: clamp(1.45rem, 2.4vw, 2rem); font-weight: 690; letter-spacing: -.034em; text-transform: none; line-height: 1.12; }
 .catalog-heading p { color: var(--gallery-muted); font-size: 12.5px; margin: 0; }
 .filter-tools { display: flex; gap: 8px; align-items: center; min-width: 0; }
 .search-field, .family-filter { display: flex; position: relative; min-height: 38px; align-items: center; gap: 8px; border: 1px solid var(--gallery-rule); border-radius: 6px; background: var(--gallery-surface); color: var(--gallery-muted); }
@@ -139,6 +139,11 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 .segmented button { border: 0; background: transparent; border-radius: 5px; color: var(--muted-foreground); padding: 6px 7px; display: inline-flex; gap: 6px; align-items: center; font-size: 12px; }
 .segmented button:is([data-pressed], [aria-selected='true']) { background: var(--gallery-selection); color: var(--gallery-selection-text); }
 .example-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: clamp(14px, 1.65vw, 20px); }
+.example-grid--scientific {
+  --science-card-height: clamp(14rem, 26vw, 18rem);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .example-card { position: relative; min-width: 0; background: var(--gallery-surface); border: 1px solid var(--gallery-rule); border-radius: 9px; overflow: hidden; }
 .example-card:hover { border-color: color-mix(in srgb, var(--gallery-accent), var(--gallery-rule) 62%); }
 .example-card--featured {
@@ -160,6 +165,13 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
 .hero--featured .example-card { height: calc(var(--featured-plot-height) + 2px); min-height: 212px; }
 .hero--featured .example-card .card-plot { height: 100%; }
 .example-grid > .example-card:nth-child(n+7) .card-plot { content-visibility: auto; contain-intrinsic-block-size: auto 211px; }
+.example-grid--scientific .card-plot {
+  height: var(--science-card-height);
+  padding: 12px;
+}
+.example-grid--scientific > .example-card:nth-child(n+7) .card-plot {
+  contain-intrinsic-block-size: auto var(--science-card-height);
+}
 .text-button[data-pressed] { color: var(--primary); }
 [data-pressed] > svg.lucide-bookmark { fill: color-mix(in srgb,var(--primary),transparent 63%); }
 .clipboard-field, .clipboard-status { position: fixed; width: 1px; height: 1px; overflow: hidden; padding: 0; clip-path: inset(50%); }
@@ -230,6 +242,7 @@ kbd { color: var(--muted-foreground); background: var(--muted); border: 1px soli
   .gallery-main { padding: 6px 0 40px; }
 }
 @media (max-width: 767px) {
+  .example-grid--scientific { grid-template-columns: minmax(0, 1fr); }
   .dialog--code { inset: auto 0 0; width: 100%; height: auto; max-height: 85dvh; border: 1px solid var(--border); border-bottom: 0; border-radius: 16px 16px 0 0; }
 }
 @media (max-width: 650px) {
