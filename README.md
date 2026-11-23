@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="http://opensource.pitant.de/"><picture>
+  <a href="https://opensource.pitant.de/"><picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/pitant-logo-dark.svg">
     <img src="docs/images/pitant-logo-light.svg" alt="PITANT" width="174" height="30">
   </picture></a>
@@ -10,9 +10,9 @@
 <p align="center">React charts for dashboards and a WebGPU-first TypeScript engine for industrial time series.</p>
 
 <p align="center">
-  <a href="http://opensource.pitant.de/charts/"><strong>Explore 331 examples</strong></a>
+  <a href="https://opensource.pitant.de/charts/"><strong>Explore 331 examples</strong></a>
   &nbsp;·&nbsp;
-  <a href="http://opensource.pitant.de/charts/#docs=area">Component documentation</a>
+  <a href="https://opensource.pitant.de/charts/#docs=area">Component documentation</a>
   &nbsp;·&nbsp;
   <a href="#quick-start">Quick start</a>
   &nbsp;·&nbsp;
@@ -20,8 +20,8 @@
 </p>
 
 <p align="center">
-  <a href="http://opensource.pitant.de/charts/">
-    <img src="docs/images/catalog-preview.png" alt="Four examples from the PITANT Charts catalog showing a time-range line chart, stacked bars, a donut with a center total, and a gradient area chart">
+  <a href="https://opensource.pitant.de/charts/">
+    <img src="apps/chart-catalog/public/catalog-preview.png" alt="Four examples from the PITANT Charts catalog showing a time-range line chart, stacked bars, a donut with a center total, and a gradient area chart">
   </a>
 </p>
 
@@ -31,7 +31,7 @@
 | --- | --- |
 | **Build a dashboard** | [`pitant-charts`](packages/charts-ui/README.md) provides typed line, bar, donut, and sunburst components with Recharts and CSS theme tokens. |
 | **Plot industrial time series** | [`@pitant/charts`](packages/charts/README.md) includes a WebGPU renderer, a Canvas2D fallback, and worker-backed downsampling. [`@pitant/charts-react`](packages/charts-react/README.md) provides React bindings. |
-| **Explore chart types and interactions** | The [interactive catalog](http://opensource.pitant.de/charts/) covers 44 chart families plus Tooltips. The [catalog source guide](apps/chart-catalog/README.md) explains how to build and reuse the examples from `@pitant/chart-catalog`. |
+| **Explore chart types and interactions** | The [interactive catalog](https://opensource.pitant.de/charts/) covers 44 chart families plus Tooltips. The [catalog source guide](apps/chart-catalog/README.md) explains how to build and reuse the examples from `@pitant/chart-catalog`. |
 
 ## Quick start
 

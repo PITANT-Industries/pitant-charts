@@ -23,6 +23,7 @@ import pitantWordmark from './brand/pitant-wordmark.svg'
 import pitantWordmarkWhite from './brand/pitant-wordmark-white.svg'
 
 const pageSize = 12
+const catalogTitle = document.title
 const popularFamilies = [
   { id: 'all', label: 'All charts' },
   { id: 'area', label: 'Area' },
@@ -283,7 +284,7 @@ export function Gallery() {
   const selectedFamily = getFamily(link.family)
   const documentedFamily = getFamily(link.docs ?? '')
   useEffect(() => {
-    document.title = documentedFamily ? `${documentedFamily.name} | PITANT Charts` : 'PITANT Charts'
+    document.title = documentedFamily ? `${documentedFamily.name} | PITANT Charts` : catalogTitle
   }, [documentedFamily])
   const detail = getExample(link.example)
   const available = selectedFamily ? selectedFamily.examples : galleryOrder
