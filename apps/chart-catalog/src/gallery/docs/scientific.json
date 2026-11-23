@@ -443,6 +443,33 @@
       { "label": "Lu et al. (2023), additive manufacturing data and metadata acquisition, X-ray CT", "href": "https://www.nist.gov/publications/additive-manufacturing-data-and-metadata-acquisition-general-practice" }
     ]
   },
+  "cad-scan-deviation": {
+    "summary": "Inspect signed distances between a registered 3D scan and a nominal CAD surface, with a linked section through the part.",
+    "useWhen": "Compare a measured surface with its nominal reference and locate points beyond a specified deviation band.",
+    "data": "Provide the nominal surface as finite XYZ vertices and nondegenerate triangles with zero-based vertex indices. For each scan point, supply its position, its closest point on the nominal surface, and signed deviation in millimeters. Register both surfaces in one physical coordinate frame before passing the data. Optionally set sectionAxis, a positive colorLimitMm, and a nonnegative toleranceMm.",
+    "reading": "Drag the 3D view or use Rotate left and Rotate right. With focus on the 3D view, press Up or Down to change the tilt. Select a measured point in either view to inspect its signed deviation and bring the section through that point. With focus on the section, press Left or Right to select a nearby measured point. Use Show nominal surface to control the 3D reference overlay. Move Section position to intersect the nominal mesh with a plane and see nearby scan points projected onto it. Use Tolerance (mm) to set the symmetric deviation band and Outside tolerance only to filter the measured points.",
+    "notes": [
+      "The distance magnitude is the Euclidean distance to the nearest point on the nominal surface. The sign follows the orientation of the nearest reference face. A positive deviation is on the normal-facing side. A negative deviation is on the opposite side. Use consistent reference normals when computing signed distances.",
+      "The color bar gives signed deviations in millimeters. Blue marks negative deviations and red marks positive deviations. Values beyond the endpoints use the endpoint colors and keep their numerical deviation. Tolerance is applied to the absolute deviation before rounding the readout. The section projects samples from a slab around the plane and retains their supplied 3D deviations.",
+      "The viewer uses the supplied alignment and point-to-surface distances. Document the frame, registration method, and reference orientation alongside your data. The tolerance control applies a band to the supplied points. A part-level conformance decision also depends on its tolerance specification, scan coverage, and measurement uncertainty.",
+      "The example compares measured Part 4 from the NIST Overhang Part X4 study with its nominal 9 mm × 5 mm × 5 mm CAD geometry. The part was printed in nickel superalloy 625 with a 45° overhang and a horizontal cylindrical cutout. NIST measured the part with X-ray CT at 11.95 µm isotropic voxel pitch and published the cleaned surface mesh.",
+      "The study established a 3-2-1 datum frame from the base cut by electrical discharge machining, the long side, and one end face. The example refines that alignment with a rigid fit to the same datum surfaces. The machining step removed some material from the base after printing.",
+      "To sample the measured mesh, the example takes vertices from every 32nd triangle and keeps a representative nearest the center of each occupied 0.32 mm bin. Distances for the resulting 3,601 locations use all 2,904 triangles of the original nominal mesh. The viewer uses a lighter 1,464-triangle mesh to draw the nominal surface.",
+      "At the example’s ±0.10 mm tolerance, 1,269 of the 3,601 sampled locations are outside the band. The color bar spans ±0.60 mm. The initial point at about (1.063, 2.421, 3.453) mm lies inside the nominal bore with a positive deviation of 1.044 mm. Its color reaches the endpoint while the readout retains its value. The XZ section starts at the selected point’s Y coordinate and shows samples within 0.089 mm on either side."
+    ],
+    "properties": [
+      { "name": "data", "type": "CadScanDeviationData", "description": "Required. Provide a nominal mesh and scan points with closest nominal locations and signed deviations in millimeters. Add optional sectionAxis, colorLimitMm, and toleranceMm." },
+      { "name": "label", "type": "string", "description": "Describe the scanned part and nominal reference for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact view for a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Credit the scan, CAD reference, and registration source." }
+    ],
+    "sources": [
+      { "label": "Praniewicz et al. (2020), NIST Overhang Part X4 X-ray CT dataset and nominal CAD", "href": "https://doi.org/10.18434/mds2-2291" },
+      { "label": "Praniewicz et al. (2020), X-ray CT acquisition, registration, and surface extraction", "href": "https://www.nist.gov/publications/x-ray-computed-tomography-data-additive-manufacturing-metrology-testbed-ammt-parts" },
+      { "label": "CloudCompare, signed distance from point clouds to oriented meshes", "href": "https://cloudcompare.org/doc/wiki/index.php/Distances_Computation" },
+      { "label": "NIST, improving fitting of CAD to measured 3D point clouds", "href": "https://www.nist.gov/publications/improving-fitting-cad-3d-point-cloud-acquired-line-sight-sensor" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",
