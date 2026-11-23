@@ -1,0 +1,168 @@
+.wavelet-scalogram {
+  display: grid;
+  gap: .8rem;
+  min-inline-size: 0;
+  margin: 0;
+  container-type: inline-size;
+  color: var(--gallery-ink, var(--foreground));
+}
+
+.wavelet-scalogram[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.wavelet-scalogram),
+.detail-plot:has(.wavelet-scalogram) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.wavelet-map {
+  block-size: clamp(15rem, 46cqw, 22rem);
+}
+
+.wavelet-scalogram[data-compact='true'] .wavelet-map {
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.wavelet-coi path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.25px;
+  stroke-dasharray: 4 3;
+  paint-order: stroke;
+}
+
+.wavelet-selection rect {
+  fill: #fff;
+  fill-opacity: .1;
+  stroke: #fff;
+  stroke-opacity: .6;
+  stroke-width: 1px;
+}
+
+.wavelet-selection line {
+  stroke: #fff;
+  stroke-width: 1px;
+  stroke-dasharray: 2 4;
+}
+
+.wavelet-selection circle {
+  fill: #fff;
+  stroke: #1d2329;
+  stroke-width: 1.4px;
+}
+
+.wavelet-plot-pick {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.wavelet-legend {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin: -.35rem 0 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .75rem;
+}
+
+.wavelet-legend::before {
+  content: '';
+  flex: 0 0 1rem;
+  border-block-start: 1px dashed currentColor;
+}
+
+.wavelet-signal {
+  block-size: 12.5rem;
+}
+
+.wavelet-signal-trace {
+  fill: none;
+  stroke: #1f5b91;
+  stroke-width: 1.15px;
+  stroke-linejoin: round;
+}
+
+.wavelet-inspector {
+  display: grid;
+  gap: .65rem;
+  min-inline-size: 0;
+}
+
+.wavelet-inspector output {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .2rem .75rem;
+  font-size: .875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.wavelet-inspector output span {
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .8rem;
+}
+
+.wavelet-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: .5rem .8rem;
+}
+
+.wavelet-controls label {
+  display: grid;
+  gap: .22rem;
+  min-inline-size: 0;
+  font-size: .8rem;
+}
+
+.wavelet-controls input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 1.8rem;
+  margin: 0;
+  accent-color: var(--gallery-accent, var(--primary));
+}
+
+.wavelet-controls select {
+  min-block-size: 2.3rem;
+  max-inline-size: 100%;
+  padding-inline: .45rem;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .3rem;
+  background: var(--gallery-surface, var(--card));
+  color: inherit;
+  font: inherit;
+}
+
+.wavelet-caption {
+  border-block-start: 1px solid var(--gallery-rule, var(--border));
+  padding-block-start: .6rem;
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.wavelet-caption p {
+  margin: .2rem 0 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+.wavelet-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+@container (max-width: 27rem) {
+  .wavelet-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wavelet-controls label:last-child {
+    justify-self: start;
+  }
+}

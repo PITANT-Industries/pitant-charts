@@ -3268,6 +3268,22 @@
     ]
   },
   {
+    "id": "wavelet-scalogram",
+    "name": "Wavelet Scalogram",
+    "url": "https://opensource.pitant.de/charts/#docs=wavelet-scalogram",
+    "examples": [
+      {
+        "id": "wavelet-scalogram-bearing",
+        "family": "wavelet-scalogram",
+        "title": "Bearing Run-up Wavelet Scalogram",
+        "label": "Measured vibration during a run-up",
+        "description": "Follow changing frequency content in an inner-race bearing fault recording and inspect the waveform around a selected time.",
+        "url": "https://opensource.pitant.de/charts/#example=wavelet-scalogram-bearing",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",

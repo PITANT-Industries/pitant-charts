@@ -219,6 +219,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
     families = {
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
+        'wavelet-scalogram',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -280,6 +281,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=coherence-phase&variant=coherence-phase-bearing'
                 )
+            elif example['family'] == 'wavelet-scalogram':
+                scalogram = card_plot.locator('svg[data-wavelet-plot]')
+                await check_wavelet_figure(scalogram, compact=True)
+                await check_compact_figure_bounds(scalogram, 'rect[data-wavelet-axis-frame]')
+                await expect(card_plot.locator('select, [data-wavelet-signal], [data-wavelet-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=wavelet-scalogram&variant=wavelet-scalogram-bearing'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -336,6 +345,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'coherence-phase':
                 await check_coherence_phase(plot, touch)
                 code_import = 'CoherencePhase'
+            elif example['family'] == 'wavelet-scalogram':
+                await check_wavelet_scalogram(plot, touch)
+                code_import = 'WaveletScalogram'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -899,6 +911,105 @@ async def check_coherence_phase(plot, touch):
         unbalance_phase, -143.14, abs_tol=0.01
     ):
         raise RuntimeError(f'Unexpected unbalance coherence or phase at the prior bin: {new_hz}, {unbalance_coherence}, {unbalance_phase}')
+
+
+async def check_wavelet_figure(scalogram, compact=False):
+    await expect(scalogram).to_be_visible()
+    raster = scalogram.locator('image[data-wavelet-raster]')
+    await expect(raster).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+    if await raster.evaluate('image => getComputedStyle(image).imageRendering') in ('crisp-edges', 'pixelated'):
+        raise RuntimeError('The wavelet raster should use smooth image rendering')
+    await expect(scalogram.locator('rect[data-wavelet-axis-frame]')).to_be_visible()
+    await expect(scalogram.locator('.scientific-tick').first).to_be_attached()
+    await expect(scalogram.get_by_text('Time (s)', exact=True)).to_be_visible()
+    await expect(scalogram.get_by_text('Frequency (Hz, log scale)', exact=True)).to_be_visible()
+    colorbar = scalogram.locator('[data-wavelet-colorbar]')
+    await expect(colorbar.get_by_text('Relative power (dB)', exact=True)).to_be_visible()
+    await expect(colorbar.locator('rect[fill^="url("]')).to_be_visible()
+    values = [text.strip().replace('−', '-') for text in await colorbar.locator('text').all_text_contents()]
+    levels = sorted(float(value) for value in values if re.fullmatch(r'-?\d+(?:\.\d+)?', value))
+    if levels != ([-60, -30, 0] if compact else [-60, -40, -20, 0]):
+        raise RuntimeError(f'Wavelet colorbar should retain its declared display scale, observed {levels}')
+    boundaries = scalogram.locator('[data-wavelet-coi]')
+    await expect(boundaries).to_be_visible()
+    await expect(boundaries.locator('path')).to_have_count(2)
+
+
+async def check_wavelet_scalogram(plot, touch):
+    chart = plot.locator('[data-wavelet-scalogram]')
+    await expect(chart.get_by_role('link', name='Dataset', exact=True)).to_have_attribute(
+        'href', re.compile(r'^https://(?:doi\.org/10\.17632/v43hmbwxpm\.2|data\.mendeley\.com/datasets/v43hmbwxpm/2)/?$')
+    )
+    scalogram = chart.locator('svg[data-wavelet-plot]')
+    await check_wavelet_figure(scalogram)
+    signal = chart.locator('svg[data-wavelet-signal]')
+    await expect(signal).to_be_visible()
+    trace = signal.locator('path[data-wavelet-signal-trace]')
+    await expect(trace).to_have_attribute('d', re.compile(r'^M'))
+    readout = chart.locator('output[data-wavelet-readout]')
+    await expect(readout).to_be_visible()
+    time = chart.get_by_role('slider', name='Time', exact=True)
+    frequency = chart.get_by_role('slider', name='Frequency', exact=True)
+    window = chart.get_by_role('combobox', name='Waveform window', exact=True)
+    await expect(window).to_have_value('0.25')
+
+    async def selection():
+        attributes = await readout.evaluate(
+            "output => ['time', 'frequency', 'power', 'windowStart', 'windowEnd'].map(key => output.dataset[key])"
+        )
+        seconds, hz, power, start, end = map(float, attributes)
+        if not all(map(math.isfinite, (seconds, hz, power, start, end))) or not (
+            hz > 0 and -60 <= power <= 0 and start <= seconds <= end and start < end
+        ):
+            raise RuntimeError(f'Invalid wavelet selection or waveform extent: {attributes}')
+        return seconds, hz, start, end
+
+    initial_time, initial_hz, *_ = await selection()
+    initial_power = float(await readout.get_attribute('data-power'))
+    if not math.isclose(initial_time, 4.606) or not math.isclose(initial_hz, 1638.68316531) or initial_power != 0:
+        raise RuntimeError(f'The example should open on the measured peak, observed {initial_time} s, {initial_hz} Hz, {initial_power} dB')
+
+    await time.press('Home')
+    await frequency.press('Home')
+    await expect(readout.get_by_text('Near the transform boundary', exact=True)).to_be_visible()
+    first_time, first_hz, first_start, *_ = await selection()
+    first_trace = await trace.get_attribute('d')
+    await time.press('End')
+    last_time, same_hz, last_start, *_ = await selection()
+    if not math.isclose(first_time, 3.502, abs_tol=0.00001) or not math.isclose(last_time, 6.058, abs_tol=0.00001):
+        raise RuntimeError(f'Unexpected measured time grid: {first_time}–{last_time} s')
+    if same_hz != first_hz or last_start <= first_start:
+        raise RuntimeError('Time should shift the linked waveform window and retain the selected frequency')
+    await expect(trace).not_to_have_attribute('d', first_trace)
+
+    await frequency.press('End')
+    fixed_time, last_hz, *_ = await selection()
+    if fixed_time != last_time or not math.isclose(first_hz, 30) or not math.isclose(last_hz, 3000):
+        raise RuntimeError(f'Unexpected measured frequency grid: {first_hz}–{last_hz} Hz')
+    target = scalogram.locator('.wavelet-plot-pick')
+    await expect(target).to_be_visible()
+    bounds = await target.bounding_box()
+    position = {'x': bounds['width'] * 0.7, 'y': bounds['height'] * 0.22}
+    if touch:
+        await target.tap(position=position)
+    else:
+        await target.click(position=position)
+    selected_time, selected_hz, start, end = await selection()
+    await expect(readout.get_by_text('Near the transform boundary', exact=True)).to_have_count(0)
+    expected_time = first_time + (last_time - first_time) * 0.7
+    expected_hz = first_hz * (last_hz / first_hz) ** 0.78
+    if not math.isclose(selected_time, expected_time, abs_tol=0.02) or not math.isclose(selected_hz, expected_hz, rel_tol=0.05):
+        raise RuntimeError(f'Scalogram pick should follow the time and log-frequency axes: {selected_time} s, {selected_hz} Hz')
+    if not math.isclose(end - start, 0.25, abs_tol=0.001):
+        raise RuntimeError(f'Expected a 0.25 s waveform window, observed {end - start} s')
+
+    for value in ['0.05', '1']:
+        previous_trace = await trace.get_attribute('d')
+        await window.select_option(value)
+        seconds, hz, start, end = await selection()
+        if (seconds, hz) != (selected_time, selected_hz) or not math.isclose(end - start, float(value), abs_tol=0.001):
+            raise RuntimeError(f'Window {value} s should resize the waveform and preserve selection: {seconds} s, {hz} Hz, {end - start} s')
+        await expect(trace).not_to_have_attribute('d', previous_trace)
 
 
 async def check_native_scientific(plot, slug, touch):

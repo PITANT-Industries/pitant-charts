@@ -116,6 +116,32 @@
       { "label": "SciPy, cross spectral density and phase sign convention", "href": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.csd.html" }
     ]
   },
+  "wavelet-scalogram": {
+    "summary": "Locate short vibration events and changing frequencies, then inspect the waveform at the same time.",
+    "useWhen": "Analyze a signal whose frequency content changes over time, such as during a machine run-up or a short vibration burst.",
+    "data": "Supply strictly increasing times in seconds, strictly increasing positive frequencies in Hz, and a matrix of finite relative power values in dB. Index the matrix as powerDb[frequencyIndex][timeIndex]. Provide the matching waveform with startSeconds, a positive sampleRateHz, a unit label, and uniformly sampled finite values.",
+    "reading": "The scalogram plots time horizontally and frequency on a logarithmic vertical axis. The colorbar shows wavelet power relative to the peak. Select a time and frequency in the map or with the controls, then inspect the linked waveform and adjust its time window.",
+    "notes": [
+      "The example uses Channel_1 of the measured University of Ottawa I-A-1 inner-race fault run-up. The full 200 kHz recording is low-pass filtered with a Kaiser window (β = 5) and resampled to 12.5 kHz before extracting 3.500–6.060 s. The linked waveform shows the demeaned segment in multiples of its root-mean-square amplitude.",
+      "The transform uses zero-padded convolution with a sampled unit-energy complex Morlet wavelet (ω₀ = 6). The map contains 100 log-spaced equivalent Fourier frequencies from 30 to 3,000 Hz and 640 four-millisecond time bins. Each cell retains the maximum wavelet power in its time bin.",
+      "For transform coefficients W, compute power P = |W|² and report 10 × log₁₀(P/Pₘₐₓ). The strongest retained cell in this map sets 0 dB, and the display floor is −60 dB. Keep the wavelet, scaling, and reference consistent when comparing levels.",
+      "The cone-of-influence boundaries mark where finite-record edges can affect the estimates. coiEdgeSeconds supplies one inward time margin per frequency row, set to √2 times the Morlet scale in this example. Lower-frequency wavelets extend farther in time."
+    ],
+    "properties": [
+      { "name": "data", "type": "WaveletScalogramData", "description": "Required. Supply timeSeconds, frequencyHz, powerDb, and waveform. Add optional coiEdgeSeconds to display edge-influence boundaries." },
+      { "name": "powerDomainDb", "type": "readonly [number, number]", "description": "Set the lower and upper limits of the color scale in decibels. The recorded example fixes them at −60 and 0 dB." },
+      { "name": "initialTimeSeconds", "type": "number", "description": "Start near this time on the scalogram’s time axis." },
+      { "name": "initialFrequencyHz", "type": "number", "description": "Start near this frequency on the scalogram’s frequency axis." },
+      { "name": "label", "type": "string", "description": "Describe the signal and test condition for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show the scalogram in a compact space such as a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Add the data source, a measurement note, and optional license information." }
+    ],
+    "sources": [
+      { "label": "Huan Huang and Natalie Baddour (2019), University of Ottawa bearing vibration dataset, version 2 (CC BY 4.0)", "href": "https://doi.org/10.17632/v43hmbwxpm.2" },
+      { "label": "Christopher Torrence and Gilbert P. Compo (1998), A Practical Guide to Wavelet Analysis, §§3g–h and Table 1", "href": "https://psl.noaa.gov/people/gilbert.p.compo/Torrence_compo1998.pdf" },
+      { "label": "MathWorks, Time-Frequency Analysis and Continuous Wavelet Transform", "href": "https://www.mathworks.com/help/wavelet/ug/time-frequency-analysis-and-continuous-wavelet-transform.html" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",
