@@ -1,0 +1,163 @@
+{
+  "pie": {
+    "summary": "Divide a single total into slices. Donut variants leave room for a total or a selected value in the middle.",
+    "useWhen": "Show the composition of a batch, budget, or inventory when the number of categories is small.",
+    "data": "Pass rows with name or label, value, and optional color. You can also pass categories and the first numeric series. The chart draws positive values only.",
+    "reading": "A wider angle represents a larger share of the total. Inspect a slice to read its value and percentage.",
+    "notes": ["Use renderCenter to supply custom center content. Its context includes the active name, value, total, and fractional share."]
+  },
+  "ring": {
+    "summary": "Show progress against one or more targets in concentric tracks.",
+    "useWhen": "Display a compact status summary for milestones, quotas, or capacity targets that share a dashboard.",
+    "data": "Pass rows with name or label, value, optional color, and a positive target or maximum. Categories with the first numeric series also supply readings.",
+    "reading": "Read each arc as a fraction of its own target. Inspect a track to see the underlying reading and goal.",
+    "notes": ["Supply explicit targets when their values matter. Otherwise the renderer supplies a range based on the variant and readings.", "renderCenter receives the selected value, total, share, and target when a track is active."]
+  },
+  "radar": {
+    "summary": "Plot a profile around spokes that share a radial scale.",
+    "useWhen": "Compare a few profiles across a fixed set of scores with common units or a shared scoring scale.",
+    "data": "Put metric names in categories and provide one named series per profile. Align each series' nonnegative scores to the categories and use optional series colors.",
+    "reading": "Read farther from the center as a higher score. Compare profiles along the same spoke and inspect the individual score when precision matters.",
+    "notes": ["Keep the category order stable. Changing the spoke order changes the visual profile even when every value is unchanged.", "Supply the category labels explicitly. Series with omitted categories can inherit example labels."]
+  },
+  "radial": {
+    "summary": "Arrange ordered positions around a circle. The catalog includes clock, seasonal, population, and storage variants.",
+    "useWhen": "Show a repeating time cycle or a compact circular breakdown whose ordering is meaningful.",
+    "data": "Supply ordered categories and named numeric series. Clock examples use the category order for angular positions, while storage examples interpret the values as component quantities.",
+    "reading": "Find the time or category around the rim, then read the distance or mark length according to the chosen variant.",
+    "notes": ["Equal angular spacing follows the position order. Provide a regularly spaced time sequence when equal clock intervals matter.", "The reference comparisons and prior-day context in clock demos are specific to the fixture."]
+  },
+  "gauge": {
+    "summary": "Show a single reading on a bounded scale using a dial or a linear track.",
+    "useWhen": "Display utilization or progress for a current reading that already has a meaningful percentage scale.",
+    "data": "Pass a percentage as the first row's value or the first value of the first numeric series. The gauge clamps the reading to 0–100.",
+    "reading": "Read the numeric label for the current value and use the pointer or fill to judge its position on the scale.",
+    "notes": ["The quarter selector, next-reading control, and repeating Live Load samples use fixture data. Supply a current reading to use your own data."]
+  },
+  "funnel": {
+    "summary": "Show how a cohort changes through a sequence of stages.",
+    "useWhen": "Follow conversion or yield through consecutive steps that count the same people, items, or events.",
+    "data": "Pass stage rows in process order with name or label, value, and optional color. Categories and the first numeric series supply the same ordered counts.",
+    "reading": "Stage width reflects the count. The percentage readout uses the first stage as its denominator, and the interactive variant also shows change from the previous stage.",
+    "notes": ["Use a positive first-stage count for a meaningful baseline. Keep the cohorts and time windows consistent across the sequence."]
+  },
+  "sunburst": {
+    "summary": "Show a hierarchy as concentric bands, with children branching outward from their parent segments.",
+    "useWhen": "Explain where a total comes from across nested departments, cost centers, or product categories.",
+    "data": "Supply nested rows with name or label and children for branches. Give leaves nonnegative values and optionally assign colors to nodes.",
+    "reading": "Start at the center and follow each branch outward. Compare the angular spans of siblings within the same parent.",
+    "notes": ["The Breadcrumb variant displays the selected path during drill-down.", "Use a few levels if each outer segment needs enough room to inspect."]
+  },
+  "sankey": {
+    "summary": "Connect stages with ribbons that encode the amount moving between them.",
+    "useWhen": "Trace quantities that split or merge along ordered paths, such as traffic sources, material flows, or job outcomes.",
+    "data": "Supply one row per directed link with string source and target names and a positive value in a common unit.",
+    "reading": "Follow the ribbons from source to destination. Compare widths to see which paths carry the most and inspect a ribbon for its value.",
+    "notes": ["Use distinct names for nodes that appear in different stages. The renderer joins links by name.", "The Legend variant can highlight downstream links from a selected source."]
+  },
+  "treemap": {
+    "summary": "Show nested groups and their quantities as packed rectangles.",
+    "useWhen": "Compare the major contributors in a hierarchy, such as compute usage by team and service, in a compact space.",
+    "data": "Supply nested rows with name or label, optional color, and children on branches. Set leaf values to nonnegative quantities in one unit.",
+    "reading": "Larger rectangles represent larger values. In the Drilldown variant, open a group to inspect its contents and use the breadcrumb to return.",
+    "notes": ["The supplied-data renderer supports independent selection and drill identities for siblings with duplicate names."]
+  },
+  "tree": {
+    "summary": "Draw explicit parent–child links in a horizontal, vertical, or radial layout.",
+    "useWhen": "Explain ownership or navigation in a strict hierarchy, such as an organization, folder structure, or bill of materials.",
+    "data": "Pass nested rows with name or label, optional value and color, and children arrays for branches.",
+    "reading": "Follow a link to identify the parent or child. Collapse a branch to focus on the remaining levels.",
+    "notes": ["Supply each branch once under its parent. Use a network when a relationship needs to join two independent branches."]
+  },
+  "network": {
+    "summary": "Connect named nodes with links and optionally group them by color.",
+    "useWhen": "Inspect connections between services, devices, or teams that can have several neighbors.",
+    "data": "Use link rows with string source and target. Optional sourceGroup and targetGroup set node groups, and optional value controls link width within the renderer's limits.",
+    "reading": "Inspect a node to see its direct neighbors and link count. The supplied-data layout starts from a circle, so position gives layout context.",
+    "notes": ["A repeated endpoint name identifies the same node. Self-links are skipped.", "Drag a node to untangle a local cluster during inspection."]
+  },
+  "waffle": {
+    "summary": "Convert parts of a total into colored cells on a fixed grid.",
+    "useWhen": "Show a few proportions in an accessible grid, such as a simple capacity or segment breakdown.",
+    "data": "Supply rows with name or label, value, and optional color, or use categories with the first numeric series. Negative or invalid inputs contribute zero.",
+    "reading": "Compare the number of colored cells to estimate share. Use the readout for exact amounts because shares are rounded to cell counts.",
+    "notes": ["The standard variant uses a 100-cell grid. Other variants use different grid dimensions.", "In the Progress variant, a final category named Still on sale contributes to the total and leaves its cells unfilled."]
+  },
+  "marimekko": {
+    "summary": "Draw a stacked percentage chart with columns whose widths represent different totals.",
+    "useWhen": "Compare each group's overall size and its internal mix in a single view.",
+    "data": "Supply categories and aligned nonnegative numeric series with optional colors. Missing values contribute zero, and omitted category labels receive numbered positions.",
+    "reading": "Read the column width for the group's share of the grand total and the segment height for its share within the column.",
+    "notes": ["Keep category series in the same unit so width and area are meaningful.", "The Legend variant lets you pin a series to track it across columns."]
+  },
+  "choropleth": {
+    "summary": "Shade country boundaries by an associated value. Some variants add patterns, markers, or zoom controls.",
+    "useWhen": "Compare how the same metric varies across countries while keeping geographic context.",
+    "data": "Supply rows with country and a numeric value. Label can stand in for country. Match the atlas names, such as Germany. Marker variants also accept lon, lat, and optional label, category, and value.",
+    "reading": "Use the legend to map a country's color or pattern back to a value or status. Use the country readout for exact comparison.",
+    "notes": ["If a country appears more than once, the last valid supplied value wins.", "The Patterns variant recognizes live, beta, and not yet as status values."]
+  },
+  "violin": {
+    "summary": "Show the shape of a sample distribution with a mirrored density curve.",
+    "useWhen": "Compare spread, skew, and clusters across groups with raw observations, such as machine cycle times or request latency.",
+    "data": "Pass one finite value per row with optional group and series labels, or pass a named numeric series of raw observations for each group.",
+    "reading": "A wider section indicates a higher estimated concentration near that value. Use the median, middle-half range, and observation count for context.",
+    "notes": ["The width is normalized for each shape. Compare distribution shape and the numeric scale, and read the sample count separately."]
+  },
+  "box-plot": {
+    "summary": "Summarize raw observations using quartiles, a median, whiskers, and outlier marks.",
+    "useWhen": "Compare typical values and spread across several groups without drawing each observation.",
+    "data": "Supply raw observations as numeric series or as rows with finite value and optional group and series labels. The renderer derives quartiles and whiskers from the samples.",
+    "reading": "The box spans the middle half of the data and the line marks the median. Points beyond the whiskers indicate observations flagged as outliers by the renderer.",
+    "notes": ["The default renderer uses the 1.5× interquartile-range rule and places whiskers at observed values inside those limits. Check readouts for counts and values."]
+  },
+  "hexbin": {
+    "summary": "Aggregate nearby x and y observations into hexagonal cells.",
+    "useWhen": "Look for clusters or crowded regions in a scatterplot where individual points would overlap.",
+    "data": "Provide rows with finite numeric x and y. Add a finite value per observation for the Average variant.",
+    "reading": "Cell color represents the number of observations by default. The Average variant summarizes the supplied value within each cell.",
+    "notes": ["Read the legend of the selected variant to confirm whether it shows counts or averages.", "Compare plots with similar scales and bin sizes when the comparison depends on apparent cluster density."]
+  },
+  "density": {
+    "summary": "Show where observations concentrate on a two-dimensional plane using smoothed density contours.",
+    "useWhen": "Find overlapping clusters or hotspots in a large collection of paired measurements.",
+    "data": "Provide rows with finite x and y values, plus optional group and label. Grouped input can also use numeric series with matching colors.",
+    "reading": "Nested contours enclose estimated areas of higher concentration. In the Groups variant, select a legend entry to isolate it and select it again to restore all groups.",
+    "notes": ["Density is a smoothed estimate. Use individual point or bin readouts when a decision needs exact observations or counts."]
+  },
+  "bubble-map": {
+    "summary": "Place proportional circles at geographic locations.",
+    "useWhen": "Compare a metric measured at particular cities, offices, or sites while preserving their locations.",
+    "data": "Supply rows with numeric lon and lat in degrees, optional label and category, and a nonnegative value for the marker size. A missing value defaults to 1.",
+    "reading": "The circle center locates the site and size indicates relative magnitude. Inspect the marker for its exact value and label.",
+    "notes": ["The Categories variant uses color to separate groups.", "Nearby sites can overlap. The Region variant provides a closer view when the sites are clustered."]
+  },
+  "route-map": {
+    "summary": "Draw geographic connections between pairs of locations.",
+    "useWhen": "Show lanes, connections, or transfers whose origin and destination coordinates are known.",
+    "data": "Supply one row per link with fromLon, fromLat, toLon, and toLat in degrees. Optional label, fromName, toName, category, and value enrich the route readout.",
+    "reading": "Follow each line between its endpoints and inspect it for route names and quantities.",
+    "notes": ["The renderer connects endpoints using a geographic arc. Use route waypoints in a separate map when an exact journey path is needed.", "A route with an invalid endpoint is skipped."]
+  },
+  "globe": {
+    "summary": "Show locations on a rotatable sphere with only the visible hemisphere drawn.",
+    "useWhen": "Explore the worldwide distribution of sites or regions, especially across ocean basins and around the date line.",
+    "data": "Provide marker rows with lon and lat in degrees and optional label, category, and value. The Sized Markers variant uses the value to size each marker.",
+    "reading": "Drag to rotate the globe and inspect the markers on the facing side. Rotation can reveal sites that were behind the horizon.",
+    "notes": ["Use the marker readout for equal-precision comparisons across the globe. Apparent positions depend on the viewing angle."]
+  },
+  "vector-field": {
+    "summary": "Show the direction and speed of a measurement with arrows placed at sampled locations.",
+    "useWhen": "Inspect wind observations or other directional readings collected across a site or region.",
+    "data": "For Stations, pass Cartesian x and y coordinates in kilometres, speed in km/h, and direction in degrees. Geographic input uses lon and lat, speed in m/s, and direction. Label is optional.",
+    "reading": "Arrow orientation shows bearing. Use the inspection readout for the station name, numeric direction, and speed in the variant's units.",
+    "notes": ["Use one coordinate format throughout the dataset.", "Cartesian Stations also accepts speedKmh, bearing, and name as aliases."]
+  },
+  "tooltip": {
+    "summary": "Compare pointer and keyboard readout styles for inspecting values at a chart position.",
+    "useWhen": "Choose how to show the active category, current values, and optional context such as a previous observation.",
+    "data": "Supply categories and aligned numeric series, or rows with label and value. Nullable and non-finite samples remain unavailable. A supplied empty dataset shows a no-data message.",
+    "reading": "Inspect a position to read its category and series values. The examples demonstrate different headers, indicators, crosshairs, and panel content.",
+    "notes": ["renderTooltip receives category, index, pinned state, and the raw current and previous values for each series.", "Panel width follows its content and can extend beyond the plot. Test long labels in your container."]
+  }
+}

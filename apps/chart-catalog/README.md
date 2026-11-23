@@ -6,13 +6,13 @@ React chart components and a searchable gallery indexed against the [shadcn.io R
 
 From the PITANT Charts repository root, run `bun install --frozen-lockfile` and `bun run catalog:dev`.
 
-Open the URL printed by Vite. Search or filter by family, switch to list view, and save examples for later. The browser stores saved charts and theme preferences. A variant’s URL opens it directly. **Compare** puts the local chart alongside the live shadcn.io preview and shows the available parity notes. **Match reference styling** applies the measured palette and Hanken Grotesk typeface to the local comparison chart. For variants with verified plot sizes, Compare uses the reference plot proportions and fits fixed-size charts to narrow panes. **Code** shows how to use the example in React. **Parity review** tracks notes for each family, with a filter for variants that have measured plot sizing.
+Open the URL printed by Vite. Search or filter by family, switch to list view, and save examples for later. The browser stores saved charts and theme preferences. A variant’s URL opens it directly. **Compare** puts the local chart alongside the live shadcn.io preview. **Match reference styling** applies the measured palette and Hanken Grotesk typeface to the local comparison chart. For variants with verified plot sizes, Compare uses the reference plot proportions and fits fixed-size charts to narrow panes. **Code** shows how to use the example in React. **Notes** records the checked behavior and known differences for the variant.
 
-The gallery uses Hanken Grotesk, neutral surfaces, and a blue accent in both themes. The header theme button switches the gallery and its charts together. The Compare palette uses the measured colors from the reference preview.
+**Documentation** opens the family guide. Each guide covers installation, input data, how to read the chart, supported props, and the family’s variants. The **Docs** link on each gallery example opens its family guide. Use the guide’s example list to open each variant’s live preview, React code, or notes.
 
-Search within **Parity review** to find checked behavior and remaining gaps by keyword. Copy the URL while **Compare** or **Code** is selected to share that view of the variant.
+The header theme button switches the gallery and its charts together. The Compare palette can use the measured colors from the reference preview. Search within **Parity review** to find checked behavior and remaining gaps by keyword, or filter to variants with measured plot sizing. Copy the URL while **Compare**, **Code**, or **Notes** is selected to share that view of the variant.
 
-The header’s **Component index** opens the gallery’s built-in Parity review. It works without a connected workspace account. [Source index and verification progress](PARITY.md) · [Detailed remaining work for all 331 examples](REMAINING_WORK.md).
+[Source index and verification progress](PARITY.md) · [Detailed remaining work for all 331 examples](REMAINING_WORK.md).
 
 The agreed project closeout finishes the current Line caller-data batch and records the remaining work. Catalogue coverage is complete; exact reference parity remains open in the backlog. Further parity implementation is outside this closeout.
 
@@ -73,4 +73,4 @@ node apps/chart-catalog/scripts/check-workspace.mjs --pack
 
 See [Parity status](https://github.com/PITANT-Industries/pitant-charts/blob/main/apps/chart-catalog/PARITY.md) for verification and known differences, and [Third-party notices](THIRD_PARTY_NOTICES.md) for upstream code and licenses.
 
-The private gallery uses `bun run catalog:site` to build the deployable `dist` directory from PITANT Charts `main`.
+The gallery uses `bun run catalog:site` to build the deployable `dist` directory from PITANT Charts `main`.
