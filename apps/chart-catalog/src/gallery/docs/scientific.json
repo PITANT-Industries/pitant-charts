@@ -26,11 +26,12 @@
     "summary": "See how a cantilever beam bends in each of its first four natural modes.",
     "useWhen": "Compare bending patterns, locate vibration nodes, or connect a natural frequency to the shape of the corresponding motion.",
     "data": "Supply a uniform rectangular beam with length, width, and thickness in metres, Young’s modulus in pascals, and density in kilograms per cubic metre. All values must be positive and finite. The example computes Euler–Bernoulli modes for a 600 × 30 × 3 mm steel strip with a modulus of 200 GPa and a density of 7,850 kg/m³.",
-    "reading": "Choose mode 1–4 to see its calculated natural frequency in Hz. The baseline marks the undeformed beam. Interior nodes stay at zero transverse displacement during the cycle. Read their positions as x/L, measured from the clamp as a fraction of the beam’s length.",
+    "reading": "Choose mode 1–4 to see its calculated natural frequency in Hz. The horizontal axis shows normalized span x/L, from 0 at the clamp to 1 at the free tip. The vertical axis shows normalized transverse deflection u/A₀ on a fixed scale shared by all four modes.",
     "notes": [
       "The model computes free, undamped bending in the thickness direction. The clamp holds both displacement and slope at zero. The free end has zero bending moment and shear force.",
-      "Inspect 0°, 90°, 180°, and 270° with the phase slider to see quarter-cycle snapshots. Playback shows one cycle in about 2.4 seconds for every mode. The frequency readout reports the model’s natural frequency.",
-      "The displacement scale ranges from 25% to 150% of the default drawing height. The plotted displacement is unitless.",
+      "The displayed deflection is u/A₀ = (s/100) cos(θ) φₙ(x)/φₙ(L). Here s is the deformation scale from 25% to 150%, θ is the phase, φₙ is the mode shape, and A₀ is an arbitrary reference tip amplitude at 100% scale.",
+      "Dashed curves mark the phase limits at 0° and 180° for the selected deformation scale. Hollow circles mark interior nodes, which stay at zero transverse deflection throughout the cycle.",
+      "Set the phase to 0°, 90°, 180°, or 270° for quarter-cycle snapshots. Playback shows one cycle in about 2.4 seconds for every mode. The modeled oscillation period in seconds is the reciprocal of the displayed natural frequency in Hz.",
       "The example predicts frequencies of 6.79, 42.58, 119.23, and 233.65 Hz. The model assumes a slender beam with small deflections and an ideal clamp.",
       "For this rectangular section, width cancels out of the ratio of bending stiffness to mass per unit length. Increasing thickness raises the natural frequencies, and increasing length lowers them."
     ],
