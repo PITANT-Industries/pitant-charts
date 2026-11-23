@@ -221,6 +221,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
+        'stress-strain-comparison',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -332,6 +333,15 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=xrd-peak-tracker&variant=xrd-peak-tracker-dynic2'
                 )
+            elif example['family'] == 'stress-strain-comparison':
+                stress = card_plot.locator('svg[data-stress-overview]')
+                await check_stress_axes(stress)
+                await expect(stress.locator('path[data-stress-curve]')).to_have_count(3)
+                await check_compact_figure_bounds(stress, 'rect[data-stress-axis-frame]')
+                await expect(card_plot.locator('select, [data-stress-detail], [data-stress-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=stress-strain-comparison&variant=stress-strain-heat-treatment'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -406,6 +416,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'xrd-peak-tracker':
                 await check_xrd_peak_tracker(plot, touch)
                 code_import = 'PeakTracker'
+            elif example['family'] == 'stress-strain-comparison':
+                await check_stress_strain(plot)
+                code_import = 'StressStrainComparison'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -1588,6 +1601,128 @@ async def check_xrd_peak_tracker(plot, touch):
         await expect(peak).to_have_value('peak-middle')
         if (await selection())[0] != picked_temperature:
             raise RuntimeError(f'Picking diffraction angle {angle}° should retain the selected scan')
+
+
+async def check_stress_axes(panel):
+    await expect(panel).to_be_visible()
+    await expect(panel.locator('rect.scientific-frame')).to_be_visible()
+    await expect(panel.locator('.scientific-tick').first).to_be_attached()
+    await expect(panel.get_by_text('Engineering strain, ε (%)', exact=True)).to_be_visible()
+    await expect(panel.get_by_text('Engineering stress, σ (MPa)', exact=True)).to_be_visible()
+
+
+async def check_stress_strain(plot):
+    chart = plot.locator('[data-stress-strain-comparison]')
+    await expect(chart.locator('figcaption a').first).to_have_attribute(
+        'href', re.compile(r'^https://(?:doi\.org/10\.5281/zenodo\.|zenodo\.org/records/)10377164/?$')
+    )
+    overview = chart.locator('svg[data-stress-overview]')
+    detail = chart.locator('svg[data-stress-detail]')
+    await check_stress_axes(overview)
+    await check_stress_axes(detail)
+    curves = overview.locator('path[data-stress-curve]')
+    conditions = {
+        't61': (78928.05, 363.2333, 428.6515454439417, 0.0529786866721968, 419.8302238439861),
+        'aged-160c': (69495.98, 283.0986, 362.0105593051729, 0.0819847441562559, 335.8435939304965),
+        'aged-190c': (66815.61, 248.9384, 342.7704259942056, 0.0787740619650348, 322.1875264674847),
+    }
+    await expect(curves).to_have_count(len(conditions))
+    for name in conditions:
+        await expect(overview.locator(f'path[data-stress-curve][data-condition="{name}"]')).to_have_attribute('d', re.compile(r'^M'))
+    fit = detail.locator('path[data-stress-elastic]')
+    offset = detail.locator('path[data-stress-offset]')
+    measured = detail.locator('path[data-stress-detail-curve]')
+    proof = detail.locator('circle[data-stress-proof]')
+    ultimate_point = overview.locator('circle[data-stress-ultimate]')
+    endpoint = overview.locator('circle[data-stress-endpoint]')
+    for path in [fit, offset, measured]:
+        await expect(path).to_have_attribute('d', re.compile(r'^M'))
+    await expect(offset).to_have_attribute('data-offset-strain', '0.002')
+    condition = chart.get_by_role('combobox', name='Condition', exact=True)
+    readout = chart.locator('output[data-stress-readout]')
+    await expect(readout).to_be_visible()
+    choices = await condition.locator('option').evaluate_all('options => options.map(option => option.value)')
+    if set(choices) != set(conditions):
+        raise RuntimeError(f'Expected the three measured aluminum conditions, observed {choices}')
+
+    previous_curve = None
+    for name, expected in conditions.items():
+        await condition.select_option(name)
+        await expect(readout).to_have_attribute('data-condition', name)
+        await expect(readout).to_have_attribute('data-fracture', 'false')
+        await expect(readout).to_contain_text('Recorded endpoint strain')
+        await expect(proof).to_be_visible()
+        await expect(ultimate_point).to_be_visible()
+        await expect(endpoint).to_be_visible()
+        metrics = await readout.evaluate("out => ['modulus', 'proof', 'ultimate', 'endStrain'].map(key => Number(out.dataset[key]))")
+        modulus, proof_stress, ultimate, end_strain = metrics
+        strain, stress = await proof.evaluate("point => [Number(point.dataset.strain), Number(point.dataset.stress)]")
+        intercept = float(await fit.get_attribute('data-intercept'))
+        slope = float(await fit.get_attribute('data-slope'))
+        if not all(map(math.isfinite, [*metrics, strain, stress, intercept, slope])) or not (
+            end_strain > strain > 0.002 and ultimate >= proof_stress > 0 and modulus > 0
+        ):
+            raise RuntimeError(f'Invalid mechanical indicators for {name}: {metrics}, proof ({strain}, {stress})')
+        if not all((
+            math.isclose(slope, modulus, abs_tol=0.1),
+            math.isclose(stress, proof_stress, abs_tol=0.001),
+            math.isclose(stress, slope * (strain - 0.002) + intercept, abs_tol=0.02),
+        )):
+            raise RuntimeError(f'Proof stress for {name} must lie at the 0.2% offset intersection')
+        if not math.isclose(float(await ultimate_point.get_attribute('data-stress')), ultimate, abs_tol=0.001) or not math.isclose(
+            float(await endpoint.get_attribute('data-strain')), end_strain, abs_tol=1e-10
+        ):
+            raise RuntimeError(f'Ultimate and endpoint markers should match the measured indicators for {name}')
+        measured_values = [*metrics, float(await endpoint.get_attribute('data-stress'))]
+        if not all(math.isclose(value, target, abs_tol=tolerance) for value, target, tolerance in zip(
+            measured_values, expected, (0.1, 0.001, 0.001, 1e-10, 0.001)
+        )):
+            raise RuntimeError(f'Unexpected analysis for {name}: observed {measured_values}, expected {expected}')
+
+        errors = await proof.evaluate("""marker => {
+          const panel = marker.ownerSVGElement
+          const x = marker.cx.baseVal.value
+          const y = marker.cy.baseVal.value
+          const atX = path => {
+            let low = 0
+            let high = path.getTotalLength()
+            for (let i = 0; i < 22; i++) {
+              const middle = (low + high) / 2
+              if (path.getPointAtLength(middle).x < x) low = middle
+              else high = middle
+            }
+            return path.getPointAtLength((low + high) / 2).y
+          }
+          const atY = path => {
+            const first = path.getPointAtLength(0)
+            const last = path.getPointAtLength(path.getTotalLength())
+            return first.x + (last.x - first.x) * (y - first.y) / (last.y - first.y)
+          }
+          const frame = panel.querySelector('rect.scientific-frame')
+          const left = Number(frame.getAttribute('x'))
+          const right = left + Number(frame.getAttribute('width'))
+          const bottom = Number(frame.getAttribute('y')) + Number(frame.getAttribute('height'))
+          const ticks = Array.from(panel.querySelectorAll('text')).filter(label => Number(label.getAttribute('y')) > bottom)
+            .map(label => [Number(label.getAttribute('x')), Number(label.textContent.trim().replace('−', '-'))])
+            .filter(([tickX, strain]) => left - 0.5 <= tickX && tickX <= right + 0.5 && Number.isFinite(strain))
+            .sort(([a], [b]) => a - b)
+          const first = ticks[0]
+          const last = ticks[ticks.length - 1]
+          const offset = panel.querySelector('[data-stress-offset]')
+          const elastic = panel.querySelector('[data-stress-elastic]')
+          const measured = panel.querySelector('[data-stress-detail-curve]')
+          const expectedShift = 0.2 * (last[0] - first[0]) / (last[1] - first[1])
+          return [
+            Math.abs(atX(measured) - y),
+            Math.abs(atX(offset) - y),
+            Math.abs((atY(offset) - atY(elastic)) - expectedShift),
+          ]
+        }""")
+        if any(error is None or error > 0.75 for error in errors):
+            raise RuntimeError(f'Rendered proof point or offset spacing is inconsistent for {name}: {errors} SVG units')
+        if previous_curve is not None:
+            await expect(measured).not_to_have_attribute('d', previous_curve)
+        previous_curve = await measured.get_attribute('d')
 
 
 async def check_native_scientific(plot, slug, touch):
