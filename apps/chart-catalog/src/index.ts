@@ -30,6 +30,8 @@ export { StressStrainComparison } from './charts/scientific/StressStrainComparis
 export type { StressStrainComparisonProps, StressStrainData, StressStrainCurve, StressStrainPoint, StressStrainElasticFit } from './charts/scientific/StressStrainComparison'
 export { FullFieldStrain } from './charts/scientific/FullFieldStrain'
 export type { FullFieldStrainProps, FullFieldStrainData, StrainFieldFrame, StrainForceSample } from './charts/scientific/FullFieldStrain'
+export { FatigueSn } from './charts/scientific/FatigueSn'
+export type { FatigueSnProps, FatigueSnData, FatigueSeries, FatigueTest } from './charts/scientific/FatigueSn'
 export { SpectralWaterfall } from './charts/scientific/waterfall/SpectralWaterfall'
 export type { SpectralWaterfallProps } from './charts/scientific/waterfall/SpectralWaterfall'
 export type { SpectralAxis, SpectralWaterfallAxes, SpectralWaterfallData } from './charts/scientific/waterfall/model'

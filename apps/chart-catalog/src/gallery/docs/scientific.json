@@ -313,6 +313,30 @@
       { "label": "International Digital Image Correlation Society (2025), A Good Practices Guide for Digital Image Correlation, Edition 2", "href": "https://doi.org/10.32720/idics/gpg.ed2" }
     ]
   },
+  "fatigue-sn": {
+    "summary": "Plot stress amplitude against cycles to failure or test stop, using measured 42CrMo4+QT steel data from the FABEST benchmark.",
+    "useWhen": "Inspect specimen-level stress–life data, including the spread in test outcomes at similar stress levels.",
+    "data": "Supply one or more nonempty series with unique series IDs. Within each series, each test needs a unique specimen ID, a finite positive stress in MPa, a positive safe integer for cycles, and outcome failure or runout. Set stressLabel to identify the stress measure and stressRatio when the source reports it.",
+    "reading": "Cycles are on a logarithmic horizontal axis and stress in MPa is on a linear vertical axis. Use Outcome to filter the plot. Select a mark or use Specimen to read its observation. For multiple campaigns, Series selects a group of tests. The axes keep the same scale as you filter.",
+    "notes": [
+      "Each plotted point is one specimen test. Failure records the cycle count at the study’s failure criterion. A right-facing arrow marks a run-out, meaning the specimen reached the plotted cycle count before the test stopped. Its lifetime is right-censored at that count.",
+      "Stress amplitude is half the difference between maximum and minimum stress in one cycle. Stress ratio R is minimum stress divided by maximum stress. Use comparable definitions and loading conditions when comparing series.",
+      "The example plots 22 measured tests from the FABEST v4 workbook (CC BY 4.0). Setups 37 and 35 used hollow, unnotched steel specimens under constant-amplitude axial tension–compression at R = −1. The vertical axis shows nominal stress amplitude on the net section.",
+      "FABEST records complete break as failure for these tests. Setup 37 has 10 failures and two interrupted tests. Setup 35 has 10 failures. Select specimen FAB060_A37-02B to see a complete break at 11,893 cycles and 800 MPa. The two 600 MPa run-outs in Setup 37 stopped at 2,634,775 and 13,149,279 cycles, giving separate lower bounds on their lives.",
+      "The figure shows individual observations and their censoring. To estimate a stress–life curve, use a model that accounts for right-censoring and the test conditions."
+    ],
+    "properties": [
+      { "name": "data", "type": "FatigueSnData", "description": "Required. Provide series of tests with stressMpa, cycles, and outcome. Add stressLabel and stressRatio when available." },
+      { "name": "label", "type": "string", "description": "Describe the material and test conditions for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact stress–life plot for a gallery card." },
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Add the data source, a test note, and optional license information." }
+    ],
+    "sources": [
+      { "label": "Papuga et al. (2026), FABEST benchmark fatigue dataset v4 (CC BY 4.0)", "href": "https://doi.org/10.5281/zenodo.23603840" },
+      { "label": "NIST/SEMATECH Engineering Statistics Handbook, right-censored data", "href": "https://www.itl.nist.gov/div898/handbook/apr/section1/apr131.htm" },
+      { "label": "ASTM E466-21, force-controlled constant-amplitude axial fatigue testing", "href": "https://store.astm.org/standards/e466" }
+    ]
+  },
   "mass-spectrum": {
     "summary": "Explore the invariant mass of 100,000 muon pairs recorded by CMS at CERN.",
     "useWhen": "View an event-count distribution across a wide mass range and compare regions near known particle resonances.",
