@@ -3,6 +3,7 @@ import type { MouseEvent } from 'react'
 import { usePlotSize } from '../../usePlotSize'
 import { deriveFrequencyResponses } from './frequency-response'
 import type { FrequencyResponseData, FrequencyResponseSample } from './frequency-response'
+import '../scientific-figure.css'
 import './frequency-response.css'
 
 export interface FrequencyResponseProps {
@@ -20,7 +21,15 @@ type Position = readonly [number, number]
 const format = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
 const bodeLabels = {
   magnitudeDb: { title: 'Magnitude (dB)', reference: 0 },
-  phaseDeg: { title: 'Unwrapped phase (°)', reference: -180 },
+  phaseDeg: { title: 'Phase (°)', reference: -180 },
+}
+
+function axisWithStep(min: number, max: number, step: number): Axis {
+  if (!Number.isFinite(step) || step <= 0) return { min, max: max === min ? min + 1 : max, ticks: [min, max] }
+  const first = Math.floor(min / step)
+  const last = Math.max(first + 1, Math.ceil(max / step))
+  const ticks = Array.from({ length: Math.min(10, last - first + 1) }, (_, index) => (first + index) * step)
+  return { min: first * step, max: last * step, ticks }
 }
 
 function valueAxis(min: number, max: number, tickCount = 4): Axis {
@@ -28,11 +37,7 @@ function valueAxis(min: number, max: number, tickCount = 4): Axis {
   const target = extent / tickCount
   const power = 10 ** Math.floor(Math.log10(target))
   const step = ([1, 2, 2.5, 5, 10].find((multiple) => multiple * power >= target) ?? 10) * power
-  if (!Number.isFinite(step) || step <= 0) return { min, max: max === min ? min + 1 : max, ticks: [min, max] }
-  const first = Math.floor(min / step)
-  const last = Math.max(first + 1, Math.ceil(max / step))
-  const ticks = Array.from({ length: Math.min(10, last - first + 1) }, (_, index) => (first + index) * step)
-  return { min: first * step, max: last * step, ticks }
+  return axisWithStep(min, max, step)
 }
 
 function responseAxes(responses: Responses) {
@@ -56,7 +61,7 @@ function responseAxes(responses: Responses) {
   }
   return {
     magnitudeDb: valueAxis(lowDb - 1, highDb + 1),
-    phaseDeg: valueAxis(lowPhase - 5, Math.max(highPhase, 5), 6),
+    phaseDeg: axisWithStep(lowPhase, highPhase, Math.max(1, Math.ceil((highPhase - lowPhase) / 360)) * 60),
     real: valueAxis(lowReal - .12, highReal + .12),
     imaginary: valueAxis(-Math.max(.25, maxImaginary) * 1.04, Math.max(.25, maxImaginary) * 1.04, 6),
   }
@@ -88,16 +93,19 @@ function closestFrequency(samples: readonly FrequencyResponseSample[], frequency
 }
 
 function logTicks(lower: number, upper: number, width: number) {
-  const ticks: number[] = []
-  const extent = upper - lower
-  const minGap = extent * 32 / width
-  for (let power = Math.floor(lower / Math.LN10); power <= Math.ceil(upper / Math.LN10); power++) {
-    for (const multiple of [1, 2, 5]) {
-      const value = power * Math.LN10 + Math.log(multiple)
-      if (value >= lower && value <= upper && (!ticks.length || value - ticks[ticks.length - 1] >= minGap)) ticks.push(value)
+  const ticks: { log: number; frequency: number; major: boolean }[] = []
+  const firstPower = Math.floor(lower / Math.LN10)
+  const lastPower = Math.ceil(upper / Math.LN10)
+  const step = Math.max(1, Math.ceil((lastPower - firstPower) * 36 / width))
+  const subdivisions = step === 1 && upper - lower < 4 * Math.LN10 ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [1]
+  for (let power = firstPower; power <= lastPower; power += step) {
+    for (const multiple of subdivisions) {
+      const log = power * Math.LN10 + Math.log(multiple)
+      if (log >= lower && log <= upper) ticks.push({ log, frequency: Math.exp(log), major: multiple === 1 })
     }
   }
-  return ticks.length > 1 ? ticks : [lower, upper]
+  if (ticks.filter(({ major }) => major).length >= 2) return ticks
+  return [lower, upper].map((log) => ({ log, frequency: Math.exp(log), major: true }))
 }
 
 function clickPosition(event: MouseEvent<SVGRectElement>) {
@@ -115,10 +123,10 @@ function BodePlot({ field, samples, selected, axis, onSelect }: {
   const isPhase = field === 'phaseDeg'
   const { title, reference } = bodeLabels[field]
   const { plot, width, height } = usePlotSize<HTMLDivElement>(440, 168)
-  const left = 40
+  const left = 54
   const right = Math.max(left + 1, width - 19)
-  const top = 27
-  const bottom = Math.max(top + 1, height - (isPhase ? 34 : 23))
+  const top = 24
+  const bottom = Math.max(top + 1, height - (isPhase ? 38 : 23))
   const logMin = Math.log(samples[0].frequencyHz)
   const logMax = Math.log(samples[samples.length - 1].frequencyHz)
   const x = (log: number) => span((log - logMin) / (logMax - logMin), left, right)
@@ -127,30 +135,33 @@ function BodePlot({ field, samples, selected, axis, onSelect }: {
   const path = svgPath(samples, (sample) => [x(Math.log(sample.frequencyHz)), y(sample[field])])
 
   return (
-    <div className={`response-panel response-bode${isPhase ? ' response-bode--phase' : ''}`} ref={plot}>
+    <div className="response-panel response-bode scientific-plot" ref={plot}>
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Bode ${title} versus frequency`}
         data-bode-magnitude={isPhase ? undefined : ''} data-bode-phase={isPhase ? '' : undefined}>
-        <g className="response-grid" aria-hidden="true">
+        <g className="scientific-axis" aria-hidden="true">
+          <rect className="scientific-frame" data-bode-axis-frame="" x={left} y={top} width={right - left} height={bottom - top} />
           {axis.ticks.map((value) => (
             <g key={value}>
-              <line x1={left} x2={right} y1={y(value)} y2={y(value)} />
-              <text x={left - 5} y={y(value) + 3} textAnchor="end">{format.format(value)}</text>
+              <line className="scientific-tick" x1={left - 4} x2={left} y1={y(value)} y2={y(value)} />
+              <text x={left - 8} y={y(value) + 4} textAnchor="end">{format.format(value)}</text>
             </g>
           ))}
-          {logTicks(logMin, logMax, right - left).map((log) => (
+          {logTicks(logMin, logMax, right - left).map(({ log, frequency, major }) => (
             <g key={log}>
-              <line x1={x(log)} x2={x(log)} y1={top} y2={bottom} />
-              <text x={x(log)} y={bottom + 13} textAnchor="middle">{format.format(Math.exp(log))}</text>
+              <line className="scientific-tick" x1={x(log)} x2={x(log)} y1={bottom} y2={bottom + (major ? 5 : 2.5)}
+                data-bode-frequency-tick={major ? '' : undefined} data-frequency={major ? frequency : undefined} />
+              {major && <text x={x(log)} y={bottom + 17} textAnchor="middle">{format.format(frequency)}</text>}
             </g>
           ))}
-          <line className="response-reference" x1={left} x2={right} y1={y(reference)} y2={y(reference)} />
-          <text className="response-axis-title" x={left} y={16}>{title}</text>
-          {isPhase && <text className="response-axis-title" x={(left + right) / 2} y={height - 5} textAnchor="middle">Frequency (Hz, log)</text>}
+          <line className="scientific-reference" x1={left} x2={right} y1={y(reference)} y2={y(reference)} />
+          <text className="scientific-panel-title" x={left} y={14}>{isPhase ? '(b) Bode phase' : '(a) Bode magnitude'}</text>
+          <text className="scientific-axis-label" transform={`translate(13 ${(top + bottom) / 2}) rotate(-90)`} textAnchor="middle">{title}</text>
+          {isPhase && <text className="scientific-axis-label" x={(left + right) / 2} y={height - 6} textAnchor="middle">Frequency (Hz)</text>}
         </g>
         <g aria-hidden="true">
           <path className="response-line" data-response-trace="" d={path} />
-          <line className="response-crosshair" x1={markerX} x2={markerX} y1={top} y2={bottom} />
-          <circle className="response-point" cx={markerX} cy={y(selected[field])} r={4} data-response-marker=""
+          <line className="scientific-reference" x1={markerX} x2={markerX} y1={top} y2={bottom} />
+          <circle className="response-point" cx={markerX} cy={y(selected[field])} r={3.5} data-response-marker=""
             data-frequency={selected.frequencyHz} />
         </g>
         <rect className="response-bode-pick" x={left} y={top} width={right - left} height={bottom - top} fill="transparent"
@@ -169,8 +180,8 @@ function NyquistPlot({ samples, selected, real, imaginary, compact, onSelect }: 
   onSelect: (index: number) => void
 }) {
   const { plot, width, height } = usePlotSize<HTMLDivElement>(compact ? 450 : 380, compact ? 220 : 348)
-  const leftPad = 41
-  const rightPad = 14
+  const leftPad = 49
+  const rightPad = 20
   const topPad = 29
   const bottomPad = 39
   const availableWidth = Math.max(1, width - leftPad - rightPad)
@@ -208,32 +219,36 @@ function NyquistPlot({ samples, selected, real, imaginary, compact, onSelect }: 
   }
 
   return (
-    <div className="response-panel response-nyquist" ref={plot}>
+    <div className="response-panel response-nyquist scientific-plot" ref={plot}>
       <svg viewBox={`0 0 ${width} ${height}`} data-nyquist-plot="" role="img"
         aria-label="Nyquist response in the complex plane with a reflected negative-frequency branch">
-        <g className="response-grid" aria-hidden="true">
+        <g className="scientific-axis" aria-hidden="true">
+          <rect className="scientific-frame" data-nyquist-axis-frame="" x={left} y={top} width={plotWidth} height={plotHeight} />
+          <line className="scientific-reference" x1={left} x2={left + plotWidth} y1={y(0)} y2={y(0)} />
+          <line className="scientific-reference" x1={x(0)} x2={x(0)} y1={top} y2={top + plotHeight} />
           {imaginary.ticks.map((value) => (
             <g key={value}>
-              <line className={value === 0 ? 'response-zero' : undefined} x1={left} x2={left + plotWidth} y1={y(value)} y2={y(value)} />
-              <text x={left - 6} y={y(value) + 3} textAnchor="end">{format.format(value)}</text>
+              <line className="scientific-tick" x1={left - 4} x2={left} y1={y(value)} y2={y(value)} />
+              <text x={left - 8} y={y(value) + 4} textAnchor="end">{format.format(value)}</text>
             </g>
           ))}
           {real.ticks.map((value) => (
             <g key={value}>
-              <line className={value === 0 ? 'response-zero' : undefined} x1={x(value)} x2={x(value)} y1={top} y2={top + plotHeight} />
-              <text x={x(value)} y={top + plotHeight + 13} textAnchor="middle">{format.format(value)}</text>
+              <line className="scientific-tick" x1={x(value)} x2={x(value)} y1={top + plotHeight} y2={top + plotHeight + 4} />
+              <text x={x(value)} y={top + plotHeight + 17} textAnchor="middle">{format.format(value)}</text>
             </g>
           ))}
-          <text className="response-axis-title" x={left} y={top - 8}>Imaginary</text>
-          <text className="response-axis-title" x={left + plotWidth / 2} y={top + plotHeight + 28} textAnchor="middle">Real</text>
+          <text className="scientific-panel-title" x={left} y={top - 9}>{compact ? 'Nyquist diagram' : '(c) Nyquist diagram'}</text>
+          <text className="scientific-axis-label" transform={`translate(${left - 36} ${top + plotHeight / 2}) rotate(-90)`} textAnchor="middle">Imaginary part</text>
+          <text className="scientific-axis-label" x={left + plotWidth / 2} y={top + plotHeight + 32} textAnchor="middle">Real part</text>
         </g>
         <g aria-hidden="true">
-          <path className="response-reflection" d={svgPath(samples, (sample) => [x(sample.real), y(-sample.imaginary)])} />
+          <path className="response-reflection" data-nyquist-reflection="" d={svgPath(samples, (sample) => [x(sample.real), y(-sample.imaginary)])} />
           <path className="response-line" data-response-trace="" d={svgPath(samples, (sample) => [x(sample.real), y(sample.imaginary)])} />
           <path className="response-critical" data-nyquist-critical=""
             d={`M${criticalX - 3} ${criticalY - 3} l6 6 m-6 0 l6 -6`} />
           <text className="response-critical-label" x={criticalX - 7} y={criticalY - 6} textAnchor="end">−1</text>
-          {!compact && <circle className="response-point" cx={markerX} cy={markerY} r={4} data-response-marker=""
+          {!compact && <circle className="response-point" cx={markerX} cy={markerY} r={3.5} data-response-marker=""
             data-frequency={selected.frequencyHz} />}
         </g>
         {!compact && <rect className="response-nyquist-pick" x={left} y={top} width={plotWidth} height={plotHeight}
@@ -264,12 +279,6 @@ function FrequencyResponseFigure({ responses, compact, source, label }: Omit<Fre
 
   return (
     <figure className="frequency-response" aria-label={label} data-frequency-response="" data-compact={compact}>
-      {!compact && source && (
-        <figcaption className="response-caption">
-          <strong>{source.label}</strong>
-          <p>{source.description} <a href={source.href}>Frequency response methods</a></p>
-        </figcaption>
-      )}
       {!compact && responses.length > 1 && (
         <label className="response-gain">Loop gain
           <select value={response.id} onChange={(event) => setResponseId(event.currentTarget.value)}>
@@ -284,8 +293,17 @@ function FrequencyResponseFigure({ responses, compact, source, label }: Omit<Fre
             <BodePlot field="phaseDeg" samples={samples} selected={selected} axis={axes.phaseDeg} onSelect={select} />
           </div>
         )}
-        <NyquistPlot samples={samples} selected={selected} real={axes.real} imaginary={axes.imaginary}
-          compact={Boolean(compact)} onSelect={select} />
+        <div className="response-nyquist-group">
+          <NyquistPlot samples={samples} selected={selected} real={axes.real} imaginary={axes.imaginary}
+            compact={Boolean(compact)} onSelect={select} />
+          {!compact && (
+            <ul className="response-legend" aria-label="Nyquist key">
+              <li className="response-key-positive">Positive frequency</li>
+              <li className="response-key-reflected">Reflected branch</li>
+              <li className="response-key-critical">Critical point (−1, 0)</li>
+            </ul>
+          )}
+        </div>
       </div>
       {!compact && (
         <div className="response-inspector">
@@ -302,6 +320,12 @@ function FrequencyResponseFigure({ responses, compact, source, label }: Omit<Fre
               onChange={(event) => select(event.currentTarget.valueAsNumber)} />
           </label>
         </div>
+      )}
+      {!compact && source && (
+        <figcaption className="response-caption">
+          <strong>{source.label}</strong>
+          <p>{source.description} <a href={source.href}>Frequency response methods</a></p>
+        </figcaption>
       )}
     </figure>
   )
