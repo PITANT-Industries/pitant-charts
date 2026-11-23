@@ -220,7 +220,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
     families = {
         'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
-        'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation',
+        'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane',
     }
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
@@ -316,6 +316,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=allan-deviation&variant=allan-deviation-stability'
                 )
+            elif example['family'] == 'phase-plane':
+                portrait = card_plot.locator('svg[data-phase-plot]')
+                await check_phase_figure(portrait)
+                await check_compact_figure_bounds(portrait, 'rect[data-phase-axis-frame]')
+                await expect(card_plot.locator('select, [data-phase-cursor], [data-phase-readout], [data-phase-history]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=phase-plane&variant=phase-plane-pendulum'
+                )
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -384,6 +392,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'allan-deviation':
                 await check_allan_deviation(plot, touch)
                 code_import = 'AllanDeviation'
+            elif example['family'] == 'phase-plane':
+                await check_phase_plane(plot, touch)
+                code_import = 'PhasePlane'
             elif slug == 'spectrogram-measured':
                 await check_mauna_loa_spectrogram(plot, touch)
                 code_import = '@pitant/charts-react'
@@ -1342,6 +1353,106 @@ async def check_allan_deviation(plot, touch):
         selected_tau, selected_deviation, selected_pairs = await selection()
         if (selected_tau, selected_pairs) != (100, 43802) or not math.isclose(selected_deviation, expected, rel_tol=1e-9):
             raise RuntimeError(f'Unexpected measured {curve_id} at shared 100 s: {selected_tau}, {selected_deviation}, {selected_pairs}')
+
+
+async def check_phase_figure(portrait):
+    await expect(portrait).to_be_visible()
+    await expect(portrait.locator('rect[data-phase-axis-frame]')).to_be_visible()
+    await expect(portrait.locator('.scientific-tick').first).to_be_attached()
+    await expect(portrait.locator('line.phase-zero')).to_have_count(2)
+    await expect(portrait.get_by_text('Angular displacement, θ (rad)', exact=True)).to_be_visible()
+    await expect(portrait.get_by_text('Angular velocity, ω (rad/s)', exact=True)).to_be_visible()
+    await expect(portrait.locator('path[data-phase-trace]')).to_have_attribute('d', re.compile(r'^M'))
+    await expect(portrait.locator('path[data-phase-direction]').first).to_have_attribute('d', re.compile(r'^M'))
+
+
+async def check_phase_plane(plot, touch):
+    chart = plot.locator('[data-phase-plane]')
+    await expect(chart.locator('figcaption a').first).to_have_attribute(
+        'href', re.compile(r'^https://github\.com/EnzeXu/Damped_Pendulum_Dataset(?:/tree/cbf82673641ecd65e902ad5c38a048387649a2a0)?/?$')
+    )
+    portrait = chart.locator('svg[data-phase-plot]')
+    await check_phase_figure(portrait)
+    history = chart.locator('svg[data-phase-history]')
+    await expect(history).to_be_visible()
+    await expect(history.get_by_text('Time, t (s)', exact=True)).to_be_visible()
+    await expect(history.get_by_text('Angular displacement, θ (rad)', exact=True)).to_be_visible()
+    await expect(chart.get_by_role('checkbox', name='Show direction field', exact=True)).to_have_count(0)
+    await expect(portrait.locator('[data-phase-field]')).to_have_count(0)
+
+    time = chart.get_by_role('slider', name='Time', exact=True)
+    trajectory = chart.get_by_role('combobox', name='Trajectory', exact=True)
+    readout = chart.locator('output[data-phase-readout]')
+    phase_cursor = portrait.locator('circle[data-phase-cursor]')
+    history_cursor = history.locator('circle[data-phase-history-cursor]')
+    await expect(readout).to_be_visible()
+    await expect(phase_cursor).to_be_visible()
+    await expect(history_cursor).to_be_visible()
+    ids = await trajectory.locator('option').evaluate_all('options => options.map(option => option.value)')
+    if set(ids) != {'air-only', 'small-baffle', 'large-baffle'}:
+        raise RuntimeError(f'Expected the three measured pendulum recordings, observed {ids}')
+    await expect(trajectory).to_have_value('large-baffle')
+
+    async def selection():
+        values = await readout.evaluate("out => ['time', 'position', 'velocity'].map(key => out.dataset[key])")
+        seconds, position, velocity = map(float, values)
+        if not all(map(math.isfinite, (seconds, position, velocity))):
+            raise RuntimeError(f'Invalid pendulum state: {values}')
+        await expect(phase_cursor).to_have_attribute('data-time', values[0])
+        await expect(phase_cursor).to_have_attribute('data-position', values[1])
+        await expect(phase_cursor).to_have_attribute('data-velocity', values[2])
+        await expect(history_cursor).to_have_attribute('data-time', values[0])
+        await expect(history_cursor).to_have_attribute('data-position', values[1])
+        return seconds, position, velocity
+
+    async def cursor_x():
+        return await history_cursor.evaluate('cursor => { const box = cursor.getBoundingClientRect(); return box.left + box.width / 2 }')
+
+    if await selection() != (2, -0.028, -1.99):
+        raise RuntimeError('The guide should open on the measured large-baffle state at 2 s')
+    await time.press('Home')
+    first_time, first_position, first_velocity = await selection()
+    if (first_time, first_position, first_velocity) != (0, 0.559, 0):
+        raise RuntimeError(f'Unexpected large-baffle state at release: {first_time}, {first_position}, {first_velocity}')
+    left = await cursor_x()
+    first_phase = [await phase_cursor.get_attribute(key) for key in ('cx', 'cy')]
+    await time.press('End')
+    last_time, last_position, last_velocity = await selection()
+    right = await cursor_x()
+    if (last_time, last_position, last_velocity) != (16, 0.276, -0.471) or not left < right:
+        raise RuntimeError(f'Unexpected final large-baffle sample: {last_time}, {last_position}, {last_velocity}')
+    if [await phase_cursor.get_attribute(key) for key in ('cx', 'cy')] == first_phase:
+        raise RuntimeError(f'Time should move the phase cursor away from ({first_position}, {first_velocity})')
+
+    target = history.locator('.phase-history-pick')
+    await expect(target).to_be_visible()
+    bounds = await target.bounding_box()
+    fraction = 0.63
+    position = {'x': left + (right - left) * fraction - bounds['x'], 'y': bounds['height'] * 0.5}
+    if touch:
+        await target.tap(position=position)
+    else:
+        await target.click(position=position)
+    selected_time, selected_position, selected_velocity = await selection()
+    expected_time = first_time + (last_time - first_time) * fraction
+    nominal_step = (last_time - first_time) / float(await time.get_attribute('max'))
+    if not math.isclose(selected_time, expected_time, abs_tol=nominal_step * 2):
+        raise RuntimeError(f'History pointer should select the plotted time: expected around {expected_time} s, observed {selected_time} s')
+
+    trace = portrait.locator('path[data-phase-trace]')
+    for trajectory_id in ['air-only', 'small-baffle']:
+        original_path = await trace.get_attribute('d')
+        await trajectory.select_option(trajectory_id)
+        await expect(trace).not_to_have_attribute('d', original_path)
+        next_time, position, velocity = await selection()
+        if next_time != selected_time or (position, velocity) == (selected_position, selected_velocity):
+            raise RuntimeError('Changing trajectories should preserve requested time and move to the corresponding state')
+
+    await time.fill('50')
+    for trajectory_id, state in [('air-only', (-0.101, -2.147)), ('small-baffle', (-0.094, -2.251))]:
+        await trajectory.select_option(trajectory_id)
+        if await selection() != (2, *state):
+            raise RuntimeError(f'Unexpected measured {trajectory_id} state at 2 s')
 
 
 async def check_native_scientific(plot, slug, touch):

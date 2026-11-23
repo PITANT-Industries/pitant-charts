@@ -8,6 +8,7 @@ import eyeDiagram from './docs/examples/EyeDiagram.tsx?raw'
 import frequencyResponse from './docs/examples/FrequencyResponse.tsx?raw'
 import individualsControlChart from './docs/examples/IndividualsControlChart.tsx?raw'
 import modeShapes from './docs/examples/ModeShapes.tsx?raw'
+import phasePlane from './docs/examples/PhasePlane.tsx?raw'
 import shaftOrbit from './docs/examples/ShaftOrbit.tsx?raw'
 import spectrogram from './docs/examples/Spectrogram.tsx?raw'
 import spectrum from './docs/examples/Spectrum.tsx?raw'
@@ -30,6 +31,7 @@ const scientificExamples = new Map([
   ['bearing-envelope-ottawa', withCatalogImports(bearingEnvelope)],
   ['eye-diagram-nrz', withCatalogImports(eyeDiagram)],
   ['allan-deviation-stability', withCatalogImports(allanDeviation)],
+  ['phase-plane-pendulum', withCatalogImports(phasePlane)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

@@ -3332,6 +3332,22 @@
     ]
   },
   {
+    "id": "phase-plane",
+    "name": "Phase-Plane Portrait",
+    "url": "https://opensource.pitant.de/charts/#docs=phase-plane",
+    "examples": [
+      {
+        "id": "phase-plane-pendulum",
+        "family": "phase-plane",
+        "title": "Measured Damped Pendulum Phase Portrait",
+        "label": "Three measured damping setups",
+        "description": "Compare how a pendulum’s angle and angular velocity change as it settles with three damping setups.",
+        "url": "https://opensource.pitant.de/charts/#example=phase-plane-pendulum",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "mass-spectrum",
     "name": "Particle mass spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum",
