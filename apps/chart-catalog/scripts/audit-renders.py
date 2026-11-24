@@ -219,7 +219,8 @@ async def check_docs_navigation(browser, local_url, catalog):
 
 async def check_scientific_catalog(browser, local_url, catalog):
     families = {
-        'mass-spectrum', 'mass-spectrum-mirror', 'pca-biplot', 'pareto-frontier', 'batch-genealogy', 'spectrum', 'spectrogram',
+        'mass-spectrum', 'mass-spectrum-mirror', 'pca-biplot', 'pareto-frontier', 'batch-genealogy',
+        'spatial-defect-map', 'spectrum', 'spectrogram',
         'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
@@ -372,6 +373,17 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=batch-genealogy&variant=batch-genealogy-enclosures'
                 )
+            elif example['family'] == 'spatial-defect-map':
+                wafer = card_plot.locator('svg[data-wafer-plot]')
+                await check_wafer_plot(wafer, example['id'])
+                await check_compact_figure_bounds(wafer, '[data-wafer-outline]')
+                measured = example['id'] == 'spatial-defect-map-measured'
+                await expect(wafer.locator('.wafer-compact-layer')).to_have_count(2 if measured else 5)
+                interactive = 'button, select, [data-wafer-die], [data-wafer-cursor], [data-wafer-readout]'
+                await expect(card_plot.locator(interactive)).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', f'#docs=spatial-defect-map&variant={example["id"]}'
+                )
             elif example['family'] == 'stress-strain-comparison':
                 stress = card_plot.locator('svg[data-stress-overview]')
                 await check_stress_axes(stress)
@@ -509,6 +521,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'batch-genealogy':
                 await check_batch_genealogy(plot, touch)
                 code_import = 'BatchGenealogy'
+            elif example['family'] == 'spatial-defect-map':
+                await check_spatial_defect_map(plot, slug, touch)
+                code_import = 'SpatialDefectMap'
             elif example['family'] == 'campbell-diagram':
                 await check_campbell_diagram(plot, touch)
                 code_import = 'CampbellDiagram'
@@ -4710,6 +4725,136 @@ async def check_batch_genealogy(preview, touch):
     await verify_counts('AL-17', 0, 7, 0, 5)
     for key in ['step:assemble', 'step:assemble-sibling', 'lot:ASM-26', 'lot:ASM-90', 'lot:PK-31']:
         await expect(node(key)).to_have_attribute('data-relation', 'downstream')
+
+
+async def check_wafer_plot(wafer, slug):
+    await expect(wafer).to_be_visible()
+    measured = slug == 'spatial-defect-map-measured'
+    await expect(wafer).to_have_attribute('data-row-direction', 'down' if measured else 'up')
+    outline = wafer.locator('[data-wafer-outline]')
+    await expect(outline).to_be_visible()
+    await expect(outline).to_have_attribute('data-wafer-outline', 'observed' if measured else 'declared')
+    await expect(outline).to_have_attribute('d', re.compile(r'^M'))
+    clip = wafer.locator('clipPath path')
+    if measured:
+        await expect(clip).to_have_count(0)
+    else:
+        await expect(outline).to_have_attribute('data-notch-angle', '270')
+        await expect(outline).to_have_attribute('d', re.compile(r'^M[^A]+A[^L]+L[^Z]+Z$'))
+        await expect(clip).to_have_attribute('d', await outline.get_attribute('d'))
+
+
+async def check_spatial_defect_map(preview, slug, touch):
+    chart = preview.locator('figure[data-spatial-defect-map]')
+    wafer = chart.locator('svg[data-wafer-plot]')
+    await check_wafer_plot(wafer, slug)
+    dies = wafer.locator('[data-wafer-die]')
+    readout = chart.locator('output[data-wafer-readout]')
+    counts = chart.locator('output[data-wafer-counts]')
+    batch = chart.get_by_role('combobox', name='Batch', exact=True)
+    wafer_choice = chart.get_by_role('combobox', name='Wafer', exact=True)
+    keyboard = chart.get_by_role('group', name=re.compile(r'^Die map\b'))
+
+    def die(row, column):
+        return wafer.locator(f'[data-wafer-die="{row},{column}"]')
+
+    async def count(wafer_id, pass_count, fail_count, untested=0, missing=0):
+        tested = pass_count + fail_count
+        total = tested + untested + missing
+        expected = {'wafer-id': wafer_id, 'total': total, 'tested': tested, 'pass': pass_count,
+                    'fail': fail_count, 'untested': untested, 'missing': missing}
+        for name, value in expected.items():
+            await expect(counts).to_have_attribute(f'data-{name}', str(value))
+        await expect(dies).to_have_count(total)
+        measured = float(await counts.get_attribute('data-yield'))
+        if not math.isclose(measured, pass_count / tested * 100, abs_tol=1e-10):
+            raise RuntimeError(f'Unexpected tested yield on {wafer_id}: {measured}')
+
+    async def verify_site(row, column, x, y, status, cluster=None):
+        await expect(readout).to_have_attribute('data-key', f'{row},{column}')
+        await expect(wafer.locator('[data-wafer-cursor]')).to_have_attribute('data-wafer-cursor', f'{row},{column}')
+        for mark in (die(row, column), readout):
+            await expect(mark).to_have_attribute('data-row', str(row))
+            await expect(mark).to_have_attribute('data-column', str(column))
+            await expect(mark).to_have_attribute('data-status', status)
+            for axis, value in [('x', x), ('y', y)]:
+                measured = float(await mark.get_attribute(f'data-{axis}'))
+                if not math.isclose(measured, value, rel_tol=0, abs_tol=1e-10):
+                    raise RuntimeError(f'Die {row},{column} must retain physical {axis}={value}, observed {measured}')
+        if cluster is not None:
+            await expect(readout).to_have_attribute('data-cluster-size', str(cluster))
+            await expect(wafer.locator('[data-wafer-cluster]')).to_have_attribute('data-wafer-cluster', str(cluster))
+
+    async def pick(row, column):
+        target = die(row, column)
+        await target.evaluate("mark => mark.scrollIntoView({block: 'center', inline: 'nearest'})")
+        if touch:
+            await target.tap(timeout=5000)
+        else:
+            await target.click(timeout=5000)
+
+    await expect(die(0, 0)).to_have_count(0)
+    if slug == 'spatial-defect-map-measured':
+        await expect(wafer.get_by_text('X (die pitch)', exact=True)).to_be_visible()
+        await expect(wafer.get_by_text('Y (die pitch)', exact=True)).to_be_visible()
+        await count('lot2-wafer20', 2145, 315)
+        await expect(counts).to_have_attribute('data-wafer-pattern', 'Center')
+        await verify_site(24, 29, 0, 2, 'fail', 80)
+        await expect(readout).to_have_attribute('data-bin', 'electrical-fail')
+        await expect(chart.get_by_role('combobox', name='Failure bin', exact=True)).to_have_count(0)
+        await pick(0, 23)
+        await verify_site(0, 23, -6, 26, 'fail')
+        await keyboard.press('ArrowUp')
+        await verify_site(0, 23, -6, 26, 'fail')
+        await keyboard.press('ArrowDown')
+        await verify_site(1, 23, -6, 25, 'fail')
+        upper_svg_y = float(await die(0, 23).get_attribute('y'))
+        lower_svg_y = float(await die(1, 23).get_attribute('y'))
+        if upper_svg_y >= lower_svg_y:
+            raise RuntimeError('Increasing raw measured row numbers must move down the plotted wafer')
+
+        await batch.select_option('lot2')
+        pattern = chart.get_by_role('combobox', name='Wafer pattern', exact=True)
+        await pattern.select_option('Edge-Loc')
+        await expect(wafer_choice).to_have_value('lot2-wafer12')
+        await count('lot2-wafer12', 2241, 219)
+        await verify_site(22, 55, 26, 4, 'fail', 50)
+        await pick(0, 23)
+        await verify_site(0, 23, -6, 26, 'pass')
+        await batch.select_option('lot8')
+        await expect(wafer_choice).to_have_value('lot8-wafer12')
+        await expect(counts).to_have_attribute('data-wafer-pattern', 'Edge-Ring')
+        await count('lot8-wafer12', 379, 154)
+        await verify_site(24, 13, 0, -11, 'fail', 69)
+        return
+
+    await expect(wafer.get_by_text('X (mm)', exact=True)).to_be_visible()
+    await expect(wafer.get_by_text('Y (mm)', exact=True)).to_be_visible()
+    await count('sim-a-01', 204, 21, 5, 4)
+    await verify_site(12, 16, 67.6, 37.8, 'fail', 12)
+    await expect(wafer.locator('[data-status="untested"]')).to_have_count(5)
+    await expect(wafer.locator('[data-status="missing"]')).to_have_count(4)
+    footprint = await die(12, 16).evaluate('mark => mark.width.baseVal.value / mark.height.baseVal.value')
+    if not math.isclose(footprint, 10.4 / 11.2, abs_tol=1e-6):
+        raise RuntimeError(f'The die footprints must preserve the unequal physical pitches: {footprint}')
+    await pick(4, 10)
+    await verify_site(4, 10, 5.2, -51.8, 'missing')
+    await expect(readout).to_contain_text('Missing record')
+    await keyboard.press('ArrowUp')
+    await verify_site(5, 10, 5.2, -40.6, 'pass')
+    await keyboard.press('ArrowRight')
+    await verify_site(5, 11, 15.6, -40.6, 'untested')
+    await expect(readout).to_contain_text('Untested')
+
+    outline = wafer.locator('[data-wafer-outline]')
+    original_boundary = await outline.get_attribute('d')
+    await chart.get_by_role('combobox', name='Failure bin', exact=True).select_option('bin:parametric-fail')
+    await expect(counts).to_have_attribute('data-matching', '14')
+    await expect(wafer.locator('[data-wafer-die][data-match="true"]')).to_have_count(14)
+    await expect(wafer.locator('[data-wafer-die][data-bin="functional-fail"][data-dimmed="true"]')).to_have_count(7)
+    await count('sim-a-01', 204, 21, 5, 4)
+    await verify_site(5, 11, 15.6, -40.6, 'untested')
+    await expect(outline).to_have_attribute('d', original_boundary)
 
 
 async def check_spectral_waterfall(plot, slug, touch=False):

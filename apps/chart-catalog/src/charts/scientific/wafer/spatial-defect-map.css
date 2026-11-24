@@ -1,0 +1,170 @@
+.spatial-defect-map {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .7rem;
+  min-inline-size: 0;
+  margin: 0;
+  color: var(--gallery-ink, var(--foreground));
+  container-type: inline-size;
+}
+
+.spatial-defect-map[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.spatial-defect-map),
+.detail-plot:has(.spatial-defect-map) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.wafer-plot {
+  block-size: clamp(17.5rem, 63cqw, 29rem);
+}
+
+.wafer-plot:focus-visible {
+  outline: 2px solid var(--gallery-accent, var(--primary));
+  outline-offset: .12rem;
+}
+
+.spatial-defect-map[data-compact='true'] .wafer-plot {
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.wafer-die {
+  stroke: #fff;
+  stroke-width: .45;
+  cursor: crosshair;
+}
+
+.wafer-die[data-status='missing'] {
+  stroke: #a3b0b7;
+  stroke-dasharray: 1.4 1;
+}
+
+.wafer-die[data-dimmed='true'] {
+  fill-opacity: .19;
+}
+
+.wafer-outline,
+.wafer-die-cursor,
+.wafer-cluster {
+  fill: none;
+  pointer-events: none;
+}
+
+.wafer-outline {
+  stroke: #52636d;
+  stroke-width: 1.2;
+}
+
+.wafer-die-cursor {
+  stroke: #142c37;
+  stroke-width: 1.8;
+}
+
+.wafer-cluster {
+  stroke: #253740;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.wafer-controls,
+.wafer-key,
+.wafer-counts,
+.wafer-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1.05rem;
+  align-items: center;
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.wafer-controls label,
+.wafer-readout > span {
+  display: grid;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  gap: .25rem;
+}
+
+.wafer-controls select {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  min-block-size: 2rem;
+  padding-inline: .45rem;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .25rem;
+  background: var(--gallery-surface, var(--card));
+  color: inherit;
+  font: inherit;
+}
+
+.wafer-key {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wafer-key li {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.wafer-key li::before {
+  content: '';
+  inline-size: .68rem;
+  block-size: .68rem;
+  border: 1px solid #91a2ad;
+  background: #dde8ec;
+}
+
+.wafer-key [data-chip='untested']::before {
+  border-color: #8d839f;
+  background: repeating-linear-gradient(135deg, #8d839f, #8d839f 1px, #e8e4ef 1px, #e8e4ef 3px);
+}
+
+.wafer-key [data-chip='missing']::before {
+  border-style: dashed;
+  background: #fff;
+}
+
+.wafer-key [data-chip='fail']::before {
+  border-color: var(--wafer-chip);
+  background: var(--wafer-chip);
+}
+
+.wafer-counts,
+.wafer-readout,
+.wafer-caption {
+  padding-block-start: .58rem;
+  border-block-start: 1px solid var(--gallery-rule, var(--border));
+}
+
+.wafer-readout > span,
+.wafer-caption p {
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+.wafer-readout strong {
+  color: var(--gallery-ink, var(--foreground));
+  font-size: .92rem;
+}
+
+.wafer-caption {
+  font-size: .82rem;
+}
+
+.wafer-caption p {
+  margin: .18rem 0 0;
+}
+
+.wafer-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .16em;
+}

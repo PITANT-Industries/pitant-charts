@@ -1,4 +1,5 @@
 import allanDeviation from './docs/examples/AllanDeviation.tsx?raw'
+import spatialDefectMap from './docs/examples/SpatialDefectMap.tsx?raw'
 import batchGenealogy from './docs/examples/BatchGenealogy.tsx?raw'
 import bearingEnvelope from './docs/examples/BearingEnvelopeSpectrum.tsx?raw'
 import binaryPhaseDiagram from './docs/examples/BinaryPhaseDiagram.tsx?raw'
@@ -65,6 +66,8 @@ const scientificExamples = new Map([
   ['pareto-frontier-oil-press', withCatalogImports(paretoFrontier)],
   ['pareto-frontier-turning', withCatalogImports(paretoFrontier)],
   ['batch-genealogy-enclosures', withCatalogImports(batchGenealogy)],
+  ['spatial-defect-map-measured', withCatalogImports(spatialDefectMap)],
+  ['spatial-defect-map-simulated', withCatalogImports(spatialDefectMap)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],
