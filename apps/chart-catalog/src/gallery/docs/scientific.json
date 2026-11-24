@@ -250,7 +250,7 @@
     "summary": "Inspect a diffraction peak fit and follow its center, width, and height across temperatures.",
     "useWhen": "Compare how an observed feature shifts, broadens, or changes height in temperature-resolved diffraction scans.",
     "data": "Supply a shared, strictly increasing angleDeg axis in degrees 2θ. Provide scans in increasing temperature order in kelvin, with one finite intensity value per angle. Give each peak a unique ID, a label, a fixed window in degrees 2θ, and one fit per scan in the same order. Use null when a fit is unavailable.",
-    "reading": "Choose a Peak and move the Temperature control. The profile shows measured sample markers, a fitted curve over the fixed window, and its linear background. The bracket marks the full width at half maximum (FWHM). Three aligned temperature plots follow the fitted center, FWHM, and peak height above background.",
+    "reading": "Choose a Peak and move the Temperature control. In the DyNiC₂ waterfall, you can also select a measured point inside a fitted angle window to inspect that scan’s fit. The profile shows measured sample markers, a fitted curve over the fixed window, and its linear background. The bracket marks the full width at half maximum (FWHM). Three aligned temperature plots follow the fitted center, FWHM, and peak height above background.",
     "notes": [
       "The example uses 16 measured DyNiC₂ synchrotron X-ray diffraction scans from 10.91 to 294.11 K. The scans share 163 samples from about 5.002 to 5.500° 2θ. The fixed windows are 5.157–5.247°, 5.252–5.322°, and 5.324–5.407° and identify observed features by angle.",
       "Bounded, unweighted least squares fits a pseudo-Voigt peak, a Gaussian–Lorentzian mixture with a shared center and width, plus a linear background. The background intercept is defined at the fitted center. Height is the fitted peak contribution above that background, in arbitrary intensity units (a.u.). FWHM measures the separation of the points at half that height above the local background.",
@@ -260,6 +260,7 @@
     "properties": [
       { "name": "data", "type": "XrdPeakData", "description": "Required. Give angleDeg, scans with temperatureK and intensity, and peaks with fixed windowDeg boundaries and aligned fits." },
       { "name": "initialTemperatureK", "type": "number", "description": "Choose the initial scan to inspect by temperature in kelvin." },
+      { "name": "selection", "type": "{ peakId: string; temperatureK: number }", "description": "Optional. Supply a known peak ID and the exact temperature in kelvin of a measured scan. The companion view controls the selection." },
       { "name": "label", "type": "string", "description": "Describe the diffraction experiment for assistive technology." },
       { "name": "compact", "type": "boolean", "description": "Show a compact peak profile for a gallery card." },
       { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Add the data source and optional method and license information." }
@@ -619,15 +620,18 @@
     "summary": "Compare spectra across measured time windows or experimental conditions in a linked 3D waterfall, heatmap, and selected spectrum.",
     "useWhen": "Follow peak shifts or changes in intensity across an ordered series, such as the same material measured at different temperatures.",
     "data": "Pass strictly increasing spectralBins and scanValues in their original units. Supply one intensity per scan and bin in scan-major order. Use NaN for a missing measurement.",
-    "reading": "Rotate the waterfall to see how peaks develop. Click a plotted point or use the Scan and Spectral bin controls to read the original value. The heatmap and selected spectrum follow the same scan and bin.",
+    "reading": "Rotate the waterfall to see how peaks develop. Pick a plotted point in 3D Waterfall, Heatmap, or Spectrum, or use the Scan and Spectral bin controls. The three views share the same scan, bin, and measured intensity. In the DyNiC₂ example, pick an angle inside a fitted window to inspect the fit for that temperature and follow the peak across all scans.",
     "notes": [
       "The frequency example reuses the Mauna Loa spectrogram values from the NOAA monthly record. Each scan is a 96-month analysis window and the depth axis shows its center year.",
       "The materials example includes 16 measured DyNiC₂ diffraction scans from 10.91 to 294.11 K. It keeps the reported intensity values in a 5–5.5° diffraction-angle window.",
+      "The three DyNiC₂ fit windows are 5.157–5.247°, 5.252–5.322°, and 5.324–5.407° 2θ. The fit reports center, full width at half maximum (FWHM), and fitted peak height above the local background. Outside the fit windows, the panel reads “No fit covers the selected diffraction angle.” Use the measured intensity readout or move the angle into a fitted window.",
+      "At 10.91 K, select the measured bin near 5.365° 2θ to see the high-angle feature. The fit gives a center of 5.36450°, a FWHM of 0.01875°, and a height of 73.39 a.u.",
       "The displayed spacing follows the supplied coordinates. If input scans use different spectral grids, align them to a shared grid before supplying the matrix and document the alignment method."
     ],
     "properties": [
       { "name": "data", "type": "SpectralWaterfallData", "description": "Required. Spectral positions, scan coordinates, and flattened intensity values. The value at scan i and bin j is values[i × spectralBins.length + j]." },
       { "name": "axes", "type": "SpectralWaterfallAxes", "description": "Required. Labels and optional units for the spectral, scan, and intensity axes." },
+      { "name": "renderSelection", "type": "(selection: SpectralSelection) => ReactNode", "description": "Optional. Render a detail panel below the plots in the full view. The callback receives the selected scanIndex and binIndex." },
       { "name": "source", "type": "{ label: string; href: string }", "description": "Optional source citation displayed with the interactive figure." },
       { "name": "description", "type": "string", "description": "Optional description of the dataset, preprocessing, and measurement context." }
     ],

@@ -458,7 +458,7 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 raise RuntimeError(f'{slug} must use page scrolling for its preview')
             await expect(page.get_by_role('list', name='Data sources')).to_be_visible()
             if example['family'] == 'spectral-waterfall':
-                await check_spectral_waterfall(plot, slug)
+                await check_spectral_waterfall(plot, slug, touch)
                 code_import = 'SpectralWaterfall'
             elif example['family'] == 'mass-spectrum':
                 await check_particle_mass_spectrum(plot)
@@ -4217,7 +4217,7 @@ async def check_particle_mass_spectrum(plot):
     await expect(readout).to_have_attribute('data-events', '664')
 
 
-async def check_spectral_waterfall(plot, slug):
+async def check_spectral_waterfall(plot, slug, touch=False):
     ridges = plot.locator('[data-waterfall-ridge]')
     await ridges.first.wait_for(state='attached', timeout=8000)
     await expect(plot.locator('dl[aria-label="Plot axes"]')).to_be_visible()
@@ -4246,6 +4246,105 @@ async def check_spectral_waterfall(plot, slug):
     await expect(readout).to_have_attribute('data-bin-index', '1')
     await plot.get_by_role('tab', name='3D Waterfall').click()
     await expect(plot.locator('[data-waterfall-selected-bin="1"]')).to_be_visible()
+    if slug == 'spectral-waterfall-xrd':
+        await check_xrd_waterfall_fit(plot, readout, touch)
+    else:
+        await expect(plot.locator('[data-xrd-waterfall-fit]')).to_have_count(0)
+
+
+async def check_xrd_waterfall_fit(plot, measurement, touch):
+    fixture = CATALOG.parent / 'charts/scientific/waterfall/xrd-measurements.json'
+    data = json.loads(fixture.read_text())
+    bins, scans = data['spectralBins'], data['scanValues']
+    panel = plot.locator('[data-xrd-waterfall-fit]')
+    tracker = panel.locator('[data-xrd-peak-tracker]')
+    empty = panel.locator('[data-xrd-waterfall-empty]')
+
+    async def check_measurement(scan_index, bin_index, bin_tolerance=0):
+        await expect(measurement).to_have_attribute('data-scan-index', str(scan_index))
+        accepted_bins = '|'.join(str(index) for index in range(bin_index - bin_tolerance, bin_index + bin_tolerance + 1))
+        await expect(measurement).to_have_attribute('data-bin-index', re.compile(f'^(?:{accepted_bins})$'))
+        selected_bin = int(await measurement.get_attribute('data-bin-index'))
+        expected_intensity = data['intensityRows'][scan_index][selected_bin]
+        actual_intensity = float(await measurement.get_attribute('data-intensity'))
+        if not math.isclose(actual_intensity, expected_intensity, rel_tol=0, abs_tol=1e-9):
+            raise RuntimeError(f'Unexpected measured XRD intensity for scan {scan_index}, bin {selected_bin}: {actual_intensity}')
+        return selected_bin
+
+    async def check_fit(peak, temperature, center, fwhm, height):
+        await expect(empty).to_have_count(0)
+        await expect(tracker).to_have_attribute('data-peak', peak)
+        await expect(tracker.locator('select, input, .xrd-profile-pick, .xrd-trend-pick')).to_have_count(0)
+        readout = tracker.locator('output[data-xrd-readout]')
+        await expect(readout).to_have_attribute('data-temperature', temperature)
+        for metric, value in [('center', center), ('fwhm', fwhm), ('height', height)]:
+            await expect(readout).to_have_attribute(f'data-{metric}', value)
+            cursor = tracker.locator(f'[data-xrd-trend][data-metric="{metric}"] [data-xrd-trend-cursor]')
+            await expect(cursor).to_have_attribute('data-temperature', temperature)
+            await expect(cursor).to_have_attribute('data-value', value)
+
+    async def pick(view, frame, horizontal, vertical):
+        await view.scroll_into_view_if_needed()
+        position = await view.evaluate("""(svg, [frame, horizontal, vertical]) => {
+            const bounds = svg.querySelector(frame).getBBox();
+            const point = new DOMPoint(bounds.x + horizontal * bounds.width, bounds.y + vertical * bounds.height)
+                .matrixTransform(svg.getScreenCTM());
+            const viewport = svg.getBoundingClientRect();
+            return {x: point.x - viewport.left, y: point.y - viewport.top};
+        }""", [frame, horizontal, vertical])
+        if touch:
+            await view.tap(position=position)
+        else:
+            await view.click(position=position)
+
+    await expect(empty).to_be_visible()
+    await expect(tracker).to_have_count(0)
+    spectral_bin = plot.get_by_role('slider', name='Spectral bin')
+    await expect(spectral_bin).to_have_attribute('max', str(len(bins) - 1))
+    await expect(plot.get_by_role('slider', name='Scan', exact=True)).to_have_attribute('max', str(len(scans) - 1))
+    await spectral_bin.fill('64')
+    await check_measurement(0, 64)
+    await check_fit('peak-low', '10.91', '5.200343275', '0.0250630084', '90.96446705')
+    profile = tracker.locator('svg[data-xrd-profile]')
+    await check_xrd_profile(profile)
+    fit_path = profile.locator('path[data-xrd-fit]')
+    initial_path = await fit_path.get_attribute('d')
+
+    await plot.get_by_role('group', name='Spectral waterfall', exact=True).press('ArrowDown')
+    await expect(plot.locator('[data-waterfall-selected-scan="1"][data-waterfall-selected-bin="64"]')).to_be_visible()
+    await check_measurement(1, 64)
+    await check_fit('peak-low', '29.019', '5.197808971', '0.02577902814', '135.2612876')
+    await expect(fit_path).not_to_have_attribute('d', initial_path)
+
+    await spectral_bin.fill('80')
+    await check_measurement(1, 80)
+    await expect(empty).to_be_visible()
+    await expect(tracker).to_have_count(0)
+
+    await plot.get_by_role('tab', name='Heatmap').click()
+    heatmap = plot.locator('[data-spectral-view="heatmap"] svg')
+    bin_min = bins[0] - (bins[1] - bins[0]) / 2
+    bin_max = bins[-1] + (bins[-1] - bins[-2]) / 2
+    scan_min = scans[0] - (scans[1] - scans[0]) / 2
+    scan_max = scans[-1] + (scans[-1] - scans[-2]) / 2
+    await pick(heatmap, '.spectral-heatmap-missing', (bins[96] - bin_min) / (bin_max - bin_min),
+               (scan_max - scans[7]) / (scan_max - scan_min))
+    # A browser may round the pick to the neighboring measured bin on a narrow plot.
+    middle_bin = await check_measurement(7, 96, bin_tolerance=1)
+    await check_fit('peak-middle', '144.29', '5.295454796', '0.02075437752', '108.6561838')
+
+    await plot.get_by_role('tab', name='Spectrum', exact=True).click()
+    spectrum = plot.locator('[data-spectral-view="spectrum"] svg')
+    await check_measurement(7, middle_bin)
+    await check_fit('peak-middle', '144.29', '5.295454796', '0.02075437752', '108.6561838')
+    await pick(spectrum, '.spectral-view-axis', (bins[115] - bins[0]) / (bins[-1] - bins[0]), 0.5)
+    await check_measurement(7, 115, bin_tolerance=1)
+    await check_fit('peak-high', '144.29', '5.358128979', '0.02017690145', '63.56737184')
+
+    await spectrum.press('End')
+    await check_measurement(7, len(bins) - 1)
+    await expect(empty).to_be_visible()
+    await expect(tracker).to_have_count(0)
 
 
 async def run(browser, queue, results, local_url):

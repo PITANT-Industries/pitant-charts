@@ -31,6 +31,26 @@
   font-size: 9px;
 }
 
+.xrd-waterfall-fit {
+  display: grid;
+  gap: .55rem;
+  min-inline-size: 0;
+  margin-block-start: 1.1rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--gallery-rule, var(--border));
+}
+
+.xrd-waterfall-fit > p {
+  margin: 0;
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.xrd-waterfall-fit .xrd-profile {
+  block-size: clamp(14rem, 33cqw, 17rem);
+}
+
 .xrd-window,
 .xrd-fit,
 .xrd-fwhm,
