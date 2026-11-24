@@ -3629,6 +3629,31 @@
     ]
   },
   {
+    "id": "weibull-probability",
+    "name": "Weibull probability plot",
+    "url": "https://opensource.pitant.de/charts/#docs=weibull-probability",
+    "examples": [
+      {
+        "id": "weibull-probability-bearing-greases",
+        "family": "weibull-probability",
+        "title": "Bearing Steel Fatigue by Lubricant Grade",
+        "label": "63 measured fatigue failures",
+        "description": "Compare three lubricant grades on Weibull probability paper and inspect where early failures depart from their fitted lifetimes.",
+        "url": "https://opensource.pitant.de/charts/#example=weibull-probability-bearing-greases",
+        "position": 1
+      },
+      {
+        "id": "weibull-probability-suppliers",
+        "family": "weibull-probability",
+        "title": "Censored Supplier Lifetime Tests",
+        "label": "Simulated supplier comparison",
+        "description": "Compare fitted supplier lifetimes and inspect simulated early failures and units still running at the test cutoff.",
+        "url": "https://opensource.pitant.de/charts/#example=weibull-probability-suppliers",
+        "position": 2
+      }
+    ]
+  },
+  {
     "id": "lcms-feature-map",
     "name": "LC–MS feature map",
     "url": "https://opensource.pitant.de/charts/#docs=lcms-feature-map",

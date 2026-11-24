@@ -1,4 +1,5 @@
 import allanDeviation from './docs/examples/AllanDeviation.tsx?raw'
+import weibullProbability from './docs/examples/WeibullProbabilityPlot.tsx?raw'
 import kaplanMeier from './docs/examples/KaplanMeierReliability.tsx?raw'
 import gaugeRR from './docs/examples/GaugeRR.tsx?raw'
 import chromatogramPeakIntegration from './docs/examples/ChromatogramPeakIntegration.tsx?raw'
@@ -77,6 +78,8 @@ const scientificExamples = new Map([
   ['gauge-rr-thread-baseline', withCatalogImports(gaugeRR)],
   ['gauge-rr-thread-corrected', withCatalogImports(gaugeRR)],
   ['kaplan-meier-glass-capacitors', withCatalogImports(kaplanMeier)],
+  ['weibull-probability-bearing-greases', withCatalogImports(weibullProbability)],
+  ['weibull-probability-suppliers', withCatalogImports(weibullProbability)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

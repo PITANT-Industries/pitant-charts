@@ -222,7 +222,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'mass-spectrum', 'mass-spectrum-mirror', 'pca-biplot', 'pareto-frontier', 'batch-genealogy',
         'spatial-defect-map', 'lcms-feature-map', 'chromatogram-peak-integration', 'spectrum', 'spectrogram',
         'spectral-waterfall', 'correlation-matrix',
-        'gauge-rr', 'kaplan-meier', 'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
+        'gauge-rr', 'kaplan-meier', 'weibull-probability', 'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
         'ternary-mixture-map', 'industrial-ct', 'cad-scan-deviation', 'cie-chromaticity', 'hyperspectral-cube', 'response-surface',
@@ -394,6 +394,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', f'#docs=gauge-rr&variant={example["id"]}'
                 )
+            elif example['family'] == 'weibull-probability':
+                await check_weibull_compact(card_plot, example['id'])
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', f'#docs=weibull-probability&variant={example["id"]}'
+                )
             elif example['family'] == 'kaplan-meier':
                 await check_kaplan_meier_compact(card_plot)
                 await expect(card.locator('.example-card-link')).to_have_attribute(
@@ -550,6 +555,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'gauge-rr':
                 await check_gauge_rr(plot, slug, touch)
                 code_import = 'GaugeRR'
+            elif example['family'] == 'weibull-probability':
+                await check_weibull_probability(plot, slug, touch)
+                code_import = 'WeibullProbabilityPlot'
             elif example['family'] == 'kaplan-meier':
                 await check_kaplan_meier(plot, touch)
                 code_import = 'KaplanMeierReliability'
@@ -5233,6 +5241,224 @@ async def check_gauge_rr(preview, slug, touch):
         await expect(row).to_have_attribute('data-df', str(df))
         close(await row.get_attribute('data-ss'), ss, 1e-18)
         close(await row.get_attribute('data-ms'), ss / df, 1e-18)
+
+
+def weibull_fixture_anchors(slug):
+    if slug == 'weibull-probability-suppliers':
+        return {
+            'supplier-a': (8, 4, 'A-01', 180, 1600, 2.2069557599972693, 1592.2040700236585),
+            'supplier-b': (8, 4, 'B-01', 535, 1600, 2.595725410993263, 1500.5653795515436),
+        }
+    return {
+        'ep0': (21, 0, 'T-13', 1677, 7652, 2.4128953580426886, 4547.852784300926),
+        'ep00': (21, 0, 'T-06', 3220, 7352, 5.95449562862727, 6171.273026117448),
+        'ep000': (21, 0, 'T-16', 2263, 8822, 2.3032213639000765, 5754.36166282265),
+    }
+
+
+def check_weibull_number(actual, expected, description):
+    if not math.isclose(float(actual), expected, rel_tol=1e-10, abs_tol=1e-8):
+        raise RuntimeError(f'{description}: expected {expected}, observed {actual}')
+
+
+async def check_weibull_paper(paper, anchors, *, compact, guide=.1):
+    # Recover the linear plotting coordinates from SVG attributes. Independently reconstruct the
+    # two axis transforms and the straight-line Weibull relationship from time, probability, and fit.
+    geometry = await paper.evaluate("""svg => {
+      const pair = (node, first, second) => [Number(node.getAttribute(first)), Number(node.getAttribute(second))]
+      return {
+        ...svg.dataset,
+        ticksX: [...svg.querySelectorAll('[data-time-tick]')].map(node => [Number(node.dataset.timeTick), Number(node.getAttribute('x'))]),
+        ticksY: [...svg.querySelectorAll('[data-probability-tick]')].map(node => [Number(node.dataset.probabilityTick), Number(node.getAttribute('y'))]),
+        guide: svg.querySelector('[data-weibull-guide]')?.getAttribute('y1'),
+        groups: [...svg.querySelectorAll('[data-weibull-cohort]')].map(group => ({
+          id: group.dataset.weibullCohort,
+          marks: [...group.querySelectorAll('[data-weibull-mark]')].map(mark => {
+            const box = mark.querySelector('.weibull-dot').getBBox()
+            return {id: mark.dataset.weibullMark, time: Number(mark.dataset.time), p: Number(mark.dataset.probability),
+              risk: Number(mark.dataset.atRisk), x: box.x + box.width / 2, y: box.y + box.height / 2}
+          }),
+          fits: [...group.querySelectorAll('[data-weibull-fit]')].map(line => ({
+            kind: line.dataset.weibullFit,
+            times: [Number(line.dataset.start), Number(line.dataset.end)],
+            x: pair(line, 'x1', 'x2'), y: pair(line, 'y1', 'y2'),
+            dash: getComputedStyle(line).strokeDasharray,
+          })),
+          quantiles: [...group.querySelectorAll('[data-weibull-quantile]')].map(mark => ({
+            probability: Number(mark.dataset.weibullQuantile),
+            time: Number(mark.dataset.time),
+            center: pair(mark.querySelector('circle'), 'cx', 'cy'),
+          })),
+        })),
+        censors: [...svg.querySelectorAll('[data-weibull-censor]')].map(node => ({
+          id: node.dataset.weibullCensor, time: Number(node.dataset.time), cohort: node.parentElement.dataset.weibullCensors,
+          x: Number(node.getAttribute('x1')), y: Number(node.getAttribute('y1')), end: Number(node.getAttribute('y2')),
+        })),
+      }
+    }""")
+    left, right, top, bottom = (float(geometry[key]) for key in ('plotLeft', 'plotRight', 'plotTop', 'plotBottom'))
+    lo, hi = (math.log(float(geometry[key])) for key in ('xMin', 'xMax'))
+    paper_min, paper_max = (float(geometry[key]) for key in ('paperMin', 'paperMax'))
+    x = lambda time: left + (math.log(time) - lo) * (right - left) / (hi - lo)
+    y = lambda ordinate: bottom - (ordinate - paper_min) * (bottom - top) / (paper_max - paper_min)
+    ordinate = lambda probability: math.log(-math.log1p(-probability))
+
+    if [cohort['id'] for cohort in geometry['groups']] != list(anchors):
+        raise RuntimeError('Weibull paper lost the fixture’s original cohort order')
+    if compact:
+        if geometry['ticksX'] or geometry['ticksY'] or geometry.get('guide') is not None:
+            raise RuntimeError('The compact probability paper must omit tick labels and the lifetime guide')
+    else:
+        if len(geometry['ticksX']) < 2 or len(geometry['ticksY']) < 4:
+            raise RuntimeError('The probability paper needs visible calibrated axes')
+        for time, position in geometry['ticksX']:
+            check_weibull_number(position, x(time), 'Log-time axis tick')
+        for probability, position in geometry['ticksY']:
+            check_weibull_number(position, y(ordinate(probability)), 'Weibull probability axis tick')
+        check_weibull_number(geometry['guide'], y(ordinate(guide)), 'Lifetime guide probability')
+
+    for group in geometry['groups']:
+        failures, censors, first_id, first_time, last_time, shape, scale = anchors[group['id']]
+        marks, fits, quantiles = group['marks'], group['fits'], group['quantiles']
+        if len(marks) != failures or marks[0]['time'] != first_time or marks[0]['id'] != first_id:
+            raise RuntimeError(f'{group["id"]} does not preserve the observed failures')
+        if len({mark['id'] for mark in marks}) != failures:
+            raise RuntimeError(f'{group["id"]} duplicated source observation identities')
+        for index, mark in enumerate(marks):
+            # The fixture failures are distinct and the censors are tied at the final cutoff.
+            check_weibull_number(mark['p'], (index + .5) / (failures + censors), 'Failure-step midpoint')
+            check_weibull_number(mark['risk'], failures + censors - index, 'Pre-failure risk set')
+            if abs(mark['x'] - x(mark['time'])) > .0001 or abs(mark['y'] - y(ordinate(mark['p']))) > .0001:
+                raise RuntimeError(f'{group["id"]} observation {mark["id"]} was displaced on the probability paper')
+        if sum(line['kind'] == 'observed' for line in fits) != 1:
+            raise RuntimeError(f'{group["id"]} is missing its fitted line within the observed time extent')
+        for line in fits:
+            start, end = line['times']
+            in_extent = start >= first_time - 1e-8 and end <= last_time + 1e-8
+            separated_tail = end <= first_time + 1e-8 or start >= last_time - 1e-8
+            if line['kind'] == 'observed':
+                if not in_extent or line['dash'] != 'none':
+                    raise RuntimeError('The fitted line within the recorded time extent must be solid')
+            elif not separated_tail or line['dash'] == 'none':
+                raise RuntimeError('Extrapolated segments must be clearly dashed and outside observed time extent')
+            for time, px, py in zip(line['times'], line['x'], line['y']):
+                check_weibull_number(px, x(time), 'Fitted line log-time coordinate')
+                check_weibull_number(py, y(shape * math.log(time / scale)), 'Fitted Weibull line ordinate')
+
+        if compact:
+            if quantiles:
+                raise RuntimeError('The compact probability paper must omit lifetime guide intersections')
+        else:
+            if len(quantiles) != 1:
+                raise RuntimeError(f'{group["id"]} needs one fitted lifetime at the guide probability')
+            quantile = quantiles[0]
+            expected = scale * (-math.log1p(-guide)) ** (1 / shape)
+            check_weibull_number(quantile['probability'], guide, 'Lifetime guide probability at intersection')
+            check_weibull_number(quantile['time'], expected, 'Fitted lifetime at intersection')
+            check_weibull_number(quantile['center'][0], x(expected), 'Fitted lifetime x coordinate')
+            check_weibull_number(quantile['center'][1], y(ordinate(guide)), 'Fitted lifetime y coordinate')
+
+    expected_censors = [] if len(anchors) == 3 else [f'{supplier}-{trial:02}' for supplier in ('A', 'B') for trial in range(9, 13)]
+    if [mark['id'] for mark in geometry['censors']] != expected_censors:
+        raise RuntimeError('The censor rug must preserve censor identities and remain separate from failed specimens')
+    for mark in geometry['censors']:
+        check_weibull_number(mark['time'], 1600, 'Right-censor cutoff')
+        check_weibull_number(mark['x'], x(1600), 'Censor rug log-time coordinate')
+        if mark['y'] <= bottom:
+            raise RuntimeError('Right-censored specimens must stay in their own rug beneath the probability paper')
+    if expected_censors and not compact:
+        prior_end = bottom
+        for identifier in anchors:
+            row = [mark for mark in geometry['censors'] if mark['cohort'] == identifier]
+            for mark in row:
+                if mark['y'] <= prior_end or mark['end'] <= mark['y']:
+                    raise RuntimeError('Tied censors must occupy distinct marks on separate cohort rows')
+                prior_end = mark['end']
+            count = paper.locator(f'[data-weibull-censors="{identifier}"] [data-weibull-censor-count="4"]')
+            await expect(count).to_have_text('×4')
+
+
+async def check_weibull_compact(preview, slug):
+    chart = preview.locator('figure[data-weibull-probability][data-compact="true"]')
+    paper = chart.locator('svg[data-weibull-paper]')
+    await expect(paper).to_be_visible()
+    await expect(chart.locator('select, button, [data-weibull-inspection], [data-weibull-fit-row]')).to_have_count(0)
+    await check_compact_figure_bounds(paper, '[data-weibull-mark], [data-weibull-fit], [data-weibull-censor]')
+    await check_weibull_paper(paper, weibull_fixture_anchors(slug), compact=True)
+
+
+async def check_weibull_probability(preview, slug, touch):
+    anchors = weibull_fixture_anchors(slug)
+    measured = slug == 'weibull-probability-bearing-greases'
+    chart = preview.locator('figure[data-weibull-probability][data-compact="false"]')
+    paper = chart.locator('svg[data-weibull-paper]')
+    await expect(paper.get_by_text('Failure probability', exact=True)).to_be_visible()
+    await expect(paper.get_by_text(f'Test time ({"s" if measured else "h"}, log scale)', exact=True)).to_be_visible()
+    source = 'https://doi.org/10.17632/d5n3zgvs7p.3' if measured else 'https://www.itl.nist.gov/div898/handbook/apr/section2/apr221.htm'
+    await expect(chart.locator('figcaption a').first).to_have_attribute('href', source)
+    if measured:
+        await expect(chart.locator('figcaption a[href="https://creativecommons.org/licenses/by/4.0/"]')).to_be_visible()
+    else:
+        await expect(chart.locator('figcaption')).to_contain_text('Illustrative observations for two fictional suppliers')
+
+    readout = chart.locator('[data-weibull-inspection]')
+    async def check_selected(cohort, identifier, time, probability):
+        await expect(readout).to_have_attribute('data-weibull-inspection', identifier)
+        await expect(readout).to_have_attribute('data-cohort', cohort)
+        shape, scale = anchors[cohort][-2:]
+        expected = scale * (-math.log1p(-probability)) ** (1 / shape)
+        for attr, value in [('time', time), ('probability', probability), ('fitted', expected),
+                            ('ratio', time / expected), ('log-residual', math.log(time / expected))]:
+            check_weibull_number(await readout.get_attribute(f'data-{attr}'), value, f'Failure inspection {attr}')
+        await expect(paper.locator(f'[data-weibull-cohort="{cohort}"] [data-weibull-mark="{identifier}"]')).to_have_attribute('data-active', 'true')
+        residual = paper.locator('[data-weibull-residual]')
+        await expect(residual).to_have_attribute('data-weibull-residual', identifier)
+        residual_points = await residual.locator('line').evaluate("""line => {
+          const d = line.ownerSVGElement.dataset
+          const xToTime = x => Math.exp(Math.log(+d.xMin) + (x - +d.plotLeft) *
+            (Math.log(+d.xMax) - Math.log(+d.xMin)) / (+d.plotRight - +d.plotLeft))
+          const yToPaper = y => +d.paperMin + (+d.plotBottom - y) *
+            (+d.paperMax - +d.paperMin) / (+d.plotBottom - +d.plotTop)
+          return [xToTime(+line.getAttribute('x1')), xToTime(+line.getAttribute('x2')),
+            yToPaper(+line.getAttribute('y1')), yToPaper(+line.getAttribute('y2'))]
+        }""")
+        position = math.log(-math.log1p(-probability))
+        for actual, value in zip(residual_points, (time, expected, position, position)):
+            check_weibull_number(actual, value, 'Observed-to-fitted residual segment')
+
+    first, *_, alternative = anchors
+    size = sum(anchors[first][:2])
+    await check_selected(first, anchors[first][2], anchors[first][3], .5 / size)
+    fit_table = chart.locator('[data-weibull-fit-row]')
+    fits = await fit_table.evaluate_all('rows => rows.map(({dataset: d}) => [d.weibullFitRow, +d.shape, +d.scale, +d.b10, +d.b50, +d.failures, +d.censored])')
+    for identifier, shape, scale, b10, b50, failures, censored in fits:
+        n_fail, n_censor, _, _, _, expected_shape, expected_scale = anchors[identifier]
+        assert (failures, censored) == (n_fail, n_censor)
+        for value, expected in [
+            (shape, expected_shape), (scale, expected_scale),
+            (b10, expected_scale * (-math.log(.9)) ** (1 / expected_shape)),
+            (b50, expected_scale * math.log(2) ** (1 / expected_shape)),
+        ]:
+            check_weibull_number(value, expected, 'Censored or complete maximum-likelihood summary')
+    await check_weibull_paper(paper, anchors, compact=False, guide=.1)
+    await chart.get_by_role('combobox', name='Lifetime guide', exact=True).select_option('0.5')
+    await check_weibull_paper(paper, anchors, compact=False, guide=.5)
+    await check_selected(first, anchors[first][2], anchors[first][3], .5 / size)
+    after = await fit_table.evaluate_all('rows => rows.map(({dataset: d}) => [d.weibullFitRow, +d.shape, +d.scale, +d.b10, +d.b50, +d.failures, +d.censored])')
+    assert after == fits
+
+    await chart.get_by_role('combobox', name='Failure', exact=True).select_option('T-14' if measured else 'A-08')
+    await check_selected(first, 'T-14' if measured else 'A-08', anchors[first][4], (anchors[first][0] - .5) / size)
+    await chart.get_by_role('combobox', name='Cohort', exact=True).select_option(alternative)
+    await check_selected(alternative, anchors[alternative][2], anchors[alternative][3], .5 / sum(anchors[alternative][:2]))
+
+    point = paper.locator(f'[data-weibull-cohort="{first}"] [data-weibull-mark="{anchors[first][2]}"] .weibull-mark-target')
+    await point.evaluate("mark => mark.scrollIntoView({block: 'center', inline: 'nearest'})")
+    if touch:
+        await point.tap(timeout=5000)
+    else:
+        await point.click(timeout=5000)
+    await check_selected(first, anchors[first][2], anchors[first][3], .5 / size)
 
 
 async def check_kaplan_meier_curves(plot):
