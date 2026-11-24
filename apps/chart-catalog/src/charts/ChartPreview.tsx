@@ -32,6 +32,7 @@ const CieChromaticityDiagramPreview = lazy(() => import('./scientific/CieChromat
 const HyperspectralCubePreview = lazy(() => import('./scientific/HyperspectralCubePreview'))
 const ResponseSurfacePreview = lazy(() => import('./scientific/ResponseSurfacePreview'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
+const KaplanMeierPreview = lazy(() => import('./scientific/kaplan-meier/KaplanMeierPreview'))
 const GaugeRRPreview = lazy(() => import('./scientific/gauge-rr/GaugeRRPreview'))
 const ChromatogramPeakIntegrationPreview = lazy(() => import('./scientific/chromatography/ChromatogramPeakIntegrationPreview'))
 const LcMsFeatureMapPreview = lazy(() => import('./scientific/lcms/LcMsFeatureMapPreview'))
@@ -56,6 +57,7 @@ export const rendererFamilies = {
   lcMsFeatureMap: ['lcms-feature-map'],
   chromatogramPeakIntegration: ['chromatogram-peak-integration'],
   gaugeRR: ['gauge-rr'],
+  kaplanMeier: ['kaplan-meier'],
   campbell: ['campbell-diagram'],
   modes: ['mode-shapes'],
   orbit: ['shaft-orbit'],
@@ -91,6 +93,7 @@ const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.lcMsFeatureMap.map((id) => [id, LcMsFeatureMapPreview] as const),
   ...rendererFamilies.chromatogramPeakIntegration.map((id) => [id, ChromatogramPeakIntegrationPreview] as const),
   ...rendererFamilies.gaugeRR.map((id) => [id, GaugeRRPreview] as const),
+  ...rendererFamilies.kaplanMeier.map((id) => [id, KaplanMeierPreview] as const),
   ...rendererFamilies.paretoFrontier.map((id) => [id, ParetoFrontierPreview] as const),
   ...rendererFamilies.pcaBiplot.map((id) => [id, PcaBiplotPreview] as const),
   ...rendererFamilies.mirrorSpectrum.map((id) => [id, MassSpectrumMirrorPreview] as const),

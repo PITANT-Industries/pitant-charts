@@ -222,7 +222,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'mass-spectrum', 'mass-spectrum-mirror', 'pca-biplot', 'pareto-frontier', 'batch-genealogy',
         'spatial-defect-map', 'lcms-feature-map', 'chromatogram-peak-integration', 'spectrum', 'spectrogram',
         'spectral-waterfall', 'correlation-matrix',
-        'gauge-rr', 'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
+        'gauge-rr', 'kaplan-meier', 'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
         'ternary-mixture-map', 'industrial-ct', 'cad-scan-deviation', 'cie-chromaticity', 'hyperspectral-cube', 'response-surface',
@@ -394,6 +394,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', f'#docs=gauge-rr&variant={example["id"]}'
                 )
+            elif example['family'] == 'kaplan-meier':
+                await check_kaplan_meier_compact(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=kaplan-meier&variant=kaplan-meier-glass-capacitors'
+                )
             elif example['family'] == 'lcms-feature-map':
                 await check_lcms_compact(card_plot)
                 await expect(card.locator('.example-card-link')).to_have_attribute(
@@ -545,6 +550,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'gauge-rr':
                 await check_gauge_rr(plot, slug, touch)
                 code_import = 'GaugeRR'
+            elif example['family'] == 'kaplan-meier':
+                await check_kaplan_meier(plot, touch)
+                code_import = 'KaplanMeierReliability'
             elif example['family'] == 'lcms-feature-map':
                 await check_lcms_feature_map(plot, touch)
                 code_import = 'LcMsFeatureMap'
@@ -5225,6 +5233,167 @@ async def check_gauge_rr(preview, slug, touch):
         await expect(row).to_have_attribute('data-df', str(df))
         close(await row.get_attribute('data-ss'), ss, 1e-18)
         close(await row.get_attribute('data-ms'), ss / df, 1e-18)
+
+
+async def check_kaplan_meier_curves(plot):
+    failure_times = {
+        '200v': (439, 904, 1092, 1105),
+        '300v': (315, 315, 439, 628),
+        '350v': (258, 258, 347, 588),
+    }
+    await expect(plot.locator('[data-km-curve]')).to_have_count(3)
+    await expect(plot.locator('[data-km-censor]')).to_have_count(3)
+    domain = await plot.evaluate("""node => Object.fromEntries(
+      ['timeMax', 'plotLeft', 'plotRight', 'plotTop', 'plotBottom'].map(key => [key, Number(node.dataset[key])]))""")
+    if domain['timeMax'] != 1105:
+        raise RuntimeError(f'Expected the measured follow-up domain to end at 1105 h, observed {domain["timeMax"]}')
+
+    def x(time):
+        return domain['plotLeft'] + (domain['plotRight'] - domain['plotLeft']) * time / domain['timeMax']
+
+    def y(survival):
+        return domain['plotBottom'] - (domain['plotBottom'] - domain['plotTop']) * survival
+
+    for cohort, times in failure_times.items():
+        trace = plot.locator(f'[data-km-cohort="{cohort}"]')
+        curve = trace.locator('[data-km-curve]')
+        await expect(curve).to_have_attribute('data-cohort-end', str(times[-1]))
+        commands = re.findall(r'([MHV])([^MHV]+)', await curve.get_attribute('d'))
+        expected = [('M', (x(0), y(1)))]
+        for time in sorted(set(times)):
+            survival = (8 - sum(item <= time for item in times)) / 8
+            expected.extend([('H', (x(time),)), ('V', (y(survival),))])
+        if len(commands) != len(expected):
+            raise RuntimeError(f'{cohort} must have one step per distinct failure time and stop at its last observation')
+        for (command, raw), (kind, coords) in zip(commands, expected):
+            values = tuple(map(float, raw.split()))
+            if command != kind or len(values) != len(coords) or any(
+                not math.isclose(a, b, rel_tol=0, abs_tol=1e-8) for a, b in zip(values, coords)
+            ):
+                raise RuntimeError(f'{cohort} reliability path differs from the measured weighted risk steps')
+        marker = trace.locator('[data-km-censor]')
+        await expect(marker).to_have_attribute('data-km-censor', str(times[-1]))
+        await expect(marker).to_have_attribute('data-count', '4')
+        await expect(marker).to_have_attribute('data-survival', '0.5')
+
+    risks = await plot.locator('[data-km-risk-at]').evaluate_all("""cells => cells.map(cell => ({
+      cohort: cell.dataset.cohort, time: Number(cell.dataset.kmRiskAt),
+      count: Number(cell.dataset.atRisk), text: cell.textContent, x: Number(cell.getAttribute('x'))
+    }))""")
+    for cell in risks:
+        times = failure_times[cell['cohort']]
+        at_risk = sum(time >= cell['time'] for time in times + (times[-1],) * 4)
+        if cell['count'] != at_risk or cell['text'] != str(at_risk) or not math.isclose(cell['x'], x(cell['time']), abs_tol=1e-8):
+            raise RuntimeError(f'Incorrect risk count or shared tick position for {cell}')
+    return risks
+
+
+async def check_kaplan_meier_compact(preview):
+    chart = preview.locator('figure[data-km-reliability][data-compact="true"]')
+    plot = chart.locator('svg[data-km-plot]')
+    await expect(plot).to_be_visible()
+    await check_kaplan_meier_curves(plot)
+    await check_compact_figure_bounds(plot, '[data-km-curve], [data-km-censor]')
+    controls = 'select, input, button, [data-km-hit], [data-km-risk-at], [data-km-event-row], [data-km-specimens]'
+    await expect(chart.locator(controls)).to_have_count(0)
+
+
+async def check_kaplan_meier(preview, touch):
+    chart = preview.locator('figure[data-km-reliability][data-compact="false"]')
+    plot = chart.locator('svg[data-km-plot]')
+    risks = await check_kaplan_meier_curves(plot)
+    times = {cell['time'] for cell in risks}
+    ticks = await plot.locator('.km-axes text[text-anchor="middle"]:not(.scientific-axis-label)').evaluate_all("""labels => labels.map(label => [
+      Number(label.textContent.replaceAll(',', '')), Number(label.getAttribute('x'))
+    ])""")
+    tick_positions = dict(ticks)
+    if 0 not in times or len(times) < 3 or len(risks) != len(times) * 3 or times != set(tick_positions):
+        raise RuntimeError('The aligned at-risk table must have a row for every cohort at the plot ticks')
+    if any(not math.isclose(cell['x'], tick_positions[cell['time']], abs_tol=1e-8) for cell in risks):
+        raise RuntimeError('At-risk table values must align with the time-axis labels')
+    await expect(chart.locator('figcaption a').first).to_have_attribute('href', 'https://doi.org/10.1080/00401706.1959.10489862')
+    slider = chart.get_by_role('slider', name='Event time', exact=True)
+    cohort_select = chart.get_by_role('combobox', name='Cohort', exact=True)
+    specimen_select = chart.get_by_role('combobox', name='Specimen', exact=True)
+    detail = chart.locator('[data-km-specimen-detail]')
+
+    async def expect_time(time):
+        await expect(chart.locator('[data-km-time]')).to_have_attribute('data-km-time', str(time))
+        await expect(plot.locator('[data-km-cursor]')).to_have_attribute('data-km-cursor', str(time))
+        await expect(slider).to_have_attribute('aria-valuetext', f'{time} h')
+
+    async def event(cohort, at_risk, failed, censored, after, survival):
+        row = chart.locator(f'[data-km-event-row="{cohort}"]')
+        for key, count in [('at-risk', at_risk), ('failures', failed), ('censored', censored), ('after', after)]:
+            await expect(row).to_have_attribute(f'data-{key}', str(count))
+        value = await row.get_attribute('data-survival')
+        if survival is None:
+            if value is not None:
+                raise RuntimeError(f'{cohort} has no reliability estimate beyond its last observation')
+            await expect(plot.locator(f'[data-km-cohort="{cohort}"] [data-km-selected-survival]')).to_have_count(0)
+        elif value is None or not math.isclose(float(value), survival, abs_tol=1e-12):
+            raise RuntimeError(f'{cohort} expected reliability {survival}, observed {value}')
+        return row
+
+    await expect_time(628)
+    await expect(cohort_select).to_have_value('300v')
+    terminal = await event('300v', 5, 1, 4, 0, .5)
+    await event('200v', 7, 0, 0, 7, .875)
+    await event('350v', 0, 0, 0, 0, None)
+    for side, expected in [('lower', .1520358902990239), ('upper', .7748650120668888)]:
+        bound = float(await terminal.get_attribute(f'data-{side}'))
+        if not math.isclose(bound, expected, abs_tol=1e-12):
+            raise RuntimeError(f'The measured terminal Greenwood 95% {side} bound differs: {bound}')
+    await expect(plot.locator('[data-km-confidence]')).to_have_count(2)
+    await expect(plot.locator('[data-km-cohort="300v"] [data-km-confidence]')).to_have_count(2)
+    await expect(chart.locator('[data-km-cohort-summary]')).to_have_attribute('data-median', '628')
+
+    await slider.press('Home')
+    await expect_time(0)
+    await event('300v', 8, 0, 0, 8, 1)
+    await slider.press('ArrowRight')
+    await slider.press('ArrowRight')
+    await expect_time(315)
+    await event('300v', 8, 2, 0, 6, .75)
+    timeline = chart.locator('[data-km-specimens="300v"]')
+    await expect(timeline.locator('[data-time="315"][data-status="failed"]')).to_have_count(2)
+    await expect(timeline.locator('[data-at-risk="true"]')).to_have_count(8)
+    await slider.press('ArrowRight')
+    await expect_time(347)
+    await event('300v', 6, 0, 0, 6, .75)
+    await expect(timeline.locator('[data-at-risk="true"]')).to_have_count(6)
+
+    await expect(timeline.locator('[data-km-specimen]')).to_have_count(8)
+    await expect(timeline.locator('[data-km-outcome="failed"]')).to_have_count(4)
+    await expect(timeline.locator('[data-km-outcome="censored"]')).to_have_count(4)
+    specimen = timeline.locator('[data-km-specimen="300v-07"]')
+    await specimen.evaluate("row => row.scrollIntoView({block: 'center', inline: 'nearest'})")
+    await (specimen.tap(timeout=8000) if touch else specimen.click(timeout=8000))
+    await expect_time(628)
+    await expect(timeline.locator('[data-at-risk="true"]')).to_have_count(5)
+    await expect(specimen_select).to_have_value('300v-07')
+    await expect(detail).to_have_attribute('data-status', 'censored')
+    await expect(detail).to_have_attribute('data-time', '628')
+    await expect(detail).to_contain_text('Right-censored')
+
+    await cohort_select.select_option('350v')
+    await expect(chart.locator('[data-km-specimens]')).to_have_attribute('data-km-specimens', '350v')
+    await expect(detail).to_have_count(0)
+    await specimen_select.select_option('350v-02')
+    await expect_time(258)
+    await expect(detail).to_have_attribute('data-km-specimen-detail', '350v-02')
+    await expect(detail).to_have_attribute('data-status', 'failed')
+    await event('350v', 8, 2, 0, 6, .75)
+
+    hit = plot.locator('[data-km-hit]')
+    await hit.evaluate("region => region.scrollIntoView({block: 'center', inline: 'nearest'})")
+    box = await hit.bounding_box()
+    position = {'x': box['width'] * 904 / 1105, 'y': box['height'] / 2}
+    await (hit.tap(position=position, timeout=8000) if touch else hit.click(position=position, timeout=8000))
+    await expect_time(904)
+    await event('200v', 7, 1, 0, 6, .75)
+    await event('300v', 0, 0, 0, 0, None)
+    await event('350v', 0, 0, 0, 0, None)
 
 
 async def check_lcms_compact(preview):

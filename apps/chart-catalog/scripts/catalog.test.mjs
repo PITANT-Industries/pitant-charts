@@ -8,11 +8,11 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 81 chart and tooltip families and all 373 public examples', () => {
+test('covers 82 chart and tooltip families and all 374 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()
-  assert.equal(catalog.length, 81)
+  assert.equal(catalog.length, 82)
   for (const family of catalog) {
     assert(!familyIds.has(family.id), `Duplicate family ${family.id}`)
     familyIds.add(family.id)
@@ -58,8 +58,9 @@ test('covers 81 chart and tooltip families and all 373 public examples', () => {
   assert.deepEqual(catalog.find((family) => family.id === 'lcms-feature-map')?.examples.map((example) => example.id), ['lcms-feature-map-openms'])
   assert.deepEqual(catalog.find((family) => family.id === 'chromatogram-peak-integration')?.examples.map((example) => example.id), ['chromatogram-peak-integration-coffee'])
   assert.deepEqual(catalog.find((family) => family.id === 'gauge-rr')?.examples.map((example) => example.id), ['gauge-rr-thread-baseline', 'gauge-rr-thread-corrected'])
-  assert.equal(ids.size, 373)
-  assert.equal(urls.size, 373)
+  assert.deepEqual(catalog.find((family) => family.id === 'kaplan-meier')?.examples.map((example) => example.id), ['kaplan-meier-glass-capacitors'])
+  assert.equal(ids.size, 374)
+  assert.equal(urls.size, 374)
 })
 
 test('documents every catalog family exactly once with practical guidance', async () => {
