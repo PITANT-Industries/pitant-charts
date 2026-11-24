@@ -1,0 +1,29 @@
+NASA Milling Wear
+
+Published by the NASA Prognostics Center of Excellence (PCoE).
+The source measurements were provided by the UC Berkeley Emergent Space
+Tensegrities (BEST) Lab. Kai Goebel (NASA Ames) and Alice Agogino
+(UC Berkeley) authored the experimental documentation.
+
+Dataset and license metadata:
+https://data.nasa.gov/dataset/milling-wear
+NASA links to the U.S. government works guidance:
+https://www.usa.gov/government-copyright
+
+The example contains numeric summaries of measured readings. The original
+archive includes mill.mat and Milling-Readme.pdf and is available from:
+https://data.nasa.gov/docs/legacy/mill.zip
+Archive SHA-256:
+de9c8685cb0e07b4f39459dc282b49192a3ad660e9577ff99b68dc9994e35d27
+
+Each row uses Case 11 of the mill structure in mill.mat, in ascending run
+order 1 through 23. The experiment machined cast iron at 0.75 mm depth of
+cut and 0.25 mm/rev feed. Compute arithmetic means over the inclusive range
+of MATLAB samples 1801–7200 for smcAC, vib_spindle, and AE_table. The
+readme describes hardware RMS conditioning of the vibration and acoustic
+emission signals. Means are retained on the recorded signal scale and
+rounded to twelve decimal places.
+
+The example retrospectively fits a fixed reference to runs 1–8 and scores
+runs 9–23. The example computes the control limit and flags from this
+reference. The study recorded flank wear separately.

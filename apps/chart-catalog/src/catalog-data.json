@@ -3654,6 +3654,22 @@
     ]
   },
   {
+    "id": "hotelling-process-monitor",
+    "name": "Multivariate process monitoring",
+    "url": "https://opensource.pitant.de/charts/#docs=hotelling-process-monitor",
+    "examples": [
+      {
+        "id": "hotelling-process-monitor-milling",
+        "family": "hotelling-process-monitor",
+        "title": "NASA Milling Multivariate Process Monitor",
+        "label": "23 measured milling passes",
+        "description": "Compare three sensor channels against a fixed reference and inspect signed contributions to each Hotelling T² signal.",
+        "url": "https://opensource.pitant.de/charts/#example=hotelling-process-monitor-milling",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "lcms-feature-map",
     "name": "LC–MS feature map",
     "url": "https://opensource.pitant.de/charts/#docs=lcms-feature-map",

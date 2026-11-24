@@ -930,6 +930,39 @@
       { "label": "NIST/SEMATECH e-Handbook, Weibull percent-point function", "href": "https://www.itl.nist.gov/div898/handbook/eda/section3/eda3668.htm" }
     ]
   },
+  "hotelling-process-monitor": {
+    "summary": "Monitor joint changes in process measurements against a fixed reference. Select a run to inspect its channel measurements, covariance geometry, and signed contributions to Hotelling T².",
+    "useWhen": "Track successive runs with several correlated measurements per run, such as spindle current, vibration, and acoustic emission from machining passes. Establish a reference period under stable process conditions before monitoring new runs.",
+    "data": "Define at least two channels with unique IDs. Supply a finite measurement per channel in every observation, using a consistent channel order and units. Provide more reference observations than channels and a full-rank reference covariance. Include at least one monitoring run, place runs in acquisition order, and use unique observation IDs within each group.",
+    "reading": "Each plotted run has a Hotelling T² score and an upper control limit. Select a run to see where two of its standardized measurements fall inside or outside the projected boundary. Change the axis pair to inspect other channels. The signed contribution plot shows every channel’s term in the selected run’s total T².",
+    "notes": [
+      "The reference fixes the sample means and covariance. Each new run’s T² is its squared Mahalanobis distance from the reference mean. Covariance matters because a combination of otherwise ordinary readings can depart from the relationships established in the reference.",
+      "The one-sided Phase II limit uses p(m + 1)(m − 1) / [m(m − p)] times the (1 − α) quantile of the F distribution with p and m − p degrees of freedom. Here p is the channel count and m is the reference sample count. The nominal per-run false alarm probability α assumes independent observations from the same multivariate normal process in the reference and follow-up. Treat consecutive exceedances or non-normal data in light of the sampling design.",
+      "When the score axis shows log₁₊, vertical positions use log(1 + T²) and the tick labels show T². This keeps the lower scores legible when the follow-up includes extreme values.",
+      "The ellipse is the projection of the full control region onto the displayed pair of standardized channels. A point outside it exceeds the full limit. With additional channels, an inside point can still exceed the full limit. Read each run’s alert from the full-channel score.",
+      "For standardized readings z and reference correlation matrix R, channel j contributes zⱼ × (R⁻¹z)ⱼ. The signed contributions sum to T². A negative value offsets positive terms through the fitted correlations. Use these terms to prioritize review while investigating physical causes independently.",
+      "The measured example uses Milling Wear Case 11 from UC Berkeley’s BEST Lab, published by NASA. The test recorded 23 passes on cast iron at 0.75 mm cutting depth and 0.25 mm per revolution. Each channel is the mean of samples 1,801–7,200 from its 9,000-sample pass. The channels retain their recorded scales. The vibration and acoustic emission channels are recorded envelopes from the test hardware.",
+      "The example retrospectively fixes the reference at passes 01–08 and monitors passes 09–23 at α = 0.01. Pass 15 is the first exceedance, at T² = 64.27 against a limit of 56.98. Eight follow-up runs exceed the limit. This split illustrates the method on an ordered wear test. The limit is a model-based reference for that sequence.",
+      "At Pass 15, table acoustic emission contributes 64.25 to T². The current and vibration terms nearly cancel. Select current and vibration as the displayed axes to see this run inside their projected boundary with its full-channel alert still active.",
+      "The runnable example uses simulated shaft diameter, spindle load, and motor current."
+    ],
+    "properties": [
+      { "name": "data", "type": "HotellingData", "description": "Required. Pass channel definitions, reference observations, ordered monitoring runs, and an optional upper-tail probability." },
+      { "name": "data.channels", "type": "readonly { id, label, unit? }[]", "description": "Define at least two simultaneously measured channels in vector order." },
+      { "name": "data.reference", "type": "readonly { id, values }[]", "description": "Pass complete reference observations used to estimate the fixed means and covariance." },
+      { "name": "data.runs", "type": "readonly { id, values }[]", "description": "Pass complete monitoring observations in display order." },
+      { "name": "data.alpha", "type": "number", "description": "Set the nominal upper-tail probability for one future run. Supply a value strictly between zero and one. Defaults to 0.01." },
+      { "name": "initialRun", "type": "string", "description": "Choose the monitoring run to inspect initially by its ID." },
+      { "name": "label", "type": "string", "description": "Give the monitor an accessible name." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact gallery preview." },
+      { "name": "source", "type": "{ label, href, description?, references? }", "description": "Credit the process records and link related references." }
+    ],
+    "sources": [
+      { "label": "UC Berkeley BEST Lab, Milling Wear dataset via NASA Open Data", "href": "https://data.nasa.gov/dataset/milling-wear" },
+      { "label": "NIST/SEMATECH e-Handbook, Hotelling T² statistic and model assumptions", "href": "https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc341.htm" },
+      { "label": "NIST/SEMATECH e-Handbook, Phase II limits for individual observations", "href": "https://www.itl.nist.gov/div898/handbook/pmc/section5/pmc5434.htm" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",
