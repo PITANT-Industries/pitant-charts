@@ -3588,6 +3588,31 @@
     ]
   },
   {
+    "id": "pareto-frontier",
+    "name": "Pareto frontier",
+    "url": "https://opensource.pitant.de/charts/#docs=pareto-frontier",
+    "examples": [
+      {
+        "id": "pareto-frontier-oil-press",
+        "family": "pareto-frontier",
+        "title": "Oil Press Throughput, Energy, and Recovery",
+        "label": "Three measured pressing conditions",
+        "description": "Inspect the trade-off between feed rate, specific press energy, and the oil removed from the feed.",
+        "url": "https://opensource.pitant.de/charts/#example=pareto-frontier-oil-press",
+        "position": 1
+      },
+      {
+        "id": "pareto-frontier-turning",
+        "family": "pareto-frontier",
+        "title": "Stainless Steel Turning Trade-offs",
+        "label": "54 measured AISI 316L turning trials",
+        "description": "Compare removal rate, specific cutting energy, and surface roughness across lubricated and dry trials.",
+        "url": "https://opensource.pitant.de/charts/#example=pareto-frontier-turning",
+        "position": 2
+      }
+    ]
+  },
+  {
     "id": "spectrum",
     "name": "Spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=spectrum",

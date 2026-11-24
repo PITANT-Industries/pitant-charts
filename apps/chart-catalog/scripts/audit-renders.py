@@ -219,7 +219,8 @@ async def check_docs_navigation(browser, local_url, catalog):
 
 async def check_scientific_catalog(browser, local_url, catalog):
     families = {
-        'mass-spectrum', 'mass-spectrum-mirror', 'pca-biplot', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
+        'mass-spectrum', 'mass-spectrum-mirror', 'pca-biplot', 'pareto-frontier', 'spectrum', 'spectrogram',
+        'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
@@ -354,6 +355,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=pca-biplot&variant=pca-biplot-glass'
                 )
+            elif example['family'] == 'pareto-frontier':
+                frontier = card_plot.locator('svg[data-pareto-plot]')
+                await check_initial_pareto_plot(frontier, example['id'])
+                await check_compact_figure_bounds(frontier, '[data-pareto-face]')
+                await expect(card_plot.locator('select, input, [data-pareto-readout], [data-pareto-active], .pareto-hit')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', f'#docs=pareto-frontier&variant={example["id"]}'
+                )
             elif example['family'] == 'stress-strain-comparison':
                 stress = card_plot.locator('svg[data-stress-overview]')
                 await check_stress_axes(stress)
@@ -485,6 +494,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'pca-biplot':
                 await check_pca_biplot(plot, touch)
                 code_import = 'PcaBiplot'
+            elif example['family'] == 'pareto-frontier':
+                await check_pareto_frontier(plot, slug, touch)
+                code_import = 'ParetoFrontier'
             elif example['family'] == 'campbell-diagram':
                 await check_campbell_diagram(plot, touch)
                 code_import = 'CampbellDiagram'
@@ -4437,6 +4449,141 @@ async def check_pca_biplot(plot, touch):
         await chart.get_by_role('button', name='Clear brush', exact=True).click()
         await expect(biplot.locator('[data-pca-row][data-brushed="true"]')).to_have_count(0)
         await expect(source_rows).to_have_attribute('data-pca-original-row', '107')
+
+
+async def check_pareto_trials(plot, eligible, frontier):
+    await expect(plot.locator('[data-pareto-trial]')).to_have_count(eligible)
+    marks = plot.locator('[data-pareto-trial][data-frontier="true"]')
+    await expect(marks).to_have_count(len(frontier))
+    actual = await marks.evaluate_all('trials => trials.map(trial => trial.dataset.paretoTrial)')
+    if set(actual) != set(frontier):
+        raise RuntimeError(f'Unexpected nondominated trial IDs: {actual}, expected {frontier}')
+
+
+async def check_initial_pareto_plot(plot, slug):
+    turning = slug == 'pareto-frontier-turning'
+    frontier = {'run-5', 'run-17', 'run-19', 'run-45', 'run-47'} if turning else {'rpm-11', 'rpm-16-5', 'rpm-22'}
+    await expect(plot).to_have_attribute('data-view', 'boundary')
+    await check_pareto_trials(plot, 54 if turning else 3, frontier)
+    faces = await plot.locator('polygon[data-pareto-face]').evaluate_all("""polygons => polygons.map(face => [
+        face.dataset.paretoFace, Array.from(face.points, ({x, y}) => [x, y]),
+    ])""")
+    if {axis for axis, _ in faces} != {'0', '1', '2'}:
+        raise RuntimeError('The attainment boundary must render floors and both directions of risers')
+    for _, vertices in faces:
+        if len(vertices) != 4 or not all(map(math.isfinite, (value for vertex in vertices for value in vertex))):
+            raise RuntimeError(f'Invalid attainment boundary facet: {vertices}')
+        a, b, c, d = vertices
+        if not all(math.isclose(a[axis] + c[axis], b[axis] + d[axis], abs_tol=0.002) for axis in (0, 1)):
+            raise RuntimeError(f'Attainment boundary facet must project a rectangle: {vertices}')
+
+
+async def check_pareto_frontier(preview, slug, touch):
+    chart = preview.locator('figure[data-pareto-frontier]')
+    plot = chart.locator('svg[data-pareto-plot]')
+    await check_initial_pareto_plot(plot, slug)
+    view = chart.get_by_role('combobox', name='View', exact=True)
+    inspect = chart.get_by_role('combobox', name='Inspect trial', exact=True)
+    counts = chart.locator('output[data-pareto-counts]')
+    readout = chart.locator('output[data-pareto-readout]')
+    cells = plot.locator('rect[data-pareto-section-cell]')
+
+    async def count(eligible, nondominated, threshold):
+        for name, value in [('eligible', eligible), ('nondominated', nondominated), ('threshold', threshold)]:
+            await expect(counts).to_have_attribute(f'data-{name}', str(value))
+
+    async def raw_trial(trial_id, values, frontier):
+        await expect(readout).to_have_attribute('data-trial-id', trial_id)
+        await expect(readout).to_have_attribute('data-frontier', 'true' if frontier else 'false')
+        for axis, expected in zip('xyz', values):
+            measured = float(await readout.get_attribute(f'data-value-{axis}'))
+            if not math.isclose(measured, expected, rel_tol=0, abs_tol=1e-10):
+                raise RuntimeError(f'Unexpected source value for {trial_id} objective {axis}: {measured}')
+
+    if slug == 'pareto-frontier-oil-press':
+        slider = chart.get_by_role('slider', name='Minimum feed oil removed', exact=True)
+        labels = ['Feed rate ↑', 'Press energy ↓', 'Oil removed ↑'] if touch else [
+            'Feed rate (kg/h) ↑', 'Specific press energy (kJ/kg feed) ↓', 'Feed oil removed (%) ↑',
+        ]
+        for label in labels:
+            await expect(plot.get_by_text(label, exact=True)).to_be_visible()
+        await count(3, 3, 34)
+        await raw_trial('rpm-16-5', (1 / 0.65, 589, 43), True)
+        await expect(readout).to_contain_text('589 kJ/kg feed')
+        await view.select_option('section')
+        await expect(plot).to_have_attribute('data-view', 'section')
+        await expect(plot.get_by_text('Feed rate (kg/h) ↑', exact=True)).to_be_visible()
+        await expect(plot.get_by_text('Specific press energy (kJ/kg feed) ↓', exact=True)).to_be_visible()
+        await expect(cells.first).to_be_visible()
+        await expect(plot.locator('[data-pareto-face]')).to_have_count(0)
+        pick = plot.locator('[data-pareto-trial="rpm-22"] .pareto-hit')
+        if touch:
+            await pick.tap()
+        else:
+            await pick.click()
+        await expect(inspect).to_have_value('rpm-22')
+        await raw_trial('rpm-22', (1 / 0.60, 675, 34), True)
+        await slider.press('ArrowRight')
+        await expect(slider).to_be_focused()
+        await count(2, 2, 43)
+        await check_pareto_trials(plot, 2, {'rpm-11', 'rpm-16-5'})
+        await slider.press('End')
+        await count(1, 1, 55)
+        await check_pareto_trials(plot, 1, {'rpm-11'})
+        await raw_trial('rpm-11', (1 / 1.28, 992, 55), True)
+        await expect(cells).to_have_count(1)
+        snug_corner = await plot.evaluate("""svg => {
+            const cell = svg.querySelector('[data-pareto-section-cell]');
+            const frame = svg.querySelector('[data-pareto-section-frame]');
+            const trial = svg.querySelector('[data-pareto-trial="rpm-11"] .pareto-hit');
+            const {x, y, width, height} = cell.getBBox();
+            const bounds = frame.getBBox();
+            return Math.abs(x - trial.cx.baseVal.value) < 0.01 &&
+                Math.abs(y + height - trial.cy.baseVal.value) < 0.01 &&
+                Math.abs(x + width - bounds.x - bounds.width) < 0.01 && Math.abs(y - bounds.y) < 0.01;
+        }""")
+        if not snug_corner:
+            raise RuntimeError('The one-trial section must extend only from its measured target corner toward worse objectives')
+        return
+
+    slider = chart.get_by_role('slider', name=re.compile(r'^Maximum surface roughness Ra$', re.I))
+    group = chart.get_by_role('combobox', name='Trial group', exact=True)
+    labels = ['Removal rate ↑', 'Cutting energy ↓', 'Roughness Ra ↓'] if touch else [
+        'Material removal rate (cm³/min) ↑', 'Specific cutting energy (kWh/dm³) ↓', 'Surface roughness Ra (µm) ↓',
+    ]
+    for label in labels:
+        await expect(plot.get_by_text(label, exact=True)).to_be_visible()
+    await count(54, 5, 0.68)
+    await inspect.select_option('run-1')
+    await raw_trial('run-1', (30, 248.17 / 360, 0.30), False)
+    await expect(readout).to_have_attribute('data-dominator', 'run-5')
+    await inspect.select_option('run-5')
+    await raw_trial('run-5', (30, 229.22 / 360, 0.30), True)
+    await expect(chart.locator('output[data-pareto-readout][data-dominator]')).to_have_count(0)
+    await slider.press('End')
+    for _ in range(3):
+        await slider.press('ArrowLeft')
+    await count(7, 2, 0.30)
+    await check_pareto_trials(plot, 7, {'run-5', 'run-17'})
+    await slider.press('Home')
+
+    await view.select_option('section')
+    await expect(plot).to_have_attribute('data-view', 'section')
+    await group.select_option('Dry')
+    await count(27, 8, 0.68)
+    await group.select_option('MQL')
+    await count(27, 4, 0.68)
+    await expect(cells.first).to_be_visible()
+    await slider.press('End')
+    await count(1, 1, 0.25)
+    await check_pareto_trials(plot, 1, {'run-17'})
+    await raw_trial('run-17', (20, 200.28 / 360, 0.25), True)
+
+    await group.select_option('Dry')
+    await count(0, 0, 0.25)
+    await expect(chart.get_by_role('status').filter(has_text='No measured trial meets these filters.')).to_be_visible()
+    await expect(readout).to_have_count(0)
+    await expect(cells).to_have_count(0)
 
 
 async def check_spectral_waterfall(plot, slug, touch=False):

@@ -712,6 +712,33 @@
       { "label": "K. Ruben Gabriel (1971), The biplot graphic display of matrices with application to principal component analysis", "href": "https://doi.org/10.1093/biomet/58.3.453" }
     ]
   },
+  "pareto-frontier": {
+    "summary": "Compare three competing objectives and identify trials that set the best observed trade-offs.",
+    "useWhen": "Find process runs that balance production rate, energy, and product performance, then check which remain eligible under a minimum or maximum requirement.",
+    "data": "Supply exactly three objectives with labels, optional short labels and units, and a minimize or maximize direction for each. Give each trial a unique ID and three finite objective values in matching order. Add a label, trial group, or setup details if available.",
+    "reading": "The 3D attainment boundary steps at target levels supported by eligible trials. The axis arrows indicate the preferred direction. Switch to Threshold section to see the attainable targets for the first two objectives at the selected third-objective requirement. Use the threshold to set a minimum for a maximized objective or a maximum for a minimized objective. Select a point or use Inspect trial to see its measurements and status.",
+    "notes": [
+      "A trial dominates another when it is at least as good in every objective and strictly better in at least one. The chart recalculates dominance among the eligible trials when the threshold or trial group changes. Trials with equal objective values keep their own IDs and share the same status.",
+      "The staircase shows the boundary of targets met by at least one eligible trial. Its steps retain the observed objective values. Each area in the threshold section corresponds to targets that an eligible trial meets simultaneously.",
+      "The maize germ example uses the three active screw speeds in Table 1, measured in 10-minute steady-state intervals. Feed rate in kg/h is the reciprocal of specific pressing time in h/kg feed. Specific press energy stays in the reported kJ/kg feed. Feed oil removed is 100% minus the reported percentage of initial oil retained in the cake.",
+      "At 11, 16.5, and 22 rpm, the press removes 55%, 43%, and 34% of feed oil by that measure. All three trials are nondominated. At 16.5 rpm the press uses the least specific energy, 589 kJ/kg feed. Setting the minimum oil removed to 43% leaves two eligible trials.",
+      "The AISI 316L example uses 54 turning trials, split equally between dry and minimum-quantity lubrication (MQL). It computes nominal removal rate as V × f × aₚ in cm³/min and estimates specific cutting energy as Fz ÷ (3600 × f × aₚ) in kWh/dm³. V is cutting speed in m/min, f is feed in mm/rev, aₚ is the 0.5 mm depth of cut, and Fz is the measured tangential force in newtons. Surface roughness Ra is the measured finish criterion.",
+      "With all 54 turning trials eligible, runs 5, 17, 19, 45, and 47 are nondominated. Run 17 has a nominal removal rate of 20 cm³/min, an estimated specific cutting energy of 0.5563 kWh/dm³, and a measured Ra of 0.25 µm. Setting maximum Ra to 0.30 µm leaves seven eligible trials, of which two are nondominated."
+    ],
+    "properties": [
+      { "name": "data", "type": "ParetoData", "description": "Required. Supply three objectives and trials with unique IDs, aligned objective values, and optional labels, groups, and setup descriptions." },
+      { "name": "initialTrial", "type": "string", "description": "Choose the initial trial to inspect by ID." },
+      { "name": "label", "type": "string", "description": "Describe the experiment or objective trade-off for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show the 3D attainment boundary in a compact space such as a gallery card." },
+      { "name": "source", "type": "{ label: string; href: string; description?: string; license?: string; licenseUrl?: string }", "description": "Show the data source with optional measurement and license details." }
+    ],
+    "sources": [
+      { "label": "Wetterauw et al. (2025), maize germ de-oiling trials, Table 1 (CC BY 4.0)", "href": "https://edepot.wur.nl/700871" },
+      { "label": "Castillo Pantoja et al. (2023), AISI 316L experimental turning measurements (CC BY 4.0)", "href": "https://doi.org/10.5281/zenodo.7892469" },
+      { "label": "Castillo Pantoja et al. (2023), AISI 316L turning dataset description and Table 1", "href": "https://doi.org/10.1016/j.dib.2023.109475" },
+      { "label": "del Risco-Alfonso et al. (2021), turning conditions and equations for removal rate and cutting energy", "href": "https://doi.org/10.3390/met11111698" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",

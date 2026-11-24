@@ -8,11 +8,11 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 75 chart and tooltip families and all 364 public examples', () => {
+test('covers 76 chart and tooltip families and all 366 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()
-  assert.equal(catalog.length, 75)
+  assert.equal(catalog.length, 76)
   for (const family of catalog) {
     assert(!familyIds.has(family.id), `Duplicate family ${family.id}`)
     familyIds.add(family.id)
@@ -52,8 +52,9 @@ test('covers 75 chart and tooltip families and all 364 public examples', () => {
   assert.deepEqual(catalog.find((family) => family.id === 'response-surface')?.examples.map((example) => example.id), ['response-surface-thermal'])
   assert.deepEqual(catalog.find((family) => family.id === 'mass-spectrum-mirror')?.examples.map((example) => example.id), ['mass-spectrum-mirror-caffeine'])
   assert.deepEqual(catalog.find((family) => family.id === 'pca-biplot')?.examples.map((example) => example.id), ['pca-biplot-glass'])
-  assert.equal(ids.size, 364)
-  assert.equal(urls.size, 364)
+  assert.deepEqual(catalog.find((family) => family.id === 'pareto-frontier')?.examples.map((example) => example.id), ['pareto-frontier-oil-press', 'pareto-frontier-turning'])
+  assert.equal(ids.size, 366)
+  assert.equal(urls.size, 366)
 })
 
 test('documents every catalog family exactly once with practical guidance', async () => {
