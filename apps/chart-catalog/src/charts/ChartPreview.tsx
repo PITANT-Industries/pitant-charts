@@ -32,6 +32,7 @@ const CieChromaticityDiagramPreview = lazy(() => import('./scientific/CieChromat
 const HyperspectralCubePreview = lazy(() => import('./scientific/HyperspectralCubePreview'))
 const ResponseSurfacePreview = lazy(() => import('./scientific/ResponseSurfacePreview'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
+const EnergyOperatingMapPreview = lazy(() => import('./scientific/energy-operating-map/EnergyOperatingMapPreview'))
 const TaktBalancePreview = lazy(() => import('./scientific/takt-balance/TaktBalancePreview'))
 const CumulativeFlowPreview = lazy(() => import('./scientific/cumulative-flow/CumulativeFlowPreview'))
 const StartupOverlayPreview = lazy(() => import('./scientific/startup-overlay/StartupOverlayPreview'))
@@ -72,6 +73,7 @@ export const rendererFamilies = {
   startupOverlay: ['startup-overlay'],
   cumulativeFlow: ['cumulative-flow'],
   taktBalance: ['takt-balance'],
+  energyOperatingMap: ['energy-operating-map'],
   campbell: ['campbell-diagram'],
   modes: ['mode-shapes'],
   orbit: ['shaft-orbit'],
@@ -115,6 +117,7 @@ const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.startupOverlay.map((id) => [id, StartupOverlayPreview] as const),
   ...rendererFamilies.cumulativeFlow.map((id) => [id, CumulativeFlowPreview] as const),
   ...rendererFamilies.taktBalance.map((id) => [id, TaktBalancePreview] as const),
+  ...rendererFamilies.energyOperatingMap.map((id) => [id, EnergyOperatingMapPreview] as const),
   ...rendererFamilies.paretoFrontier.map((id) => [id, ParetoFrontierPreview] as const),
   ...rendererFamilies.pcaBiplot.map((id) => [id, PcaBiplotPreview] as const),
   ...rendererFamilies.mirrorSpectrum.map((id) => [id, MassSpectrumMirrorPreview] as const),

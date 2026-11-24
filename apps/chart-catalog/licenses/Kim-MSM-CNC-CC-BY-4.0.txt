@@ -1,0 +1,33 @@
+Multi-Sensor and MTConnect Dataset of Metal Cutting Anomaly in Milling from
+Laboratory and Industry Settings.
+
+Eunseob Kim, Yuseop Sim, Adrian Shuai Li, Mir Imtiaz Mostafiz, Zachary Van Meter,
+Martin Byung-Guk Jun, Elisa Bertino, and Ali Shakouri (2026).
+Dataset DOI: https://doi.org/10.34740/kaggle/ds/8392825
+Versioned Kaggle record:
+https://www.kaggle.com/datasets/manufuturetoday/multi-sensor-for-metal-milling-anomaly/versions/2
+Scientific Data article: https://doi.org/10.1038/s41597-026-07255-7
+Data license: Creative Commons Attribution 4.0 International
+https://creativecommons.org/licenses/by/4.0/
+
+The PITANT example selects 16 passes from the February 26, 2024 laboratory
+experiment imi_vm20i/dataset10. The annotated start and end times, speed, axial
+depth, direction, and other cutting settings come from label.csv. The cohort
+fixes AA 6061 material, three-flute Tool B (diameter 50.8 mm), 26.67 mm radial
+depth and 63.5 mm/s programmed feed (150 in/min in G20 program B_N2-a3.nc).
+Each speed and axial depth combination has one up-milling and one down-milling
+pass. Row numbers follow the data rows of label.csv, starting at one.
+
+The fixture copies the original time and watt values from
+20240226_055737.825160_mtc.csv, including the enclosing measurements at each
+annotated cut boundary. The source identifies watt as true power at the main
+supply. Exported rows have a median interval of about 0.145 s. The meter
+adapter's update interval is about 1 s and consecutive rows can repeat a value.
+The chart integrates within annotated windows and skips intervals longer than
+0.25 s. Pass 52 has a 0.461592 s gap at the end of its cut and is omitted from
+the setting median. The denominator is one annotated cutting pass. The
+comparison covers main-supply electricity within those windows and retains
+baseline draw during the cuts.
+
+Regeneration: run apps/chart-catalog/scripts/extract-energy-operating-map.py
+with label.csv followed by the MTConnect CSV. Its SHA-256 checks pin both files.

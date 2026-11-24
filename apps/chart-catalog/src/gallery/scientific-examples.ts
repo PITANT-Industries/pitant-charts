@@ -1,4 +1,5 @@
 import allanDeviation from './docs/examples/AllanDeviation.tsx?raw'
+import energyOperatingMap from './docs/examples/EnergyOperatingMap.tsx?raw'
 import taktBalance from './docs/examples/TaktBalance.tsx?raw'
 import cumulativeFlow from './docs/examples/CumulativeFlow.tsx?raw'
 import startupOverlay from './docs/examples/StartupOverlay.tsx?raw'
@@ -92,6 +93,7 @@ const scientificExamples = new Map([
   ['startup-overlay-measured', withCatalogImports(startupOverlay)],
   ['cumulative-flow-manufacturing', withCatalogImports(cumulativeFlow)],
   ['takt-balance-assembly', withCatalogImports(taktBalance)],
+  ['energy-operating-map-machine', withCatalogImports(energyOperatingMap)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

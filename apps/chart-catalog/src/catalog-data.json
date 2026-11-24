@@ -3750,6 +3750,22 @@
     ]
   },
   {
+    "id": "energy-operating-map",
+    "name": "Energy per unit operating map",
+    "url": "https://opensource.pitant.de/charts/#docs=energy-operating-map",
+    "examples": [
+      {
+        "id": "energy-operating-map-machine",
+        "family": "energy-operating-map",
+        "title": "CNC Milling Energy per Cut",
+        "label": "Metered milling trials",
+        "description": "Compare watt-hours per annotated cut across tested settings and inspect the recorded power traces behind each result.",
+        "url": "https://opensource.pitant.de/charts/#example=energy-operating-map-machine",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "lcms-feature-map",
     "name": "LC–MS feature map",
     "url": "https://opensource.pitant.de/charts/#docs=lcms-feature-map",

@@ -1109,6 +1109,38 @@
       { "label": "MIT, Production Operations Level Transition-to-Lean Guide, takt time calculation", "href": "https://dspace.mit.edu/bitstream/handle/1721.1/81899/PRD_TTL_ProdOpsDoc_V.1_2000.pdf" }
     ]
   },
+  "energy-operating-map": {
+    "summary": "Compare metered energy per unit across observed speed and load settings, then inspect the power trace of an individual run.",
+    "useWhen": "Investigate how energy demand varies across repeated operating settings for the same process. Use comparable process windows, output definitions, and meter boundaries.",
+    "data": "Supply axis labels and units, an output unit label, and a record for each run. Give every run a speed, a load, a positive output quantity, an explicit time window, and timestamped power in watts. Use the same clock for a run’s readings and bounds.",
+    "reading": "Each map mark represents one observed speed and load pair. Its color gives the median energy per unit among runs with full power coverage at that pair. Select a mark or use the settings list to inspect its runs. The meter trace shows the intervals that contributed to observed energy.",
+    "notes": [
+      "The chart integrates power with the trapezoidal rule. It divides watt-seconds by 3,600 to obtain watt-hours. At an integration bound between adjacent valid readings, it uses linear interpolation within that pair.",
+      "A null reading or a gap longer than maxGap splits the trace and leaves the intervening time uncovered. The integration uses the measured intervals inside the requested bounds, without extrapolating past the first or last measured reading.",
+      "Only runs with full coverage contribute energy per unit. For a run with a gap, inspect the observed watt-hours and the fraction of the window covered. The mark remains visible when every run for a setting has incomplete coverage.",
+      "The median uses one energy-per-unit value per eligible run at an identical speed and load. Map positions represent tested settings. Compare like-for-like runs and use the meter trace to investigate differences in duration and power.",
+      "The measured example uses 16 annotated cutting passes from the Hurco VM20i laboratory mill in Kim et al., imi_vm20i/dataset10. The cuts use AA 6061, the same 50.8 mm three-flute tool, 26.67 mm radial depth, and a programmed feed of 63.5 mm/s. The map compares four recorded spindle settings from 8,500 to 11,500 rpm and two programmed axial depths, 0.1016 and 0.508 mm. Axial depth is the load setting in this example.",
+      "Each setting includes an up-milling pass and a down-milling pass from the source annotations. The chart integrates the MTConnect watt channel from the machine’s main supply over each annotated cutting interval. The denominator is one cutting pass. Measurements bracketing the interval remain available for boundary interpolation.",
+      "The measured fixture sets maxGap to 0.25 seconds on the original meter export timestamps. Fifteen passes cover their full windows. Pass 52 has a gap of about 0.462 seconds and contributes only observed energy. Its paired pass supplies the setting’s color. The selected Pass 20 uses 10,500 rpm and 0.508 mm axial depth and records approximately 3.625 Wh per cut.",
+      "The runnable example uses synthetic machining trials. Two complete runs at 600 rpm and 8 N·m produce 6.375 and 6 Wh per part. The run at 900 rpm and 12 N·m has a gap and records 9 Wh over 20 of 40 seconds."
+    ],
+    "properties": [
+      { "name": "data", "type": "EnergyOperatingMapData", "description": "Required. Supply the output unit, speed and load axes, and run records." },
+      { "name": "data.unit", "type": "string", "description": "Name the output unit used to normalize watt-hours, such as part or cut." },
+      { "name": "data.speed, data.load", "type": "{ label, unit }", "description": "Name each operating variable and its measurement unit. Identify the actual setting or measured quantity behind the load axis." },
+      { "name": "data.runs", "type": "readonly { id, label, speed, load, units, start, end, maxGap, readings }[]", "description": "Supply a distinct run ID, operating values, output quantity, time bounds in seconds, and the largest interval to integrate between readings." },
+      { "name": "data.runs[].readings", "type": "readonly { time: number, watts: number | null }[]", "description": "Pass timestamps in seconds and nonnegative power in watts. Use null for a known missing reading." },
+      { "name": "initialRun", "type": "string", "description": "Select a run by ID when the chart opens." },
+      { "name": "title", "type": "string", "description": "Give the operating map an accessible name." },
+      { "name": "caption", "type": "ReactNode", "description": "Credit the source and describe the meter scope, run bounds, and output definition." },
+      { "name": "compact", "type": "boolean", "description": "Show the read-only operating map used in gallery previews." }
+    ],
+    "sources": [
+      { "label": "Kim et al., Multi-Sensor and MTConnect milling dataset, version 2 (CC BY 4.0)", "href": "https://doi.org/10.34740/kaggle/ds/8392825" },
+      { "label": "Kim et al., machine, meter, and cutting path annotations", "href": "https://doi.org/10.1038/s41597-026-07255-7" },
+      { "label": "NIST Guide to the SI, watt-hour and watt-second conversions", "href": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",

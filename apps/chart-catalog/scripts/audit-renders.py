@@ -224,6 +224,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'spectral-waterfall', 'correlation-matrix',
         'gauge-rr', 'kaplan-meier', 'weibull-probability', 'process-control', 'hotelling-process-monitor',
         'classifier-threshold-explorer', 'fault-event-replay', 'startup-overlay', 'cumulative-flow', 'takt-balance',
+        'energy-operating-map',
         'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
@@ -400,6 +401,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await check_hotelling_compact(card_plot)
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=hotelling-process-monitor&variant=hotelling-process-monitor-milling'
+                )
+            elif example['family'] == 'energy-operating-map':
+                await check_energy_operating_map_compact(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=energy-operating-map&variant=energy-operating-map-machine'
                 )
             elif example['family'] == 'takt-balance':
                 await check_takt_balance_compact(card_plot)
@@ -590,6 +596,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'hotelling-process-monitor':
                 await check_hotelling(plot, touch)
                 code_import = 'HotellingProcessMonitor'
+            elif example['family'] == 'energy-operating-map':
+                await check_energy_operating_map(plot, touch)
+                code_import = 'EnergyOperatingMap'
             elif example['family'] == 'takt-balance':
                 await check_takt_balance(plot, touch)
                 code_import = 'TaktBalance'
@@ -6041,6 +6050,129 @@ async def check_takt_balance(plot, touch):
     await expect(sources).to_contain_text('scenario assumptions')
     page = plot.page
     provenance = 'licenses/Nugraha-Automotive-Yamazumi-CC-BY-4.0.txt'
+    notices = await page.request.get(urljoin(page.url, 'THIRD_PARTY_NOTICES.md'))
+    assert notices.ok and f'({provenance})' in await notices.text()
+    data_notice = await page.request.get(urljoin(page.url, provenance))
+    assert data_notice.ok
+    text = await data_notice.text()
+    assert doi in text and 'https://creativecommons.org/licenses/by/4.0/' in text
+
+
+async def check_energy_map_settings(chart):
+    diagram = chart.locator('svg[data-energy-map]')
+    groups = diagram.locator('[data-energy-group]')
+    await expect(chart).to_have_attribute('data-run-count', '16')
+    await expect(groups).to_have_count(8)
+    readings = await groups.evaluate_all("""groups => groups.map(group => {
+      const mark = group.querySelector('circle[data-energy-mark]')
+      return {...group.dataset, x: Number(mark.getAttribute('cx')), y: Number(mark.getAttribute('cy'))}
+    })""")
+    # Reference integrals independently reconstructed from the two publisher CSV files.
+    medians = (
+        (1.8637285411522084 + 1.7869418639109722) / 2,
+        (2.1452000509078055 + 2.2417599147062712) / 2,
+        (1.94840233771075 + 1.8631521405574032) / 2,
+        (2.4243300257277083 + 2.1049426170475276) / 2,
+        2.2578580492442777,
+        (3.435653201335722 + 3.6251811924059445) / 2,
+        (2.103571499346236 + 1.6883227611170972) / 2,
+        (2.522883913225264 + 2.27240035076125) / 2,
+    )
+    measured_coordinates = [(speed, load) for speed in (8500, 9500, 10500, 11500) for load in (.1016, .508)]
+    assert [(float(group['speed']), float(group['load'])) for group in readings] == measured_coordinates
+    for i, (group, median) in enumerate(zip(readings, medians)):
+        assert group['count'] == '2' and group['energyGroup'] == str(i), group
+        assert math.isclose(float(group['median']), median, abs_tol=1e-9), group
+        x = readings[0]['x'] + (readings[6]['x'] - readings[0]['x']) * (i // 2) / 3
+        assert math.isclose(group['x'], x, abs_tol=1e-7), group
+        assert group['y'] == readings[i % 2]['y'], group
+    assert readings[0]['y'] > readings[1]['y']
+
+
+async def check_energy_trace(trace, run, start, end, segment_end):
+    await expect(trace).to_have_attribute('data-run', run)
+    for name, expected in [('start', start), ('end', end)]:
+        assert math.isclose(float(await trace.get_attribute(f'data-{name}')), expected, abs_tol=1e-8)
+    segments = trace.locator('[data-energy-power-segment]')
+    await expect(segments).to_have_count(1)
+    for name, expected in [('start', start), ('end', segment_end)]:
+        assert math.isclose(float(await segments.get_attribute(f'data-{name}')), expected, abs_tol=1e-8)
+    left, right = [float(await trace.get_attribute(f'data-{side}')) for side in ('left', 'right')]
+    line = await segments.locator('.energy-power-line').get_attribute('d')
+    coordinates = [float(x) for x in re.findall(r'[ML]([-+0-9.eE]+),', line)]
+    assert len(coordinates) > 2, (run, line)
+    assert math.isclose(coordinates[0], left, abs_tol=.001), run
+    expected_right = left + (segment_end - start) / (end - start) * (right - left)
+    assert math.isclose(coordinates[-1], expected_right, abs_tol=.001), run
+    assert all(a <= b for a, b in zip(coordinates, coordinates[1:])), run
+    area = await segments.locator('.energy-power-area').get_attribute('d')
+    assert area.startswith(line) and area.endswith('Z'), run
+    return line
+
+
+async def check_energy_operating_map_compact(plot):
+    chart = plot.locator('figure[data-energy-operating-map][data-compact="true"]')
+    await expect(chart).to_be_visible()
+    await check_energy_map_settings(chart)
+    diagram = chart.locator('svg[data-energy-map]')
+    await expect(diagram.locator('[data-energy-group="5"]')).to_have_attribute('data-selected', 'true')
+    trace = chart.locator('svg[data-energy-trace]')
+    await check_energy_trace(trace, 'pass-20', 127.019, 129.963, 129.963)
+    await check_compact_figure_bounds(diagram, '[data-energy-mark], .energy-selection-ring')
+    await check_compact_figure_bounds(trace, '.energy-power-line, .energy-power-area')
+    await expect(chart.locator('text, button, input, select, a, .energy-map-hit, [data-energy-readout]')).to_have_count(0)
+
+
+async def check_energy_operating_map(plot, touch):
+    chart = plot.locator('figure[data-energy-operating-map][data-compact="false"]')
+    diagram = chart.locator('svg[data-energy-map]')
+    setting = chart.get_by_role('combobox', name='Operating setting')
+    trial = chart.get_by_role('combobox', name='Trial')
+    readout = chart.locator('[data-energy-readout]')
+    trace = chart.locator('svg[data-energy-trace]')
+
+    async def check_trial(group, run, start, end, segment_end, energy):
+        await expect(setting).to_have_value(str(group))
+        await expect(trial).to_have_value(run)
+        await expect(trial.locator('option')).to_have_count(2)
+        await expect(diagram.locator(f'[data-energy-group="{group}"]')).to_have_attribute('data-selected', 'true')
+        await expect(diagram.locator('[data-energy-group][data-selected="true"]')).to_have_count(1)
+        await expect(readout).to_have_attribute('data-energy-readout', run)
+        await expect(readout).to_have_attribute('data-units', '1')
+        assert math.isclose(float(await readout.get_attribute('data-observed-wh')), energy, abs_tol=1e-9)
+        assert math.isclose(float(await readout.get_attribute('data-covered-seconds')), segment_end - start, abs_tol=1e-8)
+        if end == segment_end:
+            assert math.isclose(float(await readout.get_attribute('data-energy-per-unit')), energy, abs_tol=1e-9)
+            await expect(readout.get_by_text('100%', exact=True)).to_be_visible()
+        else:
+            await expect(readout).to_have_attribute('data-energy-per-unit', 'unavailable')
+            await expect(readout.get_by_text('Unavailable', exact=True)).to_be_visible()
+            await expect(readout.get_by_text('95.5%', exact=True)).to_be_visible()
+        return await check_energy_trace(trace, run, start, end, segment_end)
+
+    await check_energy_map_settings(chart)
+    await expect(setting.locator('option')).to_have_count(8)
+    initial = await check_trial(5, 'pass-20', 127.019, 129.963, 129.963, 3.6251811924059445)
+    await setting.select_option('4')
+    paired = await check_trial(4, 'pass-51', 315.371, 317.461, 317.461, 2.2578580492442777)
+    assert paired != initial
+    await trial.select_option('pass-52')
+    gap = await check_trial(4, 'pass-52', 320.341, 322.667, 322.562861, 2.4816882447856945)
+    assert gap != paired
+    await expect(chart.get_by_text('Median 2.2579 Wh / cut · 1 of 2 with full coverage', exact=True)).to_be_visible()
+    await check_energy_map_settings(chart)
+    if not touch:
+        await diagram.locator('[data-energy-group="0"] .energy-map-hit').click()
+        await check_trial(0, 'pass-35', 219.221, 221.056, 221.056, 1.8637285411522084)
+
+    sources = chart.locator('figcaption')
+    doi = 'https://doi.org/10.34740/kaggle/ds/8392825'
+    await expect(sources.locator(f'a[href="{doi}"]')).to_be_visible()
+    await expect(sources).to_contain_text('CC BY 4.0')
+    await expect(sources).to_contain_text('logged main-supply watts')
+    await expect(sources).to_contain_text('energy is omitted from the setting median')
+    page = plot.page
+    provenance = 'licenses/Kim-MSM-CNC-CC-BY-4.0.txt'
     notices = await page.request.get(urljoin(page.url, 'THIRD_PARTY_NOTICES.md'))
     assert notices.ok and f'({provenance})' in await notices.text()
     data_notice = await page.request.get(urljoin(page.url, provenance))
