@@ -32,6 +32,7 @@ const CieChromaticityDiagramPreview = lazy(() => import('./scientific/CieChromat
 const HyperspectralCubePreview = lazy(() => import('./scientific/HyperspectralCubePreview'))
 const ResponseSurfacePreview = lazy(() => import('./scientific/ResponseSurfacePreview'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
+const PcaBiplotPreview = lazy(() => import('./scientific/pca/PcaBiplotPreview'))
 const MassSpectrumMirrorPreview = lazy(() => import('./scientific/mirror-spectrum/MassSpectrumMirrorPreview'))
 const ParticleMassSpectrum = lazy(() => import('./scientific/particle/ParticleMassSpectrumPreview'))
 const ScientificWaterfall = lazy(() => import('./scientific/waterfall/SpectralWaterfallPreview'))
@@ -42,6 +43,7 @@ export const rendererFamilies = {
   waterfall: ['spectral-waterfall'],
   particle: ['mass-spectrum'],
   mirrorSpectrum: ['mass-spectrum-mirror'],
+  pcaBiplot: ['pca-biplot'],
   campbell: ['campbell-diagram'],
   modes: ['mode-shapes'],
   orbit: ['shaft-orbit'],
@@ -72,6 +74,7 @@ export const rendererFamilies = {
 const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.cartesian.map((id) => [id, Cartesian] as const),
   ...rendererFamilies.polarflow.map((id) => [id, PolarFlow] as const),
+  ...rendererFamilies.pcaBiplot.map((id) => [id, PcaBiplotPreview] as const),
   ...rendererFamilies.mirrorSpectrum.map((id) => [id, MassSpectrumMirrorPreview] as const),
   ...rendererFamilies.particle.map((id) => [id, ParticleMassSpectrum] as const),
   ...rendererFamilies.campbell.map((id) => [id, CampbellPreview] as const),

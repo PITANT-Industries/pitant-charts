@@ -17,6 +17,7 @@ import individualsControlChart from './docs/examples/IndividualsControlChart.tsx
 import industrialCtViewer from './docs/examples/IndustrialCtViewer.tsx?raw'
 import massSpectrumMirror from './docs/examples/MassSpectrumMirror.tsx?raw'
 import modeShapes from './docs/examples/ModeShapes.tsx?raw'
+import pcaBiplot from './docs/examples/PcaBiplot.tsx?raw'
 import phasePlane from './docs/examples/PhasePlane.tsx?raw'
 import responseSurface from './docs/examples/ResponseSurface.tsx?raw'
 import shaftOrbit from './docs/examples/ShaftOrbit.tsx?raw'
@@ -58,6 +59,7 @@ const scientificExamples = new Map([
   ['hyperspectral-cube-cuprite', withCatalogImports(hyperspectralCube)],
   ['response-surface-thermal', withCatalogImports(responseSurface)],
   ['mass-spectrum-mirror-caffeine', withCatalogImports(massSpectrumMirror)],
+  ['pca-biplot-glass', withCatalogImports(pcaBiplot)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],
