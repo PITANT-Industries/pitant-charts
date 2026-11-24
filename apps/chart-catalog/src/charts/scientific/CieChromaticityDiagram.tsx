@@ -5,7 +5,7 @@ import type { ChromaticityPoint, ChromaticitySpace, CieChromaticityData } from '
 import './scientific-figure.css'
 import './cie-chromaticity.css'
 
-export type { ChromaticityPoint, ChromaticitySpace, CieChromaticityData, CieGamut, CieSpectralSample } from './cie-chromaticity-model'
+export type { ChromaticityPoint, ChromaticitySpace, CieChromaticityData, CieColorSample, CieGamut, CieSpectralSample } from './cie-chromaticity-model'
 
 export interface CieChromaticityDiagramProps {
   data: CieChromaticityData
@@ -43,9 +43,12 @@ function ChromaticityFigure({ data, analysis, label, compact = false, source }: 
   const [referenceId, setReferenceId] = useState(analysis.reference.id)
   const [comparisonId, setComparisonId] = useState(analysis.comparison.id)
   const [selection, setSelection] = useState(analysis.initialPoint)
+  const [sampleId, setSampleId] = useState('')
+  const [showSamples, setShowSamples] = useState(true)
   const ref = analysis.gamuts.get(referenceId) ?? analysis.reference
   const comp = analysis.gamuts.get(comparisonId) ?? analysis.comparison
-  const current = cieContains(analysis.locus, selection) ? selection : analysis.initialPoint
+  const sample = analysis.samples.get(sampleId)
+  const current = sample?.xy ?? (cieContains(analysis.locus, selection) ? selection : analysis.initialPoint)
   const [u, v] = cieUv(current)
   const [x, y] = current
   const convert = space === 'xy' ? keepPoint : cieUv
@@ -55,26 +58,46 @@ function ChromaticityFigure({ data, analysis, label, compact = false, source }: 
   const reference = useMemo(() => ({ hull: ref.hull.map(convert), white: ref.white ? convert(ref.white) : undefined }), [ref, convert])
   const comparison = useMemo(() => ({ hull: comp.hull.map(convert), white: comp.white ? convert(comp.white) : undefined }), [comp, convert])
   const intersection = useMemo(() => cieCompare(reference.hull, comparison.hull), [reference, comparison])
+  const samples = useMemo(() => [...analysis.samples.values()].map((entry) => ({
+    ...entry,
+    point: convert(entry.xy),
+    inReference: cieContains(ref.hull, entry.xy),
+    inComparison: cieContains(comp.hull, entry.xy),
+  })), [analysis.samples, convert, ref, comp])
+  const referenceCount = samples.filter(({ inReference }) => inReference).length
+  const comparisonCount = samples.filter(({ inComparison }) => inComparison).length
   const inReference = cieContains(ref.hull, current)
   const inComparison = cieContains(comp.hull, current)
 
   function choose(point: ChromaticityPoint) {
     const xy = space === 'xy' ? point : cieXy(point)
-    if (xy.every(Number.isFinite) && cieContains(analysis.locus, xy)) setSelection(xy)
+    if (!xy.every(Number.isFinite) || !cieContains(analysis.locus, xy)) return
+    setSampleId('')
+    setSelection(xy)
+  }
+
+  function chooseSample(id: string) {
+    setSampleId(id)
+    setSelection(analysis.samples.get(id)?.xy ?? current)
   }
 
   return (
-    <figure className="cie-chromaticity" data-cie-chromaticity="" data-compact={compact} aria-label={label}>
+    <figure className="cie-chromaticity" data-cie-chromaticity="" data-compact={compact} data-has-samples={samples.length > 0} aria-label={label}>
       <div className="cie-layout">
         <div className="cie-figure">
           <CieChromaticityPlot space={space} domain={domain} spectral={spectral} wavelengths={data.locus}
             reference={reference} comparison={comparison} overlap={intersection.intersectionArea > 0 ? intersection.intersection : []}
-            marker={convert(current)} selectedXy={current} compact={compact} choose={choose} />
+            marker={convert(current)} selectedXy={current} samples={showSamples ? samples : []} sampleId={sample?.id}
+            compact={compact} choose={choose} chooseSample={chooseSample} />
           {!compact && <ul className="cie-legend" aria-label="Diagram legend">
             <li data-cie-key="reference">{ref.label} reference</li>
             <li data-cie-key="comparison">{comp.label} comparison</li>
             <li data-cie-key="overlap">Intersection</li>
             {(ref.white || comp.white) && <li data-cie-key="white">White point</li>}
+            {showSamples && samples.length > 0 && <>
+              <li data-cie-key="sample-in">Sample inside reference</li>
+              <li data-cie-key="sample-out">Sample outside reference</li>
+            </>}
           </ul>}
         </div>
         {!compact && <div className="cie-inspection">
@@ -87,16 +110,34 @@ function ChromaticityFigure({ data, analysis, label, compact = false, source }: 
             </label>
             <GamutSelect label="Reference gamut" gamuts={analysis.gamuts} value={ref.id} choose={setReferenceId} />
             <GamutSelect label="Comparison gamut" gamuts={analysis.gamuts} value={comp.id} choose={setComparisonId} />
+            {samples.length > 0 && <>
+              <label className="cie-control">Measured sample
+                <select value={sample?.id ?? ''} onChange={(event) => chooseSample(event.currentTarget.value)}>
+                  <option value="">Free probe</option>
+                  {samples.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
+                </select>
+              </label>
+              <label className="cie-sample-toggle">
+                <input type="checkbox" checked={showSamples} onChange={(event) => setShowSamples(event.currentTarget.checked)} />
+                Show sample markers
+              </label>
+            </>}
           </div>
           <output className="cie-readout" data-cie-readout="" data-x={x} data-y={y} data-u={u} data-v={v}
             data-reference={ref.id} data-comparison={comp.id}
             data-reference-area={intersection.referenceArea} data-comparison-area={intersection.comparisonArea}
             data-intersection-area={intersection.intersectionArea} data-coverage={intersection.coverage}
-            data-comparison-coverage={intersection.comparisonCoverage} data-in-reference={inReference} data-in-comparison={inComparison}>
+            data-comparison-coverage={intersection.comparisonCoverage} data-in-reference={inReference} data-in-comparison={inComparison}
+            data-sample-id={sample?.id} data-sample-count={samples.length} data-samples-in-reference={referenceCount} data-samples-in-comparison={comparisonCount}>
             <span className="cie-readout-title">Gamut area coverage</span>
             <span className="cie-readout-row">Reference covered <strong>{coverageFormat.format(intersection.coverage)}</strong></span>
             <span className="cie-readout-row">Comparison covered <strong>{coverageFormat.format(intersection.comparisonCoverage)}</strong></span>
             <span className="cie-readout-row">Intersection area <strong>{areaFormat.format(intersection.intersectionArea)}</strong></span>
+            {samples.length > 0 && <>
+              <span className="cie-readout-title cie-selected-title">Sample containment</span>
+              <span className="cie-readout-row">Inside reference <strong>{referenceCount} / {samples.length}</strong></span>
+              <span className="cie-readout-row">Inside comparison <strong>{comparisonCount} / {samples.length}</strong></span>
+            </>}
             <span className="cie-readout-title cie-selected-title">Selected chromaticity</span>
             <span className="cie-readout-row"><span>x / y</span><strong>{coordinate.format(x)} / {coordinate.format(y)}</strong></span>
             <span className="cie-readout-row"><span>u′ / v′</span><strong>{coordinate.format(u)} / {coordinate.format(v)}</strong></span>

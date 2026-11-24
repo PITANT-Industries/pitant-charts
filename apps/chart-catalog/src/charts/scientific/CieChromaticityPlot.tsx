@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { usePlotSize } from '../usePlotSize'
 import { cieXy } from './cie-chromaticity-model'
-import type { ChromaticityPoint, ChromaticitySpace, CieSpectralSample } from './cie-chromaticity-model'
+import type { ChromaticityPoint, ChromaticitySpace, CieColorSample, CieSpectralSample } from './cie-chromaticity-model'
 
 type PlotGamut = { hull: readonly ChromaticityPoint[]; white?: ChromaticityPoint }
 const wavelengthLabels = [420, 460, 480, 490, 500, 510, 520, 540, 560, 580, 600, 620]
@@ -47,7 +47,8 @@ function axisTicks(maximum: number, pixels: number) {
   return Array.from({ length: Math.floor(maximum / step + 1e-9) + 1 }, (_, index) => index * step)
 }
 
-export function CieChromaticityPlot({ space, domain, spectral, wavelengths, reference, comparison, overlap, marker, selectedXy, compact, choose }: {
+export function CieChromaticityPlot({ space, domain, spectral, wavelengths, reference, comparison, overlap, marker, selectedXy,
+  samples, sampleId, compact, choose, chooseSample }: {
   space: ChromaticitySpace
   domain: ChromaticityPoint
   spectral: readonly ChromaticityPoint[]
@@ -57,8 +58,11 @@ export function CieChromaticityPlot({ space, domain, spectral, wavelengths, refe
   overlap: readonly ChromaticityPoint[]
   marker: ChromaticityPoint
   selectedXy: ChromaticityPoint
+  samples: readonly (CieColorSample & { point: ChromaticityPoint; inReference: boolean })[]
+  sampleId?: string
   compact: boolean
   choose: (point: ChromaticityPoint) => void
+  chooseSample: (id: string) => void
 }) {
   const { plot, width, height } = usePlotSize<HTMLDivElement>(compact ? 430 : 494, compact ? 215 : 441)
   const clip = useId()
@@ -176,6 +180,15 @@ export function CieChromaticityPlot({ space, domain, spectral, wavelengths, refe
               }
               event.preventDefault()
             }} />
+          <g aria-hidden="true">
+            {samples.map(({ id, point, xy, inReference }) => (
+              <g key={id} data-cie-sample="" data-id={id} data-x={xy[0]} data-y={xy[1]}
+                data-in-reference={inReference} data-selected={id === sampleId}
+                transform={`translate(${x(point[0])} ${y(point[1])})`} onClick={() => chooseSample(id)}>
+                {inReference ? <circle r="2.3" /> : <rect x="-2.7" y="-2.7" width="5.4" height="5.4" />}
+              </g>
+            ))}
+          </g>
         </>}
       </svg>
     </div>
