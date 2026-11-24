@@ -963,6 +963,32 @@
       { "label": "NIST/SEMATECH e-Handbook, Phase II limits for individual observations", "href": "https://www.itl.nist.gov/div898/handbook/pmc/section5/pmc5434.htm" }
     ]
   },
+  "classifier-threshold-explorer": {
+    "summary": "Explore how a binary classifier trades missed failures against false alarms. One threshold links the operating points on the ROC and precision–recall curves with the counts in the confusion matrix.",
+    "useWhen": "Review scored inspection results with known outcomes. Compare the burden of sending passing items for review with the benefit of catching more failures.",
+    "data": "Supply one record per evaluated item with a unique ID, a finite score and its observed outcome. Higher scores must indicate stronger evidence for the positive class. Include both observed classes and give each a descriptive label.",
+    "reading": "Move the threshold slider or pick a plotted operating point. The ROC marker shows recall versus the false-positive rate, while the precision–recall marker shows how many flagged items actually failed. The confusion matrix shows observed outcomes in rows and threshold predictions in columns.",
+    "notes": [
+      "A score at or above the threshold predicts the positive class. All items with identical scores change classification together. Each observed score is one threshold stop, and an additional stop above the highest score predicts every item as negative.",
+      "Recall divides caught failures by all observed failures. The false-positive rate divides false alarms by all observed passes. Precision divides caught failures by all items flagged at the current threshold. Precision is undefined when no items are flagged.",
+      "ROC AUC uses trapezoidal area between attainable points. Average precision weights precision at each score group by its increase in recall. The precision–recall plot uses steps that reflect this weighting. The horizontal line shows the positive fraction in the evaluated sample.",
+      "The SECOM example uses observed semiconductor line-test outcomes from the UCI Machine Learning Repository. A class-balanced L2 logistic model (C = 0.01) was fitted on 1,208 July–September 2008 records, including 82 failures. The preprocessing dropped constant and entirely missing features, then fitted median imputation and standardization using those training records.",
+      "The final October 2008 block contains 359 held-out tests with 22 failures. Its observed positive rate is 6.13%. The displayed scores rank failures for threshold inspection. They are model outputs on this retrospective split. Evaluate calibration and any chosen threshold separately on fresh data before production use.",
+      "The runnable example uses synthetic inspection scores for 12 items. Two items share the initial cutoff score of 0.72 and enter the predicted positive class together."
+    ],
+    "properties": [
+      { "name": "data", "type": "ClassifierThresholdData", "description": "Required. Supply positive and negative class labels and evaluated prediction records." },
+      { "name": "data.predictions", "type": "readonly { id: string, score: number, actual: boolean }[]", "description": "Pass the item ID, finite decision score and observed outcome. Set actual to true for the positive class." },
+      { "name": "initialThreshold", "type": "number", "description": "Choose the initial decision threshold in the same units as the scores." },
+      { "name": "title", "type": "string", "description": "Give the explorer a descriptive figure title and accessible name." },
+      { "name": "caption", "type": "ReactNode", "description": "Credit the evaluation records and describe how the scores were obtained." }
+    ],
+    "sources": [
+      { "label": "McCann and Johnston (2008), SECOM dataset, UCI Machine Learning Repository (CC BY 4.0)", "href": "https://doi.org/10.24432/C54305" },
+      { "label": "scikit-learn, receiver operating characteristic curve", "href": "https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html" },
+      { "label": "scikit-learn, average precision definition", "href": "https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",
