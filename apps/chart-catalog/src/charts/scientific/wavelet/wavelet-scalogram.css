@@ -86,6 +86,18 @@
   stroke-linejoin: round;
 }
 
+.wavelet-sample-marker {
+  fill: #fff;
+  stroke: #1f5b91;
+  stroke-width: 1.2px;
+}
+
+.wavelet-original-status {
+  margin: 0 0 .45rem;
+  color: var(--gallery-muted, var(--muted-foreground));
+  font-size: .8rem;
+}
+
 .wavelet-inspector {
   display: grid;
   gap: .65rem;

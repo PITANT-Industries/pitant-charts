@@ -6,11 +6,14 @@
 """Rebuild the scalogram fixture from the published I-A-1.mat recording.
 
 Download I-A-1.mat from https://data.mendeley.com/datasets/v43hmbwxpm/2.
-Run uv run derive-wavelet-fixture.py path/to/I-A-1.mat > wavelet-fixture.json.
+Recreate both the JSON fixture and the lossless original waveform asset with:
+uv run derive-wavelet-fixture.py path/to/I-A-1.mat \
+  --original-waveform wavelet-original-waveform.bin > wavelet-fixture.json
 """
 
 import argparse
 import base64
+import gzip
 import hashlib
 import json
 from pathlib import Path
@@ -24,8 +27,8 @@ SOURCE = {
     "label": "Huan Huang and Natalie Baddour, University of Ottawa",
     "href": "https://doi.org/10.17632/v43hmbwxpm.2",
     "description": (
-        "Measured inner-race bearing run-up, recording I-A-1. The waveform shows "
-        "3.50–6.06 seconds of the accelerometer recording in segment RMS units."
+        "Measured inner-race bearing run-up, recording I-A-1. The original "
+        "200 kHz accelerometer excerpt covers 3.50–6.06 seconds in published channel units."
     ),
     "license": "CC BY 4.0",
     "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -51,7 +54,7 @@ FOURIER_FACTOR = 4 * np.pi / (OMEGA_0 + np.sqrt(2 + OMEGA_0 ** 2))
 POWER_MIN_DB = -60
 
 
-def normalized_waveform(path):
+def read_recording(path):
     with path.open("rb") as mat_file:
         if hashlib.file_digest(mat_file, "sha256").hexdigest() != RECORDING["sha256"]:
             raise ValueError(f"{path.name} does not match the expected recording hash.")
@@ -60,10 +63,32 @@ def normalized_waveform(path):
 
     if samples.shape != (10 * ORIGINAL_RATE_HZ,) or not np.isfinite(samples).all():
         raise ValueError("Unexpected acceleration samples in I-A-1.mat.")
+    return samples
+
+
+def normalized_waveform(samples):
     filtered = resample_poly(samples, 1, DECIMATION, window=("kaiser", 5.0))
     segment = filtered[START_ORIGINAL_SAMPLE // DECIMATION:END_ORIGINAL_SAMPLE // DECIMATION]
     centered = segment - segment.mean()
     return centered / np.sqrt(np.mean(centered ** 2))
+
+
+def write_original_waveform(samples, path):
+    dictionary, indexes = np.unique(samples, return_inverse=True)
+    if dictionary.size > 65_536:
+        raise ValueError("Original waveform dictionary exceeds the uint16 index format.")
+    if not np.array_equal(dictionary[indexes].view("u8"), samples.view("u8")):
+        raise ValueError("Original waveform values did not round-trip exactly.")
+
+    # Byte planes improve gzip compression without changing any source values.
+    low = (indexes & 0xFF).astype("uint8")
+    high = (indexes >> 8).astype("uint8")
+    with path.open("wb") as target:
+        with gzip.GzipFile(filename="", fileobj=target, mode="wb", mtime=0) as stream:
+            stream.write(dictionary.size.to_bytes(4, "little"))
+            stream.write(dictionary.astype("<f8").tobytes())
+            stream.write(low.tobytes())
+            stream.write(high.tobytes())
 
 
 def morlet_power(waveform, scale_samples):
@@ -76,8 +101,10 @@ def morlet_power(waveform, scale_samples):
     return np.abs(coefficients) ** 2
 
 
-def derive(path):
-    waveform = normalized_waveform(path)
+def derive(path, original_waveform_path=None):
+    samples = read_recording(path)
+    original = samples[START_ORIGINAL_SAMPLE:END_ORIGINAL_SAMPLE]
+    waveform = normalized_waveform(samples)
     frequency_hz = np.geomspace(30, 3_000, 100)
     scale_seconds = 1 / (frequency_hz * FOURIER_FACTOR)
     time_count = waveform.size // TIME_BIN_SAMPLES
@@ -99,6 +126,8 @@ def derive(path):
 
     waveform_scale = float(np.max(np.abs(waveform)) / np.iinfo(np.int16).max)
     waveform_i16 = np.rint(waveform / waveform_scale).astype("<i2")
+    if original_waveform_path is not None:
+        write_original_waveform(original, original_waveform_path)
     return {
         "source": SOURCE,
         "recording": RECORDING,
@@ -117,6 +146,10 @@ def derive(path):
             "powerReference": "10 log10(power / peak retained power), clipped at -60 dB.",
             "powerEncoding": "Unsigned 8-bit samples, rows in ascending frequency order, time fastest.",
             "waveformEncoding": "Little-endian signed int16 samples, in time order.",
+            "originalWaveformEncoding": (
+                "Gzip stream containing a uint32 little-endian dictionary length, "
+                "a float64 little-endian dictionary, then the low and high byte planes of uint16 sample indices."
+            ),
         },
         "timeSeconds": np.round(time_seconds, 6).tolist(),
         "frequencyHz": np.round(frequency_hz, 8).tolist(),
@@ -131,6 +164,12 @@ def derive(path):
             "samplesBase64": base64.b64encode(waveform_i16.tobytes()).decode("ascii"),
             "scale": waveform_scale,
         },
+        "originalWaveform": {
+            "startSeconds": START_SECONDS,
+            "sampleRateHz": ORIGINAL_RATE_HZ,
+            "unit": "channel units",
+            "length": original.size,
+        },
         "initialTimeSeconds": round(float(time_seconds[interior[time_column]]), 6),
         "initialFrequencyHz": round(float(frequency_hz[high_band[high_row]]), 8),
     }
@@ -139,4 +178,6 @@ def derive(path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("recording", type=Path, help="Published I-A-1.mat file")
-    print(json.dumps(derive(parser.parse_args().recording), indent=2, ensure_ascii=False, allow_nan=False))
+    parser.add_argument("--original-waveform", type=Path, help="Write the compressed original waveform asset to this path")
+    args = parser.parse_args()
+    print(json.dumps(derive(args.recording, args.original_waveform), indent=2, ensure_ascii=False, allow_nan=False))
