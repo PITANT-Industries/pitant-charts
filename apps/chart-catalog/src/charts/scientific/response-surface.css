@@ -136,14 +136,60 @@
   gap: .65rem;
 }
 
-.response-section {
+.response-section,
+.response-map {
   position: relative;
+}
+
+.response-section {
   block-size: clamp(13rem, 39cqw, 17.5rem);
 }
 
-.response-section > svg {
+.response-map {
+  block-size: clamp(16.5rem, 47cqw, 20.75rem);
+}
+
+.response-section > svg,
+.response-map > svg {
   position: absolute;
   inset: 0;
+}
+
+[data-response-map-contour],
+[data-response-map-domain] {
+  fill: none;
+  stroke: #253b4b;
+  stroke-width: 1;
+}
+
+[data-response-map-contour] {
+  stroke-opacity: .48;
+  stroke-width: .75;
+}
+
+[data-response-map-section] {
+  stroke: #1d3447;
+  stroke-width: 1.35;
+  stroke-dasharray: 4 3;
+  filter: drop-shadow(0 0 1px #fff);
+}
+
+[data-response-map-probe] {
+  fill: #fff;
+  stroke: #213c55;
+  stroke-width: 1.6;
+}
+
+[data-response-map-trial] {
+  fill: #fff;
+  stroke: #213645;
+  stroke-width: 1.15;
+  cursor: crosshair;
+}
+
+[data-response-map-trial][data-selected='true'] {
+  fill: #a44d31;
+  stroke: #fff;
 }
 
 .response-section-curve,
@@ -178,10 +224,18 @@
   stroke-width: 1.5;
 }
 
-[data-response-section-pick] {
+[data-response-section-pick],
+[data-response-map-pick] {
   outline: none;
   cursor: crosshair;
+}
+
+[data-response-section-pick] {
   touch-action: pan-y;
+}
+
+[data-response-map-pick] {
+  touch-action: none;
 }
 
 .response-viewport canvas:focus-visible {
@@ -189,7 +243,8 @@
   outline-offset: -2px;
 }
 
-[data-response-section-pick]:focus-visible {
+[data-response-section-pick]:focus-visible,
+[data-response-map-pick]:focus-visible {
   stroke: #2c678e;
   stroke-width: 1.65;
 }
@@ -252,6 +307,16 @@
 
 @container (min-width: 635px) {
   .response-detail {
-    grid-template-columns: minmax(0, 1fr) minmax(13.5rem, .52fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .response-readout {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 1rem;
+  }
+
+  .response-readout-title {
+    grid-column: 1 / -1;
   }
 }

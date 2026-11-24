@@ -106,6 +106,28 @@ export function responseAxisLabel({ label, unit }: ResponseAxis) {
   return unit ? `${label} (${unit})` : label
 }
 
+export function responseTicks(min: number, max: number, target: number) {
+  const rough = (max - min) / target
+  const magnitude = 10 ** Math.floor(Math.log10(rough))
+  const step = magnitude * ([1, 2, 2.5, 5, 10].find((value) => value * magnitude >= rough) ?? 10)
+  if (!Number.isFinite(step) || step <= 0) return [min, max]
+  const first = Math.ceil(min / step)
+  const last = Math.floor(max / step)
+  return last > first
+    ? Array.from({ length: last - first + 1 }, (_, index) => (first + index) * step)
+    : [min, max]
+}
+
+export const responseColors = [[38, 63, 113], [45, 107, 149], [69, 151, 148], [162, 188, 107], [247, 215, 131]] as const
+
+export function responseColor(value: number, [min, max]: readonly [number, number]) {
+  const index = max === min ? 2 : Math.min(4, Math.max(0, (value - min) / (max - min) * 4))
+  const start = Math.min(3, Math.floor(index))
+  const rgb = responseColors[start].map((channel, channelIndex) =>
+    Math.round(channel + (responseColors[start + 1][channelIndex] - channel) * (index - start)))
+  return `rgb(${rgb.join(',')})`
+}
+
 export function analyseResponseSurface(data: ResponseSurfaceData) {
   const { trials, domain, evaluate, initialPosition, sectionAxis = 'x' } = data
   const ids = new Set<string>()
