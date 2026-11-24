@@ -1,0 +1,27 @@
+Batch Distillation Data for Developing Machine Learning Anomaly Detection Methods
+Zenodo, version 1.1.3, record 22250958
+https://doi.org/10.5281/zenodo.22250958
+
+Creators: Justus Arweiler, Indra Jungjohann, Jennifer Werner, Aparna
+Muraleedharan, Jochen Schmid, Heike Leitte, Jakob Burger, Kerstin Münnemann,
+Michael Bortz, Fabian Jirasek, and Hans Hasse.
+
+License: Creative Commons Attribution 4.0 International (CC BY 4.0).
+https://creativecommons.org/licenses/by/4.0/
+
+Related study: Arweiler et al. (2026), Scientific Data 13, 513.
+https://doi.org/10.1038/s41597-026-07124-3
+
+The startup overlay fixture adapts the experimental sensor time series and
+interpolation flags. It retains all 30 runs at operating points 001–003 for
+the 1-butanol, 2-propanol and water mixture. Channels T703 and T705 are
+retained in degrees Celsius at 30-second intervals, at the first archived
+Operation timestamp, and at the end of the shortened display window.
+Duplicate clock readings use the last row, preferring Operation at its
+shared boundary with Startup. Absent and source-interpolated observations
+are represented as missing. Each display ends at the earliest of the
+100-minute limit, the end of observed operation, or five minutes after the
+first Operation record. Times are in elapsed seconds on the archived
+per-run clock, with the first Startup row as the alignment event. The
+45-minute comparison deadline is illustrative and was added for this
+example. The adaptation contains no simulation predictions.
