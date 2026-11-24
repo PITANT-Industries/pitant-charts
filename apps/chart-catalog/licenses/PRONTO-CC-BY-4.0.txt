@@ -1,0 +1,21 @@
+PRONTO heterogeneous benchmark dataset, version 1 (2019)
+Anna Stief, Ruomu Tan, Yi Cao, and James R. Ottewill
+https://doi.org/10.5281/zenodo.1341583
+
+© 2019 The Authors. The dataset is licensed under Creative Commons Attribution
+4.0 International. License text: https://creativecommons.org/licenses/by/4.0/legalcode
+
+Associated publication: A. Stief, R. Tan, Y. Cao, J. R. Ottewill, N. F. Thornhill,
+and J. Baranowski, “A heterogeneous benchmark dataset for data analytics:
+Multiphase flow facility case study”, Journal of Process Control 79 (2019), 41–55.
+https://doi.org/10.1016/j.jprocont.2019.04.009
+
+PITANT extracted Test 3 at the Cranfield multiphase flow facility on 7 September
+2017, 14:47–15:57 on the site log clock. The fixture converts timestamps to seconds
+relative to the first retained record. Within each 60-row SCADA minute, elapsed
+seconds follow the original 1 Hz record order. It retains every fifth record
+from three channels, rounds values to four decimal places, and pairs the logged
+activation and clearance of five instrument module alarms without changing their
+millisecond precision. Successive manual V11 position settings define intervals
+from the operation log's whole-minute times. No sensor values or alarm events are
+simulated. The source experiment deliberately reproduced an inlet air blockage.

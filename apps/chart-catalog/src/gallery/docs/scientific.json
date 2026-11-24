@@ -989,6 +989,35 @@
       { "label": "scikit-learn, average precision definition", "href": "https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html" }
     ]
   },
+  "fault-event-replay": {
+    "summary": "Replay an incident across sensor readings, equipment states, alarms, and operator actions on one clock.",
+    "useWhen": "Reconstruct the order of a process disturbance. Inspect which alarms were active, what changed in the equipment, and which measurements were available when an operator acted.",
+    "data": "Supply a start and end time in seconds on a common clock. Give each signal a unique ID, a label, optional units and samples with distinct timestamps. Supply nonoverlapping equipment-state intervals, alarm intervals that may overlap, and timestamped operator actions. Use source records for logged events and describe how you derived any phases.",
+    "reading": "Press Play to advance the cursor at the selected speed or use the scrubber to inspect a recorded sample or event time. Jump to an event from the chronology or use the previous and next event controls. Scrubbing or jumping pauses playback. At each position, inspect the most recent sensor samples, current state, and active alarms.",
+    "notes": [
+      "Each signal uses its last sample at or before the cursor. A missing value or an expired sample leaves the reading unavailable until a valid one arrives. Set maxAge in seconds to specify how long a sample remains current. The plotted trace breaks across gaps.",
+      "A state or alarm starts at its start time and clears at its end time. An omitted end leaves it active through the replay window. At an exact boundary the new interval applies.",
+      "Keep separate records when alarms, state changes, and operator actions share a timestamp. Shared time aligns the records without establishing causation.",
+      "The measured example replays Cranfield Test 3 from the PRONTO multiphase flow benchmark, an induced restriction test on 7 September 2017. It covers 14:47 to 15:57 on the recorded site clock. It shows PT312 air delivery pressure, the FIC302 inlet air flow reading, and the controller output.",
+      "The example reconstructs one-second measurement times from acquisition order within each logged minute and retains every fifth row. Valve-opening states and manual changes come from the independent operation log at minute resolution. Instrument-health alarms come from the SCADA alarm log at its recorded precision.",
+      "Each valve phase places a manual position change at its logged minute boundary. Inspect the signal response and alarm history around the change, allowing for the operation log’s coarser timing.",
+      "The runnable code example uses synthetic pump readings, equipment states, alarms, and operator actions. It includes separate signal sampling times, a pressure data gap, and actions that share timestamps with equipment-state changes."
+    ],
+    "properties": [
+      { "name": "data", "type": "FaultReplayData", "description": "Required. Supply the time bounds, signals, equipment states, alarms, and timestamped actions." },
+      { "name": "data.signals", "type": "readonly { id, label, unit?, samples, maxAge? }[]", "description": "Provide ordered timestamped readings for each signal. Use null for a missing sample and specify maxAge in seconds where appropriate." },
+      { "name": "data.states, data.alarms", "type": "readonly { id, label, start, end?, detail? }[]", "description": "Provide state or alarm intervals. An interval includes its start and excludes its end." },
+      { "name": "data.actions", "type": "readonly { id, label, time, detail? }[]", "description": "Provide independently timestamped operator or process actions. Preserve entries that share a timestamp." },
+      { "name": "initialTime", "type": "number", "description": "Choose the initial cursor time in seconds on the data clock." },
+      { "name": "title", "type": "string", "description": "Give the replay an accessible incident name." },
+      { "name": "caption", "type": "ReactNode", "description": "Credit the records and clarify whether the data describes a test, a simulation, or an operating incident." },
+      { "name": "compact", "type": "boolean", "description": "Show the read-only incident timeline used in gallery previews." }
+    ],
+    "sources": [
+      { "label": "Stief et al. (2019), PRONTO heterogeneous benchmark dataset, version 1 (CC BY 4.0)", "href": "https://doi.org/10.5281/zenodo.1341583" },
+      { "label": "Stief et al. (2019), multiphase flow facility case study and benchmark protocol", "href": "https://doi.org/10.1016/j.jprocont.2019.04.009" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",

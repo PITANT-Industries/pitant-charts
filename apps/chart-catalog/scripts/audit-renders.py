@@ -223,7 +223,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'spatial-defect-map', 'lcms-feature-map', 'chromatogram-peak-integration', 'spectrum', 'spectrogram',
         'spectral-waterfall', 'correlation-matrix',
         'gauge-rr', 'kaplan-meier', 'weibull-probability', 'process-control', 'hotelling-process-monitor',
-        'classifier-threshold-explorer',
+        'classifier-threshold-explorer', 'fault-event-replay',
         'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
@@ -401,6 +401,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=hotelling-process-monitor&variant=hotelling-process-monitor-milling'
                 )
+            elif example['family'] == 'fault-event-replay':
+                await check_fault_replay_compact(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=fault-event-replay&variant=fault-event-replay-pronto'
+                )
             elif example['family'] == 'classifier-threshold-explorer':
                 await check_classifier_threshold_compact(card_plot)
                 await expect(card.locator('.example-card-link')).to_have_attribute(
@@ -570,6 +575,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'hotelling-process-monitor':
                 await check_hotelling(plot, touch)
                 code_import = 'HotellingProcessMonitor'
+            elif example['family'] == 'fault-event-replay':
+                await check_fault_replay(plot, touch)
+                code_import = 'FaultReplay'
             elif example['family'] == 'classifier-threshold-explorer':
                 await check_classifier_threshold(plot, touch)
                 code_import = 'ClassifierThresholdExplorer'
@@ -5548,6 +5556,127 @@ async def check_classifier_threshold(plot, touch):
     await expect(sources).to_contain_text(re.compile('uncalibrated', re.I))
     page = plot.page
     provenance = 'licenses/UCI-SECOM-CC-BY-4.0.txt'
+    notices = await page.request.get(urljoin(page.url, 'THIRD_PARTY_NOTICES.md'))
+    assert notices.ok and f'({provenance})' in await notices.text()
+    data_notice = await page.request.get(urljoin(page.url, provenance))
+    assert data_notice.ok and 'https://creativecommons.org/licenses/by/4.0/legalcode' in await data_notice.text()
+
+
+async def check_fault_replay_compact(plot):
+    chart = plot.locator('figure[data-fault-replay][data-compact="true"]')
+    await expect(chart).to_be_visible()
+    timeline = chart.locator('svg[data-replay-timeline]')
+    for selector, count in [
+        ('[data-replay-trace]', 3), ('[data-replay-state-mark]', 10),
+        ('[data-replay-alarm-mark]', 5), ('[data-replay-action-mark]', 9),
+    ]:
+        await expect(timeline.locator(selector)).to_have_count(count)
+    await expect(timeline.locator('[data-replay-cursor]')).to_have_attribute('data-time', '3540')
+    await check_compact_figure_bounds(
+        timeline, '[data-replay-trace], [data-replay-state-mark] rect, [data-replay-alarm-mark], '
+        '[data-replay-action-mark], [data-replay-cursor]'
+    )
+    await expect(chart.locator('button, input, select, a, [data-replay-snapshot], .fault-replay-ledger')).to_have_count(0)
+
+
+async def check_fault_replay(plot, touch):
+    chart = plot.locator('figure[data-fault-replay][data-compact="false"]')
+    timeline = chart.locator('svg[data-replay-timeline]')
+    cursor = timeline.locator('[data-replay-cursor]')
+    snapshot = chart.locator('[data-replay-snapshot]')
+    slider = chart.get_by_role('slider', name='Replay time')
+    previous = chart.get_by_role('button', name='Previous event')
+    following = chart.get_by_role('button', name='Next event')
+    play = chart.get_by_role('button', name='Play replay')
+    pause = chart.get_by_role('button', name='Pause replay')
+    clock = chart.locator('[data-replay-clock]')
+    ledger = chart.get_by_role('region', name='Incident event log')
+    raise_event = ledger.locator('[data-replay-event="raised:fic301-164"]')
+    clear_event = ledger.locator('[data-replay-event="cleared:fic301-164"]')
+    restores = ledger.locator('[data-replay-event="action:v11-169"]')
+
+    async def check_cursor(time, state, sample_time, alarms=0):
+        await expect(cursor).to_have_attribute('data-time', str(time))
+        await expect(snapshot).to_have_attribute('data-time', str(time))
+        await expect(snapshot).to_have_attribute('data-state', state)
+        await expect(snapshot).to_have_attribute('data-alarm-count', str(alarms))
+        for signal in ('air-pressure', 'air-flow', 'controller-output'):
+            reading = snapshot.locator(f'[data-replay-reading="{signal}"]')
+            await expect(reading).to_have_attribute('data-sample-time', str(sample_time))
+            await expect(reading).to_have_attribute('data-status', 'recorded')
+        left, right = [float(await timeline.get_attribute(f'data-{edge}')) for edge in ('left', 'right')]
+        mark = float(await cursor.get_attribute('x1'))
+        assert math.isclose(mark, left + time / 4200 * (right - left), abs_tol=1e-6), (time, mark)
+
+    await expect(chart).to_have_attribute('data-playing', 'false')
+    await check_cursor(3540, 'v11-state-3540', 3540)
+    await expect(clock).to_have_text('59:00 / 1:10:00')
+    await expect(snapshot.locator('[data-replay-last-action="v11-161"]')).to_be_visible()
+    for signal, value in [('air-pressure', 6.8461), ('air-flow', 78.5436), ('controller-output', 100)]:
+        reading = snapshot.locator(f'[data-replay-reading="{signal}"]')
+        await expect(reading).to_have_attribute('data-value', str(value))
+    await expect(ledger.locator('button[aria-current="time"]')).to_have_count(2)
+
+    await previous.click()
+    await check_cursor(3060, 'v11-state-3060', 3060)
+    await following.click()
+    await check_cursor(3540, 'v11-state-3540', 3540)
+    await following.click()
+    await check_cursor(4020, 'v11-state-4020', 4020)
+    await expect(restores).to_have_attribute('aria-current', 'time')
+
+    await raise_event.click()
+    await check_cursor(993.725, 'v11-state-660', 990, alarms=1)
+    await expect(snapshot.locator('[data-replay-active-alarm="fic301-164"]')).to_be_visible()
+    await expect(raise_event).to_have_attribute('aria-current', 'time')
+    await clear_event.click()
+    await check_cursor(1153.724, 'v11-state-1140', 1150)
+    await expect(snapshot.locator('[data-replay-active-alarm="fic301-164"]')).to_have_count(0)
+    await expect(clear_event).to_have_attribute('aria-current', 'time')
+
+    await slider.press('Home')
+    await check_cursor(0, 'v11-state-0', 0)
+    await expect(previous).to_be_disabled()
+    await expect(snapshot.locator('[data-replay-last-action]')).to_have_count(0)
+    await slider.press('End')
+    await check_cursor(4200, 'v11-state-4020', 4200)
+    await expect(following).to_be_disabled()
+
+    if not touch:
+        await timeline.scroll_into_view_if_needed()
+        position = await timeline.evaluate("""svg => {
+          const left = Number(svg.dataset.left)
+          const right = Number(svg.dataset.right)
+          const mark = new DOMPoint((left + right) / 2, 64).matrixTransform(svg.getScreenCTM())
+          return {x: mark.x, y: mark.y}
+        }""")
+        await plot.page.mouse.click(position['x'], position['y'])
+        time = float(await cursor.get_attribute('data-time'))
+        assert abs(time - 2100) <= 5, time
+        assert float(await snapshot.get_attribute('data-time')) == time
+
+    await slider.press('Home')
+    await chart.get_by_role('combobox', name=re.compile(r'^Speed')).select_option('600')
+    await play.click()
+    await expect(chart).to_have_attribute('data-playing', 'true')
+    await expect(snapshot).not_to_have_attribute('data-time', '0')
+    await pause.click()
+    await expect(chart).to_have_attribute('data-playing', 'false')
+    paused_time = await snapshot.get_attribute('data-time')
+    await plot.page.wait_for_timeout(100)
+    await expect(cursor).to_have_attribute('data-time', paused_time)
+    await expect(snapshot).to_have_attribute('data-time', paused_time)
+    await restores.click()
+    await play.click()
+    await check_cursor(4200, 'v11-state-4020', 4200)
+    await expect(chart).to_have_attribute('data-playing', 'false')
+
+    sources = chart.locator('figcaption')
+    await expect(sources.locator('a[href="https://doi.org/10.5281/zenodo.1341583"]')).to_be_visible()
+    await expect(sources).to_contain_text(re.compile('Cranfield.*Test 3', re.I))
+    await expect(sources).to_contain_text(re.compile('minute-resolution operation log', re.I))
+    page = plot.page
+    provenance = 'licenses/PRONTO-CC-BY-4.0.txt'
     notices = await page.request.get(urljoin(page.url, 'THIRD_PARTY_NOTICES.md'))
     assert notices.ok and f'({provenance})' in await notices.text()
     data_notice = await page.request.get(urljoin(page.url, provenance))
