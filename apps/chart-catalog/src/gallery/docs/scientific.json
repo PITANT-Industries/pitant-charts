@@ -739,6 +739,29 @@
       { "label": "del Risco-Alfonso et al. (2021), turning conditions and equations for removal rate and cutting energy", "href": "https://doi.org/10.3390/met11111698" }
     ]
   },
+  "batch-genealogy": {
+    "summary": "Trace a material lot through the production steps that consume or create it.",
+    "useWhen": "Investigate which inputs contributed to a lot, follow a quality hold to downstream outputs, or check whether another production branch used the selected lot.",
+    "data": "Give each lot and transformation step a unique ID. Each step needs a label, a timestamp with a time zone, and at least one input and output lot ID. Add shortLabel to shorten a step label in the diagram. Add finite positive quantities and units to individual connections and an optional location to the step. Keep each lot to one producing step, and give reworked output a new lot ID even if the display label stays the same.",
+    "reading": "Select a lot to trace its inputs and outputs through the recorded steps. Read upstream links to see how the lot was made and downstream links to find which later lots use it. Select a node or use Inspect record to see event times in UTC, recorded quantities, or the material path. The highlighted lineage identifies where to inspect related material.",
+    "notes": [
+      "The enclosure example is simulated. Milling turns 96 aluminum blanks from AL-17 into 64 housings in HG-12-R1 and 32 in HG-13. The recoat step uses 0.64 kg from coating lot CO-12 and produces HG-12-R2. Both housing revisions share a display label, and their IDs distinguish them.",
+      "A simulated coating-thickness inspection places HG-12-R2 on hold at 14:10 UTC, after production. Selecting HG-12-R2 finds three upstream lots and three downstream lots. Assembly creates ASM-26 and ASM-27 from that revision, and packing creates PK-31 from ASM-26.",
+      "The separate assembly step runs at the same time and uses 32 pieces from HG-13 to create released lot ASM-90. It shares insert-kit lot INS-04 with the main run. Direct tracing from HG-12-R2 follows its own recorded input and output paths, so ASM-90 stays outside that lineage.",
+      "Connection quantities describe the amounts recorded at each step in their own units. A transformation link shows that an input may contribute to an output. Allocation between individual input and output lots requires more detailed records. Consumption follows production, with equal timestamps supported when steps share the same clock resolution."
+    ],
+    "properties": [
+      { "name": "data", "type": "BatchGenealogyData", "description": "Required. Supply lots with IDs, labels, and optional quality status and details. Supply transformation steps with IDs, labels, timestamps, and input and output connections." },
+      { "name": "initialLot", "type": "string", "description": "Choose the initial lot to trace by ID." },
+      { "name": "label", "type": "string", "description": "Describe the batch genealogy or production process for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show the lot and transformation graph in a compact space such as a gallery card." },
+      { "name": "source", "type": "{ label: string; href: string; description?: string }", "description": "Show the source of the trace or a reference for the event model." }
+    ],
+    "sources": [
+      { "label": "GS1 EPCIS and CBV Implementation Guideline 2.0, §5.5, transformation inputs and outputs", "href": "https://ref.gs1.org/guidelines/epcis-cbv/2.0.0/" },
+      { "label": "GS1 EPCIS and CBV data model, TransformationEvent", "href": "https://ref.gs1.org/epcis/TransformationEvent" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",

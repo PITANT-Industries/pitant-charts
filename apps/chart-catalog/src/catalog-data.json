@@ -3613,6 +3613,22 @@
     ]
   },
   {
+    "id": "batch-genealogy",
+    "name": "Batch genealogy",
+    "url": "https://opensource.pitant.de/charts/#docs=batch-genealogy",
+    "examples": [
+      {
+        "id": "batch-genealogy-enclosures",
+        "family": "batch-genealogy",
+        "title": "Enclosure Batch Genealogy",
+        "label": "Simulated quality hold",
+        "description": "Trace a held enclosure revision through stock, rework, assembly, and packing in a simulated production record.",
+        "url": "https://opensource.pitant.de/charts/#example=batch-genealogy-enclosures",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "spectrum",
     "name": "Spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=spectrum",
