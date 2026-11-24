@@ -1,0 +1,23 @@
+Glass capacitor life-test observations
+
+Marvin Zelen, National Bureau of Standards. “Factorial Experiments in Life
+Testing,” Technometrics 1(3), 269–288 (1959).
+https://doi.org/10.1080/00401706.1959.10489862
+
+NBS Report 6493 documents the article as a publication from the Bureau's
+Measurement of Reliability project, NBS Task 1103-12-1130/56-182.
+https://nvlpubs.nist.gov/nistpubs/Legacy/RPT/nbsreport6493.pdf
+
+This fixture transcribes numerical observations from the U.S. government
+research. See 17 U.S.C. § 105 for the U.S. government works provision.
+https://www.govinfo.gov/content/pkg/USCODE-2024-title17/html/USCODE-2024-title17-chap1-sec105.htm
+
+The readings are cross-checked against Table 3.1 on printed page 59 of
+Laura J. Freeman, Statistical Methods for Reliability Data from Designed
+Experiments, Virginia Tech (2010).
+https://vtechworks.lib.vt.edu/bitstream/handle/10919/37729/Freeman_LauraJ_D_2010.pdf#page=73
+
+The fixture selects the 200 V, 300 V, and 350 V cells at 170 °C. It retains
+the four observed failure hours in each cell and assigns each of its four
+right-censored units the fourth failure's reported hour, following the
+study's Type II stopping rule. Unit IDs are illustrative labels.

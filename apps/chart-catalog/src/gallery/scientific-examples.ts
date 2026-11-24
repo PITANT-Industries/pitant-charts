@@ -1,4 +1,5 @@
 import allanDeviation from './docs/examples/AllanDeviation.tsx?raw'
+import kaplanMeier from './docs/examples/KaplanMeierReliability.tsx?raw'
 import gaugeRR from './docs/examples/GaugeRR.tsx?raw'
 import chromatogramPeakIntegration from './docs/examples/ChromatogramPeakIntegration.tsx?raw'
 import lcMsFeatureMap from './docs/examples/LcMsFeatureMap.tsx?raw'
@@ -75,6 +76,7 @@ const scientificExamples = new Map([
   ['chromatogram-peak-integration-coffee', withCatalogImports(chromatogramPeakIntegration)],
   ['gauge-rr-thread-baseline', withCatalogImports(gaugeRR)],
   ['gauge-rr-thread-corrected', withCatalogImports(gaugeRR)],
+  ['kaplan-meier-glass-capacitors', withCatalogImports(kaplanMeier)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

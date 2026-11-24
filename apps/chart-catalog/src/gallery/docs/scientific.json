@@ -870,6 +870,36 @@
       { "label": "Creative Commons Attribution 4.0 International", "href": "https://creativecommons.org/licenses/by/4.0/" }
     ]
   },
+  "kaplan-meier": {
+    "summary": "Estimate component reliability from failures and right-censored observations. Inspect the specimens and risk set behind each step.",
+    "useWhen": "Compare groups of components observed from a common time origin when some specimens finish follow-up without a recorded failure. Choose cohorts with well-defined test conditions and retain the original censoring times.",
+    "data": "Supply a time unit and at least one cohort with a unique ID and a label. Give every observation a unique ID within its cohort, a finite nonnegative elapsed time, and a status of failed or censored. All specimens enter the risk set at time zero.",
+    "reading": "Choose a cohort and inspect an observation time using the slider or the plot. Each step reports the number at risk immediately before that time, failures and right-censored observations at that time, and the remaining risk set. Use the specimen timeline and event ledger to inspect the underlying records.",
+    "notes": [
+      "The Kaplan–Meier estimate starts at one before any events and multiplies by one minus the ratio of failures to specimens at risk at each failure time. When failures and censoring share a time, both count in the risk set for the failure step. Both are then removed for the next time. Censor-only times leave the estimate unchanged.",
+      "A right-censored endpoint records the last observed time for a specimen that had no recorded failure by that time. The at-risk table counts specimens just before each displayed time. Every curve ends at its cohort's last observation.",
+      "The chart uses Greenwood variance with a log–log transformation for approximate pointwise 95% confidence bounds where defined. Interpret the estimate and bounds in light of the study design and the assumption that censoring is independent of failure time.",
+      "The measured example contains 24 glass capacitors from the 200, 300, and 350 V settings at 170 °C in Zelen’s National Bureau of Standards life test. Each test stand began with eight capacitors. Testing stopped at the fourth failure and the four remaining capacitors were right-censored at that hour. The chart assigns specimen IDs for inspection.",
+      "Each voltage setting used one test stand. The curves describe the recorded cohorts under their test conditions.",
+      "The runnable example uses illustrative test records. At 120 hours in cohort A, four specimens are at risk, one fails, and one is censored. Survival falls to 75% and two specimens remain at risk immediately afterward."
+    ],
+    "properties": [
+      { "name": "data", "type": "ReliabilityData", "description": "Required. Pass the elapsed time unit and cohorts of individual failure and right-censoring observations." },
+      { "name": "data.cohorts", "type": "readonly { id, label, observations }[]", "description": "Pass a unique cohort ID, a display label, and specimen records with id, time and failed or censored status." },
+      { "name": "initialCohort", "type": "string", "description": "Choose a cohort by its ID for initial inspection." },
+      { "name": "initialTime", "type": "number", "description": "Set the initial inspection time in the same unit as the observations." },
+      { "name": "label", "type": "string", "description": "Give the reliability study an accessible name." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact, read-only preview for gallery cards." },
+      { "name": "source", "type": "{ label, href, description?, references? }", "description": "Credit the test and link the original records and relevant references." }
+    ],
+    "sources": [
+      { "label": "Zelen (1959), Factorial Experiments in Life Testing", "href": "https://doi.org/10.1080/00401706.1959.10489862" },
+      { "label": "Freeman (2010), life test results of capacitors, Table 3.1", "href": "https://vtechworks.lib.vt.edu/bitstream/handle/10919/37729/Freeman_LauraJ_D_2010.pdf#page=73" },
+      { "label": "NIST/SEMATECH e-Handbook, Kaplan–Meier product-limit estimates", "href": "https://www.itl.nist.gov/div898/handbook/apr/section2/apr215.htm" },
+      { "label": "NIST/SEMATECH e-Handbook, right censoring in reliability tests", "href": "https://www.itl.nist.gov/div898/handbook/apr/section1/apr131.htm" },
+      { "label": "R survival package, Kaplan–Meier risk sets and confidence bounds", "href": "https://cran.r-project.org/web/packages/survival/refman/survival.html#survfit.object" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",
