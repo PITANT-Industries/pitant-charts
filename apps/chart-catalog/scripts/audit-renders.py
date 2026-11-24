@@ -219,7 +219,7 @@ async def check_docs_navigation(browser, local_url, catalog):
 
 async def check_scientific_catalog(browser, local_url, catalog):
     families = {
-        'mass-spectrum', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
+        'mass-spectrum', 'mass-spectrum-mirror', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
@@ -337,6 +337,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card_plot.locator('select, [data-xrd-trend], [data-xrd-readout]')).to_have_count(0)
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=xrd-peak-tracker&variant=xrd-peak-tracker-dynic2'
+                )
+            elif example['family'] == 'mass-spectrum-mirror':
+                spectrum = card_plot.locator('svg[data-mirror-spectrum-plot]')
+                await check_mirror_spectrum_plot(spectrum)
+                await check_compact_figure_bounds(spectrum, 'rect[data-mirror-spectrum-frame]')
+                await expect(card_plot.locator('select, [data-mirror-readout], [data-mirror-pick], [data-selected="true"]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=mass-spectrum-mirror&variant=mass-spectrum-mirror-caffeine'
                 )
             elif example['family'] == 'stress-strain-comparison':
                 stress = card_plot.locator('svg[data-stress-overview]')
@@ -463,6 +471,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'mass-spectrum':
                 await check_particle_mass_spectrum(plot)
                 code_import = "getExample('mass-spectrum-cms')"
+            elif example['family'] == 'mass-spectrum-mirror':
+                await check_mass_spectrum_mirror(plot, touch)
+                code_import = 'MassSpectrumMirror'
             elif example['family'] == 'campbell-diagram':
                 await check_campbell_diagram(plot, touch)
                 code_import = 'CampbellDiagram'
@@ -4219,6 +4230,93 @@ async def check_particle_mass_spectrum(plot):
     await slider.press('Home')
     await expect(readout).to_have_attribute('data-bin-index', '0')
     await expect(readout).to_have_attribute('data-events', '664')
+
+
+async def check_mirror_spectrum_plot(spectrum):
+    await expect(spectrum).to_be_visible()
+    await expect(spectrum.get_by_text('Mass-to-charge ratio, m/z', exact=True)).to_be_visible()
+    await expect(spectrum.locator('[data-mirror-peak][data-spectrum="query"]')).to_have_count(23)
+    await expect(spectrum.locator('[data-mirror-peak][data-spectrum="reference"]')).to_have_count(15)
+    await expect(spectrum.locator('[data-mirror-pair]')).to_have_count(12)
+    correct_geometry = await spectrum.evaluate("""svg => {
+        const query = svg.querySelector('[data-mirror-peak][data-spectrum="query"][data-mz="109.0392"]');
+        const reference = svg.querySelector('[data-mirror-peak][data-spectrum="reference"][data-mz="109.0392"]');
+        return query.x1.baseVal.value === reference.x1.baseVal.value &&
+            query.y2.baseVal.value < query.y1.baseVal.value &&
+            query.y1.baseVal.value < reference.y1.baseVal.value &&
+            reference.y1.baseVal.value < reference.y2.baseVal.value;
+    }""")
+    if not correct_geometry:
+        raise RuntimeError('The mirror spectrum must align equal masses and draw opposing intensity sticks')
+
+
+async def check_mass_spectrum_mirror(plot, touch):
+    chart = plot.locator('figure[data-mass-spectrum-mirror]')
+    spectrum = chart.locator('svg[data-mirror-spectrum-plot]')
+    await check_mirror_spectrum_plot(spectrum)
+    await expect(spectrum.get_by_text('Relative intensity (%)', exact=True)).to_be_visible()
+    tolerance = chart.get_by_role('combobox', name='Fragment tolerance (m/z)', exact=True)
+    fragment = chart.get_by_role('combobox', name='Inspect fragment', exact=True)
+    readout = chart.locator('output[data-mirror-readout]')
+    query_peak = spectrum.locator('[data-mirror-peak][data-spectrum="query"][data-mz="110.0718"]')
+    reference_peak = spectrum.locator('[data-mirror-peak][data-spectrum="reference"][data-mz="110.0687"]')
+    pair = spectrum.locator('[data-mirror-pair][data-query-mz="110.0718"][data-reference-mz="110.0687"]')
+
+    async def check_pair(side):
+        await expect(readout).to_have_attribute('data-active-spectrum', side)
+        await expect(readout).to_have_attribute('data-status', 'paired')
+        await expect(readout).to_have_attribute('data-query-mz', '110.0718')
+        await expect(readout).to_have_attribute('data-reference-mz', '110.0687')
+        await expect(readout).to_have_attribute('data-query-intensity', '22.6')
+        await expect(readout).to_have_attribute('data-reference-intensity', '0.5')
+        await expect(readout).to_contain_text('+0.0031 m/z')
+        delta = float(await readout.get_attribute('data-delta-mz'))
+        if not math.isclose(delta, 0.0031, abs_tol=1e-12):
+            raise RuntimeError(f'Unexpected signed query minus reference m/z difference: {delta}')
+        for mark in [query_peak, reference_peak, pair]:
+            await expect(mark).to_have_attribute('data-selected', 'true')
+
+    await expect(tolerance).to_have_value('0.02')
+    await expect(readout).to_have_attribute('data-match-count', '12')
+    await tolerance.focus()
+    await tolerance.press('Tab')
+    await expect(fragment).to_be_focused()
+    await fragment.select_option('reference:110.0687')
+    await check_pair('reference')
+    await tolerance.select_option('0.002')
+    await expect(readout).to_have_attribute('data-tolerance', '0.002')
+    await expect(readout).to_have_attribute('data-match-count', '10')
+    await expect(spectrum.locator('[data-mirror-pair]')).to_have_count(10)
+    await expect(pair).to_have_count(0)
+    await expect(reference_peak).to_have_attribute('data-selected', 'true')
+    await expect(reference_peak).to_have_attribute('data-matched', 'false')
+    await expect(query_peak).to_have_attribute('data-matched', 'false')
+    await expect(readout).to_have_attribute('data-status', 'unmatched')
+    await expect(readout).to_have_attribute('data-reference-mz', '110.0687')
+    await expect(chart.locator('output[data-query-mz], output[data-delta-mz]')).to_have_count(0)
+
+    pick = spectrum.locator('[data-mirror-pick="query"]')
+    await pick.scroll_into_view_if_needed()
+    position = await pick.evaluate("""rect => {
+        const peak = rect.ownerSVGElement.querySelector('[data-spectrum="query"][data-mz="110.0718"]');
+        const y = rect.y.baseVal.value + rect.height.baseVal.value / 2;
+        const point = new DOMPoint(peak.x1.baseVal.value, y).matrixTransform(rect.getScreenCTM());
+        const bounds = rect.getBoundingClientRect();
+        return {x: point.x - bounds.left, y: point.y - bounds.top};
+    }""")
+    if touch:
+        await pick.tap(position=position)
+    else:
+        await pick.click(position=position)
+    await expect(fragment).to_have_value('query:110.0718')
+    await expect(readout).to_have_attribute('data-status', 'unmatched')
+    await expect(readout).to_have_attribute('data-query-mz', '110.0718')
+    await expect(chart.locator('output[data-reference-mz], output[data-delta-mz]')).to_have_count(0)
+
+    await tolerance.select_option('0.02')
+    await expect(readout).to_have_attribute('data-match-count', '12')
+    await expect(fragment).to_have_value('query:110.0718')
+    await check_pair('query')
 
 
 async def check_spectral_waterfall(plot, slug, touch=False):

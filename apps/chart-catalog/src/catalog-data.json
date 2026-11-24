@@ -3556,6 +3556,22 @@
     ]
   },
   {
+    "id": "mass-spectrum-mirror",
+    "name": "Mirror mass spectrum",
+    "url": "https://opensource.pitant.de/charts/#docs=mass-spectrum-mirror",
+    "examples": [
+      {
+        "id": "mass-spectrum-mirror-caffeine",
+        "family": "mass-spectrum-mirror",
+        "title": "Caffeine MS/MS Mirror Spectrum",
+        "label": "Matched and unmatched caffeine fragments",
+        "description": "Compare two measured caffeine fragmentation spectra. Follow paired fragments across the shared m/z axis and inspect how the tolerance changes the matches.",
+        "url": "https://opensource.pitant.de/charts/#example=mass-spectrum-mirror-caffeine",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "spectrum",
     "name": "Spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=spectrum",

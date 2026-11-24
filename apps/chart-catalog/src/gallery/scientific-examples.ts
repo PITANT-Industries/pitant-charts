@@ -15,6 +15,7 @@ import fullFieldStrain from './docs/examples/FullFieldStrain.tsx?raw'
 import hyperspectralCube from './docs/examples/HyperspectralCube.tsx?raw'
 import individualsControlChart from './docs/examples/IndividualsControlChart.tsx?raw'
 import industrialCtViewer from './docs/examples/IndustrialCtViewer.tsx?raw'
+import massSpectrumMirror from './docs/examples/MassSpectrumMirror.tsx?raw'
 import modeShapes from './docs/examples/ModeShapes.tsx?raw'
 import phasePlane from './docs/examples/PhasePlane.tsx?raw'
 import responseSurface from './docs/examples/ResponseSurface.tsx?raw'
@@ -56,6 +57,7 @@ const scientificExamples = new Map([
   ['cie-chromaticity-gamuts', withCatalogImports(cieChromaticityDiagram)],
   ['hyperspectral-cube-cuprite', withCatalogImports(hyperspectralCube)],
   ['response-surface-thermal', withCatalogImports(responseSurface)],
+  ['mass-spectrum-mirror-caffeine', withCatalogImports(massSpectrumMirror)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

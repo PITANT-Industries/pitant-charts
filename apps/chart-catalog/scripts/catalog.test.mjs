@@ -8,11 +8,11 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 73 chart and tooltip families and all 362 public examples', () => {
+test('covers 74 chart and tooltip families and all 363 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()
-  assert.equal(catalog.length, 73)
+  assert.equal(catalog.length, 74)
   for (const family of catalog) {
     assert(!familyIds.has(family.id), `Duplicate family ${family.id}`)
     familyIds.add(family.id)
@@ -50,8 +50,9 @@ test('covers 73 chart and tooltip families and all 362 public examples', () => {
   assert.deepEqual(catalog.find((family) => family.id === 'cie-chromaticity')?.examples.map((example) => example.id), ['cie-chromaticity-gamuts'])
   assert.deepEqual(catalog.find((family) => family.id === 'hyperspectral-cube')?.examples.map((example) => example.id), ['hyperspectral-cube-cuprite'])
   assert.deepEqual(catalog.find((family) => family.id === 'response-surface')?.examples.map((example) => example.id), ['response-surface-thermal'])
-  assert.equal(ids.size, 362)
-  assert.equal(urls.size, 362)
+  assert.deepEqual(catalog.find((family) => family.id === 'mass-spectrum-mirror')?.examples.map((example) => example.id), ['mass-spectrum-mirror-caffeine'])
+  assert.equal(ids.size, 363)
+  assert.equal(urls.size, 363)
 })
 
 test('documents every catalog family exactly once with practical guidance', async () => {
