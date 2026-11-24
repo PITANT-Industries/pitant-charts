@@ -21,6 +21,8 @@ export interface StressStrainCurve {
   points: readonly StressStrainPoint[]
   elasticFit: StressStrainElasticFit
   fractureIndex?: number
+  /** Reported elongation after fracture, expressed as a fraction. */
+  elongationAfterFracture?: number
 }
 
 export interface StressStrainData {
@@ -68,17 +70,22 @@ function proofPoint(points: readonly StressStrainPoint[], fit: StressStrainElast
 }
 
 function resultFor(curve: StressStrainCurve): Result | null {
-  const { id, label, elasticFit, fractureIndex, points: samples } = curve
+  const { id, label, elasticFit, fractureIndex, elongationAfterFracture, points: samples } = curve
   if (samples.length < 2 || !samples.every(({ strain, stressMpa }, i) =>
     Number.isFinite(strain) && Number.isFinite(stressMpa) && (i === 0 || strain > samples[i - 1].strain))) return null
   if (fractureIndex !== undefined && (!Number.isInteger(fractureIndex) || fractureIndex < 1 || fractureIndex >= samples.length)) return null
+  const reportedElongation = elongationAfterFracture !== undefined &&
+    Number.isFinite(elongationAfterFracture) && elongationAfterFracture >= 0 ? elongationAfterFracture : undefined
   const points = fractureIndex === undefined ? samples : samples.slice(0, fractureIndex + 1)
   const endpoint = points[points.length - 1]
   const { startStrain, endStrain, modulusMpa, interceptMpa } = elasticFit
   if (![startStrain, endStrain, modulusMpa, interceptMpa].every(Number.isFinite) ||
       modulusMpa <= 0 || startStrain >= endStrain || startStrain < points[0].strain || endStrain > endpoint.strain) return null
   const ultimate = points.reduce((maximum, point) => point.stressMpa > maximum.stressMpa ? point : maximum)
-  return { id, label, points, elasticFit, proof: proofPoint(points, elasticFit), ultimate, endpoint, fracture: fractureIndex !== undefined }
+  return {
+    id, label, points, elasticFit, proof: proofPoint(points, elasticFit), ultimate, endpoint,
+    fracture: fractureIndex !== undefined, elongationAfterFracture: reportedElongation,
+  }
 }
 
 function rangesFor(results: readonly Result[]) {
@@ -279,11 +286,15 @@ function ComparisonFigure({ analysis, label, compact = false, source }: Omit<Str
           </ul>
           <output className="stress-readout" data-stress-readout="" data-condition={active.id}
             data-modulus={active.elasticFit.modulusMpa} data-proof={active.proof?.stressMpa} data-ultimate={active.ultimate.stressMpa}
-            data-end-strain={active.endpoint.strain} data-fracture={active.fracture}>
+            data-end-strain={active.endpoint.strain} data-fracture={active.fracture}
+            data-elongation-after-fracture={active.elongationAfterFracture}>
             <span>Elastic-fit slope <strong>{(active.elasticFit.modulusMpa / 1000).toFixed(1)} GPa</strong></span>
             <span>0.2% proof stress <strong>{active.proof ? `${active.proof.stressMpa.toFixed(1)} MPa` : 'Unavailable'}</strong></span>
             <span>Tensile maximum <strong>{active.ultimate.stressMpa.toFixed(1)} MPa</strong></span>
             <span>{active.fracture ? 'Fracture strain' : 'Recorded endpoint strain'} <strong>{(active.endpoint.strain * 100).toFixed(2)}%</strong></span>
+            {active.elongationAfterFracture !== undefined && (
+              <span>Elongation after fracture, A <strong>{number.format(active.elongationAfterFracture * 100)}%</strong></span>
+            )}
           </output>
           {source && (
             <figcaption className="stress-caption">

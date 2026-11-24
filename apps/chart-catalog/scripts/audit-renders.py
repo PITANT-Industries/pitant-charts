@@ -1808,9 +1808,9 @@ async def check_stress_strain(plot):
     await check_stress_axes(detail)
     curves = overview.locator('path[data-stress-curve]')
     conditions = {
-        't61': (78928.05, 363.2333, 428.6515454439417, 0.0529786866721968, 419.8302238439861),
-        'aged-160c': (69495.98, 283.0986, 362.0105593051729, 0.0819847441562559, 335.8435939304965),
-        'aged-190c': (66815.61, 248.9384, 342.7704259942056, 0.0787740619650348, 322.1875264674847),
+        't61': (78928.05, 363.2333, 428.6515454439417, 0.0529786866721968, 419.8302238439861, '0.053'),
+        'aged-160c': (69495.98, 283.0986, 362.0105593051729, 0.0819847441562559, 335.8435939304965, '0.082'),
+        'aged-190c': (66815.61, 248.9384, 342.7704259942056, 0.0787740619650348, 322.1875264674847, '0.079'),
     }
     await expect(curves).to_have_count(len(conditions))
     for name in conditions:
@@ -1832,14 +1832,18 @@ async def check_stress_strain(plot):
         raise RuntimeError(f'Expected the three measured aluminum conditions, observed {choices}')
 
     previous_curve = None
-    for name, expected in conditions.items():
+    for name, (*expected, elongation) in conditions.items():
         await condition.select_option(name)
         await expect(readout).to_have_attribute('data-condition', name)
         await expect(readout).to_have_attribute('data-fracture', 'false')
+        await expect(readout).to_have_attribute('data-elongation-after-fracture', elongation)
+        elongation_percent = re.escape(f'{float(elongation) * 100:.1f}')
+        await expect(readout.get_by_text(re.compile(rf'^Elongation after fracture, A\s*{elongation_percent}0?%$'))).to_be_visible()
         await expect(readout).to_contain_text('Recorded endpoint strain')
         await expect(proof).to_be_visible()
         await expect(ultimate_point).to_be_visible()
         await expect(endpoint).to_be_visible()
+        await expect(endpoint).to_have_attribute('data-fracture', 'false')
         metrics = await readout.evaluate("out => ['modulus', 'proof', 'ultimate', 'endStrain'].map(key => Number(out.dataset[key]))")
         modulus, proof_stress, ultimate, end_strain = metrics
         strain, stress = await proof.evaluate("point => [Number(point.dataset.strain), Number(point.dataset.stress)]")
