@@ -222,7 +222,8 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'mass-spectrum', 'mass-spectrum-mirror', 'pca-biplot', 'pareto-frontier', 'batch-genealogy',
         'spatial-defect-map', 'lcms-feature-map', 'chromatogram-peak-integration', 'spectrum', 'spectrogram',
         'spectral-waterfall', 'correlation-matrix',
-        'gauge-rr', 'kaplan-meier', 'weibull-probability', 'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
+        'gauge-rr', 'kaplan-meier', 'weibull-probability', 'process-control', 'hotelling-process-monitor',
+        'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
         'ternary-mixture-map', 'industrial-ct', 'cad-scan-deviation', 'cie-chromaticity', 'hyperspectral-cube', 'response-surface',
@@ -394,6 +395,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', f'#docs=gauge-rr&variant={example["id"]}'
                 )
+            elif example['family'] == 'hotelling-process-monitor':
+                await check_hotelling_compact(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=hotelling-process-monitor&variant=hotelling-process-monitor-milling'
+                )
             elif example['family'] == 'weibull-probability':
                 await check_weibull_compact(card_plot, example['id'])
                 await expect(card.locator('.example-card-link')).to_have_attribute(
@@ -555,6 +561,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'gauge-rr':
                 await check_gauge_rr(plot, slug, touch)
                 code_import = 'GaugeRR'
+            elif example['family'] == 'hotelling-process-monitor':
+                await check_hotelling(plot, touch)
+                code_import = 'HotellingProcessMonitor'
             elif example['family'] == 'weibull-probability':
                 await check_weibull_probability(plot, slug, touch)
                 code_import = 'WeibullProbabilityPlot'
@@ -5241,6 +5250,182 @@ async def check_gauge_rr(preview, slug, touch):
         await expect(row).to_have_attribute('data-df', str(df))
         close(await row.get_attribute('data-ss'), ss, 1e-18)
         close(await row.get_attribute('data-ms'), ss / df, 1e-18)
+
+
+# Independent NumPy covariance and SciPy F-quantile results for NASA Milling Wear, case 11.
+HOTELLING_LIMIT = 56.9832811930556
+HOTELLING_SCORES = (
+    10.27786484847716, 6.436386282089163, 13.54188260763852, 26.610009611843438, 16.12406782322151,
+    37.044669085277896, 64.27440858113651, 52.09463786314467, 122.43901743025754, 153.23749965754803,
+    100.72157626395779, 296.92288070709265, 198.68150976162292, 336.6773260690498, 295.2420628826139,
+)
+
+
+def check_hotelling_number(actual, expected):
+    assert math.isclose(float(actual), expected, rel_tol=2e-10, abs_tol=1e-9), (actual, expected)
+
+
+async def check_hotelling_sequence(chart):
+    sequence = chart.locator('svg[data-hotelling-sequence]')
+    await expect(sequence.locator('[data-hotelling-run][data-flagged="true"]')).to_have_count(8)
+    await expect(sequence.locator('.hotelling-stem')).to_have_count(15)
+    await expect(sequence.locator('.hotelling-run-dot')).to_have_count(15)
+    dimensions, ucl, marks = await sequence.evaluate('''svg => {
+        const numbers = (el, ...names) => names.map(name => Number(el.getAttribute(name)));
+        const dimensions = numbers(svg, 'data-plot-left', 'data-plot-right', 'data-plot-top', 'data-plot-bottom', 'data-y-max');
+        const ucl = numbers(svg.querySelector('[data-hotelling-limit]'), 'data-hotelling-limit', 'x1', 'x2', 'y1', 'y2');
+        const marks = [...svg.querySelectorAll('[data-hotelling-run]')].map(mark => [
+            mark.dataset,
+            numbers(mark.querySelector('.hotelling-stem'), 'x1', 'x2', 'y1', 'y2'),
+            numbers(mark.querySelector('.hotelling-run-dot'), 'cx', 'cy'),
+        ]);
+        return [dimensions, ucl, marks];
+    }''')
+    left, right, top, bottom, y_max = dimensions
+    await expect(sequence).to_have_attribute('data-scale', 'linear')
+
+    def y(score):
+        return bottom - (bottom - top) * score / y_max
+
+    for actual, expected in zip(ucl, (HOTELLING_LIMIT, left, right, y(HOTELLING_LIMIT), y(HOTELLING_LIMIT))):
+        check_hotelling_number(actual, expected)
+    for index, ((data, stem, dot), score) in enumerate(zip(marks, HOTELLING_SCORES)):
+        assert data['hotellingRun'] == f'Pass {index + 9:02}' and int(data['order']) == index + 1, data
+        assert (data['flagged'] == 'true') == (score > HOTELLING_LIMIT), data
+        check_hotelling_number(data['score'], score)
+        x = left + (right - left) * (index + 0.5) / len(HOTELLING_SCORES)
+        for actual, expected in zip(stem + dot, (x, x, bottom, y(score), x, y(score))):
+            check_hotelling_number(actual, expected)
+    return sequence
+
+
+async def check_hotelling_compact(plot):
+    chart = plot.locator('figure[data-hotelling-monitor][data-compact="true"]')
+    await expect(chart).to_be_visible()
+    sequence = await check_hotelling_sequence(chart)
+    await check_compact_figure_bounds(sequence, '.hotelling-run-dot, .hotelling-stem, [data-hotelling-limit]')
+    projection = chart.locator('svg[data-hotelling-projection]')
+    await expect(projection.locator('[data-hotelling-reference]')).to_have_count(8)
+    await expect(projection.locator('[data-hotelling-projected-run]')).to_have_attribute('data-hotelling-projected-run', 'Pass 15')
+    await check_compact_figure_bounds(projection, '[data-hotelling-boundary], [data-hotelling-reference], [data-hotelling-projected-run]')
+    await expect(chart.locator('button, select, .hotelling-target, [data-hotelling-readout]')).to_have_count(0)
+
+
+async def check_hotelling_projection(projection, channel_x, channel_y, rho, z):
+    await expect(projection).to_have_attribute('data-channel-x', channel_x)
+    await expect(projection).to_have_attribute('data-channel-y', channel_y)
+    check_hotelling_number(await projection.get_attribute('data-rho'), rho)
+    left, right, top, bottom, extent = [float(await projection.get_attribute(f'data-{name}'))
+                                       for name in ('plot-left', 'plot-right', 'plot-top', 'plot-bottom', 'extent')]
+    check_hotelling_number(right - left, bottom - top)
+    boundary = projection.locator('[data-hotelling-boundary]')
+    check_hotelling_number(await boundary.get_attribute('data-hotelling-boundary'), HOTELLING_LIMIT)
+
+    def to_data(x, y):
+        return (-extent + (float(x) - left) * 2 * extent / (right - left),
+                -extent + (bottom - float(y)) * 2 * extent / (bottom - top))
+
+    def projected_score(x, y):
+        return (x * x - 2 * rho * x * y + y * y) / (1 - rho * rho)
+
+    path = await boundary.get_attribute('d')
+    coordinates = re.findall(r'[ML]([-+.\deE]+) ([-+.\deE]+)', path)
+    assert len(coordinates) == 96 and path.endswith('Z'), path
+    for point in coordinates:
+        check_hotelling_number(projected_score(*to_data(*point)), HOTELLING_LIMIT)
+    selected = projection.locator('[data-hotelling-projected-run="Pass 15"][data-flagged="true"]')
+    await expect(selected).to_be_visible()
+    center = to_data(await selected.get_attribute('cx'), await selected.get_attribute('cy'))
+    for actual, expected in zip(center, z):
+        check_hotelling_number(actual, expected)
+    reference = projection.locator('[data-hotelling-reference]')
+    assert await reference.evaluate_all('marks => marks.map(mark => mark.dataset.hotellingReference)') == [
+        f'Pass {index:02}' for index in range(1, 9)
+    ]
+    return projected_score(*center)
+
+
+async def check_hotelling(plot, touch):
+    chart = plot.locator('figure[data-hotelling-monitor][data-compact="false"]')
+    sequence = await check_hotelling_sequence(chart)
+    run = chart.get_by_role('combobox', name='Run', exact=True)
+    await expect(run).to_have_value('Pass 15')
+    await expect(run.locator('optgroup[label="Above limit"] option')).to_have_count(8)
+    await expect(run.locator('optgroup[label="At or below limit"] option')).to_have_count(7)
+    readout = chart.locator('[data-hotelling-readout="Pass 15"]')
+    await expect(readout).to_contain_text('Above limit')
+    check_hotelling_number(await readout.get_attribute('data-score'), HOTELLING_SCORES[6])
+    check_hotelling_number(await readout.get_attribute('data-limit'), HOTELLING_LIMIT)
+    check_hotelling_number(await readout.get_attribute('data-alpha'), .01)
+
+    evidence = chart.locator('[data-hotelling-contributions="Pass 15"]')
+    expected_rows = [
+        ('AE_table', 64.25158739370939, .194369958948, .14147552207675002, 7.734482898128582),
+        ('vib_spindle', 4.897323240135478, .273740641276, .29691246880412503, -2.4742509868996225),
+        ('smcAC', -4.874502052708352, -.164986165365, -.173954038266875, 2.260235400282637),
+    ]
+    rows = evidence.locator('[data-hotelling-contribution]')
+    await expect(rows).to_have_count(3)
+    terms = []
+    for index, (channel, *values) in enumerate(expected_rows):
+        row = rows.nth(index)
+        await expect(row).to_have_attribute('data-hotelling-contribution', channel)
+        for key, expected in zip(('value', 'observed', 'baseline', 'z'), values):
+            check_hotelling_number(await row.get_attribute(f'data-{key}'), expected)
+        term = float(await row.get_attribute('data-value'))
+        terms.append(term)
+        bar = row.locator('[data-hotelling-bar]')
+        await expect(bar).to_have_attribute('data-negative', str(term < 0).lower())
+        width, start = await bar.evaluate('bar => [parseFloat(bar.style.inlineSize), parseFloat(bar.style.insetInlineStart)]')
+        expected_width = 50 * abs(term) / abs(terms[0])
+        # Browsers round serialized style percentages.
+        assert math.isclose(width, expected_width, abs_tol=5e-5), (width, expected_width)
+        expected_start = 50 - expected_width if term < 0 else 50
+        assert math.isclose(start, expected_start, abs_tol=5e-5), (start, expected_start)
+    check_hotelling_number(math.fsum(terms), HOTELLING_SCORES[6])
+    check_hotelling_number(await evidence.get_attribute('data-sum'), HOTELLING_SCORES[6])
+
+    projection = chart.locator('svg[data-hotelling-projection]')
+    ae, vibration, current = [row[-1] for row in expected_rows]
+    await check_hotelling_projection(projection, 'AE_table', 'vib_spindle', -.17478763219702326, (ae, vibration))
+    x_axis = chart.get_by_role('combobox', name='Projection X', exact=True)
+    y_axis = chart.get_by_role('combobox', name='Projection Y', exact=True)
+    await x_axis.select_option('0')
+    projected = await check_hotelling_projection(projection, 'smcAC', 'vib_spindle', -.4437716419622971, (current, vibration))
+    check_hotelling_number(projected, 7.80395188330718)
+    assert projected < HOTELLING_LIMIT < HOTELLING_SCORES[6], projected
+    await y_axis.select_option('0')
+    await expect(x_axis).to_have_value('1')
+    await expect(y_axis).to_have_value('0')
+    await expect(readout).to_have_attribute('data-flagged', 'true')
+    check_hotelling_number(await readout.get_attribute('data-score'), HOTELLING_SCORES[6])
+
+    await run.select_option('Pass 09')
+    within = chart.locator('[data-hotelling-readout="Pass 09"]')
+    await expect(within).to_contain_text('At or below limit')
+    check_hotelling_number(await within.get_attribute('data-score'), HOTELLING_SCORES[0])
+    await expect(projection.locator('[data-hotelling-projected-run="Pass 09"][data-flagged="false"]')).to_be_visible()
+    await expect(chart.locator('[data-hotelling-contributions="Pass 09"]')).to_be_visible()
+    last = sequence.locator('[data-hotelling-run="Pass 23"]')
+    target = last.locator('.hotelling-target')
+    await target.evaluate("mark => mark.scrollIntoView({block: 'center'})")
+    await (target.tap(timeout=5000) if touch else target.click(timeout=5000))
+    await expect(last).to_have_attribute('data-active', 'true')
+    await expect(run).to_have_value('Pass 23')
+    check_hotelling_number(await chart.locator('[data-hotelling-readout="Pass 23"]').get_attribute('data-score'), HOTELLING_SCORES[-1])
+    sources = chart.locator('figcaption')
+    for label, url in [
+        ('NASA Milling Wear, Case 11', 'https://data.nasa.gov/dataset/milling-wear'),
+        ('Measurement archive and readme', 'https://data.nasa.gov/docs/legacy/mill.zip'),
+        ('NIST Phase II method', 'https://www.itl.nist.gov/div898/handbook/pmc/section5/pmc5434.htm'),
+    ]:
+        await expect(sources.get_by_role('link', name=label, exact=True)).to_have_attribute('href', url)
+    page = plot.page
+    provenance = 'licenses/NASA-Milling-Wear-Data.txt'
+    notices = await page.request.get(urljoin(page.url, 'THIRD_PARTY_NOTICES.md'))
+    assert notices.ok and f'({provenance})' in await notices.text()
+    data_notice = await page.request.get(urljoin(page.url, provenance))
+    assert data_notice.ok and 'https://www.usa.gov/government-copyright' in await data_notice.text()
 
 
 def weibull_fixture_anchors(slug):

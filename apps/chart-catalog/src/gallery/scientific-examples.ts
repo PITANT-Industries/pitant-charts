@@ -1,4 +1,5 @@
 import allanDeviation from './docs/examples/AllanDeviation.tsx?raw'
+import hotellingProcessMonitor from './docs/examples/HotellingProcessMonitor.tsx?raw'
 import weibullProbability from './docs/examples/WeibullProbabilityPlot.tsx?raw'
 import kaplanMeier from './docs/examples/KaplanMeierReliability.tsx?raw'
 import gaugeRR from './docs/examples/GaugeRR.tsx?raw'
@@ -80,6 +81,7 @@ const scientificExamples = new Map([
   ['kaplan-meier-glass-capacitors', withCatalogImports(kaplanMeier)],
   ['weibull-probability-bearing-greases', withCatalogImports(weibullProbability)],
   ['weibull-probability-suppliers', withCatalogImports(weibullProbability)],
+  ['hotelling-process-monitor-milling', withCatalogImports(hotellingProcessMonitor)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],
