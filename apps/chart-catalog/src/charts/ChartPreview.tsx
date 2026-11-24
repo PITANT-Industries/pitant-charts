@@ -32,6 +32,7 @@ const CieChromaticityDiagramPreview = lazy(() => import('./scientific/CieChromat
 const HyperspectralCubePreview = lazy(() => import('./scientific/HyperspectralCubePreview'))
 const ResponseSurfacePreview = lazy(() => import('./scientific/ResponseSurfacePreview'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
+const FaultReplayPreview = lazy(() => import('./scientific/fault-replay/FaultReplayPreview'))
 const ClassifierThresholdPreview = lazy(() => import('./scientific/classifier-threshold/ClassifierThresholdPreview'))
 const HotellingPreview = lazy(() => import('./scientific/hotelling/HotellingPreview'))
 const WeibullPreview = lazy(() => import('./scientific/weibull/WeibullPreview'))
@@ -64,6 +65,7 @@ export const rendererFamilies = {
   weibullProbability: ['weibull-probability'],
   hotellingMonitor: ['hotelling-process-monitor'],
   classifierThreshold: ['classifier-threshold-explorer'],
+  faultReplay: ['fault-event-replay'],
   campbell: ['campbell-diagram'],
   modes: ['mode-shapes'],
   orbit: ['shaft-orbit'],
@@ -103,6 +105,7 @@ const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.weibullProbability.map((id) => [id, WeibullPreview] as const),
   ...rendererFamilies.hotellingMonitor.map((id) => [id, HotellingPreview] as const),
   ...rendererFamilies.classifierThreshold.map((id) => [id, ClassifierThresholdPreview] as const),
+  ...rendererFamilies.faultReplay.map((id) => [id, FaultReplayPreview] as const),
   ...rendererFamilies.paretoFrontier.map((id) => [id, ParetoFrontierPreview] as const),
   ...rendererFamilies.pcaBiplot.map((id) => [id, PcaBiplotPreview] as const),
   ...rendererFamilies.mirrorSpectrum.map((id) => [id, MassSpectrumMirrorPreview] as const),

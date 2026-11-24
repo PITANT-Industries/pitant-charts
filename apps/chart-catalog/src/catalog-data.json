@@ -3686,6 +3686,22 @@
     ]
   },
   {
+    "id": "fault-event-replay",
+    "name": "Fault-event replay",
+    "url": "https://opensource.pitant.de/charts/#docs=fault-event-replay",
+    "examples": [
+      {
+        "id": "fault-event-replay-pronto",
+        "family": "fault-event-replay",
+        "title": "Cranfield Air Blockage Replay",
+        "label": "70 minutes of measured process data",
+        "description": "Replay a controlled restriction test across three measured signals, valve settings, module alarms, and operator actions.",
+        "url": "https://opensource.pitant.de/charts/#example=fault-event-replay-pronto",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "lcms-feature-map",
     "name": "LC–MS feature map",
     "url": "https://opensource.pitant.de/charts/#docs=lcms-feature-map",
