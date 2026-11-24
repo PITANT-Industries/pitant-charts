@@ -762,6 +762,31 @@
       { "label": "GS1 EPCIS and CBV data model, TransformationEvent", "href": "https://ref.gs1.org/epcis/TransformationEvent" }
     ]
   },
+  "spatial-defect-map": {
+    "summary": "Locate individual die failures and inspect connected clusters across wafers and batches.",
+    "useWhen": "Compare wafer-sort results, investigate the shape of failure clusters, or identify which locations were missing or untested.",
+    "data": "Supply wafer IDs, batch labels, a grid geometry, and die records with unique integer row and column pairs. Each site has a pass, fail, untested, or missing status. A failed die may reference a declared failure bin. Omit cells outside the recorded grid footprint. Specify pitch, coordinate unit, optional origin and row direction, and a radius and notch where measured or declared.",
+    "reading": "Choose a batch and wafer, then select a die to read its row, column, coordinates, status, and failure bin. Failed dies belong to the same cluster when edges connect them through dies in the same bin. Use the failure-bin filter to focus the map. The full wafer counts and yield remain visible.",
+    "notes": [
+      "Yield is passing dies divided by tested dies. Tested counts include pass and fail only. Missing and untested sites are reported separately, and locations outside the wafer map are omitted. Cluster links follow shared die edges, so a diagonal touch alone leaves clusters separate.",
+      "The measured example uses three MIR-WM811K maps with their original lot, wafer index, and map-level pattern label. Each recorded die reports electrical pass or fail. Row and column restore the source zero-based grid coordinates. The coordinate axes count die pitches from the central grid index and preserve source rows increasing down.",
+      "Wafer 20 in lot2 is labeled Center and has 2,145 passing and 315 failing dies, giving 87.20% yield. Its largest edge-connected fail cluster contains 80 dies. Wafer 12 in lot2 is labeled Edge-Loc, and wafer 12 in lot8 is labeled Edge-Ring.",
+      "The simulated example uses three generated wafers across two batches. Its illustrative 200 mm outline contains a notch and uses pitches of 10.4 mm horizontally and 11.2 mm vertically. The simulation adds two named failure bins and explicit missing and untested sites.",
+      "Simulated wafer A-01 has 234 mapped sites, including 204 pass, 21 fail, five untested, and four missing. The yield is 204 ÷ 225, or 90.67%. The code example uses a small illustrative subset of die states."
+    ],
+    "properties": [
+      { "name": "data", "type": "SpatialDefectData", "description": "Required. Supply wafer geometries and die records, plus the IDs and labels of any failure bins." },
+      { "name": "initialWafer", "type": "string", "description": "Choose the initial wafer by ID." },
+      { "name": "label", "type": "string", "description": "Describe the wafer test or simulation for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show the wafer map in a compact space such as a gallery card." },
+      { "name": "source", "type": "{ label: string; href: string; description?: string; references?: readonly { label: string; href: string }[] }", "description": "Show the source of the map, a dataset description, and related references." }
+    ],
+    "sources": [
+      { "label": "Ming-Ju Wu, Jyh-Shing Roger Jang, and Jui-Long Chen (2015), wafer map failure pattern recognition", "href": "https://doi.org/10.1109/TSM.2014.2364237" },
+      { "label": "MIR-WM811K (2015), MIR Lab corpus (archived)", "href": "https://web.archive.org/web/20260609012331/http://mirlab.org/dataset/public/" },
+      { "label": "SEMI E142, substrate mapping terminology", "href": "https://store-us.semi.org/products/e14200-semi-e142-specification-for-substrate-mapping" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",

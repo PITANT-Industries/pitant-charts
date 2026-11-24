@@ -3629,6 +3629,31 @@
     ]
   },
   {
+    "id": "spatial-defect-map",
+    "name": "Spatial defect map",
+    "url": "https://opensource.pitant.de/charts/#docs=spatial-defect-map",
+    "examples": [
+      {
+        "id": "spatial-defect-map-measured",
+        "family": "spatial-defect-map",
+        "title": "Measured Wafer Defect Map",
+        "label": "WM-811K wafer-sort maps",
+        "description": "Inspect edge-connected failures on measured wafers with center, localized edge, and edge-ring patterns.",
+        "url": "https://opensource.pitant.de/charts/#example=spatial-defect-map-measured",
+        "position": 1
+      },
+      {
+        "id": "spatial-defect-map-simulated",
+        "family": "spatial-defect-map",
+        "title": "Notched Wafer Inspection Map",
+        "label": "Simulated calibrated die data",
+        "description": "Inspect a simulated physical wafer layout, identify untested and missing die records, and filter typed electrical failures.",
+        "url": "https://opensource.pitant.de/charts/#example=spatial-defect-map-simulated",
+        "position": 2
+      }
+    ]
+  },
+  {
     "id": "spectrum",
     "name": "Spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=spectrum",
