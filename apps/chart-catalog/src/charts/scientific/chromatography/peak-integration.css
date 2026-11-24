@@ -1,0 +1,312 @@
+.peak-integration {
+  --peak-ink: var(--gallery-ink, var(--foreground));
+  --peak-muted: var(--gallery-muted, var(--muted-foreground));
+  --peak-rule: var(--gallery-rule, var(--border));
+  --peak-trace: #254555;
+  --peak-accent: #a64f33;
+  --peak-positive: #2c8390;
+  --peak-positive-muted: #5997a4;
+  --peak-deficit: #a75e46;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
+  margin: 0;
+  color: var(--peak-ink);
+  container-type: inline-size;
+}
+
+.dark .peak-integration {
+  --peak-trace: #bad2dc;
+  --peak-accent: #eea181;
+  --peak-positive: #69b6c1;
+  --peak-positive-muted: #589da7;
+  --peak-deficit: #dd9e83;
+}
+
+.detail-plot:has(.peak-integration),
+.detail-plot:has(.peak-integration) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.peak-integration[data-compact='true'],
+.peak-integration[data-compact='true'] > section,
+.peak-integration[data-compact='true'] .chromatogram-plot {
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.peak-integration > section {
+  min-inline-size: 0;
+}
+
+.peak-integration h3 {
+  margin: 0;
+  font-size: .9rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.peak-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem .75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.peak-fill-key {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  color: var(--peak-muted);
+  font-size: .73rem;
+}
+
+.peak-fill-key i {
+  display: inline-block;
+  inline-size: .65rem;
+  block-size: .65rem;
+  background: color-mix(in srgb, var(--peak-positive) 36%, transparent);
+  border: 1px solid var(--peak-positive);
+}
+
+.peak-fill-key [data-below] {
+  margin-inline-start: .28rem;
+  background: repeating-linear-gradient(135deg, transparent 0 2px, var(--peak-deficit) 2px 3px);
+  border-color: var(--peak-deficit);
+}
+
+.chromatogram-plot {
+  block-size: clamp(12.4rem, 32cqw, 17.5rem);
+  min-inline-size: 0;
+}
+
+.chromatogram-plot-editor {
+  block-size: clamp(13.6rem, 36cqw, 20rem);
+}
+
+.chromatogram-guide-line {
+  stroke: var(--peak-rule);
+  stroke-width: .65;
+}
+
+.chromatogram-area-above {
+  fill: var(--peak-positive-muted);
+  fill-opacity: .22;
+}
+
+[data-active='true'] > .chromatogram-area-above,
+.peak-integration[data-compact='true'] .chromatogram-area-above {
+  fill: var(--peak-positive);
+  fill-opacity: .35;
+}
+
+.chromatogram-deficit-hatch {
+  stroke: var(--peak-deficit);
+  stroke-width: .8;
+}
+
+.chromatogram-signal,
+.chromatogram-baseline,
+.chromatogram-boundary {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.chromatogram-signal {
+  stroke: var(--peak-trace);
+  stroke-width: 1.4;
+}
+
+.chromatogram-baseline {
+  stroke: var(--peak-positive-muted);
+  stroke-width: 1;
+}
+
+[data-active='true'] > .chromatogram-baseline {
+  stroke: var(--peak-accent);
+  stroke-width: 1.6;
+}
+
+.chromatogram-boundary {
+  stroke: var(--peak-accent);
+  stroke-width: .8;
+  stroke-dasharray: 2.3 3.3;
+}
+
+.chromatogram-peak-select {
+  fill: var(--peak-positive-muted);
+  stroke: var(--gallery-surface, var(--card));
+  stroke-width: 1;
+}
+
+[data-active='true'] > .chromatogram-peak-select,
+.chromatogram-apex {
+  fill: var(--peak-accent);
+}
+
+.chromatogram-plot:not(.chromatogram-plot-editor) [data-peak-select],
+.peak-integration[data-compact='false'] .chromatogram-plot:not(.chromatogram-plot-editor) .chromatogram-area {
+  cursor: pointer;
+}
+
+.chromatogram-handle {
+  touch-action: none;
+  user-select: none;
+}
+
+.chromatogram-handle[data-kind='time'] { cursor: ew-resize; }
+.chromatogram-handle[data-kind='baseline'] { cursor: ns-resize; }
+
+.chromatogram-time-grip {
+  fill: var(--peak-accent);
+}
+
+.chromatogram-baseline-grip {
+  fill: var(--gallery-surface, var(--card));
+  stroke: var(--peak-accent);
+  stroke-width: 1.5;
+}
+
+.peak-editor-values,
+.peak-value,
+.peak-editor-actions {
+  display: grid;
+  gap: .55rem .8rem;
+  min-inline-size: 0;
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.peak-editor-values {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@container (min-width: 560px) {
+  .peak-editor-values {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.peak-editor-values label,
+.peak-value span {
+  display: grid;
+  gap: .2rem;
+  align-content: end;
+  min-inline-size: 0;
+}
+
+.peak-editor-values input,
+.peak-section-header select {
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  min-block-size: 2rem;
+  padding-inline: .45rem;
+  border: 1px solid var(--peak-rule);
+  border-radius: .25rem;
+  background: var(--gallery-surface, var(--card));
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.peak-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  margin-block-start: .6rem;
+}
+
+.peak-integration button {
+  padding: .17rem .3rem;
+  border: 0;
+  background: transparent;
+  color: var(--gallery-accent, var(--primary));
+  text-align: start;
+  cursor: pointer;
+  font: inherit;
+}
+
+.peak-editor-actions button:hover,
+.peak-results button:hover {
+  text-decoration: underline;
+}
+
+.peak-value {
+  display: flex;
+  flex-wrap: wrap;
+  margin-block-start: .65rem;
+}
+
+.peak-value,
+.peak-source {
+  padding-block-start: .63rem;
+  border-block-start: 1px solid var(--peak-rule);
+}
+
+.peak-value,
+.peak-source p {
+  color: var(--peak-muted);
+}
+
+.peak-value strong {
+  color: var(--peak-ink);
+  font-size: .87rem;
+  overflow-wrap: anywhere;
+}
+
+.peak-results .peak-section-header label {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .76rem;
+}
+
+.peak-results .peak-section-header select {
+  inline-size: auto;
+}
+
+.peak-results table {
+  display: table;
+  inline-size: 100%;
+  margin-block: .55rem 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: .81rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.peak-results td,
+.peak-results th {
+  padding: .38rem .28rem;
+  border: 0;
+  border-block-end: 1px solid var(--peak-rule);
+  background: transparent;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+
+.peak-results th:first-child {
+  text-align: start;
+}
+
+.peak-results tr[data-active='true'] {
+  background: color-mix(in srgb, var(--peak-positive) 8%, transparent);
+}
+
+.peak-results td:last-child,
+.peak-results thead th:last-child {
+  inline-size: 42%;
+}
+
+.peak-source {
+  font-size: .82rem;
+}
+
+.peak-source p {
+  margin: .4rem 0 0;
+}

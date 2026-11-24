@@ -22,6 +22,7 @@ Some catalog example names and the Line examples’ simulated latency and dense 
 
 ## Scientific datasets
 
+- [LC-DAD separation of Kahweol and cafestol oleate and palmitate from coffee](https://doi.org/10.5281/zenodo.5412345) by Guillaume Erny, Marzieh Moeenfard, and Arminda Alves (2021), Zenodo v1.0, supplies the measured chromatogram under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The example retains all 1,501 readings from 12 to 22 minutes in the first coffee injection at 225 nm, converts the MATLAB array to TypeScript, and adds editable demonstration peak windows. See the [dataset notice](licenses/Erny-Coffee-LC-DAD-CC-BY-4.0.txt) and [analysis paper](https://doi.org/10.3390/separations8100178).
 - [NOAA Global Monitoring Laboratory](https://doi.org/10.15138/yaf1-bk21) provides the monthly Mauna Loa CO₂ observations under CC0-1.0.
 - [Palmer Station LTER and Kristen Gorman](https://allisonhorst.github.io/palmerpenguins/) collected the penguin observations. The palmerpenguins data package by Horst, Hill, and Gorman provides the CC0-1.0 snapshot used here.
 - [Steel Plates Faults](https://doi.org/10.24432/C5J88N) by M. Buscema, S. Terzi, and W. Tastle (2010), UCI Machine Learning Repository, is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The example adapts four feature columns across 1,941 records to compute a Pearson correlation matrix.

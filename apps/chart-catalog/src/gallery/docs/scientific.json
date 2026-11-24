@@ -815,6 +815,34 @@
       { "label": "OpenMS FeatureFinderMetabo", "href": "https://openms.de/documentation/html/TOPP_FeatureFinderMetabo.html" }
     ]
   },
+  "chromatogram-peak-integration": {
+    "summary": "Measure chromatographic peak area between a detector trace and an editable baseline.",
+    "useWhen": "Review manual integration choices, remeasure a peak after refining its limits, or compare how baseline drift changes the integrated response across peaks.",
+    "data": "Supply detector readings as [retention time, signal] pairs in strictly increasing time order. Time spacing may vary. Give each peak a unique ID and a start and end within the measured trace. Neighboring windows can touch at an endpoint. Set the time and detector units to match the acquisition.",
+    "reading": "Select a peak to edit. Drag its time limits and baseline endpoints on the chart, or enter exact values in the numeric fields. The selected region and peak area update together. Reset region restores the supplied settings within the current neighboring boundaries.",
+    "notes": [
+      "The component integrates the original piecewise-linear trace against the straight line between the two baseline endpoints. It interpolates readings at the window limits and inserts an intersection wherever the corrected signal crosses the baseline, then integrates each portion with trapezoids.",
+      "Area above baseline includes the positive portions. Signed area adds the negative portions algebraically. Area is expressed in detector response multiplied by the input time unit. The apex marks the largest baseline-corrected response within the window. The trace and its samples are retained through every edit.",
+      "Omit a peak’s baseline to connect the interpolated detector readings at the two window endpoints. Supply both endpoint signals to start from a custom baseline. The gallery card displays the integration without editing controls.",
+      "The measured example retains all 1,501 readings at 225 nm from 12 to 22 minutes in the first coffee injection published by Guillaume Erny, Marzieh Moeenfard, and Arminda Alves (2021) under CC BY 4.0. Detector response uses the archived scale, so the area is reported in source units × min.",
+      "The example uses illustrative windows to examine partially resolved peaks. Its areas quantify the detector response in those windows. Use reference standards to assign compound identities and calibration to estimate concentrations.",
+      "The code sample uses simulated readings, including a peak that crosses its baseline near the leading edge. Its first peak has 3 mAU × min above baseline and a signed area of 2.6875 mAU × min."
+    ],
+    "properties": [
+      { "name": "data", "type": "ChromatogramData", "description": "Required. Pass the sample pairs, integration windows, time unit, and detector response unit." },
+      { "name": "data.peaks", "type": "readonly { id, label?, start, end, baseline? }[]", "description": "Pass a unique ID and an ordered time interval for each peak. Optional baseline gives the response at the start and end, in the detector’s units." },
+      { "name": "initialPeak", "type": "string", "description": "Choose the first peak to inspect by its ID." },
+      { "name": "label", "type": "string", "description": "Give the chromatogram an accessible name." },
+      { "name": "compact", "type": "boolean", "description": "Show the integrations in a compact, read-only chart." },
+      { "name": "source", "type": "{ label, href, description?, references? }", "description": "Link the acquisition, describe the example trace, and optionally list related references." }
+    ],
+    "sources": [
+      { "label": "Erny, Moeenfard, and Alves (2021), LC–DAD separation of diterpene esters from coffee", "href": "https://doi.org/10.5281/zenodo.5412345" },
+      { "label": "Erny, Moeenfard, and Alves (2021), analysis of partially resolved chromatographic peaks", "href": "https://doi.org/10.3390/separations8100178" },
+      { "label": "Creative Commons Attribution 4.0 International", "href": "https://creativecommons.org/licenses/by/4.0/" },
+      { "label": "Agilent, graphical integration and tuning", "href": "https://openlab.help.agilent.com/2.8/en/mergedProjects/DataAnalysis/DA_IntegrationOptimizer_Step2.htm" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",
