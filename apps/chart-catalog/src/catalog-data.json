@@ -3670,6 +3670,22 @@
     ]
   },
   {
+    "id": "classifier-threshold-explorer",
+    "name": "Classifier threshold explorer",
+    "url": "https://opensource.pitant.de/charts/#docs=classifier-threshold-explorer",
+    "examples": [
+      {
+        "id": "classifier-threshold-explorer-secom",
+        "family": "classifier-threshold-explorer",
+        "title": "Semiconductor Line-Test Thresholds",
+        "label": "359 held-out production records",
+        "description": "Sweep a decision threshold and inspect the trade-off between missed line-test failures and false alarms on held-out SECOM scores.",
+        "url": "https://opensource.pitant.de/charts/#example=classifier-threshold-explorer-secom",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "lcms-feature-map",
     "name": "LC–MS feature map",
     "url": "https://opensource.pitant.de/charts/#docs=lcms-feature-map",

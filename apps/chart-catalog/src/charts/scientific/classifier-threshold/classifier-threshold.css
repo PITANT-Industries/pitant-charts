@@ -1,0 +1,121 @@
+.classifier-threshold {
+  --classifier-ink: var(--gallery-ink, var(--foreground, #151b20));
+  --classifier-muted: var(--gallery-muted, var(--muted-foreground, #515e66));
+  --classifier-rule: var(--gallery-rule, var(--border, #dce1e3));
+  --classifier-surface: var(--gallery-surface, var(--card, #fff));
+  --classifier-trace: #246b76;
+  --classifier-active: #ae502c;
+  display: grid;
+  gap: 1rem;
+  min-inline-size: 0;
+  margin: 0;
+  color: var(--classifier-ink);
+  font-variant-numeric: tabular-nums;
+  container-type: inline-size;
+}
+
+:where([data-theme='dark'], .dark) .classifier-threshold {
+  --classifier-trace: #82c1ca;
+  --classifier-active: #f7a882;
+}
+
+.detail-plot:has(.classifier-threshold),
+.detail-plot:has(.classifier-threshold) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.classifier-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .125rem .7rem;
+  margin-block-end: .45rem;
+}
+
+.classifier-heading h3 { margin: 0; font-size: .92rem; font-weight: 650; line-height: 1.4; }
+.classifier-heading span,
+.classifier-baseline-key,
+.classifier-slider-scale { color: var(--classifier-muted); font-size: .74rem; }
+.classifier-heading strong { color: var(--classifier-ink); }
+
+.classifier-cutoff,
+.classifier-outcomes { border-block-end: 1px solid var(--classifier-rule); padding-block-end: .9rem; }
+
+.classifier-slider-label { display: grid; gap: .3rem; font-size: .82rem; }
+.classifier-slider-label input {
+  inline-size: 100%;
+  min-block-size: 2.2rem;
+  margin: 0;
+  accent-color: var(--classifier-active);
+  cursor: pointer;
+}
+.classifier-slider-label input:focus-visible { outline: 2px solid var(--classifier-trace); outline-offset: 2px; }
+.classifier-slider-scale { display: flex; justify-content: space-between; }
+
+.classifier-curves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem 1.2rem; }
+.classifier-curve { min-inline-size: 0; }
+.classifier-curve svg { display: block; inline-size: 100%; block-size: auto; overflow: visible; }
+.classifier-threshold[data-compact='false'] .classifier-curve svg { cursor: crosshair; }
+.classifier-curve svg text { fill: var(--classifier-muted); font-size: 11px; }
+.classifier-curve svg .classifier-axis-label { fill: var(--classifier-ink); font-size: 12px; }
+.classifier-tick path { fill: none; stroke: var(--classifier-rule); stroke-width: .7; }
+.classifier-axis { fill: none; stroke: var(--classifier-muted); stroke-width: .8; }
+.classifier-baseline { fill: none; stroke: var(--classifier-muted); stroke-opacity: .75; stroke-width: .9; stroke-dasharray: 4 3; }
+.classifier-trace { fill: none; stroke: var(--classifier-trace); stroke-width: 1.7; stroke-linejoin: round; }
+.classifier-crosshair { fill: none; stroke: var(--classifier-active); stroke-opacity: .68; stroke-width: .8; stroke-dasharray: 2 3; }
+[data-classifier-marker] circle { fill: var(--classifier-surface); stroke: var(--classifier-active); stroke-width: 2.1; }
+
+.classifier-baseline-key { margin: .22rem 0 0; }
+.classifier-baseline-key::before {
+  content: '';
+  display: inline-block;
+  inline-size: .95em;
+  margin-inline-end: .4em;
+  border-block-start: 1px dashed currentColor;
+  vertical-align: .25em;
+}
+
+.classifier-matrix { inline-size: 100%; border-collapse: collapse; font-size: .78rem; }
+.classifier-matrix th, .classifier-matrix td { text-align: start; padding: .45rem .6rem; }
+.classifier-matrix thead th { border-block-end: 1px solid var(--classifier-rule); color: var(--classifier-muted); font-weight: 550; }
+.classifier-matrix tbody th { border-block-end: 1px solid var(--classifier-rule); font-weight: 600; }
+.classifier-matrix td, .classifier-compact-matrix rect { --cell-color: var(--classifier-trace); }
+.classifier-matrix [data-error='true'], .classifier-compact-matrix [data-error='true'] { --cell-color: var(--classifier-active); }
+.classifier-matrix td {
+  border: 1px solid var(--classifier-rule);
+  background: color-mix(in srgb, var(--cell-color) calc(4% + var(--cell-rate) * 17%), var(--classifier-surface));
+}
+.classifier-matrix td strong { display: block; font-size: 1.2rem; font-weight: 630; line-height: 1.2; }
+.classifier-matrix td span { color: var(--classifier-muted); font-size: .71rem; }
+
+.classifier-readout { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; margin-block-start: .65rem; font-size: .77rem; color: var(--classifier-muted); }
+.classifier-readout strong { color: var(--classifier-ink); font-weight: 650; }
+.classifier-threshold figcaption { font-size: .74rem; line-height: 1.6; color: var(--classifier-muted); }
+.classifier-threshold figcaption p { margin: .4rem 0 0; }
+
+.classifier-threshold[data-compact='true'] {
+  grid-template-columns: minmax(0, 3.2fr) minmax(0, 1fr);
+  align-items: center;
+  gap: .2rem;
+  block-size: 100%;
+}
+.classifier-threshold[data-compact='true'] .classifier-curves { gap: .55rem; }
+.classifier-threshold[data-compact='true'] .classifier-trace { stroke-width: 3; }
+.classifier-threshold[data-compact='true'] .classifier-baseline { stroke-width: 1.6; }
+.classifier-threshold[data-compact='true'] [data-classifier-marker] circle { stroke-width: 3.6; }
+.classifier-compact-matrix { display: block; inline-size: 100%; }
+.classifier-compact-matrix rect {
+  fill: color-mix(in srgb, var(--cell-color) calc(9% + var(--cell-rate) * 36%), var(--classifier-surface));
+  stroke: color-mix(in srgb, var(--cell-color) 40%, var(--classifier-surface));
+  stroke-width: .65;
+}
+
+@container (max-width: 560px) {
+  .classifier-threshold[data-compact='false'] .classifier-curves { grid-template-columns: minmax(0, 1fr); }
+}
+
+@container (max-width: 330px) {
+  .classifier-matrix th, .classifier-matrix td { padding-inline: .35rem; }
+}

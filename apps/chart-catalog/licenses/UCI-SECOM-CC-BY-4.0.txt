@@ -1,0 +1,14 @@
+SECOM (2008)
+Michael McCann and Adrian Johnston, UCI Machine Learning Repository
+https://doi.org/10.24432/C54305
+
+UCI publishes the dataset under Creative Commons Attribution 4.0 International.
+License text: https://creativecommons.org/licenses/by/4.0/legalcode
+
+PITANT extracted each original row number and recorded October line-test outcome
+and added a model score from class-balanced logistic regression fitted on the
+preceding July–September rows. The model uses train-only median imputation,
+constant-feature removal and standardization. The record outcomes are retained
+from the source, where +1 means failure and −1 means pass. Scores are rounded to
+eight decimal places for this example and are uncalibrated. The catalog displays
+the 359 October holdout rows, including all 22 recorded failures.

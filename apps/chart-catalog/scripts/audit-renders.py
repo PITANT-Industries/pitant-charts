@@ -223,6 +223,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'spatial-defect-map', 'lcms-feature-map', 'chromatogram-peak-integration', 'spectrum', 'spectrogram',
         'spectral-waterfall', 'correlation-matrix',
         'gauge-rr', 'kaplan-meier', 'weibull-probability', 'process-control', 'hotelling-process-monitor',
+        'classifier-threshold-explorer',
         'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
@@ -400,6 +401,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=hotelling-process-monitor&variant=hotelling-process-monitor-milling'
                 )
+            elif example['family'] == 'classifier-threshold-explorer':
+                await check_classifier_threshold_compact(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=classifier-threshold-explorer&variant=classifier-threshold-explorer-secom'
+                )
             elif example['family'] == 'weibull-probability':
                 await check_weibull_compact(card_plot, example['id'])
                 await expect(card.locator('.example-card-link')).to_have_attribute(
@@ -564,6 +570,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'hotelling-process-monitor':
                 await check_hotelling(plot, touch)
                 code_import = 'HotellingProcessMonitor'
+            elif example['family'] == 'classifier-threshold-explorer':
+                await check_classifier_threshold(plot, touch)
+                code_import = 'ClassifierThresholdExplorer'
             elif example['family'] == 'weibull-probability':
                 await check_weibull_probability(plot, slug, touch)
                 code_import = 'WeibullProbabilityPlot'
@@ -5426,6 +5435,123 @@ async def check_hotelling(plot, touch):
     assert notices.ok and f'({provenance})' in await notices.text()
     data_notice = await page.request.get(urljoin(page.url, provenance))
     assert data_notice.ok and 'https://www.usa.gov/government-copyright' in await data_notice.text()
+
+
+
+def classifier_holdout_reference():
+    fixture = CATALOG.parent / 'charts/scientific/classifier-threshold/fixture.ts'
+    records = re.findall(r'^  \[(\d+), (\d+\.\d+), ([01])\],$', fixture.read_text(encoding='utf-8'), re.M)
+    assert len(records) == 359 and len({row for row, _, _ in records}) == 359
+    positives = [float(score) for _, score, failed in records if failed == '1']
+    negatives = [float(score) for _, score, failed in records if failed == '0']
+    assert (len(positives), len(negatives)) == (22, 337)
+
+    thresholds = [math.inf, *sorted(set(positives + negatives), reverse=True)]
+    # Recount directly at every cutoff instead of mirroring the component's incremental sweep.
+    points = []
+    for threshold in thresholds:
+        tp = sum(score >= threshold for score in positives)
+        fp = sum(score >= threshold for score in negatives)
+        points.append((tp, fp, len(positives) - tp, len(negatives) - fp))
+    roc_auc = math.fsum((a > b) + 0.5 * (a == b) for a in positives for b in negatives) / (22 * 337)
+    average_precision = math.fsum(points[thresholds.index(score)][0] / sum(points[thresholds.index(score)][:2])
+                                  for score in positives) / 22
+    initial = sum(score >= 0.25 for score in thresholds[1:])
+    return thresholds, points, roc_auc, average_precision, initial
+
+
+async def check_classifier_threshold_compact(plot):
+    chart = plot.locator('figure[data-classifier-threshold][data-compact="true"]')
+    await expect(chart).to_be_visible()
+    for kind in ('roc', 'pr'):
+        curve = chart.locator(f'svg[data-classifier-curve="{kind}"]')
+        await expect(curve.locator('[data-classifier-trace]')).to_have_attribute('d', re.compile(r'^M.+[LV]'))
+        await expect(curve.locator('[data-classifier-marker] circle')).to_be_visible()
+        await check_compact_figure_bounds(curve, '[data-classifier-trace], [data-classifier-marker] circle')
+    matrix = chart.locator('svg.classifier-compact-matrix')
+    await expect(matrix.locator('rect')).to_have_count(4)
+    await check_compact_figure_bounds(matrix, 'rect')
+    await expect(chart.locator('input, button, select, a, [role="slider"], [data-classifier-readout]')).to_have_count(0)
+
+
+async def check_classifier_threshold(plot, touch):
+    chart = plot.locator('figure[data-classifier-threshold][data-compact="false"]')
+    cutoff = chart.get_by_role('slider', name='Decision threshold')
+    roc, pr = [chart.locator(f'svg[data-classifier-curve="{kind}"]') for kind in ('roc', 'pr')]
+    matrix = chart.get_by_role('table', name='Confusion matrix')
+    readout = chart.locator('[data-classifier-readout]')
+    thresholds, points, auc, ap, initial = classifier_holdout_reference()
+    await expect(chart).to_have_attribute('data-positives', '22')
+    await expect(chart).to_have_attribute('data-negatives', '337')
+    await expect(cutoff).to_have_attribute('max', str(len(thresholds) - 1))
+    for element, attribute, expected in [(chart, 'data-roc-auc', auc), (chart, 'data-average-precision', ap),
+                                         (pr, 'data-baseline', 22 / 359)]:
+        actual = float(await element.get_attribute(attribute))
+        assert math.isclose(actual, expected, abs_tol=1e-12), (attribute, actual, expected)
+    await expect(roc).to_have_attribute('data-baseline', 'diagonal')
+    await expect(matrix.get_by_role('columnheader').first).to_have_text('Actual outcome')
+
+    async def check_operating_point(index):
+        tp, fp, fn, tn = points[index]
+        recall, false_positive_rate = tp / 22, fp / 337
+        precision = tp / (tp + fp) if tp + fp else None
+        await expect(cutoff).to_have_value(str(index))
+        for curve, x, y in [(roc, false_positive_rate, recall), (pr, recall, precision)]:
+            await expect(curve).to_have_attribute('data-selected-index', str(index))
+            marker = curve.locator('[data-classifier-marker]')
+            if y is None:
+                await expect(marker).to_have_count(0)
+            else:
+                await expect(marker.locator('circle')).to_be_visible()
+                for attribute, expected in [('data-x', x), ('data-y', y)]:
+                    actual = float(await marker.get_attribute(attribute))
+                    assert math.isclose(actual, expected, abs_tol=1e-12), (attribute, actual, expected)
+        values = await matrix.locator('[data-classifier-cell]').evaluate_all(
+            'cells => Object.fromEntries(cells.map(cell => [cell.dataset.classifierCell, Number(cell.dataset.count)]))'
+        )
+        assert values == {'tp': tp, 'fp': fp, 'fn': fn, 'tn': tn}, (index, values)
+        await expect(readout).to_have_attribute('data-classifier-readout', str(index))
+        if index == 0:
+            await expect(readout).to_have_attribute('data-threshold', 'none')
+            await expect(readout).to_have_attribute('data-precision', 'undefined')
+            await expect(readout).to_contain_text('Undefined')
+        else:
+            observed = float(await readout.get_attribute('data-threshold'))
+            assert observed == thresholds[index], (observed, thresholds[index])
+
+    await check_operating_point(initial)
+    await cutoff.press('Home')
+    await check_operating_point(0)
+    await cutoff.press('End')
+    await check_operating_point(len(points) - 1)
+    await cutoff.press('ArrowLeft')
+    await check_operating_point(len(points) - 2)
+
+    if not touch:
+        # Click the visible ROC vertex for the initial threshold, using axis endpoints from the SVG.
+        await roc.scroll_into_view_if_needed()
+        tp, fp, _, _ = points[initial]
+        position = await roc.evaluate("""(svg, [fpr, tpr]) => {
+          const axis = svg.querySelector('.classifier-axis')
+          const start = axis.getPointAtLength(0)
+          const end = axis.getPointAtLength(axis.getTotalLength())
+          const marker = new DOMPoint(start.x + fpr * (end.x - start.x), end.y - tpr * (end.y - start.y))
+          const screen = marker.matrixTransform(svg.getScreenCTM())
+          return {x: screen.x, y: screen.y}
+        }""", [fp / 337, tp / 22])
+        await plot.page.mouse.click(position['x'], position['y'])
+        await check_operating_point(initial)
+
+    sources = chart.locator('figcaption')
+    await expect(sources.locator('a[href="https://doi.org/10.24432/C54305"]')).to_be_visible()
+    await expect(sources).to_contain_text(re.compile('October 2008', re.I))
+    await expect(sources).to_contain_text(re.compile('uncalibrated', re.I))
+    page = plot.page
+    provenance = 'licenses/UCI-SECOM-CC-BY-4.0.txt'
+    notices = await page.request.get(urljoin(page.url, 'THIRD_PARTY_NOTICES.md'))
+    assert notices.ok and f'({provenance})' in await notices.text()
+    data_notice = await page.request.get(urljoin(page.url, provenance))
+    assert data_notice.ok and 'https://creativecommons.org/licenses/by/4.0/legalcode' in await data_notice.text()
 
 
 def weibull_fixture_anchors(slug):
