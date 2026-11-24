@@ -1,6 +1,6 @@
 # PITANT Chart Catalog
 
-Explore 369 interactive examples across 78 chart and tooltip families in the [PITANT Charts gallery](https://opensource.pitant.de/charts/).
+Explore 370 interactive examples across 79 chart and tooltip families in the [PITANT Charts gallery](https://opensource.pitant.de/charts/).
 
 ## Run the gallery
 

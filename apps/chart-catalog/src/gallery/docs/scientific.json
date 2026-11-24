@@ -787,6 +787,34 @@
       { "label": "SEMI E142, substrate mapping terminology", "href": "https://store-us.semi.org/products/e14200-semi-e142-specification-for-substrate-mapping" }
     ]
   },
+  "lcms-feature-map": {
+    "summary": "Locate detected liquid chromatography–mass spectrometry features by retention time and mass-to-charge ratio, then inspect the recorded scans for a selected mass trace.",
+    "useWhen": "Use a feature map to investigate overlapping chromatographic signals, distinguish separate mass traces grouped in one feature, and review the scan evidence behind a detection.",
+    "data": "Supply a unique feature ID, its reported retention time in seconds, mass-to-charge ratio, signal intensity, and any available mass traces. Each trace has its own ID and m/z, a footprint given by retention-time and m/z vertices, and optional scan samples and extraction bounds. A feature without trace data still has its reported position in the overview.",
+    "reading": "Select an apex marker in the overview or use the Detected feature picker. The overview uses retention time in minutes. The mass-trace panel shows all footprints at their recorded m/z coordinates. Choose an ion trace to inspect its individual footprint in parts per million relative to that trace’s centroid. Use the scan control or select a point on the chromatogram to inspect the nearest recorded scan.",
+    "notes": [
+      "Footprints show the retention-time and m/z extent reported by feature detection. The footprint detail and chromatogram share a retention-time axis in seconds. The shaded strip shows the selected extraction window. The scan readout shows the source ID, time, signal, and the extraction m/z bounds when supplied. Include a charge when the source assigns one.",
+      "A zero sample means that the extraction returned zero signal for a recorded scan. A null intensity marks an unavailable value. Keep the source scan IDs and retention times so these two cases remain distinguishable.",
+      "Apex marker color represents feature intensity relative to the strongest feature in the supplied map. The logarithmic scale covers four orders of magnitude. Zero signal uses the lightest shade. Use the footprints and assigned charge to review a detection. Confirm compound identity with evidence such as matching MS/MS spectra or a reference standard.",
+      "The measured example uses an OpenMS positive-mode teaching run with 334 MS1 scans. OpenMS 3.6.0 detected 75 features with multiple traces using the tutorial’s 10 ppm mass tolerance, 10,000 intensity threshold, and fixed elution-peak width filtering, with trace hull reporting enabled.",
+      "For the measured example, feature intensity is the peak area estimated by OpenMS in arbitrary units × seconds. Each chromatogram reading sums measured centroid intensities within ±10 ppm of the selected trace’s centroid m/z in that MS1 scan. The two measures use different units.",
+      "The code sample uses illustrative features and scan readings to demonstrate the data structure."
+    ],
+    "properties": [
+      { "name": "data", "type": "LcMsFeatureData", "description": "Required. Pass features with unique IDs, rtSeconds, mz, intensity, optional charge, and mass traces." },
+      { "name": "data.features[].traces", "type": "readonly LcMsMassTrace[]", "description": "Trace IDs are unique within a feature. Pass trace m/z, ordered hull vertices as [retention seconds, m/z], optional samples as [scan ID, retention seconds, intensity or null], and an optional mzWindow as [minimum m/z, maximum m/z]. Use the same retention time wherever a scan ID appears." },
+      { "name": "initialFeature", "type": "string", "description": "Optional ID of the feature shown on first render." },
+      { "name": "label", "type": "string", "description": "Optional accessible name for the figure." },
+      { "name": "compact", "type": "boolean", "description": "Render the selected mass-trace footprint and chromatogram without inspection controls, for gallery previews." },
+      { "name": "source", "type": "{ label, href, description?, references? }", "description": "Link the measured acquisition and describe processing used to derive the displayed features and extracted traces." }
+    ],
+    "sources": [
+      { "label": "OpenMS feature maps and featureXML", "href": "https://openms.readthedocs.io/en/stable/getting-started/topp-tools.html#features-feature-maps-and-featurexml-files" },
+      { "label": "OpenMS positive-mode LC–MS teaching run, Metabolomics_1.mzML", "href": "https://github.com/OpenMS/OpenMS/blob/01540e638431426a39b4d7acce41a5e2c738b235/doc/pyopenms/src/data/Metabolomics_1.mzML" },
+      { "label": "pyOpenMS tutorial, untargeted metabolomics preprocessing", "href": "https://pyopenms.readthedocs.io/en/stable/user_guide/untargeted_metabolomics_preprocessing.html" },
+      { "label": "OpenMS FeatureFinderMetabo", "href": "https://openms.de/documentation/html/TOPP_FeatureFinderMetabo.html" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",

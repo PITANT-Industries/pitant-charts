@@ -32,6 +32,7 @@ const CieChromaticityDiagramPreview = lazy(() => import('./scientific/CieChromat
 const HyperspectralCubePreview = lazy(() => import('./scientific/HyperspectralCubePreview'))
 const ResponseSurfacePreview = lazy(() => import('./scientific/ResponseSurfacePreview'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
+const LcMsFeatureMapPreview = lazy(() => import('./scientific/lcms/LcMsFeatureMapPreview'))
 const SpatialDefectMapPreview = lazy(() => import('./scientific/wafer/SpatialDefectMapPreview'))
 const BatchGenealogyPreview = lazy(() => import('./scientific/genealogy/BatchGenealogyPreview'))
 const ParetoFrontierPreview = lazy(() => import('./scientific/pareto/ParetoFrontierPreview'))
@@ -50,6 +51,7 @@ export const rendererFamilies = {
   paretoFrontier: ['pareto-frontier'],
   batchGenealogy: ['batch-genealogy'],
   spatialDefectMap: ['spatial-defect-map'],
+  lcMsFeatureMap: ['lcms-feature-map'],
   campbell: ['campbell-diagram'],
   modes: ['mode-shapes'],
   orbit: ['shaft-orbit'],
@@ -82,6 +84,7 @@ const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.polarflow.map((id) => [id, PolarFlow] as const),
   ...rendererFamilies.batchGenealogy.map((id) => [id, BatchGenealogyPreview] as const),
   ...rendererFamilies.spatialDefectMap.map((id) => [id, SpatialDefectMapPreview] as const),
+  ...rendererFamilies.lcMsFeatureMap.map((id) => [id, LcMsFeatureMapPreview] as const),
   ...rendererFamilies.paretoFrontier.map((id) => [id, ParetoFrontierPreview] as const),
   ...rendererFamilies.pcaBiplot.map((id) => [id, PcaBiplotPreview] as const),
   ...rendererFamilies.mirrorSpectrum.map((id) => [id, MassSpectrumMirrorPreview] as const),

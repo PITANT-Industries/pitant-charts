@@ -1,4 +1,5 @@
 import allanDeviation from './docs/examples/AllanDeviation.tsx?raw'
+import lcMsFeatureMap from './docs/examples/LcMsFeatureMap.tsx?raw'
 import spatialDefectMap from './docs/examples/SpatialDefectMap.tsx?raw'
 import batchGenealogy from './docs/examples/BatchGenealogy.tsx?raw'
 import bearingEnvelope from './docs/examples/BearingEnvelopeSpectrum.tsx?raw'
@@ -68,6 +69,7 @@ const scientificExamples = new Map([
   ['batch-genealogy-enclosures', withCatalogImports(batchGenealogy)],
   ['spatial-defect-map-measured', withCatalogImports(spatialDefectMap)],
   ['spatial-defect-map-simulated', withCatalogImports(spatialDefectMap)],
+  ['lcms-feature-map-openms', withCatalogImports(lcMsFeatureMap)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

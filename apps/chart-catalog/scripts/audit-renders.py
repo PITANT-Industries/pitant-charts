@@ -220,7 +220,7 @@ async def check_docs_navigation(browser, local_url, catalog):
 async def check_scientific_catalog(browser, local_url, catalog):
     families = {
         'mass-spectrum', 'mass-spectrum-mirror', 'pca-biplot', 'pareto-frontier', 'batch-genealogy',
-        'spatial-defect-map', 'spectrum', 'spectrogram',
+        'spatial-defect-map', 'lcms-feature-map', 'spectrum', 'spectrogram',
         'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
@@ -384,6 +384,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', f'#docs=spatial-defect-map&variant={example["id"]}'
                 )
+            elif example['family'] == 'lcms-feature-map':
+                await check_lcms_compact(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=lcms-feature-map&variant=lcms-feature-map-openms'
+                )
             elif example['family'] == 'stress-strain-comparison':
                 stress = card_plot.locator('svg[data-stress-overview]')
                 await check_stress_axes(stress)
@@ -524,6 +529,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'spatial-defect-map':
                 await check_spatial_defect_map(plot, slug, touch)
                 code_import = 'SpatialDefectMap'
+            elif example['family'] == 'lcms-feature-map':
+                await check_lcms_feature_map(plot, touch)
+                code_import = 'LcMsFeatureMap'
             elif example['family'] == 'campbell-diagram':
                 await check_campbell_diagram(plot, touch)
                 code_import = 'CampbellDiagram'
@@ -4855,6 +4863,157 @@ async def check_spatial_defect_map(preview, slug, touch):
     await count('sim-a-01', 204, 21, 5, 4)
     await verify_site(5, 11, 15.6, -40.6, 'untested')
     await expect(outline).to_have_attribute('d', original_boundary)
+
+
+async def check_lcms_compact(preview):
+    chart = preview.locator('figure[data-lcms-map][data-compact="true"]')
+    footprints = chart.locator('svg[data-lcms-trace-detail]')
+    chromatogram = chart.locator('svg[data-lcms-chromatogram]')
+    await expect(footprints).to_have_attribute('data-reference-mz', '427.30320051521875')
+    await expect(footprints.locator('[data-lcms-hull]')).to_have_count(1)
+    hull = footprints.locator('path[data-lcms-hull="M+0"]')
+    await expect(hull).to_have_attribute('data-vertices', '7')
+    await expect(hull).to_have_attribute('d', re.compile(r'^M(?:[^MLZ]+L){6}[^MLZ]+Z$'))
+    await expect(chromatogram.locator('path[data-lcms-ion-path]')).to_have_attribute('d', re.compile(r'^M.*L'))
+    await check_compact_figure_bounds(footprints, '[data-lcms-hull]')
+    await check_compact_figure_bounds(chromatogram, '[data-lcms-ion-path]')
+    await expect(chart.locator('select, input, button, [data-lcms-scan-evidence], [data-lcms-chromatogram-target]')).to_have_count(0)
+
+
+async def check_lcms_feature_map(preview, touch):
+    chart = preview.locator('figure[data-lcms-map][data-compact="false"]')
+    overview = chart.locator('svg[data-lcms-overview]')
+    footprints = chart.locator('svg[data-lcms-footprints]')
+    detail = chart.locator('svg[data-lcms-trace-detail]')
+    chromatogram = chart.locator('svg[data-lcms-chromatogram]')
+    summary = chart.locator('output[data-lcms-feature-summary]')
+    evidence = chart.locator('output[data-lcms-scan-evidence]')
+    feature = chart.get_by_role('combobox', name='Detected feature', exact=True)
+    ion_trace = chart.get_by_role('combobox', name='Ion trace', exact=True)
+    scan = chart.get_by_role('slider', name='Scan', exact=True)
+    target = chromatogram.locator('[data-lcms-chromatogram-target]')
+    native_prefix = 'controllerType=0 controllerNumber=1 scan='
+
+    async def check_scan(number, rt, intensity, trace):
+        scan_id = f'{native_prefix}{number}'
+        await expect(evidence).to_have_attribute('data-lcms-scan-evidence', scan_id)
+        await expect(evidence).to_have_attribute('data-scan-rt', rt)
+        await expect(evidence).to_have_attribute('data-scan-intensity', intensity)
+        await expect(evidence).to_have_attribute('data-scan-state', 'measured')
+        await expect(evidence).to_have_attribute('data-trace', trace)
+        await expect(evidence).to_contain_text(scan_id)
+        await expect(scan).to_have_attribute('aria-valuetext', re.compile(r'^' + re.escape(scan_id) + ', '))
+        marker = chromatogram.locator(f'circle[data-lcms-scan="{scan_id}"]')
+        await expect(marker).to_have_attribute('data-rt', rt)
+        await expect(marker).to_have_attribute('data-intensity', intensity)
+        await expect(chromatogram.locator('[data-lcms-selected-scan]')).to_have_attribute('data-lcms-selected-scan', scan_id)
+        positions = [
+            (footprints, 'line[data-lcms-footprint-scan]', 'x1'),
+            (detail, 'line[data-lcms-footprint-scan]', 'x1'),
+            (chromatogram, f'circle[data-lcms-scan="{scan_id}"]', 'cx'),
+        ]
+        for pane, selector, coordinate in positions:
+            time = await pane.evaluate("""(panel, [selector, coordinate]) => {
+              const ticks = Array.from(panel.querySelectorAll('text[text-anchor="middle"][x]'))
+                .map(tick => [Number(tick.getAttribute('x')), Number(tick.textContent)])
+                .filter(([, value]) => Number.isFinite(value))
+              const [[x1, t1], [x2, t2]] = ticks
+              const markX = Number(panel.querySelector(selector).getAttribute(coordinate))
+              return t1 + (markX - x1) * (t2 - t1) / (x2 - x1)
+            }""", [selector, coordinate])
+            if not math.isclose(time, float(rt), rel_tol=0, abs_tol=1e-6):
+                raise RuntimeError(f'{scan_id}: all three panels must project the same retention time, observed {time}')
+
+    async def check_window(trace, center_mz, min_mz, max_mz, hull_bounds):
+        await expect(detail).to_have_attribute('data-reference-mz', str(center_mz))
+        await expect(detail.locator('[data-lcms-hull]')).to_have_count(1)
+        for key, value in [('data-mz-min', min_mz), ('data-mz-max', max_mz)]:
+            await expect(evidence).to_have_attribute(key, str(value))
+        for pane, ppm in [(footprints, False), (detail, True)]:
+            rendered = await pane.evaluate("""(panel, { trace, ppm, center }) => {
+              const ticks = Array.from(panel.querySelectorAll('text[text-anchor="end"]')).map(tick =>
+                [Number(tick.getAttribute('y')), Number(tick.textContent.replaceAll(',', ''))])
+              const [[y1, v1], [y2, v2]] = ticks
+              const mz = y => {
+                const value = v1 + (y - y1) * (v2 - v1) / (y2 - y1)
+                return ppm ? center * (1 + value * 1e-6) : value
+              }
+              const rect = panel.querySelector('rect[data-lcms-extraction-window]')
+              const low = Number(rect.getAttribute('y'))
+              const high = low + Number(rect.getAttribute('height'))
+              const path = panel.querySelector(`path[data-lcms-hull="${trace}"]`).getAttribute('d')
+              const vertices = Array.from(path.matchAll(/[ML]([0-9.eE+-]+) ([0-9.eE+-]+)/g), match =>
+                [Number(match[1]), Number(match[2])])
+              const xTicks = Array.from(panel.querySelectorAll('text[text-anchor="middle"][x]'))
+                .map(tick => [Number(tick.getAttribute('x')), Number(tick.textContent)])
+                .filter(([, value]) => Number.isFinite(value))
+              const [[x1, t1], [x2, t2]] = xTicks
+              const rt = x => t1 + (x - x1) * (t2 - t1) / (x2 - x1)
+              const times = vertices.map(([x]) => rt(x))
+              const masses = vertices.map(([, y]) => mz(y))
+              return [mz(high), mz(low), Math.min(...times), Math.max(...times), Math.min(...masses), Math.max(...masses)]
+            }""", {'trace': trace, 'ppm': ppm, 'center': center_mz})
+            expected = [min_mz, max_mz, *hull_bounds]
+            if any(not math.isclose(a, b, rel_tol=0, abs_tol=1e-6) for a, b in zip(rendered, expected)):
+                raise RuntimeError(f'F29 {trace} hull or extraction bounds were altered: {rendered}')
+
+    await expect(overview.locator('[data-lcms-feature]')).to_have_count(75)
+    await expect(overview.locator('[data-lcms-hull]')).to_have_count(183)
+    await expect(overview.get_by_text('Retention time (min)', exact=True)).to_be_visible()
+    await expect(footprints.get_by_text('Retention time (s)', exact=True)).to_be_visible()
+    await expect(detail.get_by_text('Mass offset (ppm)', exact=True)).to_be_visible()
+    await expect(chromatogram.get_by_text('Ion intensity', exact=True)).to_be_visible()
+    await expect(chart.get_by_role('link', name='OpenMS Metabolomics_1.mzML', exact=True)).to_have_attribute(
+        'href', re.compile(r'/blob/01540e638431426a39b4d7acce41a5e2c738b235/.+/Metabolomics_1\.mzML$')
+    )
+    await expect(summary).to_have_attribute('data-lcms-feature-summary', 'F29')
+    await expect(summary).to_have_attribute('data-feature-rt', '298.998983887')
+    await expect(summary).to_have_attribute('data-feature-mz', '427.30320051521875')
+    await expect(summary).to_have_attribute('data-feature-intensity', '11692402688')
+    await expect(summary).to_have_attribute('data-feature-charge', '1')
+    await expect(summary).to_have_attribute('data-feature-traces', '4')
+    await expect(footprints.locator('[data-lcms-hull]')).to_have_count(4)
+    await expect(chromatogram.locator('[data-lcms-scan]')).to_have_count(35)
+    await expect(feature).to_have_value('F29')
+    await expect(ion_trace).to_have_value('M+0')
+    await check_scan(1210, '298.998983887', '3163138048', 'M+0')
+    await check_window('M+0', 427.30320051521875, 427.2989274832136, 427.3074735472239,
+                       [288.919154559, 309.036977023, 427.3028869628906, 427.3040466308594])
+
+    await scan.press('ArrowRight')
+    await check_scan(1215, '300.234997455', '1919350784', 'M+0')
+    await ion_trace.select_option('M+1')
+    await expect(footprints.locator('[data-lcms-trace="M+1"]')).to_have_attribute('data-active', 'true')
+    await check_scan(1215, '300.234997455', '465397024', 'M+1')
+    await check_window('M+1', 428.3042675160236, 428.2999844733484, 428.30855055869876,
+                       [296.838789231, 309.036977023, 428.3023986816406, 428.3056335449219])
+
+    # Click/tap the real scan's projected x-coordinate on the interaction overlay.
+    previous_scan = chromatogram.locator(f'circle[data-lcms-scan="{native_prefix}1205"]')
+    position = await previous_scan.evaluate("""mark => {
+      const point = new DOMPoint(mark.cx.baseVal.value, mark.cy.baseVal.value).matrixTransform(mark.getScreenCTM())
+      const area = mark.ownerSVGElement.querySelector('[data-lcms-chromatogram-target]').getBoundingClientRect()
+      return { x: point.x - area.left, y: area.height / 2 }
+    }""")
+    await (target.tap(position=position) if touch else target.click(position=position))
+    await check_scan(1205, '297.892759679', '354141824', 'M+1')
+
+    await ion_trace.select_option('M+2')
+    await scan.press('Home')
+    await scan.press('ArrowRight')
+    await check_scan(1145, '284.390818879', '0', 'M+2')
+    await expect(chromatogram.locator('[data-lcms-scan][data-missing]')).to_have_count(0)
+
+    # A separated feature tests direct map selection at both viewport sizes.
+    feature_target = overview.locator('[data-lcms-feature="F75"] [data-lcms-feature-target]')
+    await (feature_target.tap() if touch else feature_target.click())
+    await expect(feature).to_have_value('F75')
+    await expect(summary).to_have_attribute('data-lcms-feature-summary', 'F75')
+    await expect(overview.locator('[data-lcms-feature="F75"]')).to_have_attribute('data-active', 'true')
+    await expect(footprints.locator('[data-lcms-hull]')).to_have_count(2)
+    await check_scan(2218, '544.292637967', '223234.046875', 'M+0')
+    await feature.select_option('F29')
+    await check_scan(1210, '298.998983887', '3163138048', 'M+0')
 
 
 async def check_spectral_waterfall(plot, slug, touch=False):
