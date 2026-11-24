@@ -3718,6 +3718,22 @@
     ]
   },
   {
+    "id": "cumulative-flow",
+    "name": "Cumulative flow diagram",
+    "url": "https://opensource.pitant.de/charts/#docs=cumulative-flow",
+    "examples": [
+      {
+        "id": "cumulative-flow-manufacturing",
+        "family": "cumulative-flow",
+        "title": "Smart Factory Job Flow",
+        "label": "21 recorded lab production jobs",
+        "description": "Reconstruct inventory by stage from production events and inspect the jobs behind a recorded queue.",
+        "url": "https://opensource.pitant.de/charts/#example=cumulative-flow-manufacturing",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "lcms-feature-map",
     "name": "LC–MS feature map",
     "url": "https://opensource.pitant.de/charts/#docs=lcms-feature-map",
