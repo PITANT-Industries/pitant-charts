@@ -3572,6 +3572,22 @@
     ]
   },
   {
+    "id": "lcms-feature-map",
+    "name": "LC–MS feature map",
+    "url": "https://opensource.pitant.de/charts/#docs=lcms-feature-map",
+    "examples": [
+      {
+        "id": "lcms-feature-map-openms",
+        "family": "lcms-feature-map",
+        "title": "LC–MS Feature Map",
+        "label": "75 features from the OpenMS teaching run",
+        "description": "Inspect calibrated isotope footprints and trace each extracted-ion signal to its source measurement.",
+        "url": "https://opensource.pitant.de/charts/#example=lcms-feature-map-openms",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "pca-biplot",
     "name": "PCA biplot",
     "url": "https://opensource.pitant.de/charts/#docs=pca-biplot",

@@ -1,0 +1,288 @@
+.lcms-feature-map {
+  --lcms-ink: var(--gallery-ink, var(--foreground));
+  --lcms-muted: var(--gallery-muted, var(--muted-foreground));
+  --lcms-rule: var(--gallery-rule, var(--border));
+  --lcms-accent: #aa462b;
+  --lcms-signal: #27677a;
+  --lcms-hull: #508b94;
+  --lcms-level-0: #b5cbd1;
+  --lcms-level-1: #759fae;
+  --lcms-level-2: #407789;
+  --lcms-level-3: #164c5e;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
+  margin: 0;
+  color: var(--lcms-ink);
+  container-type: inline-size;
+}
+
+.dark .lcms-feature-map {
+  --lcms-accent: #ec9d77;
+  --lcms-signal: #8ac1cf;
+  --lcms-hull: #84b6bf;
+  --lcms-level-0: #51707b;
+  --lcms-level-1: #6b929f;
+  --lcms-level-2: #88b7c3;
+  --lcms-level-3: #c4e0e6;
+}
+
+.detail-plot:has(.lcms-feature-map),
+.detail-plot:has(.lcms-feature-map) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.lcms-feature-map[data-compact='true'] {
+  block-size: 100%;
+}
+
+.lcms-feature-map[data-compact='true'] .lcms-linked:has(> section) {
+  grid-template-rows: minmax(0, 1fr) minmax(0, .68fr);
+  gap: 0;
+  min-block-size: 0;
+}
+
+.lcms-feature-map[data-compact='true'] .lcms-linked section,
+.lcms-feature-map[data-compact='true'] .scientific-plot {
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.lcms-footprint-panels,
+.lcms-linked,
+.lcms-overview {
+  display: grid;
+  min-inline-size: 0;
+}
+
+.lcms-linked,
+.lcms-footprint-panels {
+  gap: .7rem;
+}
+
+@container (min-width: 560px) {
+  .lcms-feature-map[data-compact='false'] .lcms-footprint-panels {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr);
+  }
+}
+
+.lcms-linked section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
+}
+
+.lcms-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: .35rem 1rem;
+}
+
+.lcms-feature-map h3 {
+  margin: 0;
+  font-size: .9rem;
+  line-height: 1.4;
+  font-weight: 650;
+}
+
+.lcms-panel-head h3 span,
+.lcms-trace-reference {
+  margin-inline-start: .35rem;
+  color: var(--lcms-muted);
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+}
+
+.lcms-intensity-key,
+.lcms-intensity-ramp {
+  display: inline-flex;
+  align-items: center;
+}
+
+.lcms-intensity-key {
+  gap: .35rem;
+  font-size: .7rem;
+  color: var(--lcms-muted);
+  white-space: nowrap;
+}
+
+.lcms-intensity-ramp i {
+  inline-size: .72rem;
+  block-size: .55rem;
+}
+
+.lcms-overview-plot {
+  block-size: clamp(15rem, 38cqw, 19rem);
+}
+
+.lcms-footprints-plot {
+  block-size: clamp(10.75rem, 27cqw, 13rem);
+}
+
+.lcms-xic-plot {
+  block-size: clamp(10rem, 25cqw, 12.5rem);
+}
+
+.lcms-guide-line {
+  stroke: var(--lcms-rule);
+  stroke-width: .65;
+}
+
+.lcms-hull {
+  fill: var(--lcms-hull);
+  fill-opacity: .14;
+  stroke: var(--lcms-hull);
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.lcms-feature-apex {
+  fill: currentColor;
+}
+
+[data-lcms-feature] .lcms-hull {
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+[data-lcms-feature][data-active='true'] .lcms-feature-apex,
+.lcms-centroid {
+  fill: var(--lcms-accent);
+}
+
+[data-lcms-feature][data-active='true'] .lcms-hull,
+.lcms-trace-footprint[data-active='true'] .lcms-hull {
+  fill: var(--lcms-accent);
+  stroke: var(--lcms-accent);
+  fill-opacity: .21;
+}
+
+.lcms-feature-target,
+.lcms-chromatogram-target {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.lcms-shape-target {
+  stroke: transparent;
+  stroke-width: 11;
+  fill: transparent;
+  cursor: pointer;
+}
+
+.lcms-extraction-window {
+  fill: var(--lcms-accent);
+  fill-opacity: .10;
+}
+
+.lcms-ion-path,
+.lcms-scan-cursor {
+  fill: none;
+  pointer-events: none;
+}
+
+.lcms-ion-path {
+  stroke: var(--lcms-signal);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lcms-measured-point {
+  fill: var(--lcms-signal);
+}
+
+.lcms-gap,
+.lcms-scan-cursor {
+  stroke: var(--lcms-accent);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.lcms-active-scan {
+  fill: var(--lcms-accent);
+}
+
+.lcms-controls,
+.lcms-feature-summary,
+.lcms-scan-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem 1rem;
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lcms-controls label,
+.lcms-feature-summary span,
+.lcms-scan-evidence span {
+  display: grid;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  gap: .2rem;
+}
+
+.lcms-controls select {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  min-block-size: 2rem;
+  padding-inline: .45rem;
+  border: 1px solid var(--lcms-rule);
+  border-radius: .25rem;
+  background: var(--gallery-surface, var(--card));
+  color: inherit;
+  font: inherit;
+}
+
+.lcms-feature-summary,
+.lcms-scan-inspector,
+.lcms-caption {
+  border-block-start: 1px solid var(--lcms-rule);
+  padding-block-start: .62rem;
+}
+
+.lcms-feature-summary,
+.lcms-scan-evidence,
+.lcms-no-samples,
+.lcms-caption p {
+  color: var(--lcms-muted);
+}
+
+.lcms-feature-summary strong,
+.lcms-scan-evidence strong {
+  color: var(--lcms-ink);
+  overflow-wrap: anywhere;
+  font-size: .84rem;
+  font-weight: 620;
+}
+
+.lcms-scan-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .55rem;
+  min-inline-size: 0;
+  padding-block-end: .65rem;
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lcms-scan-control input {
+  min-inline-size: 0;
+  inline-size: 100%;
+  accent-color: var(--lcms-accent);
+}
+
+.lcms-no-samples,
+.lcms-caption {
+  font-size: .82rem;
+}
+
+.lcms-caption p {
+  margin: .4rem 0 0;
+}
