@@ -843,6 +843,33 @@
       { "label": "Agilent, graphical integration and tuning", "href": "https://openlab.help.agilent.com/2.8/en/mergedProjects/DataAnalysis/DA_IntegrationOptimizer_Step2.htm" }
     ]
   },
+  "gauge-rr": {
+    "summary": "Inspect every repeated measurement in a crossed Gauge R&R study and trace the estimated variance to parts, repeatability, operators, and part × operator interaction.",
+    "useWhen": "Compare repeated measurements of the same parts across operators. Use the matrix to find where operators differ and the variance breakdown to quantify how much the measuring system contributes in this study.",
+    "data": "Supply readings in one measurement unit. Each reading needs a part ID, operator ID, trial ID, and numeric value. Include at least two parts, two operators, and two trials. Supply exactly one reading per trial for every part and operator pair, using the same trial IDs throughout.",
+    "reading": "Select a part and operator cell to inspect its original trial values. The absolute view uses a common measurement scale. The part-centered view subtracts each part’s observed mean from every reading for that part. Zero represents that observed mean. This display choice leaves the raw values and the fitted variance components unchanged.",
+    "notes": [
+      "The same operators measure every part. The balanced, crossed random-effects ANOVA retains the part × operator interaction. Repeatability describes variation between trials within a part and operator cell. Reproducibility combines the operator component and the part × operator interaction.",
+      "The hierarchy adds variance components in squared measurement units. Total variance is the sum of part-to-part and gauge variance. Gauge variance is the sum of repeatability, operator, and interaction variance. Shares of total variance use the total estimate as denominator. Shares within the gauge use the gauge estimate. An estimate of zero in the denominator leaves that share unavailable.",
+      "The variance breakdown uses zero for a component whose method-of-moments estimate is negative and exposes the original estimate for inspection. A zero estimate shows the component was estimated at the boundary.",
+      "The baseline and corrected examples use Tables 7 and 9 of Yáñez-Contreras et al. (2026). Each contains 60 measured thread pitch diameters in inches, with ten parts, three appraisers, and two trials. The two studies used different parts on different days with the same appraisers and protocol. The later study estimates a lower absolute gauge standard deviation and a higher gauge share of total variance. Part-to-part variance was also lower in the later set.",
+      "The runnable code sample uses simulated measurements in millimeters."
+    ],
+    "properties": [
+      { "name": "data", "type": "GaugeRRData", "description": "Required. Pass a unit and a complete balanced set of crossed measurements." },
+      { "name": "data.readings", "type": "readonly GaugeReading[]", "description": "Each reading has a part, operator, and trial identifier and a finite value in the supplied unit. Each combination of identifiers appears once." },
+      { "name": "initialCell", "type": "{ part: string, operator: string }", "description": "Select an initial part and operator pair for trial inspection." },
+      { "name": "label", "type": "string", "description": "Give the measurement study an accessible name." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact, read-only view for previews." },
+      { "name": "source", "type": "{ label, href, description?, references? }", "description": "Identify the study and link the original readings and related references." }
+    ],
+    "sources": [
+      { "label": "Yáñez-Contreras et al. (2026), measured thread pitch diameters in Tables 7 and 9", "href": "https://doi.org/10.3390/metrology6040081" },
+      { "label": "NIST/SEMATECH e-Handbook, Gauge R & R studies", "href": "https://www.itl.nist.gov/div898/handbook/mpc/section4/mpc4.htm" },
+      { "label": "Minitab, methods and formulas for the crossed Gauge R&R table", "href": "https://support.minitab.com/en-us/minitab/help-and-how-to/quality-and-process-improvement/measurement-system-analysis/how-to/gage-study/crossed-gage-r-r-study/methods-and-formulas/gage-r-r-table/" },
+      { "label": "Creative Commons Attribution 4.0 International", "href": "https://creativecommons.org/licenses/by/4.0/" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",

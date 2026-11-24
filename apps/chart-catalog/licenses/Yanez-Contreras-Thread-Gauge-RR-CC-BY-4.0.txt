@@ -1,0 +1,14 @@
+Integrating Measurement-System Analysis and Statistical Process Control to Assess
+Capability Improvement of Thread Pitch Diameter in a CNC-Turned Stainless-Steel Fitting
+Pedro Yáñez-Contreras, María Fernanda Contreras-Rojas, Francisco Javier
+Santander-Bastida, Roberto Martin del Campo-Vázquez, and Norma Leticia Flores-Martínez
+Metrology 2026, 6(4), 81. https://doi.org/10.3390/metrology6040081
+
+Copyright 2026 by the authors. The article is distributed under Creative Commons
+Attribution 4.0 International. License text:
+https://creativecommons.org/licenses/by/4.0/legalcode
+
+PITANT transcribed the 120 published inch readings in Tables 7 and 9, checked
+against supplementary workbook sheets GRR_before and GRR_after, into TypeScript.
+Part, operator, and trial identifiers were normalized for display. The two
+separate part sets and the published measurement values are unchanged.
