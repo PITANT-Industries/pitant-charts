@@ -900,6 +900,36 @@
       { "label": "R survival package, Kaplan–Meier risk sets and confidence bounds", "href": "https://cran.r-project.org/web/packages/survival/refman/survival.html#survfit.object" }
     ]
   },
+  "weibull-probability": {
+    "summary": "Compare time-to-failure observations with a fitted Weibull distribution on probability paper. Inspect early departures and fitted lifetime percentiles.",
+    "useWhen": "Compare groups such as manufacturing lots, suppliers, or test conditions when each specimen has a recorded failure time or a right-censoring time. Keep the groups and test conditions visible when interpreting their fits.",
+    "data": "Supply a shared elapsed time unit and cohorts with unique IDs and labels. Each specimen needs an ID unique within its cohort, a finite positive elapsed time, and a status of failed or censored. All specimens enter at time zero.",
+    "reading": "The horizontal axis shows time on a logarithmic scale. The vertical axis spaces cumulative failure percentages according to ln(−ln(1−p)), so a fitted two-parameter Weibull appears as a straight line. Select a failure to compare its observed time with the fitted time at the same plotted probability. Choose a fitted percentile to compare model lifetimes across cohorts.",
+    "notes": [
+      "Observed failures are placed halfway up each Kaplan–Meier failure step on the cumulative failure scale. Tied failures share one plotting probability, with all specimens still at risk included in that step. Right-censored observations appear below the probability axis at their last observed times.",
+      "The two-parameter fit uses maximum likelihood independently of the plotting positions. Failure times contribute through the Weibull density. Right-censored times contribute the probability of surviving to that time. A cohort whose observations cannot identify a finite fit has no fitted line.",
+      "The selected failure’s horizontal span ends at its fitted time at the same probability. The ratio divides observed elapsed time by fitted elapsed time. A ratio below one indicates an earlier failure than the fitted quantile.",
+      "B10 and B50 are the fitted times by which 10% and 50% of the cohort would have failed under the model. Fit segments outside the cohort’s observed time range represent extrapolation. Read the fitted percentiles in light of the sample size and the recorded test conditions.",
+      "The measured example preserves all 63 recorded failure times in seconds from Bhaumik, Kumar, and Bharathwaj’s four-ball rolling contact fatigue tests on AISI 52100 bearing steel. Each calcium grease grade, EP0, EP00, and EP000, has 21 failures. The fixture uses version 3 of the dataset under CC BY 4.0.",
+      "The supplier example uses simulated test records in hours. Each illustrative supplier has eight failures and four right-censored observations at a 1,600-hour cutoff. Supplier A includes an early failure at 180 hours and a failure tied with the cutoff censors.",
+      "The runnable example uses smaller simulated supplier cohorts and includes both failures and right-censored observations."
+    ],
+    "properties": [
+      { "name": "data", "type": "ReliabilityData", "description": "Required. Pass a common elapsed time unit and cohorts of individual specimen observations." },
+      { "name": "data.cohorts", "type": "readonly { id, label, observations }[]", "description": "Supply a unique cohort ID and label, then record each specimen’s ID, positive elapsed time, and failed or censored status." },
+      { "name": "initialCohort", "type": "string", "description": "Choose a cohort by ID for initial failure inspection." },
+      { "name": "label", "type": "string", "description": "Give the probability plot an accessible name." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact, read-only preview for the gallery." },
+      { "name": "source", "type": "{ label, href, description?, references? }", "description": "Credit the test records and link related references." }
+    ],
+    "sources": [
+      { "label": "Bhaumik, Kumar, and Bharathwaj (2026), rolling contact fatigue dataset, version 3 (CC BY 4.0)", "href": "https://doi.org/10.17632/d5n3zgvs7p.3" },
+      { "label": "Bhaumik et al. (2026), rolling contact fatigue test protocol", "href": "https://doi.org/10.1038/s41597-026-08057-7" },
+      { "label": "NIST/SEMATECH e-Handbook, Weibull probability plotting", "href": "https://www.itl.nist.gov/div898/handbook/apr/section2/apr221.htm" },
+      { "label": "NIST/SEMATECH e-Handbook, likelihood contributions for censored lifetimes", "href": "https://www.itl.nist.gov/div898/handbook/apr/section4/apr412.htm" },
+      { "label": "NIST/SEMATECH e-Handbook, Weibull percent-point function", "href": "https://www.itl.nist.gov/div898/handbook/eda/section3/eda3668.htm" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",

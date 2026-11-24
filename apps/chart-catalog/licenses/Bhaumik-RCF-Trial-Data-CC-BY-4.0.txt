@@ -1,0 +1,19 @@
+Rolling contact fatigue trial data for the measured Weibull probability plot
+
+Bhaumik, Shubrajit; Kumar, Prasanna; Bharathwaj, Rahul (2026).
+Experimental dataset on rolling contact fatigue life of bearing steel under
+semi-fluid grease lubrication conditions (EP0, EP00, EP000).
+Mendeley Data, version 3. https://doi.org/10.17632/d5n3zgvs7p.3
+
+License: Creative Commons Attribution 4.0 International (CC BY 4.0).
+https://creativecommons.org/licenses/by/4.0/
+
+Source file: Four_Ball_Tribometer_Dataset/RCF_Trial_Data.docx
+https://data.mendeley.com/public-files/datasets/d5n3zgvs7p/files/3c0cb5a8-e04a-448e-bcc6-73a7e2190a08/file_downloaded
+SHA-256: 9896c75f96e91c33058772e2750a4caf0906b8fdbcb73accc66a88fd427a6385
+
+PITANT transcribed the trial identifiers and all 63 recorded failure times in
+the source seconds, grouped the values by grease grade, and computed plotting
+positions and maximum-likelihood Weibull fits for the example. The authors'
+article and deposited figures report a separate least-squares analysis.
+https://doi.org/10.1038/s41597-026-08057-7
