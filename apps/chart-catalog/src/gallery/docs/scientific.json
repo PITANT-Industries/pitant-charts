@@ -1079,6 +1079,36 @@
       { "label": "Malburg, Grüger, and Bergmann, physical factory and XES event collection", "href": "https://arxiv.org/abs/2209.02702" }
     ]
   },
+  "takt-balance": {
+    "summary": "Compare workstation task loads with takt time and test reassignments that preserve task order.",
+    "useWhen": "Review how work is distributed across a paced line. Find stations over the target and test whether a task can move to relieve an overloaded station.",
+    "data": "Supply net production time in seconds and required units for the same planning period. List the stations in process order, and give each task a duration per unit and an initial station. Add known task dependencies and station restrictions where applicable.",
+    "reading": "Each stack shows the work assigned to one station for one unit. The reference line marks takt, the available production seconds divided by demand. Select a task in the chart or the task list, then choose a permitted destination. The stacks and station margins update together. Reset restores the original assignment.",
+    "notes": [
+      "Use net available production time after planned breaks or stops. For 2,520 available seconds and demand of 60 units, takt is 42 seconds per unit.",
+      "A station at takt meets the target. Above it, the gap is a time deficit. Below it, the gap is spare time under the supplied workload assumptions.",
+      "Predecessors can share a station with a task or be at an earlier station. Tasks at the same station are ordered by their precedence relationships. A capability restriction limits a task to its allowed stations. Moves can create a time deficit so the effect stays visible.",
+      "The view adds task times within each station for a single unit. The margins are planning comparisons under the supplied assignments and durations. Actual throughput also depends on factors such as task variability, changeovers, blocking, and simultaneous work.",
+      "The automotive example uses normalized pre-automation times from the published Yamazumi worksheet for three operators. It groups the listed times into 15 work elements. The workbook lists an 11.4-second total for Operator 3. Its listed elements sum to 11.2 seconds, which the chart uses as the initial load.",
+      "The comparison assumes 37,800 net production seconds for 3,600 units, giving a takt of 10.5 seconds per unit. The recorded element times give initial loads of 9.5, 10.2, and 11.2 seconds. Moving the 1-second Process 13 from Operator 3 to Operator 1 gives 10.5, 10.2, and 10.2 seconds.",
+      "The scenario keeps walking and support work with their source operators. Routine work can move between operators at unchanged task times in the scenario. The workbook records anonymized work elements and their times.",
+      "The runnable enclosure example uses simulated data. Preparation starts at 45 seconds, Assembly at 25, and Verification at 21. Moving Deburr holes to Assembly leaves 28, 42, and 21 seconds. Moving it to Verification would put it after seating the inserts."
+    ],
+    "properties": [
+      { "name": "data", "type": "TaktBalanceData", "description": "Required. Pass the planning period, reference demand, ordered stations, and task definitions." },
+      { "name": "data.availableSeconds, data.demand", "type": "number, number", "description": "Supply net available production seconds and a positive whole number of units for the same period." },
+      { "name": "data.stations", "type": "readonly { id, label }[]", "description": "List workstation IDs and labels in their production order." },
+      { "name": "data.tasks", "type": "readonly { id, label, shortLabel?, seconds, stationId, predecessors?, allowedStations? }[]", "description": "Give each task its time in seconds per unit and initial station. Optionally add a short plot label, predecessor task IDs, and eligible station IDs." },
+      { "name": "initialTask", "type": "string", "description": "Select a task by ID when the chart opens." },
+      { "name": "title", "type": "string", "description": "Give the takt balance chart an accessible name." },
+      { "name": "caption", "type": "ReactNode", "description": "Credit the task times and describe the planning assumptions." },
+      { "name": "compact", "type": "boolean", "description": "Show the read-only stacks used in gallery previews." }
+    ],
+    "sources": [
+      { "label": "Nugraha, Avianti, and Yulianto, automotive manufacturing workbook, version 1 (CC BY 4.0)", "href": "https://zenodo.org/records/22734493" },
+      { "label": "MIT, Production Operations Level Transition-to-Lean Guide, takt time calculation", "href": "https://dspace.mit.edu/bitstream/handle/1721.1/81899/PRD_TTL_ProdOpsDoc_V.1_2000.pdf" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",

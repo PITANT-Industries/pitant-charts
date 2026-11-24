@@ -8,11 +8,11 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 88 chart and tooltip families and all 381 public examples', () => {
+test('covers 89 chart and tooltip families and all 382 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()
-  assert.equal(catalog.length, 88)
+  assert.equal(catalog.length, 89)
   for (const family of catalog) {
     assert(!familyIds.has(family.id), `Duplicate family ${family.id}`)
     familyIds.add(family.id)
@@ -65,8 +65,9 @@ test('covers 88 chart and tooltip families and all 381 public examples', () => {
   assert.deepEqual(catalog.find((family) => family.id === 'fault-event-replay')?.examples.map((example) => example.id), ['fault-event-replay-pronto'])
   assert.deepEqual(catalog.find((family) => family.id === 'startup-overlay')?.examples.map((example) => example.id), ['startup-overlay-measured'])
   assert.deepEqual(catalog.find((family) => family.id === 'cumulative-flow')?.examples.map((example) => example.id), ['cumulative-flow-manufacturing'])
-  assert.equal(ids.size, 381)
-  assert.equal(urls.size, 381)
+  assert.deepEqual(catalog.find((family) => family.id === 'takt-balance')?.examples.map((example) => example.id), ['takt-balance-assembly'])
+  assert.equal(ids.size, 382)
+  assert.equal(urls.size, 382)
 })
 
 test('documents every catalog family exactly once with practical guidance', async () => {
