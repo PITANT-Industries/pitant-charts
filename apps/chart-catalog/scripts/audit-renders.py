@@ -223,7 +223,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'spatial-defect-map', 'lcms-feature-map', 'chromatogram-peak-integration', 'spectrum', 'spectrogram',
         'spectral-waterfall', 'correlation-matrix',
         'gauge-rr', 'kaplan-meier', 'weibull-probability', 'process-control', 'hotelling-process-monitor',
-        'classifier-threshold-explorer', 'fault-event-replay',
+        'classifier-threshold-explorer', 'fault-event-replay', 'startup-overlay',
         'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
@@ -401,6 +401,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=hotelling-process-monitor&variant=hotelling-process-monitor-milling'
                 )
+            elif example['family'] == 'startup-overlay':
+                await check_startup_overlay_compact(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=startup-overlay&variant=startup-overlay-measured'
+                )
             elif example['family'] == 'fault-event-replay':
                 await check_fault_replay_compact(card_plot)
                 await expect(card.locator('.example-card-link')).to_have_attribute(
@@ -575,6 +580,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'hotelling-process-monitor':
                 await check_hotelling(plot, touch)
                 code_import = 'HotellingProcessMonitor'
+            elif example['family'] == 'startup-overlay':
+                await check_startup_overlay(plot, touch)
+                code_import = 'StartupOverlay'
             elif example['family'] == 'fault-event-replay':
                 await check_fault_replay(plot, touch)
                 code_import = 'FaultReplay'
@@ -5681,6 +5689,118 @@ async def check_fault_replay(plot, touch):
     assert notices.ok and f'({provenance})' in await notices.text()
     data_notice = await page.request.get(urljoin(page.url, provenance))
     assert data_notice.ok and 'https://creativecommons.org/licenses/by/4.0/legalcode' in await data_notice.text()
+
+
+async def check_startup_overlay_compact(plot):
+    chart = plot.locator('figure[data-startup-overlay][data-compact="true"]')
+    await expect(chart).to_be_visible()
+    await expect(chart).to_have_attribute('data-count', '30')
+    traces = chart.locator('svg[data-startup-traces]')
+    readiness = chart.locator('svg[data-startup-readiness]')
+    await expect(traces.locator('[data-startup-signal]')).to_have_count(2)
+    await expect(traces.locator('[data-startup-band]')).to_have_count(4)
+    await expect(traces.locator('[data-startup-median]')).to_have_count(4)
+    await expect(traces.locator('[data-startup-selected="op001-test001"]')).to_have_count(2)
+    await expect(traces.locator('[data-startup-individual]')).to_have_count(0)
+    await expect(readiness.locator('circle.startup-readiness-mark')).to_have_count(30)
+    await expect(readiness.locator('[data-startup-run="op001-test001"]')).to_have_attribute('data-selected', 'true')
+    await check_compact_figure_bounds(
+        traces, '[data-startup-band], [data-startup-selected], [data-startup-median], [data-startup-zero]'
+    )
+    await check_compact_figure_bounds(readiness, '.startup-readiness-mark, [data-startup-deadline]')
+    await expect(chart.locator('button, input, select, a, .startup-hit, [data-startup-selection]')).to_have_count(0)
+
+
+async def check_startup_overlay(plot, touch):
+    chart = plot.locator('figure[data-startup-overlay][data-compact="false"]')
+    deadline = chart.get_by_role('slider', name='Comparison deadline')
+    selector = chart.get_by_role('combobox', name=re.compile('^Inspect a run'))
+    counts = chart.get_by_role('list', name='Current outcome counts')
+    traces = chart.locator('svg[data-startup-traces]')
+    readiness = chart.locator('svg[data-startup-readiness]')
+    selection = chart.locator('output[data-startup-selection]')
+    initial = 'op001-test001'
+
+    async def check_groups(seconds, on_time, late):
+        await expect(chart).to_have_attribute('data-deadline', str(seconds))
+        for outcome, number in [('on-time', on_time), ('late', late)]:
+            await expect(readiness.locator(f'[data-startup-run][data-startup-outcome="{outcome}"]')).to_have_count(number)
+            group = counts.locator(f'[data-startup-outcome="{outcome}"]')
+            await expect(group).to_have_count(int(number > 0))
+            if number:
+                await expect(group).to_have_attribute('data-count', str(number))
+
+    async def check_selected(run, seconds, outcome):
+        await expect(selector).to_have_value(run)
+        await expect(selection).to_have_attribute('data-startup-selection', run)
+        await expect(selection).to_have_attribute('data-ready-after', str(seconds))
+        await expect(selection).to_have_attribute('data-startup-outcome', outcome)
+        mark = readiness.locator(f'[data-startup-run="{run}"]')
+        await expect(mark).to_have_attribute('data-selected', 'true')
+        await expect(mark).to_have_attribute('data-time', str(seconds))
+        await expect(readiness.locator('[data-startup-run][data-selected="true"]')).to_have_count(1)
+        left, right, horizon = [float(await readiness.get_attribute(f'data-{key}')) for key in ('left', 'right', 'horizon')]
+        position = float(await mark.locator('circle.startup-readiness-mark').get_attribute('cx'))
+        assert math.isclose(position, left + seconds / horizon * (right - left), abs_tol=1e-6), (run, position)
+        paths = []
+        for signal in ('T703', 'T705'):
+            strip = traces.locator(f'[data-startup-signal="{signal}"]')
+            individual = await strip.locator(f'[data-startup-individual="{run}"]').get_attribute('d')
+            chosen = strip.locator(f'[data-startup-selected="{run}"]')
+            assert individual and individual.startswith('M'), (run, signal)
+            await expect(chosen).to_have_attribute('d', individual)
+            paths.append(individual)
+        return paths
+
+    await expect(chart).to_have_attribute('data-count', '30')
+    await expect(selector.locator('option')).to_have_count(30)
+    await expect(readiness.locator('[data-startup-run][data-observed="true"]')).to_have_count(30)
+    await expect(traces.locator('[data-startup-individual]')).to_have_count(60)
+    await expect(traces).to_have_attribute('data-window-start', '0')
+    await expect(traces).to_have_attribute('data-window-end', '6000')
+    await expect(traces.locator('[data-startup-zero]')).to_have_count(2)
+    left = await traces.get_attribute('data-left')
+    for mark in await traces.locator('[data-startup-zero]').all():
+        await expect(mark).to_have_attribute('x1', left)
+    await expect(traces.get_by_text(re.compile('reboiler', re.I))).to_be_visible()
+    await expect(traces.get_by_text(re.compile('column.top', re.I))).to_be_visible()
+    await check_groups(2700, 16, 14)
+    initial_paths = await check_selected(initial, 5783, 'late')
+
+    await deadline.press('Home')
+    await check_groups(0, 0, 30)
+    assert await check_selected(initial, 5783, 'late') == initial_paths
+    await expect(traces.locator('[data-startup-outcome="on-time"]')).to_have_count(0)
+
+    await deadline.press('End')
+    await check_groups(6000, 30, 0)
+    assert await check_selected(initial, 5783, 'on-time') == initial_paths
+    await expect(traces.locator('[data-startup-outcome="late"]')).to_have_count(0)
+
+    early_run = 'op001-test003'
+    await selector.select_option(early_run)
+    assert await check_selected(early_run, 1640, 'on-time') != initial_paths
+
+    gap_run = 'op001-test011'
+    await selector.select_option(gap_run)
+    gap_paths = await check_selected(gap_run, 3048, 'on-time')
+    assert all(path.count('M') == 2 for path in gap_paths), 'The recorded gap must split each sensor trace'
+    if not touch:
+        latest = readiness.locator(f'[data-startup-run="{initial}"] .startup-hit')
+        await latest.click()
+        assert await check_selected(initial, 5783, 'on-time') == initial_paths
+
+    sources = chart.locator('figcaption')
+    await expect(sources.locator('a[href="https://zenodo.org/records/22250958"], a[href="https://doi.org/10.5281/zenodo.22250958"]')).to_be_visible()
+    await expect(sources).to_contain_text(re.compile('CC BY 4.0', re.I))
+    await expect(sources).to_contain_text('first archived startup timestamp')
+    await expect(sources).to_contain_text('first archived operation timestamp')
+    page = plot.page
+    provenance = 'licenses/Arweiler-Batch-Distillation-CC-BY-4.0.txt'
+    notices = await page.request.get(urljoin(page.url, 'THIRD_PARTY_NOTICES.md'))
+    assert notices.ok and f'({provenance})' in await notices.text()
+    data_notice = await page.request.get(urljoin(page.url, provenance))
+    assert data_notice.ok and 'https://creativecommons.org/licenses/by/4.0/' in await data_notice.text()
 
 
 def weibull_fixture_anchors(slug):

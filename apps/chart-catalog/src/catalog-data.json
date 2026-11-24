@@ -3702,6 +3702,22 @@
     ]
   },
   {
+    "id": "startup-overlay",
+    "name": "Event-aligned startup overlays",
+    "url": "https://opensource.pitant.de/charts/#docs=startup-overlay",
+    "examples": [
+      {
+        "id": "startup-overlay-measured",
+        "family": "startup-overlay",
+        "title": "Batch Distillation Startup Overlay",
+        "label": "30 measured distillation starts",
+        "description": "Align heating traces on recorded start events, compare time to operation, and inspect the measured runs at a chosen deadline.",
+        "url": "https://opensource.pitant.de/charts/#example=startup-overlay-measured",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "lcms-feature-map",
     "name": "LC–MS feature map",
     "url": "https://opensource.pitant.de/charts/#docs=lcms-feature-map",

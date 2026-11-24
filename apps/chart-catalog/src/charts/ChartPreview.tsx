@@ -32,6 +32,7 @@ const CieChromaticityDiagramPreview = lazy(() => import('./scientific/CieChromat
 const HyperspectralCubePreview = lazy(() => import('./scientific/HyperspectralCubePreview'))
 const ResponseSurfacePreview = lazy(() => import('./scientific/ResponseSurfacePreview'))
 const Scientific = lazy(() => import('./scientific/ScientificPreview'))
+const StartupOverlayPreview = lazy(() => import('./scientific/startup-overlay/StartupOverlayPreview'))
 const FaultReplayPreview = lazy(() => import('./scientific/fault-replay/FaultReplayPreview'))
 const ClassifierThresholdPreview = lazy(() => import('./scientific/classifier-threshold/ClassifierThresholdPreview'))
 const HotellingPreview = lazy(() => import('./scientific/hotelling/HotellingPreview'))
@@ -66,6 +67,7 @@ export const rendererFamilies = {
   hotellingMonitor: ['hotelling-process-monitor'],
   classifierThreshold: ['classifier-threshold-explorer'],
   faultReplay: ['fault-event-replay'],
+  startupOverlay: ['startup-overlay'],
   campbell: ['campbell-diagram'],
   modes: ['mode-shapes'],
   orbit: ['shaft-orbit'],
@@ -106,6 +108,7 @@ const renderers = new Map<string, ComponentType<ChartPreviewProps>>([
   ...rendererFamilies.hotellingMonitor.map((id) => [id, HotellingPreview] as const),
   ...rendererFamilies.classifierThreshold.map((id) => [id, ClassifierThresholdPreview] as const),
   ...rendererFamilies.faultReplay.map((id) => [id, FaultReplayPreview] as const),
+  ...rendererFamilies.startupOverlay.map((id) => [id, StartupOverlayPreview] as const),
   ...rendererFamilies.paretoFrontier.map((id) => [id, ParetoFrontierPreview] as const),
   ...rendererFamilies.pcaBiplot.map((id) => [id, PcaBiplotPreview] as const),
   ...rendererFamilies.mirrorSpectrum.map((id) => [id, MassSpectrumMirrorPreview] as const),

@@ -1018,6 +1018,37 @@
       { "label": "Stief et al. (2019), multiphase flow facility case study and benchmark protocol", "href": "https://doi.org/10.1016/j.jprocont.2019.04.009" }
     ]
   },
+  "startup-overlay": {
+    "summary": "Align repeated startups to a recorded event and compare the signals that precede readiness.",
+    "useWhen": "Investigate variation in the time it takes equipment to become ready. Compare the pressure, temperature, or load traces of early and late runs, and inspect individual runs for unusual behavior.",
+    "data": "Supply a common window relative to startup, a grid step, and an elapsed-time deadline, all in seconds. Assign each run an event timestamp on its own clock. Include time-stamped signals and the last observed time. Supply the first documented readiness timestamp or an explicit failure record when available.",
+    "reading": "The zero line is the recorded start in each run. Select a run to compare its signals with the groups. Move the readiness deadline to recalculate the groups and see which runs become late, remain unready, or have insufficient follow-up.",
+    "notes": [
+      "Each run is shifted by its own eventTime. Negative elapsed time shows measurements made before that event when present. Choose the same operational event to anchor each run.",
+      "On the common grid, a signal can be interpolated between adjacent measurements within its maxGap, which defaults to twice the grid step. A missing sample breaks the trace. Values beyond the recorded samples remain unavailable.",
+      "The cohort line is the median, and the ribbon spans the 25th to 75th percentiles of available runs at each elapsed time. Because coverage can vary over the window, the set of runs contributing to the ribbon can change over time.",
+      "A run that reaches readiness by the deadline is on time, including at the deadline itself. A recorded readiness time after it is late. A run with no readiness record and observations through the deadline is not ready by that time. A run whose observations ended earlier has insufficient follow-up at that deadline.",
+      "Mark a failure only when the source reports one. Moving the deadline changes the comparison groups while preserving the recorded readiness and failure outcomes.",
+      "The measured example uses all 30 laboratory runs at operating points 001–003 for the 1-butanol, 2-propanol, and water mixture. Starting Operation pressure is close to 500 mbar across the runs. Other operating settings can vary. The signals are T703 reboiler liquid temperature and T705 column-top fluid temperature, both in °C.",
+      "Elapsed time starts at the first recorded Startup sample. Readiness is the first recorded Operation sample. The comparison uses a 30-second grid and up to five minutes of Operation readings per run, within a 100-minute window. The source clock gap in operating point 001, test 011 is retained.",
+      "All 30 runs enter Operation, 1,640 to 5,783 seconds after the first Startup sample. At the illustrative 45-minute deadline, 16 enter Operation on time and 14 enter later. These groups describe startup duration.",
+      "The runnable pump example uses synthetic signals and status records. It includes a run ready exactly at 12 seconds, a documented failure, one run with insufficient follow-up, and a missing pressure sample."
+    ],
+    "properties": [
+      { "name": "data", "type": "StartupOverlayData", "description": "Required. Pass the shared window, grid step, deadline, signal definitions, and per-run records." },
+      { "name": "data.window, data.step, data.deadline", "type": "readonly [number, number], number, number", "description": "Set the elapsed-time plot bounds, grid interval, and initial readiness deadline in seconds." },
+      { "name": "data.signals", "type": "readonly { id, label, unit?, maxGap? }[]", "description": "Describe each signal and optionally limit the gap over which its adjacent readings may be interpolated, in seconds." },
+      { "name": "data.runs", "type": "readonly { id, label, eventTime, readyTime?, observedUntil, failed?, traces }[]", "description": "Pass each recorded event and follow-up on its original clock, any readiness or reported failure, and timestamped trace samples keyed by signal ID. Use null for missing readings." },
+      { "name": "initialRun", "type": "string", "description": "Select a run by its ID when the view opens." },
+      { "name": "title", "type": "string", "description": "Give the startup comparison an accessible name." },
+      { "name": "caption", "type": "ReactNode", "description": "Credit the dataset and describe the event, readiness criterion, and relevant measurement limits." },
+      { "name": "compact", "type": "boolean", "description": "Show the read-only comparison used in gallery previews." }
+    ],
+    "sources": [
+      { "label": "Arweiler et al., batch distillation dataset, version 1.1.3 (CC BY 4.0)", "href": "https://zenodo.org/records/22250958" },
+      { "label": "Arweiler et al., experimental procedure, signals, and phases", "href": "https://doi.org/10.1038/s41597-026-07124-3" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",
