@@ -16,6 +16,7 @@ export const stressStrainData = {
       // ABR5RTzl1 in dataset EN AW-2618A.xlsx.
       id: 't61',
       label: 'T61',
+      elongationAfterFracture: 0.053,
       elasticFit: {
         startStrain: 0.0005, endStrain: 0.0015,
         modulusMpa: 78928.05087380162, interceptMpa: 1.6730823717539636,
@@ -375,6 +376,7 @@ export const stressStrainData = {
       // ABR10RTzl1 in dataset EN AW-2618A.xlsx.
       id: 'aged-160c',
       label: 'T61 + 15,000 h at 160 °C',
+      elongationAfterFracture: 0.082,
       elasticFit: {
         startStrain: 0.0005, endStrain: 0.0015,
         modulusMpa: 69495.9785080159, interceptMpa: 7.040259098458577,
@@ -806,6 +808,7 @@ export const stressStrainData = {
       // ABR8RTzl1 in dataset EN AW-2618A.xlsx.
       id: 'aged-190c',
       label: 'T61 + 15,000 h at 190 °C',
+      elongationAfterFracture: 0.079,
       elasticFit: {
         startStrain: 0.0005, endStrain: 0.0015,
         modulusMpa: 66815.6100912287, interceptMpa: 11.632612953846177,
