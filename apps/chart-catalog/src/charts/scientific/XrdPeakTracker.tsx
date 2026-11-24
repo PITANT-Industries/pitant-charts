@@ -39,6 +39,8 @@ export interface XrdPeakTrackerProps {
   label?: string
   compact?: boolean
   initialTemperatureK?: number
+  /** Display a peak and its measured scan selected by a companion view. */
+  selection?: { peakId: string; temperatureK: number }
   source?: { label: string; href: string; description?: string; license?: string; licenseUrl?: string }
 }
 
@@ -169,7 +171,7 @@ function Profile({ data, angle, intensity, scan, fit, peak, compact, onPick, lab
   fit: XrdPeakFit | null
   peak: XrdPeak
   compact: boolean
-  onPick: (angle: number) => void
+  onPick?: (angle: number) => void
   label: string
 }) {
   const { plot, width, height } = usePlotSize<HTMLDivElement>(compact ? 420 : 760, compact ? 170 : 340)
@@ -185,7 +187,7 @@ function Profile({ data, angle, intensity, scan, fit, peak, compact, onPick, lab
 
   function choose(event: MouseEvent<SVGRectElement>) {
     const bounds = event.currentTarget.getBoundingClientRect()
-    onPick(scale(event.clientX, [bounds.left, bounds.right], ...angle))
+    onPick?.(scale(event.clientX, [bounds.left, bounds.right], ...angle))
   }
 
   return (
@@ -215,7 +217,7 @@ function Profile({ data, angle, intensity, scan, fit, peak, compact, onPick, lab
             )}
           </g>
         )}
-        {!compact && <rect className="xrd-profile-pick" x={left} y={top} width={right - left} height={bottom - top}
+        {!compact && onPick && <rect className="xrd-profile-pick" x={left} y={top} width={right - left} height={bottom - top}
           fill="transparent" onClick={choose} />}
       </svg>
     </div>
@@ -247,7 +249,7 @@ function Trend({ metric, scans, temperature, peak, selectedIndex, onSelect }: {
   temperature: Domain
   peak: XrdPeak
   selectedIndex: number
-  onSelect: (temperature: number) => void
+  onSelect?: (temperature: number) => void
 }) {
   const { plot, width, height } = usePlotSize<HTMLDivElement>(245, 168)
   const left = 60
@@ -266,7 +268,7 @@ function Trend({ metric, scans, temperature, peak, selectedIndex, onSelect }: {
 
   function choose(event: MouseEvent<SVGRectElement>) {
     const bounds = event.currentTarget.getBoundingClientRect()
-    onSelect(scale(event.clientX, [bounds.left, bounds.right], ...temperature))
+    onSelect?.(scale(event.clientX, [bounds.left, bounds.right], ...temperature))
   }
 
   return (
@@ -285,7 +287,8 @@ function Trend({ metric, scans, temperature, peak, selectedIndex, onSelect }: {
           {fit && <circle className="xrd-trend-cursor" data-xrd-trend-cursor="" data-temperature={selected}
             data-value={fit[metric.key]} cx={x(selected)} cy={y(fit[metric.key])} r={3.9} />}
         </g>
-        <rect className="xrd-trend-pick" x={left} y={top} width={right - left} height={bottom - top} fill="transparent" onClick={choose} />
+        {onSelect && <rect className="xrd-trend-pick" x={left} y={top} width={right - left} height={bottom - top}
+          fill="transparent" onClick={choose} />}
       </svg>
     </div>
   )
@@ -299,14 +302,18 @@ function nearestScan(scans: readonly XrdScan[], temperature: number) {
   return selected
 }
 
-function TrackerFigure({ data, domains, label, compact = false, source, initialTemperatureK }:
+function TrackerFigure({ data, domains, label, compact = false, source, initialTemperatureK, selection }:
   XrdPeakTrackerProps & { domains: NonNullable<ReturnType<typeof getDomains>>; label: string }) {
   const [peakId, setPeakId] = useState(data.peaks[0].id)
   const [temperature, setTemperature] = useState(initialTemperatureK !== undefined && Number.isFinite(initialTemperatureK)
     ? initialTemperatureK : data.scans[0].temperatureK)
-  const index = nearestScan(data.scans, temperature)
+  const index = selection
+    ? data.scans.findIndex(({ temperatureK }) => temperatureK === selection.temperatureK)
+    : nearestScan(data.scans, temperature)
+  const peak = data.peaks.find(({ id }) => id === (selection?.peakId ?? peakId))
+    ?? (selection ? undefined : data.peaks[0])
+  if (!peak || index < 0) return <p className="chart-render-message" role="status">Select a known peak and a measured temperature.</p>
   const scan = data.scans[index]
-  const peak = data.peaks.find(({ id }) => id === peakId) ?? data.peaks[0]
   const fit = peak.fits[index]
   const selected = `${temperatureFormat.format(scan.temperatureK)} K`
   const padding = (domains.temperature[1] - domains.temperature[0]) * .03
@@ -317,17 +324,33 @@ function TrackerFigure({ data, domains, label, compact = false, source, initialT
     if (target) setPeakId(target.id)
   }
 
+  const readout = !compact && (
+    <output className="xrd-readout" data-xrd-readout="" data-temperature={scan.temperatureK} data-center={fit?.centerDeg}
+      data-fwhm={fit?.fwhmDeg} data-height={fit?.height} data-rmse={fit?.rmse}>
+      <span>Temperature <strong>{selected}</strong></span>
+      {fit ? (
+        <>
+          <span>2θ <strong>{fit.centerDeg.toFixed(metrics[0].digits)}°</strong></span>
+          <span>FWHM <strong>{fit.fwhmDeg.toFixed(metrics[1].digits)}°</strong></span>
+          <span>Peak height <strong>{fit.height.toFixed(metrics[2].digits)} a.u.</strong></span>
+          <span>Fit RMSE <strong>{fit.rmse.toFixed(2)} a.u.</strong></span>
+        </>
+      ) : <span>Peak fit <strong>Unavailable for this scan</strong></span>}
+    </output>
+  )
+
   return (
     <figure className="xrd-peak-tracker" data-xrd-peak-tracker="" data-compact={compact} data-peak={peak.id}>
-      {!compact && data.peaks.length > 1 && (
+      {!compact && !selection && data.peaks.length > 1 && (
         <label className="xrd-choice">Peak
           <select value={peak.id} onChange={(event) => setPeakId(event.currentTarget.value)}>
             {data.peaks.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
           </select>
         </label>
       )}
+      {selection && readout}
       <Profile data={data} angle={domains.angle} intensity={domains.intensity} scan={scan} fit={fit} peak={peak}
-        compact={compact} onPick={pickPeak} label={label} />
+        compact={compact} onPick={selection ? undefined : pickPeak} label={label} />
       {!compact && (
         <>
           <ul className="xrd-key" aria-label="Figure key">
@@ -338,24 +361,13 @@ function TrackerFigure({ data, domains, label, compact = false, source, initialT
           </ul>
           <div className="xrd-trends">
             {metrics.map((metric) => <Trend key={metric.id} metric={metric} scans={data.scans}
-              temperature={temperatureDomain} peak={peak} selectedIndex={index} onSelect={setTemperature} />)}
+              temperature={temperatureDomain} peak={peak} selectedIndex={index} onSelect={selection ? undefined : setTemperature} />)}
           </div>
-          <label className="xrd-temperature">Temperature
+          {!selection && <label className="xrd-temperature">Temperature
             <input type="range" min={0} max={data.scans.length - 1} step={1} value={index} aria-valuetext={selected}
               onChange={(event) => setTemperature(data.scans[Number(event.currentTarget.value)].temperatureK)} />
-          </label>
-          <output className="xrd-readout" data-xrd-readout="" data-temperature={scan.temperatureK} data-center={fit?.centerDeg}
-            data-fwhm={fit?.fwhmDeg} data-height={fit?.height} data-rmse={fit?.rmse}>
-            <span>Temperature <strong>{selected}</strong></span>
-            {fit ? (
-              <>
-                <span>2θ <strong>{fit.centerDeg.toFixed(metrics[0].digits)}°</strong></span>
-                <span>FWHM <strong>{fit.fwhmDeg.toFixed(metrics[1].digits)}°</strong></span>
-                <span>Peak height <strong>{fit.height.toFixed(metrics[2].digits)} a.u.</strong></span>
-                <span>Fit RMSE <strong>{fit.rmse.toFixed(2)} a.u.</strong></span>
-              </>
-            ) : <span>Peak fit <strong>Unavailable for this scan</strong></span>}
-          </output>
+          </label>}
+          {!selection && readout}
           {source && (
             <figcaption className="xrd-caption">
               <a href={source.href}>{source.label}</a>

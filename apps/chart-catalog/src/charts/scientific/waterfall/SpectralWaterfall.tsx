@@ -1,4 +1,5 @@
 import { useId, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@ui-sdk/react/tabs'
 import type { SpectralAxis, SpectralSelection, SpectralWaterfallAxes, SpectralWaterfallData } from './model'
 import { axisTitle, firstSelection, readIntensity } from './model'
@@ -14,6 +15,8 @@ export interface SpectralWaterfallProps {
   description?: string
   source?: { label: string; href: string }
   compact?: boolean
+  /** Render a detail panel below the interactive views for the selected measurement. */
+  renderSelection?: (selection: SpectralSelection) => ReactNode
 }
 
 const measurementFormat = new Intl.NumberFormat('en-US', {
@@ -32,7 +35,7 @@ function measuredValue(value: number, axis: SpectralAxis) {
 }
 
 export function SpectralWaterfall({
-  data, axes, label = 'Spectral waterfall', dataset, description, source, compact = false,
+  data, axes, label = 'Spectral waterfall', dataset, description, source, compact = false, renderSelection,
 }: SpectralWaterfallProps) {
   const initial = useMemo(() => firstSelection(data), [data])
   const [selection, setSelection] = useState<SpectralSelection>()
@@ -72,7 +75,7 @@ export function SpectralWaterfall({
       </div>
     </div>
   )
-  return (
+  const figure = (
     <figure className="spectral-waterfall" data-compact={compact} data-spectral-waterfall
       aria-label={label} aria-describedby={!compact && hasContext ? caption : undefined}>
       {compact ? <WaterfallPlot {...plot} compact /> : <>
@@ -96,4 +99,5 @@ export function SpectralWaterfall({
       </>}
     </figure>
   )
+  return !compact && renderSelection ? <>{figure}{renderSelection(active)}</> : figure
 }
