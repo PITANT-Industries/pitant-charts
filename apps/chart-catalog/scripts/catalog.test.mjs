@@ -8,11 +8,11 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 80 chart and tooltip families and all 371 public examples', () => {
+test('covers 81 chart and tooltip families and all 373 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()
-  assert.equal(catalog.length, 80)
+  assert.equal(catalog.length, 81)
   for (const family of catalog) {
     assert(!familyIds.has(family.id), `Duplicate family ${family.id}`)
     familyIds.add(family.id)
@@ -57,8 +57,9 @@ test('covers 80 chart and tooltip families and all 371 public examples', () => {
   assert.deepEqual(catalog.find((family) => family.id === 'spatial-defect-map')?.examples.map((example) => example.id), ['spatial-defect-map-measured', 'spatial-defect-map-simulated'])
   assert.deepEqual(catalog.find((family) => family.id === 'lcms-feature-map')?.examples.map((example) => example.id), ['lcms-feature-map-openms'])
   assert.deepEqual(catalog.find((family) => family.id === 'chromatogram-peak-integration')?.examples.map((example) => example.id), ['chromatogram-peak-integration-coffee'])
-  assert.equal(ids.size, 371)
-  assert.equal(urls.size, 371)
+  assert.deepEqual(catalog.find((family) => family.id === 'gauge-rr')?.examples.map((example) => example.id), ['gauge-rr-thread-baseline', 'gauge-rr-thread-corrected'])
+  assert.equal(ids.size, 373)
+  assert.equal(urls.size, 373)
 })
 
 test('documents every catalog family exactly once with practical guidance', async () => {

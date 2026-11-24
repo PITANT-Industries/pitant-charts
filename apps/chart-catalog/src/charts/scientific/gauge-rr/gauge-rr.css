@@ -1,0 +1,310 @@
+.gauge-rr {
+  --grr-ink: var(--gallery-ink, var(--foreground));
+  --grr-muted: var(--gallery-muted, var(--muted-foreground));
+  --grr-rule: var(--gallery-rule, var(--border));
+  --grr-reading: #326775;
+  --grr-reference: #91a9ae;
+  --grr-active: #a14e34;
+  --grr-part: #8b9da7;
+  --grr-gauge: #237780;
+  --grr-repeatability: #528892;
+  --grr-operator: #9a6148;
+  --grr-interaction: #375c8a;
+  display: grid;
+  gap: 1.2rem;
+  grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
+  margin: 0;
+  color: var(--grr-ink);
+  container-type: inline-size;
+}
+
+.dark .gauge-rr {
+  --grr-reading: #a5c7d0;
+  --grr-reference: #6c878c;
+  --grr-active: #efa786;
+  --grr-part: #7e919d;
+  --grr-gauge: #69aeb6;
+  --grr-repeatability: #79afb7;
+  --grr-operator: #cf947a;
+  --grr-interaction: #7793c7;
+}
+
+.detail-plot:has(.gauge-rr),
+.detail-plot:has(.gauge-rr) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.gauge-rr > section {
+  min-inline-size: 0;
+}
+
+.gauge-rr[data-compact='true'],
+.gauge-rr[data-compact='true'] > section,
+.gauge-matrix-compact,
+.gauge-matrix-compact .gauge-matrix-plot {
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.gauge-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .28rem .75rem;
+}
+
+.gauge-section-head h3,
+.gauge-section-head h4 {
+  margin: 0;
+  font-size: .92rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.gauge-section-head h4 {
+  font-size: .81rem;
+}
+
+.gauge-section-head > span,
+.gauge-axis-caption {
+  color: var(--grr-muted);
+  font-size: .74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauge-matrix-controls,
+.gauge-matrix-legend {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: .55rem .85rem;
+  font-size: .8rem;
+}
+
+.gauge-matrix-controls {
+  margin-block: .6rem .45rem;
+}
+
+.gauge-matrix-controls label {
+  display: grid;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  gap: .2rem;
+}
+
+.gauge-matrix-controls select {
+  min-block-size: 2rem;
+  max-inline-size: 100%;
+  padding-inline: .42rem;
+  border: 1px solid var(--grr-rule);
+  border-radius: .24rem;
+  background: var(--gallery-surface, var(--card));
+  color: inherit;
+  font: inherit;
+}
+
+.gauge-matrix-legend {
+  flex-wrap: nowrap;
+  align-items: center;
+  margin-block-end: .38rem;
+  gap: .33rem;
+  color: var(--grr-muted);
+  white-space: nowrap;
+  font-size: .73rem;
+}
+
+.gauge-matrix-legend i {
+  display: inline-block;
+  inline-size: .33rem;
+  block-size: .33rem;
+  background: var(--grr-reading);
+  border-radius: 50%;
+}
+
+.gauge-matrix-legend i[data-mark='mean'] {
+  margin-inline-start: .35rem;
+  inline-size: .08rem;
+  block-size: .65rem;
+  border-radius: 0;
+  background: var(--grr-ink);
+}
+
+.gauge-matrix-scroll,
+.gauge-table-wrap {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow: auto;
+}
+
+.gauge-matrix-plot { min-inline-size: 0; }
+.gauge-matrix-compact { overflow: hidden; }
+
+.gauge-column-head { font-size: 10.5px; }
+.gauge-column-head [data-gauge-tick] { font-size: 9px; }
+
+.gauge-cell-background {
+  fill: transparent;
+  stroke: var(--grr-rule);
+  stroke-width: .7;
+}
+
+.gauge-rr[data-compact='false'] .gauge-cell-background {
+  cursor: crosshair;
+}
+
+.gauge-cell[data-active='true'] .gauge-cell-background {
+  fill: var(--grr-active);
+  fill-opacity: .075;
+  stroke: var(--grr-active);
+  stroke-width: 1;
+}
+
+.gauge-reading,
+.gauge-reference,
+.gauge-range,
+.gauge-mean {
+  pointer-events: none;
+}
+
+.gauge-reference {
+  stroke: var(--grr-reference);
+  stroke-width: .65;
+  stroke-dasharray: 1.55 1.9;
+}
+
+.gauge-range {
+  stroke: var(--grr-reading);
+  stroke-width: 1;
+  stroke-opacity: .7;
+}
+
+.gauge-reading { fill: var(--grr-reading); }
+.gauge-mean { stroke: var(--grr-ink); stroke-width: .9; }
+
+.gauge-cell[data-active='true'] .gauge-reading { fill: var(--grr-active); }
+.gauge-cell[data-active='true'] .gauge-mean,
+.gauge-cell[data-active='true'] .gauge-range { stroke: var(--grr-active); }
+
+.gauge-axis-caption {
+  margin: .25rem 0 0;
+  text-align: center;
+}
+
+.gauge-axis-caption span { white-space: nowrap; }
+
+.gauge-inspection,
+.gauge-variance,
+.gauge-source {
+  border-block-start: 1px solid var(--grr-rule);
+  padding-block-start: .72rem;
+}
+
+.gauge-cell-summary,
+.gauge-variance-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .48rem 1.05rem;
+  margin-block: .65rem .45rem;
+  color: var(--grr-muted);
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauge-cell-summary span,
+.gauge-variance-summary span {
+  display: grid;
+  gap: .15rem;
+}
+
+.gauge-cell-summary strong,
+.gauge-variance-summary strong {
+  color: var(--grr-ink);
+  font-size: .9rem;
+  font-weight: 650;
+}
+
+.gauge-variance {
+  display: grid;
+  gap: .68rem;
+}
+
+.gauge-variance-summary { margin: 0; }
+
+.gauge-partition svg {
+  display: block;
+  inline-size: 100%;
+  block-size: .9rem;
+  margin-block: .33rem;
+  background: color-mix(in srgb, var(--grr-reference) 18%, transparent);
+}
+
+[data-variance-segment='part'], [data-variance-chip='part'] { --term: var(--grr-part); }
+[data-variance-segment='gauge'], [data-variance-chip='gauge'] { --term: var(--grr-gauge); }
+[data-variance-segment='repeatability'], [data-variance-chip='repeatability'] { --term: var(--grr-repeatability); }
+[data-variance-segment='operator'], [data-variance-chip='operator'] { --term: var(--grr-operator); }
+[data-variance-segment='interaction'], [data-variance-chip='interaction'] { --term: var(--grr-interaction); }
+
+.gauge-partition rect { fill: var(--term); }
+
+.gauge-partition-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .26rem .85rem;
+  color: var(--grr-muted);
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauge-partition-key > span {
+  display: inline-flex;
+  align-items: center;
+  gap: .29rem;
+}
+
+.gauge-partition-key i {
+  inline-size: .63rem;
+  block-size: .63rem;
+  background: var(--term);
+}
+
+.gauge-partition-key strong { color: var(--grr-ink); }
+
+.gauge-table {
+  display: table;
+  inline-size: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  font-size: .78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauge-table th,
+.gauge-table td {
+  padding: .32rem .26rem;
+  border: 0;
+  border-block-end: 1px solid var(--grr-rule);
+  background: transparent;
+  text-align: end;
+}
+
+.gauge-table th:first-child { text-align: start; }
+
+.gauge-anova summary {
+  cursor: pointer;
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.gauge-clamped,
+.gauge-source {
+  margin: 0;
+  font-size: .8rem;
+}
+
+.gauge-clamped,
+.gauge-source p { color: var(--grr-muted); }
+
+.gauge-source p { margin: .35rem 0 0; }

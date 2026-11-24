@@ -222,7 +222,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'mass-spectrum', 'mass-spectrum-mirror', 'pca-biplot', 'pareto-frontier', 'batch-genealogy',
         'spatial-defect-map', 'lcms-feature-map', 'chromatogram-peak-integration', 'spectrum', 'spectrogram',
         'spectral-waterfall', 'correlation-matrix',
-        'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
+        'gauge-rr', 'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
         'ternary-mixture-map', 'industrial-ct', 'cad-scan-deviation', 'cie-chromaticity', 'hyperspectral-cube', 'response-surface',
@@ -389,6 +389,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=chromatogram-peak-integration&variant=chromatogram-peak-integration-coffee'
                 )
+            elif example['family'] == 'gauge-rr':
+                await check_gauge_rr_compact(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', f'#docs=gauge-rr&variant={example["id"]}'
+                )
             elif example['family'] == 'lcms-feature-map':
                 await check_lcms_compact(card_plot)
                 await expect(card.locator('.example-card-link')).to_have_attribute(
@@ -537,6 +542,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'chromatogram-peak-integration':
                 await check_peak_integration(plot, touch)
                 code_import = 'ChromatogramPeakIntegration'
+            elif example['family'] == 'gauge-rr':
+                await check_gauge_rr(plot, slug, touch)
+                code_import = 'GaugeRR'
             elif example['family'] == 'lcms-feature-map':
                 await check_lcms_feature_map(plot, touch)
                 code_import = 'LcMsFeatureMap'
@@ -5050,6 +5058,173 @@ async def check_peak_integration(preview, touch):
     await (peak_two.tap() if touch else peak_two.click())
     await expect(figure.locator('[data-peak-row="peak-2"]')).to_have_attribute('data-active', 'true')
     await expect(figure.locator('output[data-peak-value="peak-2"]')).to_have_attribute('data-start', '14.49333333')
+
+
+async def check_gauge_rr_compact(preview):
+    chart = preview.locator('figure[data-gauge-rr][data-compact="true"]')
+    matrix = chart.locator('svg[data-gauge-matrix]')
+    await expect(matrix.locator('[data-gauge-cell]')).to_have_count(30)
+    await expect(matrix.locator('[data-gauge-reading]')).to_have_count(60)
+    await expect(chart.locator('select, button, [data-gauge-cell-summary], [data-gauge-variance]')).to_have_count(0)
+    await check_compact_figure_bounds(matrix, '.gauge-cell-background, [data-gauge-reading]')
+
+
+async def check_gauge_rr(preview, slug, touch):
+    corrected = slug == 'gauge-rr-thread-corrected'
+    if corrected:
+        initial = ('P4', 'O2', [0.5841, 0.5842], 0.5840833333333333)
+        selected_readings = [0.5842, 0.5841]
+        switched_readings = [0.5841, 0.584]
+        switched_operator = [0.58405, 0.58395]
+        sums_of_squares = [1.0104166666666667e-7, 5.833333333333333e-10, 5.6083333333333336e-8, 7.875e-8]
+        raw_variances = [1.3518518518518518e-9, -1.412037037037037e-10, 2.4537037037037037e-10, 2.625e-9]
+    else:
+        initial = ('P2', 'O1', [0.58365, 0.58375], 0.5839)
+        selected_readings = [0.5841, 0.58415]
+        switched_readings = [0.58385, 0.5838]
+        switched_operator = [0.5837, 0.58365]
+        sums_of_squares = [1.053375e-6, 1.3258333333333333e-7, 2.6075e-7, 6.375e-8]
+        raw_variances = [1.7092592592592593e-8, 2.590277777777778e-9, 6.180555555555556e-9, 2.125e-9]
+
+    chart = preview.locator('figure[data-gauge-rr][data-compact="false"]')
+    matrix = chart.locator('svg[data-gauge-matrix]')
+    inspection = chart.get_by_role('region', name='Inspect crossed readings')
+    cell_summary = inspection.locator('[data-gauge-cell-summary]')
+    part_select = inspection.get_by_role('combobox', name='Part', exact=True)
+    operator_select = inspection.get_by_role('combobox', name='Operator', exact=True)
+    scale = chart.get_by_role('combobox', name='Scale', exact=True)
+    variance = chart.locator('[data-gauge-variance]')
+    variance_summary = variance.locator('[data-gauge-variance-summary]')
+
+    def close(actual, expected, tolerance=1e-12):
+        if not math.isclose(float(actual), expected, rel_tol=0, abs_tol=tolerance):
+            raise RuntimeError(f'{slug}: expected {expected}, observed {actual}')
+
+    async def check_cell(part, operator, values):
+        await expect(part_select).to_have_value(part)
+        await expect(operator_select).to_have_value(operator)
+        await expect(cell_summary).to_have_attribute('data-part', part)
+        await expect(cell_summary).to_have_attribute('data-operator', operator)
+        await expect(matrix.locator(f'[data-gauge-cell][data-part="{part}"][data-operator="{operator}"]')).to_have_attribute(
+            'data-active', 'true')
+        await expect(matrix.locator('[data-gauge-cell][data-active="true"]')).to_have_count(1)
+        await expect(inspection.locator('[data-gauge-trial]')).to_have_count(2)
+        for trial, value in enumerate(values, start=1):
+            row = inspection.locator(f'[data-gauge-trial="{trial}"]')
+            await expect(row.get_by_role('rowheader', name=str(trial), exact=True)).to_be_visible()
+            await expect(row.get_by_role('cell', name=str(value), exact=True)).to_be_visible()
+            close(await row.get_attribute('data-recorded'), value)
+            source = matrix.locator(f'[data-part="{part}"][data-operator="{operator}"] [data-gauge-reading="{trial}"]')
+            close(await source.get_attribute('data-recorded'), value)
+            part_mean = float(await cell_summary.get_attribute('data-part-mean'))
+            close(await row.get_attribute('data-deviation'), value - part_mean)
+        close(await cell_summary.get_attribute('data-mean'), math.fsum(values) / len(values))
+        close(await cell_summary.get_attribute('data-range'), max(values) - min(values))
+
+    async def check_matrix(mode):
+        await expect(matrix).to_have_attribute('data-scale', mode)
+        domain, cells = await matrix.evaluate("""svg => [
+          [Number(svg.dataset.min), Number(svg.dataset.max)],
+          [...svg.querySelectorAll('[data-gauge-cell]')].map(cell => ({
+            part: cell.dataset.part, operator: cell.dataset.operator,
+            xMin: Number(cell.dataset.xMin), xMax: Number(cell.dataset.xMax),
+            readings: [...cell.querySelectorAll('[data-gauge-reading]')].map(mark => ({
+              trial: mark.dataset.gaugeReading, value: Number(mark.dataset.recorded),
+              plotted: Number(mark.dataset.plotted), x: Number(mark.getAttribute('cx')), y: Number(mark.getAttribute('cy')),
+            })),
+          })),
+        ]""")
+        values = {(cell['part'], cell['operator'], point['trial']): point['value']
+                  for cell in cells for point in cell['readings']}
+        if len(cells) != 30 or len(values) != 60 or sum(len(cell['readings']) for cell in cells) != 60:
+            raise RuntimeError(f'{slug}: expected the complete 10 × 3 × 2 crossed study')
+        part_means = {part: math.fsum(value for (part_id, _, _), value in values.items() if part_id == part) / 6
+                      for part in {cell['part'] for cell in cells}}
+        if mode == 'part-centered':
+            close(domain[0], -domain[1])
+            close(await matrix.get_attribute('data-reference'), 0)
+        else:
+            close(await matrix.get_attribute('data-reference'), math.fsum(values.values()) / len(values))
+        for cell in cells:
+            if [point['trial'] for point in cell['readings']] != ['1', '2']:
+                raise RuntimeError(f'{slug}: trials lost their within-cell order')
+            if cell['readings'][0]['y'] >= cell['readings'][1]['y']:
+                raise RuntimeError(f'{slug}: repeat marks must occupy distinct trial lanes')
+            for point in cell['readings']:
+                expected = point['value'] - part_means[cell['part']] if mode == 'part-centered' else point['value']
+                reading = domain[0] + (point['x'] - cell['xMin']) / (cell['xMax'] - cell['xMin']) * (domain[1] - domain[0])
+                close(point['plotted'], expected)
+                close(reading, expected)
+        return values
+
+    await expect(matrix.locator('[data-gauge-part]')).to_have_count(10)
+    await expect(matrix.locator('[data-gauge-operator]')).to_have_count(3)
+    await expect(chart.get_by_role('link', name='CC BY 4.0', exact=True)).to_have_attribute(
+        'href', 'https://creativecommons.org/licenses/by/4.0/')
+    await expect(chart.get_by_role('link', name='Published workbook', exact=True)).to_have_attribute(
+        'href', 'https://www.mdpi.com/article/10.3390/metrology6040081/s1')
+    await expect(chart.locator('figcaption a').first).to_have_attribute('href', 'https://doi.org/10.3390/metrology6040081')
+    await check_cell(*initial[:3])
+    close(await cell_summary.get_attribute('data-part-mean'), initial[3])
+    raw = await check_matrix('part-centered')
+    fraction = await variance_summary.get_attribute('data-fraction')
+    await scale.select_option('measured')
+    if await check_matrix('measured') != raw:
+        raise RuntimeError(f'{slug}: changing display scale altered the recorded readings')
+    await check_cell(*initial[:3])
+    await expect(variance_summary).to_have_attribute('data-fraction', fraction)
+    await scale.select_option('part-centered')
+    await expect(matrix).to_have_attribute('data-scale', 'part-centered')
+
+    target = matrix.locator('[data-gauge-cell][data-part="P8"][data-operator="O3"] .gauge-cell-background')
+    await (target.tap(timeout=8000) if touch else target.click(timeout=8000))
+    await check_cell('P8', 'O3', selected_readings)
+    await part_select.select_option('P10')
+    await check_cell('P10', 'O3', switched_readings)
+    await operator_select.select_option('O2')
+    await check_cell('P10', 'O2', switched_operator)
+
+    components = dict(zip(['part', 'operator', 'interaction', 'repeatability'], map(lambda value: max(0, value), raw_variances)))
+    gauge = math.fsum(components[term] for term in ['operator', 'interaction', 'repeatability'])
+    total = math.fsum(components.values())
+    for attribute, expected in [('measurement-variance', gauge), ('total-variance', total),
+                                ('reproducibility-variance', components['operator'] + components['interaction'])]:
+        close(await variance_summary.get_attribute(f'data-{attribute}'), expected, 1e-20)
+    close(await variance_summary.get_attribute('data-gauge-sd'), math.sqrt(gauge))
+    close(fraction, gauge / total)
+
+    for mode, amounts in [
+        ('total', {'part': components['part'], 'gauge': gauge}),
+        ('gauge', {term: components[term] for term in ['repeatability', 'operator', 'interaction']}),
+    ]:
+        partition = variance.locator(f'[data-gauge-partition="{mode}"]')
+        total_amount = math.fsum(amounts.values())
+        close(await partition.get_attribute('data-denominator'), total_amount, 1e-20)
+        await expect(partition.locator('[data-variance-segment]')).to_have_count(len(amounts))
+        position = 0
+        for term, amount in amounts.items():
+            segment = partition.locator(f'[data-variance-segment="{term}"]')
+            width = float(await segment.get_attribute('width'))
+            close(await segment.get_attribute('data-variance'), amount, 1e-20)
+            close(await segment.get_attribute('x'), position, 1e-8)
+            close(width, 100 * amount / total_amount, 1e-8)
+            position += width
+        close(position, 100, 1e-8)
+
+    await expect(variance.locator('[data-gauge-clamped]')).to_have_count(int(corrected))
+    if corrected:
+        await expect(variance.locator('[data-gauge-clamped]')).to_contain_text('Operator:')
+    await variance.get_by_text('ANOVA table', exact=True).click(timeout=8000)
+    for term, df, ss, raw_variance in zip(components, [9, 2, 18, 30], sums_of_squares, raw_variances):
+        component = variance.locator(f'[data-gauge-term="{term}"]')
+        close(await component.get_attribute('data-raw-variance'), raw_variance, 1e-20)
+        close(await component.get_attribute('data-variance'), components[term], 1e-20)
+        await expect(component).to_be_visible()
+        row = variance.locator(f'[data-gauge-anova="{term}"]')
+        await expect(row).to_be_visible()
+        await expect(row).to_have_attribute('data-df', str(df))
+        close(await row.get_attribute('data-ss'), ss, 1e-18)
+        close(await row.get_attribute('data-ms'), ss / df, 1e-18)
 
 
 async def check_lcms_compact(preview):

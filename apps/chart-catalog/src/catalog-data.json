@@ -3588,6 +3588,31 @@
     ]
   },
   {
+    "id": "gauge-rr",
+    "name": "Gauge R&R",
+    "url": "https://opensource.pitant.de/charts/#docs=gauge-rr",
+    "examples": [
+      {
+        "id": "gauge-rr-thread-baseline",
+        "family": "gauge-rr",
+        "title": "Thread Gauge R&R Before Correction",
+        "label": "60 measured thread-pitch diameters",
+        "description": "Inspect repeat readings on a shared scale and see how operators and operator-by-part interaction contribute to measurement variance.",
+        "url": "https://opensource.pitant.de/charts/#example=gauge-rr-thread-baseline",
+        "position": 1
+      },
+      {
+        "id": "gauge-rr-thread-corrected",
+        "family": "gauge-rr",
+        "title": "Thread Gauge R&R After Correction",
+        "label": "60 measured readings on a different set of parts",
+        "description": "Inspect the later crossed study and compare its absolute gauge variation with its share of total variance.",
+        "url": "https://opensource.pitant.de/charts/#example=gauge-rr-thread-corrected",
+        "position": 2
+      }
+    ]
+  },
+  {
     "id": "lcms-feature-map",
     "name": "LC–MS feature map",
     "url": "https://opensource.pitant.de/charts/#docs=lcms-feature-map",
