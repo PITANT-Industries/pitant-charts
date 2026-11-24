@@ -1,0 +1,226 @@
+.pca-biplot {
+  display: grid;
+  gap: .7rem;
+  min-inline-size: 0;
+  margin: 0;
+  color: var(--gallery-ink, var(--foreground));
+  container-type: inline-size;
+}
+
+.pca-biplot[data-compact='true'] {
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100%;
+}
+
+.detail-plot:has(.pca-biplot),
+.detail-plot:has(.pca-biplot) .chart-preview {
+  block-size: auto;
+  overflow: visible;
+}
+
+.pca-plot {
+  block-size: clamp(16.5rem, 60cqw, 29rem);
+  inline-size: min(100%, 41rem);
+  justify-self: center;
+}
+
+.pca-biplot[data-compact='true'] .pca-plot {
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.pca-grid {
+  stroke: #e5e9ec;
+  stroke-width: 1;
+}
+
+.pca-zero {
+  stroke: #85909a;
+  stroke-width: 1;
+}
+
+.pca-loading-axes,
+.pca-vector-label {
+  fill: #873b32;
+}
+
+.pca-loading-axes line,
+.pca-vector-label line {
+  stroke: #9a5a52;
+}
+
+.pca-vector-label {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.pca-vector-label text {
+  stroke: #fff;
+  stroke-width: 3px;
+  paint-order: stroke;
+}
+
+.pca-vector-label[data-active='true'] {
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.pca-row {
+  opacity: .66;
+}
+
+.pca-row[data-brushed='false'] {
+  opacity: .19;
+}
+
+.pca-row[data-brushed='true'] {
+  opacity: 1;
+}
+
+.pca-vector {
+  stroke: #963c2e;
+  stroke-width: 1.15;
+}
+
+.pca-vector[data-active='true'] {
+  stroke-width: 2;
+}
+
+.pca-projection-ray,
+.pca-projection-drop {
+  stroke: #263746;
+  stroke-width: 1.15;
+  stroke-dasharray: 3 3;
+}
+
+.pca-projection-foot,
+.pca-active-row {
+  fill: #fff;
+  stroke: #202e3b;
+  stroke-width: 1.5;
+}
+
+.pca-active-row {
+  fill: none;
+}
+
+.pca-hit {
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.pca-brush {
+  fill: #315d8f;
+  fill-opacity: .12;
+  stroke: #315d8f;
+}
+
+.pca-key,
+.pca-controls,
+.pca-readout,
+.pca-selection-header,
+.pca-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+  align-items: center;
+}
+
+.pca-key {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: .74rem;
+}
+
+.pca-key li {
+  display: flex;
+  align-items: center;
+  gap: .26rem;
+}
+
+.pca-controls,
+.pca-readout,
+.pca-selection,
+.pca-caption {
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pca-controls label,
+.pca-readout > span {
+  display: grid;
+  gap: .25rem;
+}
+
+.pca-controls select,
+.pca-selection button {
+  min-block-size: 2rem;
+  padding-inline: .45rem;
+  border: 1px solid var(--gallery-rule, var(--border));
+  border-radius: .25rem;
+  background: var(--gallery-surface, var(--card));
+  color: inherit;
+  font: inherit;
+}
+
+.pca-readout {
+  padding-block: .6rem;
+  border-block: 1px solid var(--gallery-rule, var(--border));
+}
+
+.pca-readout > span,
+.pca-caption p,
+.pca-selection p {
+  color: var(--gallery-muted, var(--muted-foreground));
+}
+
+.pca-readout strong {
+  color: var(--gallery-ink, var(--foreground));
+  font-size: .93rem;
+}
+
+.pca-selection {
+  display: grid;
+  gap: .45rem;
+}
+
+.pca-selection p,
+.pca-caption p {
+  margin: 0;
+}
+
+.pca-selection table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.pca-selection :is(th, td) {
+  padding: .25rem .25rem .25rem 0;
+  border-block-end: 1px solid var(--gallery-rule, var(--border));
+}
+
+.pca-selection :is(th, td):last-child {
+  padding-inline-end: 0;
+  text-align: right;
+}
+
+.pca-selection button[aria-pressed='true'] {
+  color: var(--gallery-accent, var(--primary));
+  font-weight: 700;
+}
+
+.pca-caption {
+  padding-block-start: .6rem;
+}
+
+.pca-caption a {
+  color: var(--gallery-accent, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: .16em;
+}
+
+.pca-caption a + a {
+  white-space: nowrap;
+}

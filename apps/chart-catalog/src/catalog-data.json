@@ -3572,6 +3572,22 @@
     ]
   },
   {
+    "id": "pca-biplot",
+    "name": "PCA biplot",
+    "url": "https://opensource.pitant.de/charts/#docs=pca-biplot",
+    "examples": [
+      {
+        "id": "pca-biplot-glass",
+        "family": "pca-biplot",
+        "title": "Glass Composition PCA Biplot",
+        "label": "214 measured glass specimens",
+        "description": "Read specimen scores and composition loadings on calibrated axes, project a specimen onto a variable, and brush groups to inspect original measurements.",
+        "url": "https://opensource.pitant.de/charts/#example=pca-biplot-glass",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "spectrum",
     "name": "Spectrum",
     "url": "https://opensource.pitant.de/charts/#docs=spectrum",

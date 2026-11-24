@@ -687,6 +687,31 @@
       { "label": "Steel Plates Faults by Buscema, Terzi, and Tastle (CC BY 4.0)", "href": "https://doi.org/10.24432/C5J88N" }
     ]
   },
+  "pca-biplot": {
+    "summary": "Display measured specimens and variable directions in one principal component analysis (PCA) view.",
+    "useWhen": "Explore how measurements covary, which variables distinguish specimens, and where known product groups overlap.",
+    "data": "Supply at least three observations and two quantitative variables with enough independent variation to yield two components. Assign unique, nonblank IDs to variables and observations. Each observation needs a finite value for every variable in the same order. Add variable labels and optional units, and optional observation labels and groups.",
+    "reading": "Points represent specimens and arrows show variable directions. The axis labels report how much of the total standardized variance each component explains. Drag a rectangle to select points and inspect the linked specimen table. Select a variable and specimen to see the specimen’s signed projection along the arrow and compare the two-component estimate with the measured value.",
+    "notes": [
+      "PCA centers each column and divides by its sample standard deviation. Constant columns have zero contribution. Group labels identify specimens on the plot and are excluded from the fit. Each component is oriented so its largest absolute coefficient is positive.",
+      "Score scaling assigns the full component scale to specimen points, loading scaling assigns it to variable arrows, and balanced scaling shares it equally. The first mode emphasizes distances between specimens in the retained components, while the second emphasizes relationships between variables. All three keep the fitted components and explained variance fixed.",
+      "Scores use the bottom and left axes. Loadings use the top and right axes, which share the score origin and have a different calibration. Multiply the signed projection in score coordinates by the arrow length in loading coordinates to get the standardized estimate from the first two components. The fitted mean and standard deviation convert that estimate back to the measurement’s original units.",
+      "The glass example uses all 214 UCI specimens. The nine measurements are dimensionless refractive index and the weight percentages of oxides corresponding to sodium, magnesium, aluminum, silicon, potassium, calcium, barium, and iron. The six labels are source product categories. The two building-window categories distinguish float and non-float processing.",
+      "The first two components explain 27.90% and 22.78% of the standardized variance. For example, specimen 192 is a headlamp glass with 0.00 wt.% magnesium oxide and 0.64 wt.% barium oxide as recorded. The code example uses six specimens and three variables to show the expected data shape."
+    ],
+    "properties": [
+      { "name": "data", "type": "PcaBiplotData", "description": "Required. Supply variables with id, label, optional shortLabel for the plot and optional unit, and observations with id, values, and optional label and group." },
+      { "name": "initialVariable", "type": "string", "description": "Select a variable by its ID on first render." },
+      { "name": "initialObservation", "type": "string", "description": "Select an observation by its ID on first render." },
+      { "name": "label", "type": "string", "description": "Describe the measurements or study for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show a compact biplot for a gallery card." },
+      { "name": "source", "type": "{ label: string; href: string; description?: string; license?: string; licenseUrl?: string }", "description": "Add a data citation, optional methods note, and optional license link." }
+    ],
+    "sources": [
+      { "label": "B. German (1987), UCI Glass Identification dataset (CC BY 4.0)", "href": "https://doi.org/10.24432/C5WW2P" },
+      { "label": "K. Ruben Gabriel (1971), The biplot graphic display of matrices with application to principal component analysis", "href": "https://doi.org/10.1093/biomet/58.3.453" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",

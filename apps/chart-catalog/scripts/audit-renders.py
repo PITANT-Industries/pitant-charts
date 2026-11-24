@@ -219,7 +219,7 @@ async def check_docs_navigation(browser, local_url, catalog):
 
 async def check_scientific_catalog(browser, local_url, catalog):
     families = {
-        'mass-spectrum', 'mass-spectrum-mirror', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
+        'mass-spectrum', 'mass-spectrum-mirror', 'pca-biplot', 'spectrum', 'spectrogram', 'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
@@ -345,6 +345,14 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card_plot.locator('select, [data-mirror-readout], [data-mirror-pick], [data-selected="true"]')).to_have_count(0)
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=mass-spectrum-mirror&variant=mass-spectrum-mirror-caffeine'
+                )
+            elif example['family'] == 'pca-biplot':
+                biplot = card_plot.locator('svg[data-pca-plot]')
+                await check_pca_plot(biplot)
+                await check_compact_figure_bounds(biplot, 'rect[data-pca-frame]')
+                await expect(card_plot.locator('select, [data-pca-brush-target], [data-pca-loading-axes], [data-pca-readout]')).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=pca-biplot&variant=pca-biplot-glass'
                 )
             elif example['family'] == 'stress-strain-comparison':
                 stress = card_plot.locator('svg[data-stress-overview]')
@@ -474,6 +482,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'mass-spectrum-mirror':
                 await check_mass_spectrum_mirror(plot, touch)
                 code_import = 'MassSpectrumMirror'
+            elif example['family'] == 'pca-biplot':
+                await check_pca_biplot(plot, touch)
+                code_import = 'PcaBiplot'
             elif example['family'] == 'campbell-diagram':
                 await check_campbell_diagram(plot, touch)
                 code_import = 'CampbellDiagram'
@@ -4317,6 +4328,115 @@ async def check_mass_spectrum_mirror(plot, touch):
     await expect(readout).to_have_attribute('data-match-count', '12')
     await expect(fragment).to_have_value('query:110.0718')
     await check_pair('query')
+
+
+async def check_pca_plot(biplot):
+    await expect(biplot).to_be_visible()
+    await expect(biplot.locator('rect[data-pca-frame]')).to_be_visible()
+    await expect(biplot.locator('[data-pca-row]')).to_have_count(214)
+    await expect(biplot.locator('[data-pca-vector]')).to_have_count(9)
+    await expect(biplot.get_by_text('PC1 scores (27.9%)', exact=True)).to_be_visible()
+    await expect(biplot.get_by_text('PC2 scores (22.8%)', exact=True)).to_be_visible()
+
+
+async def check_pca_biplot(plot, touch):
+    chart = plot.locator('figure[data-pca-biplot]')
+    biplot = chart.locator('svg[data-pca-plot]')
+    await check_pca_plot(biplot)
+    loading_axes = biplot.locator('[data-pca-loading-axes]')
+    for label in ['PC1 loadings', 'PC2 loadings']:
+        await expect(loading_axes.get_by_text(label, exact=True)).to_be_visible()
+    projection = biplot.locator('[data-pca-projection]')
+    await expect(projection).to_be_visible()
+    cosine = await projection.evaluate("""group => {
+        const [ray, drop] = Array.from(group.querySelectorAll('line'), line => [
+            line.x2.baseVal.value - line.x1.baseVal.value,
+            line.y2.baseVal.value - line.y1.baseVal.value,
+        ]);
+        return (ray[0] * drop[0] + ray[1] * drop[1]) / (Math.hypot(...ray) * Math.hypot(...drop));
+    }""")
+    if not math.isclose(cosine, 0, abs_tol=1e-6):
+        raise RuntimeError(f'The specimen projection must meet the loading direction at a right angle: {cosine}')
+
+    scaling = chart.get_by_role('combobox', name='Scaling', exact=True)
+    variable = chart.get_by_role('combobox', name='Variable', exact=True)
+    specimen = chart.get_by_role('combobox', name='Specimen', exact=True)
+    readout = chart.locator('output[data-pca-readout]')
+    source_rows = chart.locator('[data-pca-original-row]')
+    row = biplot.locator('[data-pca-row="192"]')
+    vector = biplot.locator('[data-pca-vector="mg"]')
+
+    async def verify_readout(specimen_id, feature, observed, estimate, standardized):
+        await expect(readout).to_have_attribute('data-pca-observation', specimen_id)
+        await expect(readout).to_have_attribute('data-pca-variable', feature)
+        await expect(readout).to_have_attribute('data-pca-observed', observed)
+        await expect(source_rows).to_have_count(1)
+        await expect(source_rows).to_have_attribute('data-pca-original-row', specimen_id)
+        await expect(source_rows).to_have_attribute('data-pca-original-value', observed)
+        expected = {'variance-x': 0.27901819179456444, 'variance-y': 0.22778579831670445,
+                    'estimate': estimate, 'standardized': standardized}
+        for metric, anchor in expected.items():
+            measured = float(await readout.get_attribute(f'data-pca-{metric}'))
+            if not math.isclose(measured, anchor, rel_tol=0, abs_tol=1e-8):
+                raise RuntimeError(f'Unexpected PCA {metric} for specimen {specimen_id} and {feature}: {measured}')
+
+    async def coordinates(mark, prefix):
+        return [float(await mark.get_attribute(f'data-{prefix}-{axis}')) for axis in ['x', 'y']]
+
+    await expect(scaling).to_have_value('scores')
+    await expect(variable).to_have_value('mg')
+    await expect(specimen).to_have_value('192')
+    await scaling.focus()
+    await scaling.press('Tab')
+    await expect(variable).to_be_focused()
+    await variable.press('Tab')
+    await expect(specimen).to_be_focused()
+
+    base_score = await coordinates(row, 'score')
+    base_loading = await coordinates(vector, 'loading')
+    singular_values = (23.127426870929245, 20.896539794260732)
+    for mode, exponent in [('scores', 0), ('balanced', 0.5), ('loadings', 1)]:
+        await scaling.select_option(mode)
+        await expect(readout).to_have_attribute('data-pca-scaling', mode)
+        await verify_readout('192', 'mg', '0', 0.38079808013727945, -1.5971451058975754)
+        scores = await coordinates(row, 'score')
+        loadings = await coordinates(vector, 'loading')
+        length = float(await readout.get_attribute('data-pca-projection-length'))
+        if not math.isclose(length, -1.5971451058975754 / math.hypot(*loadings), abs_tol=1e-8):
+            raise RuntimeError(f'Unexpected signed projection length for {mode}: {length}')
+        for score, loading, before_score, before_loading, singular in zip(scores, loadings, base_score, base_loading, singular_values):
+            scale = singular ** exponent
+            if not (math.isclose(score * scale, before_score, abs_tol=1e-8) and math.isclose(loading / scale, before_loading, abs_tol=1e-8)):
+                raise RuntimeError(f'{mode} must scale specimen scores and loadings reciprocally')
+
+    await variable.select_option('na')
+    await verify_readout('192', 'na', '14.85', 14.365439543286799, 1.1726486730254957)
+    await expect(biplot.locator('[data-pca-vector="na"]')).to_have_attribute('data-active', 'true')
+    await variable.select_option('mg')
+    await specimen.select_option('1')
+    await verify_readout('1', 'mg', '4.49', 3.3204722719263553, 0.4408874812401634)
+
+    if not touch:
+        await scaling.select_option('scores')
+        await biplot.locator('[data-pca-brush-target]').scroll_into_view_if_needed()
+        isolated = biplot.locator('[data-pca-row="107"]')
+        box = await isolated.bounding_box()
+        x, y = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
+        mouse = chart.page.mouse
+        await mouse.move(x - 7, y - 7)
+        await mouse.down()
+        try:
+            await mouse.move(x + 7, y + 7, steps=4)
+        finally:
+            await mouse.up()
+        await expect(biplot.locator('[data-pca-row][data-brushed="true"]')).to_have_count(1)
+        await expect(isolated).to_have_attribute('data-brushed', 'true')
+        await expect(specimen).to_have_value('107')
+        await expect(source_rows).to_have_count(1)
+        await expect(source_rows).to_have_attribute('data-pca-original-row', '107')
+        await chart.get_by_role('button', name='Clear brush', exact=True).click()
+        await expect(biplot.locator('[data-pca-row][data-brushed="true"]')).to_have_count(0)
+        await expect(source_rows).to_have_attribute('data-pca-original-row', '107')
 
 
 async def check_spectral_waterfall(plot, slug, touch=False):
