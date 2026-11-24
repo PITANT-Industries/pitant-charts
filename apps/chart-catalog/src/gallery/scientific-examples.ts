@@ -1,4 +1,5 @@
 import allanDeviation from './docs/examples/AllanDeviation.tsx?raw'
+import batchGenealogy from './docs/examples/BatchGenealogy.tsx?raw'
 import bearingEnvelope from './docs/examples/BearingEnvelopeSpectrum.tsx?raw'
 import binaryPhaseDiagram from './docs/examples/BinaryPhaseDiagram.tsx?raw'
 import cadScanDeviation from './docs/examples/CadScanDeviation.tsx?raw'
@@ -63,6 +64,7 @@ const scientificExamples = new Map([
   ['pca-biplot-glass', withCatalogImports(pcaBiplot)],
   ['pareto-frontier-oil-press', withCatalogImports(paretoFrontier)],
   ['pareto-frontier-turning', withCatalogImports(paretoFrontier)],
+  ['batch-genealogy-enclosures', withCatalogImports(batchGenealogy)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

@@ -219,7 +219,7 @@ async def check_docs_navigation(browser, local_url, catalog):
 
 async def check_scientific_catalog(browser, local_url, catalog):
     families = {
-        'mass-spectrum', 'mass-spectrum-mirror', 'pca-biplot', 'pareto-frontier', 'spectrum', 'spectrogram',
+        'mass-spectrum', 'mass-spectrum-mirror', 'pca-biplot', 'pareto-frontier', 'batch-genealogy', 'spectrum', 'spectrogram',
         'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
@@ -363,6 +363,15 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', f'#docs=pareto-frontier&variant={example["id"]}'
                 )
+            elif example['family'] == 'batch-genealogy':
+                genealogy = card_plot.locator('svg[data-genealogy-plot]')
+                await check_genealogy_plot(genealogy, 'horizontal')
+                await check_compact_figure_bounds(genealogy, '.genealogy-node-shape')
+                interactive = 'button, select, [data-genealogy-evidence], [data-inspected="true"], [data-witness="true"]'
+                await expect(card_plot.locator(interactive)).to_have_count(0)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=batch-genealogy&variant=batch-genealogy-enclosures'
+                )
             elif example['family'] == 'stress-strain-comparison':
                 stress = card_plot.locator('svg[data-stress-overview]')
                 await check_stress_axes(stress)
@@ -497,6 +506,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'pareto-frontier':
                 await check_pareto_frontier(plot, slug, touch)
                 code_import = 'ParetoFrontier'
+            elif example['family'] == 'batch-genealogy':
+                await check_batch_genealogy(plot, touch)
+                code_import = 'BatchGenealogy'
             elif example['family'] == 'campbell-diagram':
                 await check_campbell_diagram(plot, touch)
                 code_import = 'CampbellDiagram'
@@ -4584,6 +4596,120 @@ async def check_pareto_frontier(preview, slug, touch):
     await expect(chart.get_by_role('status').filter(has_text='No measured trial meets these filters.')).to_be_visible()
     await expect(readout).to_have_count(0)
     await expect(cells).to_have_count(0)
+
+
+async def check_genealogy_plot(plot, orientation):
+    await expect(plot).to_be_visible()
+    await expect(plot).to_have_attribute('data-orientation', orientation)
+    await expect(plot.locator('[data-genealogy-node][data-kind="lot"]')).to_have_count(11)
+    await expect(plot.locator('[data-genealogy-node][data-kind="step"]')).to_have_count(5)
+    await expect(plot.locator('[data-genealogy-edge]')).to_have_count(16)
+    invalid_edges = await plot.evaluate("""svg => {
+        const nodes = new Map(Array.from(svg.querySelectorAll('[data-genealogy-node]'), node =>
+            [node.dataset.genealogyNode, node.dataset.kind]));
+        const axis = svg.dataset.orientation === 'vertical' ? 'y' : 'x';
+        return Array.from(svg.querySelectorAll('[data-genealogy-edge]')).flatMap(edge => {
+            const {from, to} = edge.dataset;
+            const start = edge.getPointAtLength(0);
+            const end = edge.getPointAtLength(edge.getTotalLength());
+            return nodes.has(from) && nodes.has(to) && nodes.get(from) !== nodes.get(to) && end[axis] > start[axis]
+                ? [] : [[from, to]];
+        });
+    }""")
+    if invalid_edges:
+        raise RuntimeError(f'Material links must point forward between lots and process events: {invalid_edges}')
+
+
+async def check_batch_genealogy(preview, touch):
+    chart = preview.locator('figure[data-batch-genealogy]')
+    plot = chart.locator('svg[data-genealogy-plot]')
+    await check_genealogy_plot(plot, 'vertical' if touch else 'horizontal')
+    root = chart.get_by_role('combobox', name='Trace from lot', exact=True)
+    inspect = chart.get_by_role('combobox', name='Inspect record', exact=True)
+    counts = chart.locator('output[data-genealogy-counts]')
+    evidence = chart.locator('section[data-genealogy-evidence]')
+    path = evidence.locator('[data-genealogy-path] [data-node-key]')
+    context = evidence.locator('[data-genealogy-context]')
+
+    def node(key):
+        return plot.locator(f'[data-genealogy-node="{key}"]')
+
+    def edge(start, end):
+        return plot.locator(f'[data-genealogy-edge][data-from="{start}"][data-to="{end}"]')
+
+    async def verify_counts(lot_id, upstream_lots, downstream_lots, upstream_steps, downstream_steps):
+        await expect(counts).to_have_attribute('data-root', f'lot:{lot_id}')
+        for name, expected in [('upstream-lots', upstream_lots), ('downstream-lots', downstream_lots),
+                               ('upstream-steps', upstream_steps), ('downstream-steps', downstream_steps)]:
+            await expect(counts).to_have_attribute(f'data-{name}', str(expected))
+
+    async def verify_path(keys, direction):
+        await expect(path).to_have_count(len(keys))
+        actual = await path.evaluate_all('records => records.map(record => record.dataset.nodeKey)')
+        if actual != keys:
+            raise RuntimeError(f'Unexpected recorded {direction} path: {actual}, expected {keys}')
+        await expect(plot.locator('[data-genealogy-edge][data-witness="true"]')).to_have_count(len(keys) - 1)
+        for start, end in zip(keys, keys[1:]):
+            record = edge(start, end)
+            await expect(record).to_have_attribute('data-witness', 'true')
+            await expect(record).to_have_attribute('data-relation', direction)
+
+    await expect(root).to_have_value('HG-12-R2')
+    await verify_counts('HG-12-R2', 3, 3, 2, 2)
+    await expect(node('lot:HG-12-R2')).to_have_attribute('data-held', 'true')
+    await expect(evidence.locator('[data-status="held"]')).to_have_text('Quality hold')
+    await expect(node('lot:HG-12-R1')).to_have_attribute('data-relation', 'upstream')
+    for key in ['lot:HG-13', 'lot:INS-04', 'lot:SE-09', 'lot:ASM-90', 'step:assemble-sibling']:
+        await expect(node(key)).to_have_attribute('data-relation', 'context')
+    await expect(edge('lot:INS-04', 'step:assemble')).to_have_attribute('data-relation', 'context')
+    await root.press('Tab')
+    await expect(inspect).to_be_focused()
+    await inspect.select_option('lot:AL-17')
+    await verify_path(['lot:AL-17', 'step:mill', 'lot:HG-12-R1', 'step:recoat', 'lot:HG-12-R2'], 'upstream')
+
+    packed = node('lot:PK-31')
+    await packed.evaluate("mark => mark.scrollIntoView({block: 'center', inline: 'nearest'})")
+    if touch:
+        await packed.tap(timeout=5000)
+    else:
+        await packed.click(timeout=5000)
+    await expect(inspect).to_have_value('lot:PK-31')
+    await expect(node('lot:PK-31')).to_have_attribute('data-inspected', 'true')
+    await expect(evidence).to_have_attribute('data-genealogy-evidence', 'lot:PK-31')
+    await verify_path(['lot:HG-12-R2', 'step:assemble', 'lot:ASM-26', 'step:pack', 'lot:PK-31'], 'downstream')
+
+    assembly_time = '2026-10-14T10:05:00Z'
+    await inspect.select_option('step:assemble')
+    await expect(evidence.locator('time')).to_have_attribute('datetime', assembly_time)
+    recorded_inputs = evidence.get_by_role('list', name='Recorded inputs', exact=True)
+    recorded_outputs = evidence.get_by_role('list', name='Recorded outputs', exact=True)
+    for ports, quantities in [(recorded_inputs, {'HG-12-R2': '64', 'INS-04': '64'}),
+                              (recorded_outputs, {'ASM-26': '32', 'ASM-27': '32'})]:
+        for lot_id, quantity in quantities.items():
+            port = ports.locator(f'[data-genealogy-port="{lot_id}"]')
+            await expect(port).to_have_attribute('data-quantity', quantity)
+            await expect(port).to_have_attribute('data-unit', 'pcs')
+    await recorded_inputs.get_by_role('button', name='INS-04', exact=True).press('Enter')
+    await expect(evidence).to_have_attribute('data-genealogy-evidence', 'lot:INS-04')
+    await expect(context).to_be_visible()
+    await expect(path).to_have_count(0)
+    await inspect.select_option('step:assemble-sibling')
+    await expect(evidence.locator('time')).to_have_attribute('datetime', assembly_time)
+    await expect(context).to_be_visible()
+    await expect(evidence.locator('[data-genealogy-port="HG-13"]')).to_have_attribute('data-quantity', '32')
+
+    await inspect.select_option('lot:ASM-90')
+    await expect(evidence.locator('[data-status="released"]')).to_have_text('Released')
+    await expect(context).to_be_visible()
+    await evidence.get_by_role('button', name='Trace this lot', exact=True).press('Enter')
+    await expect(root).to_have_value('ASM-90')
+    await verify_counts('ASM-90', 3, 0, 2, 0)
+    await expect(node('lot:HG-13')).to_have_attribute('data-relation', 'upstream')
+    await expect(node('lot:HG-12-R2')).to_have_attribute('data-relation', 'context')
+    await root.select_option('AL-17')
+    await verify_counts('AL-17', 0, 7, 0, 5)
+    for key in ['step:assemble', 'step:assemble-sibling', 'lot:ASM-26', 'lot:ASM-90', 'lot:PK-31']:
+        await expect(node(key)).to_have_attribute('data-relation', 'downstream')
 
 
 async def check_spectral_waterfall(plot, slug, touch=False):
