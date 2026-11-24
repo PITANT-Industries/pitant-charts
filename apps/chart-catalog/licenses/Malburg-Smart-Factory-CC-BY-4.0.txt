@@ -1,0 +1,23 @@
+Dataset: An IoT-Enriched Event Log for Process Mining in Smart Factories
+Lukas Malburg, Joscha Grüger, and Ralph Bergmann, Figshare version 6 (2024).
+https://doi.org/10.6084/m9.figshare.20130794.v6
+
+Licensed under Creative Commons Attribution 4.0 International.
+https://creativecommons.org/licenses/by/4.0/
+
+Companion study: https://arxiv.org/abs/2209.02702
+Official lifecycle documentation: https://ndownloader.figshare.com/files/39960181
+
+PITANT Charts transformation:
+Use the published Cleaned Event Log/MainProcess.xes from the physical
+University of Trier smart-factory demonstrator. Select traces first recorded
+from 14:24:00 inclusive to 15:46:00 exclusive on 25 June 2021, as recorded
+on the source log clock. Of 30 candidates, 21 have all six ordered boundaries,
+have successful oven and storage completions, and start and end at the given
+boundary events. The nine excluded cases have no terminal storage completion.
+Derive one stage entry per recorded boundary. Use storage unload scheduled
+and start to identify the observed queue. Other stages group work and transfers
+between recorded boundaries, ending with successful storage completion.
+Express the 126 timestamps as seconds from 14:24:00 and retain the case IDs.
+The published fixture reports the selected cohort and contains no sensor
+payload or service metadata. See scripts/extract-cumulative-flow.py.

@@ -1,4 +1,5 @@
 import allanDeviation from './docs/examples/AllanDeviation.tsx?raw'
+import cumulativeFlow from './docs/examples/CumulativeFlow.tsx?raw'
 import startupOverlay from './docs/examples/StartupOverlay.tsx?raw'
 import faultReplay from './docs/examples/FaultReplay.tsx?raw'
 import classifierThresholdExplorer from './docs/examples/ClassifierThresholdExplorer.tsx?raw'
@@ -88,6 +89,7 @@ const scientificExamples = new Map([
   ['classifier-threshold-explorer-secom', withCatalogImports(classifierThresholdExplorer)],
   ['fault-event-replay-pronto', withCatalogImports(faultReplay)],
   ['startup-overlay-measured', withCatalogImports(startupOverlay)],
+  ['cumulative-flow-manufacturing', withCatalogImports(cumulativeFlow)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

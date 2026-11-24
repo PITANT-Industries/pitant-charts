@@ -1049,6 +1049,36 @@
       { "label": "Arweiler et al., experimental procedure, signals, and phases", "href": "https://doi.org/10.1038/s41597-026-07124-3" }
     ]
   },
+  "cumulative-flow": {
+    "summary": "Reconstruct jobs in progress at each stage from timestamped job transitions, and inspect the orders behind a growing band.",
+    "useWhen": "Review how concurrent jobs advance through production. Locate stages where work accumulates, then inspect the individual jobs and how long they have been in that stage.",
+    "data": "Supply the window start and end in seconds on a common clock, a list of uniquely identified stages in process order, and timestamped job transitions. Set stage to the destination stage ID, or to null for confirmed completion. Pass opening jobs separately with their original stage entry times.",
+    "reading": "The highest boundary counts all jobs admitted by that time, including opening work in progress. The bottom band counts completed jobs. The active stage bands appear above completion in reverse process order, so the earliest stage sits at the top. The thickness of a stage band gives its job count. Select a time and stage to inspect its entries, exits, and current jobs, ordered by earliest stage entry.",
+    "notes": [
+      "Counts change in steps at recorded events. Events that share a timestamp are applied in input order, and the chart shows the state after the whole group. A visit includes its entry time and ends just before its exit time.",
+      "The first transition for a new job records its admission. A transfer exits the previous stage and enters the next one. Rework creates a new visit and adds to the stage entry and exit totals. An explicit null transition closes the job. With no completion event, the job stays in its current stage through the end of the window.",
+      "Opening jobs count toward admitted and active totals. Their existing stage entries occurred at or before the start and are supplied in the opening inventory. The entry and exit counters track transitions during the observation window. The sum of active jobs and completed jobs equals admitted jobs at each step.",
+      "Use individual job timestamps for dwell and lead time, especially when jobs follow different routes or change order. A widening band shows accumulation. Use the operating records to investigate its cause.",
+      "The measured example uses the cleaned process log from a physical smart factory in Trier. It retains 21 successfully stored jobs released from 14:24 to 15:46 on 25 June 2021. The nine omitted jobs lack a successful final storage completion, and some also lack earlier boundaries. The 126 retained boundaries cover the selected cohort through its final successful store at 15:54:20.660 on the source clock.",
+      "The storage unload queue spans the recorded unload scheduling and start events. Preparation and transfer spans unload start to oven start. Oven treatment uses the oven start and completion events. Finishing and transfer spans oven completion to scheduled inspection, and inspection and storage ends at the successful store. The grouped stages describe elapsed residence between log boundaries and can include work, transport, and waiting.",
+      "At the initial cursor about 9.7 seconds into the window, six of seven admitted jobs in the measured cohort are waiting to unload. The runnable machining example uses simulated records with opening work in progress, a return from inspection to machining, and a job still waiting at the end."
+    ],
+    "properties": [
+      { "name": "data", "type": "CumulativeFlowData", "description": "Required. Pass the observation window, ordered stage definitions, timestamped job transitions, and optional opening jobs." },
+      { "name": "data.start, data.end", "type": "number, number", "description": "Set finite inclusive bounds in seconds on the same clock as the transitions." },
+      { "name": "data.stages", "type": "readonly { id, label }[]", "description": "Describe each distinct stage with a unique ID and a readable label. List the stages in process order." },
+      { "name": "data.events", "type": "readonly { time, jobId, stage }[]", "description": "Give each transition a time, a job ID, and the destination stage ID. Use null to mark completion. Keep the source order of tied events." },
+      { "name": "data.initial", "type": "readonly { jobId, stage, enteredAt }[]", "description": "Record jobs already active at the opening of the window and the times they entered their current stages." },
+      { "name": "initialTime, initialStage", "type": "number, string", "description": "Set the starting cursor on the data clock and the stage ID to inspect when the chart opens." },
+      { "name": "title", "type": "string", "description": "Give the flow diagram an accessible name." },
+      { "name": "caption", "type": "ReactNode", "description": "Credit event sources and describe any grouped or inferred stage boundaries." },
+      { "name": "compact", "type": "boolean", "description": "Show the read-only cumulative flow bands used in gallery previews." }
+    ],
+    "sources": [
+      { "label": "Malburg, Grüger, and Bergmann, smart-factory event log, version 6 (CC BY 4.0)", "href": "https://doi.org/10.6084/m9.figshare.20130794.v6" },
+      { "label": "Malburg, Grüger, and Bergmann, physical factory and XES event collection", "href": "https://arxiv.org/abs/2209.02702" }
+    ]
+  },
   "process-control": {
     "summary": "Review successive measurements against a process baseline and compare their distribution with specified bounds.",
     "useWhen": "Show an individuals control chart to inspect stability over observation order. Show a capability histogram to compare the distribution with engineering specifications.",

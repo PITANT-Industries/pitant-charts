@@ -223,7 +223,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'spatial-defect-map', 'lcms-feature-map', 'chromatogram-peak-integration', 'spectrum', 'spectrogram',
         'spectral-waterfall', 'correlation-matrix',
         'gauge-rr', 'kaplan-meier', 'weibull-probability', 'process-control', 'hotelling-process-monitor',
-        'classifier-threshold-explorer', 'fault-event-replay', 'startup-overlay',
+        'classifier-threshold-explorer', 'fault-event-replay', 'startup-overlay', 'cumulative-flow',
         'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
@@ -400,6 +400,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await check_hotelling_compact(card_plot)
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=hotelling-process-monitor&variant=hotelling-process-monitor-milling'
+                )
+            elif example['family'] == 'cumulative-flow':
+                await check_cumulative_flow_compact(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=cumulative-flow&variant=cumulative-flow-manufacturing'
                 )
             elif example['family'] == 'startup-overlay':
                 await check_startup_overlay_compact(card_plot)
@@ -580,6 +585,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'hotelling-process-monitor':
                 await check_hotelling(plot, touch)
                 code_import = 'HotellingProcessMonitor'
+            elif example['family'] == 'cumulative-flow':
+                await check_cumulative_flow(plot, touch)
+                code_import = 'CumulativeFlow'
             elif example['family'] == 'startup-overlay':
                 await check_startup_overlay(plot, touch)
                 code_import = 'StartupOverlay'
@@ -5801,6 +5809,113 @@ async def check_startup_overlay(plot, touch):
     assert notices.ok and f'({provenance})' in await notices.text()
     data_notice = await page.request.get(urljoin(page.url, provenance))
     assert data_notice.ok and 'https://creativecommons.org/licenses/by/4.0/' in await data_notice.text()
+
+
+async def check_cumulative_flow_compact(plot):
+    chart = plot.locator('figure[data-cumulative-flow][data-compact="true"]')
+    await expect(chart).to_be_visible()
+    diagram = chart.locator('svg[data-flow-plot]')
+    await expect(diagram.locator('[data-flow-band="completed"]')).to_have_count(1)
+    await expect(diagram.locator('[data-flow-band="stage"]')).to_have_count(5)
+    coordinates = r'[-+0-9.eE]+'
+    closed_steps = re.compile(rf'^M{coordinates},{coordinates}(?:H{coordinates}V{coordinates})+V{coordinates}(?:V{coordinates}H{coordinates})+Z$')
+    for band in await diagram.locator('[data-flow-band]').all():
+        await expect(band).to_have_attribute('d', closed_steps)
+    await expect(diagram.locator('[data-flow-cursor]')).to_have_attribute('data-time', '9.692904')
+    await check_compact_figure_bounds(diagram, '[data-flow-band], [data-flow-cursor], .flow-aggregate-marker')
+    await expect(chart.locator('button, input, select, a, [data-flow-readout]')).to_have_count(0)
+
+
+async def check_cumulative_flow(plot, touch):
+    chart = plot.locator('figure[data-cumulative-flow][data-compact="false"]')
+    diagram = chart.locator('svg[data-flow-plot]')
+    readout = chart.locator('[data-flow-readout]')
+    slider = chart.get_by_role('slider', name='Flow event time')
+    cursor = diagram.locator('[data-flow-cursor]')
+    stages = ('unload-queue', 'material-prep', 'oven', 'finishing', 'inspection-storage')
+
+    def pick(stage):
+        return chart.locator(f'button[data-flow-pick="{stage}"]')
+
+    async def check_state(time, stage, admitted, completed, wip, entered, exited, expected_jobs):
+        await expect(cursor).to_have_attribute('data-time', str(time))
+        for key, value in [('time', time), ('stage', stage), ('admitted', admitted), ('completed', completed),
+                           ('entered', entered), ('exited', exited), ('wip', wip[stages.index(stage)])]:
+            await expect(readout).to_have_attribute(f'data-{key}', str(value))
+        for name, value in zip(stages, wip):
+            await expect(pick(name)).to_have_attribute('data-wip', str(value))
+            await expect(pick(name)).to_have_attribute('aria-pressed', str(name == stage).lower())
+        lower = 0
+        for name, thickness in [('', completed), *reversed(list(zip(stages, wip)))]:
+            band = diagram.locator(f'[data-flow-band][data-flow-stage="{name}"]')
+            await expect(band).to_have_attribute('data-lower', str(lower))
+            lower += thickness
+            await expect(band).to_have_attribute('data-upper', str(lower))
+            await expect(band).to_have_attribute('data-highlighted', str(name == stage).lower())
+        assert lower == admitted
+        left, right, top, bottom, capacity = [
+            float(await diagram.get_attribute(f'data-{side}')) for side in ('left', 'right', 'top', 'bottom', 'capacity')
+        ]
+        actual = float(await cursor.get_attribute('x1'))
+        assert math.isclose(actual, left + time / 5420.66 * (right - left), abs_tol=1e-6), (time, actual)
+        marker = float(await diagram.locator('.flow-aggregate-marker').get_attribute('cy'))
+        assert math.isclose(marker, bottom - admitted / capacity * (bottom - top), abs_tol=1e-6), (time, marker)
+        records = await readout.locator('[data-flow-job]').evaluate_all(
+            'rows => rows.map(row => [row.dataset.flowJob, Number(row.dataset.age)])'
+        )
+        assert [job for job, _ in records] == list(expected_jobs), (time, stage, records)
+        for job, age in records:
+            assert math.isclose(age, time - expected_jobs[job], abs_tol=1e-9), (job, age)
+        if expected_jobs:
+            await expect(readout.get_by_role('table', name='Jobs in the selected stage')).to_be_visible()
+        else:
+            await expect(readout.get_by_text('No jobs in this stage at the selected time.')).to_be_visible()
+
+    initial_jobs = {
+        'WF_102_5': 3.851359, 'WF_103_7': 4.586021, 'WF_105_4': 6.195457,
+        'WF_1107_1': 7.891973, 'WF_108_3': 8.736951, 'WF_109_2': 9.692904,
+    }
+    await check_state(9.692904, 'unload-queue', 7, 0, (6, 1, 0, 0, 0), 7, 1, initial_jobs)
+    await pick('material-prep').click()
+    await check_state(9.692904, 'material-prep', 7, 0, (6, 1, 0, 0, 0), 1, 0, {'WF_101_5': 4.835})
+    await slider.press('ArrowRight')
+    await check_state(155.794, 'material-prep', 7, 0, (5, 2, 0, 0, 0), 2, 0,
+                      {'WF_101_5': 4.835, 'WF_102_5': 155.794})
+    await slider.press('ArrowRight')
+    await check_state(164.372, 'material-prep', 7, 0, (5, 1, 1, 0, 0), 2, 1, {'WF_102_5': 155.794})
+    await pick('oven').click()
+    await check_state(164.372, 'oven', 7, 0, (5, 1, 1, 0, 0), 1, 0, {'WF_101_5': 164.372})
+
+    await slider.press('Home')
+    await check_state(0, 'oven', 0, 0, (0, 0, 0, 0, 0), 0, 0, {})
+    await slider.press('End')
+    await check_state(5420.66, 'oven', 21, 21, (0, 0, 0, 0, 0), 21, 21, {})
+
+    if not touch:
+        await diagram.scroll_into_view_if_needed()
+        position = await diagram.evaluate("""svg => {
+          const {left, right, top, bottom, capacity} = svg.dataset
+          const x = Number(left) + 100 / 5420.66 * (right - left)
+          const y = bottom - 4 / capacity * (bottom - top)
+          const mark = new DOMPoint(x, y).matrixTransform(svg.getScreenCTM())
+          return {x: mark.x, y: mark.y}
+        }""")
+        await plot.page.mouse.click(position['x'], position['y'])
+        await check_state(9.692904, 'unload-queue', 7, 0, (6, 1, 0, 0, 0), 7, 1, initial_jobs)
+
+    sources = chart.locator('figcaption')
+    doi = 'https://doi.org/10.6084/m9.figshare.20130794.v6'
+    await expect(sources.locator(f'a[href="{doi}"]')).to_be_visible()
+    await expect(sources).to_contain_text('21 jobs from the 30 released')
+    await expect(sources).to_contain_text('CC BY 4.0')
+    page = plot.page
+    provenance = 'licenses/Malburg-Smart-Factory-CC-BY-4.0.txt'
+    notices = await page.request.get(urljoin(page.url, 'THIRD_PARTY_NOTICES.md'))
+    assert notices.ok and f'({provenance})' in await notices.text()
+    data_notice = await page.request.get(urljoin(page.url, provenance))
+    assert data_notice.ok
+    text = await data_notice.text()
+    assert doi in text and 'https://creativecommons.org/licenses/by/4.0/' in text
 
 
 def weibull_fixture_anchors(slug):

@@ -8,11 +8,11 @@ const catalog = JSON.parse(await read('src/catalog-data.json'))
 const chartPreview = await read('src/charts/ChartPreview.tsx')
 const publicCatalogUrl = 'https://opensource.pitant.de/charts/'
 
-test('covers 87 chart and tooltip families and all 380 public examples', () => {
+test('covers 88 chart and tooltip families and all 381 public examples', () => {
   const ids = new Set()
   const urls = new Set()
   const familyIds = new Set()
-  assert.equal(catalog.length, 87)
+  assert.equal(catalog.length, 88)
   for (const family of catalog) {
     assert(!familyIds.has(family.id), `Duplicate family ${family.id}`)
     familyIds.add(family.id)
@@ -64,8 +64,9 @@ test('covers 87 chart and tooltip families and all 380 public examples', () => {
   assert.deepEqual(catalog.find((family) => family.id === 'classifier-threshold-explorer')?.examples.map((example) => example.id), ['classifier-threshold-explorer-secom'])
   assert.deepEqual(catalog.find((family) => family.id === 'fault-event-replay')?.examples.map((example) => example.id), ['fault-event-replay-pronto'])
   assert.deepEqual(catalog.find((family) => family.id === 'startup-overlay')?.examples.map((example) => example.id), ['startup-overlay-measured'])
-  assert.equal(ids.size, 380)
-  assert.equal(urls.size, 380)
+  assert.deepEqual(catalog.find((family) => family.id === 'cumulative-flow')?.examples.map((example) => example.id), ['cumulative-flow-manufacturing'])
+  assert.equal(ids.size, 381)
+  assert.equal(urls.size, 381)
 })
 
 test('documents every catalog family exactly once with practical guidance', async () => {
