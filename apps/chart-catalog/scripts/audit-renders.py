@@ -397,7 +397,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 cie = card_plot.locator('svg[data-cie-diagram]')
                 await check_cie_figure(cie, 'xy')
                 await check_compact_figure_bounds(cie, 'rect[data-cie-frame]')
-                await expect(card_plot.locator('select, input, button, [data-cie-selected], [data-cie-readout]')).to_have_count(0)
+                await expect(card_plot.locator(
+                    'select, input, button, [data-cie-selected], [data-cie-sample], [data-cie-readout]'
+                )).to_have_count(0)
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=cie-chromaticity&variant=cie-chromaticity-gamuts'
                 )
@@ -3141,6 +3143,7 @@ async def check_cie_chromaticity(plot, touch):
     space_control = chart.get_by_role('combobox', name='Coordinate space', exact=True)
     ref_control = chart.get_by_role('combobox', name='Reference gamut', exact=True)
     cmp_control = chart.get_by_role('combobox', name='Comparison gamut', exact=True)
+    sample_control = chart.get_by_role('combobox', name='Measured sample', exact=True)
     readout = chart.locator('output[data-cie-readout]')
     selected = figure.locator('circle[data-cie-selected]')
     target = figure.locator('rect[data-cie-pick]')
@@ -3156,6 +3159,7 @@ async def check_cie_chromaticity(plot, touch):
     await expect(space_control).to_have_value('xy')
     await expect(ref_control).to_have_value('srgb')
     await expect(cmp_control).to_have_value('display-p3')
+    await expect(sample_control).to_have_value('')
 
     async def check_areas(space, ref_id, cmp_id):
         attributes = await readout.evaluate("""out => [
@@ -3289,6 +3293,121 @@ async def check_cie_chromaticity(plot, touch):
     new_u, new_v = cie_uv(*(await selection('uv'))[:2])
     if not math.isclose(new_u, u + 0.005, abs_tol=1e-9) or not math.isclose(new_v, v, abs_tol=1e-9):
         raise RuntimeError('Right arrow should move by 0.005 along the active u′ axis and preserve v′')
+
+    marks = figure.locator('g[data-cie-sample]')
+    inclusion_counts = {'srgb': 93, 'display-p3': 99, 'rec2020': 99}
+    isolated_xy = (0.234775964, 0.431760842)
+
+    def inside_triangle(point, vertices):
+        x, y = point
+        crosses = [(bx - ax) * (y - ay) - (by - ay) * (x - ax)
+                   for (ax, ay), (bx, by) in zip(vertices, vertices[1:] + vertices[:1])]
+        return min(crosses) >= -1e-12 or max(crosses) <= 1e-12
+
+    async def check_sample_totals(reference, comparison):
+        counts = await readout.evaluate("""out =>
+          ['sampleCount', 'samplesInReference', 'samplesInComparison'].map(key => Number(out.dataset[key]))
+        """)
+        if counts != [99, inclusion_counts[reference], inclusion_counts[comparison]]:
+            raise RuntimeError(f'Expected the D65 CES sample totals for {reference} and {comparison}, observed {counts}')
+        await expect(readout.get_by_text('Sample containment', exact=True)).to_be_visible()
+        await expect(readout).to_contain_text(f'Inside reference {inclusion_counts[reference]} / 99')
+        await expect(readout).to_contain_text(f'Inside comparison {inclusion_counts[comparison]} / 99')
+
+    async def check_sample_marks(space, reference, comparison):
+        await expect(marks).to_have_count(99)
+        left, top, width, height, x_max, y_max = await cie_frame(figure)
+        rows = await marks.evaluate_all("""marks => marks.map(mark => {
+          const matrix = mark.ownerSVGElement.getCTM().inverse().multiply(mark.getCTM())
+          const { x, y } = new DOMPoint().matrixTransform(matrix)
+          return [mark.dataset.id, Number(mark.dataset.x), Number(mark.dataset.y), mark.dataset.inReference,
+            mark.querySelector('circle, rect')?.localName, x, y]
+        })""")
+        if {row[0] for row in rows} != {f'ces-{index:02d}' for index in range(1, 100)}:
+            raise RuntimeError('The gamut comparison must plot the complete set of 99 distinct CIE test samples')
+        for id_, x, y, membership, shape, screen_x, screen_y in rows:
+            inside = inside_triangle((x, y), primaries[reference])
+            projected_x, projected_y = (x, y) if space == 'xy' else cie_uv(x, y)
+            expected_x = left + width * projected_x / x_max
+            expected_y = top + height * (1 - projected_y / y_max)
+            if not (0 <= x <= 1 and 0 <= y <= 1 and x + y <= 1) or membership != str(inside).lower() or (
+                shape != ('circle' if inside else 'rect')
+            ) or not math.isclose(screen_x, expected_x, abs_tol=0.5) or not math.isclose(screen_y, expected_y, abs_tol=0.5):
+                raise RuntimeError(f'{id_} should project into {space} with its {reference} membership encoded by shape')
+        await check_sample_totals(reference, comparison)
+
+    async def check_sample_selection(space, id_, xy, memberships):
+        await expect(sample_control).to_have_value(id_)
+        await expect(readout).to_have_attribute('data-sample-id', id_)
+        await expect(figure.locator('[data-cie-sample][data-selected="true"]')).to_have_attribute('data-id', id_)
+        result = await selection(space)
+        if result[2:] != memberships or not all(math.isclose(actual, expected, abs_tol=1e-10)
+                                                for actual, expected in zip(result[:2], xy)):
+            raise RuntimeError(f'{id_} should retain its measured coordinates and gamut membership: {result}')
+
+    async def check_free_probe():
+        await expect(sample_control).to_have_value('')
+        await expect(readout).not_to_have_attribute('data-sample-id', re.compile('.+'))
+        await expect(figure.locator('[data-cie-sample][data-selected="true"]')).to_have_count(0)
+
+    async def field_geometry():
+        return await figure.evaluate("""svg => [
+          ['[data-cie-field]', 'href'], ['[data-cie-spectral-locus]', 'd'],
+          ['[data-cie-gamut="reference"]', 'points'], ['[data-cie-gamut="comparison"]', 'points'],
+          ['[data-cie-overlap]', 'points'],
+        ].map(([selector, attribute]) => svg.querySelector(selector).getAttribute(attribute))""")
+
+    await space_control.select_option('xy')
+    await expect(figure).to_have_attribute('data-space', 'xy')
+    await expect(figure.locator('[data-cie-field]')).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+    await check_free_probe()
+    await check_sample_marks('xy', 'srgb', 'display-p3')
+    geometry = await field_geometry()
+    await sample_control.select_option('ces-01')
+    await check_sample_selection('xy', 'ces-01', (0.343072466, 0.311700566), ('true', 'true'))
+    isolated = figure.locator('[data-cie-sample][data-id="ces-53"]')
+    if touch:
+        await isolated.tap()
+    else:
+        await isolated.click()
+    await check_sample_selection('xy', 'ces-53', isolated_xy, ('false', 'true'))
+    if await field_geometry() != geometry:
+        raise RuntimeError('Picking a measured sample must preserve the spectral field and gamut geometry')
+
+    await space_control.select_option('uv')
+    await check_sample_selection('uv', 'ces-53', isolated_xy, ('false', 'true'))
+    await check_sample_marks('uv', 'srgb', 'display-p3')
+    await ref_control.select_option('display-p3')
+    await cmp_control.select_option('rec2020')
+    await check_sample_selection('uv', 'ces-53', isolated_xy, ('true', 'true'))
+    await check_sample_marks('uv', 'display-p3', 'rec2020')
+
+    show_markers = chart.get_by_role('checkbox', name='Show sample markers', exact=True)
+    await expect(show_markers).to_be_checked()
+    await show_markers.uncheck()
+    await expect(figure.locator('[data-cie-sample]:visible')).to_have_count(0)
+    await expect(sample_control).to_have_value('ces-53')
+    await expect(readout).to_have_attribute('data-sample-id', 'ces-53')
+    await check_sample_totals('display-p3', 'rec2020')
+    await show_markers.check()
+    await check_sample_selection('uv', 'ces-53', isolated_xy, ('true', 'true'))
+
+    sample_u, sample_v = cie_uv(*isolated_xy)
+    await target.press('ArrowRight')
+    await check_free_probe()
+    probe_u, probe_v = cie_uv(*(await selection('uv'))[:2])
+    if not math.isclose(probe_u, sample_u + 0.005, abs_tol=1e-9) or not math.isclose(probe_v, sample_v, abs_tol=1e-9):
+        raise RuntimeError('The keyboard must move from the measured sample into free-probe mode')
+    await sample_control.select_option('ces-53')
+    await space_control.select_option('xy')
+    await pick(0.75, 0.7)
+    await check_sample_selection('xy', 'ces-53', isolated_xy, ('true', 'true'))
+    await pick(0.28, 0.64)
+    await check_free_probe()
+    probe_x, probe_y = (await selection('xy'))[:2]
+    if not math.isclose(probe_x, 0.28, abs_tol=0.005) or not math.isclose(probe_y, 0.64, abs_tol=0.005):
+        raise RuntimeError('A valid field pick must leave sample mode and inspect the chosen coordinate')
+    await check_sample_totals('display-p3', 'rec2020')
 
 
 async def check_hyper_image(image, mode='rgb'):

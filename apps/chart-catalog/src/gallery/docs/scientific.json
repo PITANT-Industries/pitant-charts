@@ -471,26 +471,32 @@
     ]
   },
   "cie-chromaticity": {
-    "summary": "Compare display gamuts and probe chromaticity in two coordinate systems using the CIE 1931 standard observer.",
-    "useWhen": "Compare standardized or measured display primaries, check whether a chromaticity lies within a gamut, or quantify how much of a reference gamut a second gamut covers.",
-    "data": "Supply at least three spectral-locus samples in increasing wavelength order, each with a wavelength in nanometers and its CIE 1931 xy coordinates. Give each gamut a unique ID, a label, and at least three non-collinear primaries in xy. The chart uses their convex hull. An optional white point must lie within its gamut. Supply initialPoint and initialGamuts to set the starting probe and comparison.",
-    "reading": "Use Coordinate space to switch between CIE 1931 xy and CIE 1976 u′v′. Choose Reference gamut and Comparison gamut to set the two regions. Click within the diagram’s visible chromaticity boundary to probe a point. With the plot focused, use the arrow keys to move by 0.005 in the active coordinates, or hold Shift to move by 0.025. The example starts at D65 and reports whether the probe lies in each gamut.",
+    "summary": "Compare display gamuts and inspect sample chromaticities in two coordinate systems using the CIE 1931 standard observer.",
+    "useWhen": "Check which measured samples lie inside a target gamut, compare standardized or measured primaries, or quantify how much of one gamut a second gamut covers.",
+    "data": "Supply at least three spectral-locus samples in increasing wavelength order, each with a wavelength in nanometers and its CIE 1931 xy coordinates. Give each gamut a unique ID, a label, and at least three non-collinear primaries in xy. The chart uses their convex hull. An optional white point must lie within its gamut. Supply optional samples with unique IDs, labels, and CIE 1931 xy coordinates inside or on the visible chromaticity boundary. Use initialPoint and initialGamuts to set the starting probe and comparison.",
+    "reading": "Choose Reference gamut to set the target and Comparison gamut to compare it with another region. Click a sample marker or choose its label in Measured sample to inspect its coordinates and gamut membership. Marker shapes distinguish samples inside the reference gamut from those outside it. The sample stays selected when you switch gamuts, switch Coordinate space between CIE 1931 xy and CIE 1976 u′v′, or turn off Show sample markers. Choose Free probe or click an unmarked position within the visible boundary to inspect a position independently. With the plot focused, use the arrow keys to move the free probe by 0.005 in the active coordinates, or hold Shift to move by 0.025.",
     "notes": [
       "The spectral locus is the curved boundary of monochromatic stimuli for the CIE 1931 2° standard observer. The straight line of purples joins its endpoints and describes mixtures of long- and short-wavelength light.",
       "For CIE 1976 u′v′, let D = 3 − 2x + 12y. Then u′ = 4x/D and v′ = 9y/D. Switching spaces changes the plotted coordinates of the same chromaticity.",
       "Coverage is the area common to both gamut polygons divided by the area of the reference polygon in the selected coordinate space. The comparison percentage uses the comparison polygon as the denominator. Switching coordinate spaces can change both percentages. This is a two-dimensional chromaticity area. Assessing color volume also requires a brightness or lightness dimension.",
+      "Sample containment counts individual points inside each gamut, including points on its boundary. The counts depend on the supplied samples and stay the same across coordinate spaces.",
       "The example uses 471 published CIE locus samples from 360 to 830 nm in 1 nm steps. The three standardized gamuts are sRGB, Display P3, and Rec. 2020 (ITU-R BT.2020). Their D65 white point is (0.3127, 0.3290) in xy and approximately (0.19783, 0.46832) in u′v′.",
+      "The 99 CIE color evaluation samples use published spectral radiance factors. Their xy coordinates are calculated by combining those spectra with illuminant D65 and the CIE 1931 2° color-matching functions at 1 nm steps from 380 to 780 nm, then normalizing the resulting XYZ values.",
+      "With sRGB as the reference and Display P3 as the comparison, 93 of the 99 samples lie inside sRGB and all 99 lie inside Display P3. Select CES 53 · Plastic to inspect a sample at approximately (0.2348, 0.4318) in xy that lies outside sRGB and inside Display P3.",
       "Set Display P3 as Reference gamut and sRGB as Comparison gamut to see about 73.72% coverage in xy and 79.64% in u′v′. With the two gamuts reversed, Display P3 covers 100% of sRGB in both coordinate spaces. With Display P3 as the reference and Rec. 2020 as the comparison, coverage rounds to 99.98% in both spaces.",
       "The diagram’s background uses illustrative sRGB colors. Use the locus, gamut boundaries, and coordinate readout for comparison."
     ],
     "properties": [
-      { "name": "data", "type": "CieChromaticityData", "description": "Required. Provide the spectral locus and any gamut primary and white-point coordinates in CIE 1931 xy. Use initialGamuts and initialPoint to set the starting state." },
+      { "name": "data", "type": "CieChromaticityData", "description": "Required. Provide the spectral locus, gamut primary and white-point coordinates, and optional samples with id, label, and xy. Supply all coordinates in CIE 1931 xy. Use initialGamuts and initialPoint to set the starting state." },
       { "name": "label", "type": "string", "description": "Describe the plotted chromaticities and gamuts for assistive technology." },
       { "name": "compact", "type": "boolean", "description": "Show a compact diagram for a gallery card." },
-      { "name": "source", "type": "{ label: string, href: string, description: string, license?: string, licenseUrl?: string }", "description": "Credit the spectral-locus data and link its license." }
+      { "name": "source", "type": "{ label: string, href: string, description?: string, license?: string, licenseUrl?: string }", "description": "Credit the data sources and link their license." }
     ],
     "sources": [
       { "label": "CIE (2019), CIE 1931 chromaticity coordinates of spectrum loci, 2° observer (CC BY-SA 4.0)", "href": "https://doi.org/10.25039/CIE.DS.mifmy4x4" },
+      { "label": "CIE (2017), spectral radiance factors of 99 color evaluation samples, 1 nm (CC BY-SA 4.0)", "href": "https://doi.org/10.25039/CIE.DS.8svs5rqd" },
+      { "label": "CIE (2019), standard illuminant D65 (CC BY-SA 4.0)", "href": "https://doi.org/10.25039/CIE.DS.hjfjmt59" },
+      { "label": "CIE (2019), CIE 1931 2° color-matching functions (CC BY-SA 4.0)", "href": "https://doi.org/10.25039/CIE.DS.xvudnb9b" },
       { "label": "CIE International Lighting Vocabulary, CIE 1976 uniform chromaticity scale", "href": "https://cie.co.at/eilvterm/17-23-073" },
       { "label": "W3C CSS Color 4, sRGB and Display P3 primary chromaticities", "href": "https://www.w3.org/TR/css-color/#predefined" },
       { "label": "ITU-R BT.2020-2, primaries and reference white for UHD television", "href": "https://www.itu.int/rec/R-REC-BT.2020-2-201510-I/en" }

@@ -43,7 +43,7 @@ export type { IndustrialCtViewerProps, IndustrialCtData, CtCoordinate } from './
 export { CadScanDeviation } from './charts/scientific/CadScanDeviation'
 export type { CadScanDeviationProps, CadScanDeviationData, CadAxis, CadCoordinate, CadNominalMesh, CadScanPoint, CadTriangle } from './charts/scientific/CadScanDeviation'
 export { CieChromaticityDiagram } from './charts/scientific/CieChromaticityDiagram'
-export type { CieChromaticityDiagramProps, CieChromaticityData, ChromaticityPoint, ChromaticitySpace, CieGamut, CieSpectralSample } from './charts/scientific/CieChromaticityDiagram'
+export type { CieChromaticityDiagramProps, CieChromaticityData, ChromaticityPoint, ChromaticitySpace, CieColorSample, CieGamut, CieSpectralSample } from './charts/scientific/CieChromaticityDiagram'
 export { HyperspectralCube } from './charts/scientific/HyperspectralCube'
 export type { HyperspectralCubeProps, HyperspectralCubeData, HyperChannels, HyperMode, HyperPixel } from './charts/scientific/HyperspectralCube'
 export { ResponseSurface } from './charts/scientific/ResponseSurface'

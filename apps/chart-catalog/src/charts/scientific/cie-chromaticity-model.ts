@@ -13,9 +13,16 @@ export interface CieGamut {
   white?: ChromaticityPoint
 }
 
+export interface CieColorSample {
+  id: string
+  label: string
+  xy: ChromaticityPoint
+}
+
 export interface CieChromaticityData {
   locus: readonly CieSpectralSample[]
   gamuts: readonly CieGamut[]
+  samples?: readonly CieColorSample[]
   initialGamuts?: readonly [string, string]
   initialPoint?: ChromaticityPoint
 }
@@ -117,11 +124,16 @@ export function analyseCieChromaticity(data: CieChromaticityData) {
     if (cieArea(hull) <= epsilon || (gamut.white && !cieContains(hull, gamut.white))) return null
     gamuts.set(gamut.id, { ...gamut, hull })
   }
+  const samples = new Map<string, CieColorSample>()
+  for (const sample of data.samples ?? []) {
+    if (!sample.id || !sample.label || samples.has(sample.id) || !isXy(sample.xy) || !cieContains(locus, sample.xy)) return null
+    samples.set(sample.id, sample)
+  }
   const reference = gamuts.get(data.initialGamuts?.[0] ?? '') ?? gamuts.get(data.gamuts[0].id)!
   const comparison = gamuts.get(data.initialGamuts?.[1] ?? '') ?? gamuts.get((data.gamuts[1] ?? data.gamuts[0]).id)!
   const start = data.initialPoint ?? reference.white
   const initialPoint = start && isXy(start) && cieContains(locus, start) ? start : locus[Math.floor(locus.length / 2)]
-  return { locus, gamuts, reference, comparison, initialPoint }
+  return { locus, gamuts, samples, reference, comparison, initialPoint }
 }
 
 export function cieCompare(reference: readonly ChromaticityPoint[], comparison: readonly ChromaticityPoint[]) {

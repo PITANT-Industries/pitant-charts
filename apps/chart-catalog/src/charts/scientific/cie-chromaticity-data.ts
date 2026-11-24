@@ -1,5 +1,6 @@
 import type { CieChromaticityData } from './CieChromaticityDiagram'
 import cieLocus from './cie-1931-locus.json'
+import { cieMeasuredSamples } from './cie-measured-samples'
 
 const d65 = [0.3127, 0.3290] as const
 
@@ -14,12 +15,13 @@ export const cieChromaticityData = {
   ],
   initialGamuts: ['srgb', 'display-p3'],
   initialPoint: d65,
+  samples: cieMeasuredSamples,
 } satisfies CieChromaticityData
 
 export const cieChromaticitySource = {
   label: 'CIE 1931 spectral locus, 2° observer',
   href: `https://doi.org/${cieLocus.source.doi}`,
-  description: 'The CIE 1931 2° standard-observer spectral locus at 1 nm intervals from 360 to 830 nm.',
+  description: 'The 2° spectral locus from 360 to 830 nm. The 99 CIE color samples use reflectance-derived chromaticities under standard illuminant D65.',
   license: cieLocus.source.license,
   licenseUrl: cieLocus.source.licenseUrl,
 }

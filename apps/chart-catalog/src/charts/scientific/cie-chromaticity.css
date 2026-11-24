@@ -112,6 +112,25 @@
   stroke-width: 2;
 }
 
+.cie-plot [data-cie-sample] {
+  fill: #fff;
+  stroke: #243845;
+  stroke-width: .85;
+  cursor: pointer;
+}
+
+.cie-plot [data-cie-sample][data-in-reference='false'] {
+  fill: #243845;
+  stroke: #fff;
+  stroke-width: 1.1;
+}
+
+.cie-plot [data-cie-sample][data-selected='true'] {
+  fill: #243845;
+  stroke: #fff;
+  stroke-width: 1.15;
+}
+
 .cie-legend {
   display: flex;
   flex-wrap: wrap;
@@ -156,6 +175,23 @@
   transform: rotate(45deg);
 }
 
+.cie-legend [data-cie-key='sample-in']::before,
+.cie-legend [data-cie-key='sample-out']::before {
+  box-sizing: border-box;
+  width: .43rem;
+  height: .43rem;
+  margin-inline: .23rem;
+  border: 1px solid #243845;
+}
+
+.cie-legend [data-cie-key='sample-in']::before {
+  border-radius: 50%;
+}
+
+.cie-legend [data-cie-key='sample-out']::before {
+  background: #243845;
+}
+
 .cie-inspection {
   min-inline-size: 0;
   border: 1px solid var(--border);
@@ -185,6 +221,16 @@
   background: var(--background);
   color: inherit;
   font: inherit;
+}
+
+.cie-sample-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .36rem;
+}
+
+.cie-sample-toggle input {
+  margin: 0;
 }
 
 .cie-readout {
@@ -229,5 +275,9 @@
 @container (min-width: 630px) {
   .cie-chromaticity[data-compact='false'] .cie-layout {
     grid-template-columns: minmax(0, 1fr) minmax(14rem, .53fr);
+  }
+
+  .cie-chromaticity[data-compact='false'][data-has-samples='true'] .cie-plot {
+    block-size: clamp(28rem, 69cqw, 33rem);
   }
 }
