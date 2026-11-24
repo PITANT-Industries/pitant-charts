@@ -220,7 +220,7 @@ async def check_docs_navigation(browser, local_url, catalog):
 async def check_scientific_catalog(browser, local_url, catalog):
     families = {
         'mass-spectrum', 'mass-spectrum-mirror', 'pca-biplot', 'pareto-frontier', 'batch-genealogy',
-        'spatial-defect-map', 'lcms-feature-map', 'spectrum', 'spectrogram',
+        'spatial-defect-map', 'lcms-feature-map', 'chromatogram-peak-integration', 'spectrum', 'spectrogram',
         'spectral-waterfall', 'correlation-matrix',
         'process-control', 'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
@@ -384,6 +384,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', f'#docs=spatial-defect-map&variant={example["id"]}'
                 )
+            elif example['family'] == 'chromatogram-peak-integration':
+                await check_peak_integration_compact(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=chromatogram-peak-integration&variant=chromatogram-peak-integration-coffee'
+                )
             elif example['family'] == 'lcms-feature-map':
                 await check_lcms_compact(card_plot)
                 await expect(card.locator('.example-card-link')).to_have_attribute(
@@ -529,6 +534,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'spatial-defect-map':
                 await check_spatial_defect_map(plot, slug, touch)
                 code_import = 'SpatialDefectMap'
+            elif example['family'] == 'chromatogram-peak-integration':
+                await check_peak_integration(plot, touch)
+                code_import = 'ChromatogramPeakIntegration'
             elif example['family'] == 'lcms-feature-map':
                 await check_lcms_feature_map(plot, touch)
                 code_import = 'LcMsFeatureMap'
@@ -4863,6 +4871,185 @@ async def check_spatial_defect_map(preview, slug, touch):
     await count('sim-a-01', 204, 21, 5, 4)
     await verify_site(5, 11, 15.6, -40.6, 'untested')
     await expect(outline).to_have_attribute('d', original_boundary)
+
+
+async def chromatogram_geometry(svg, selector):
+    return await svg.evaluate("""(plot, selector) => {
+      const {timeMin, timeMax, signalMin, signalMax, plotLeft, plotRight, plotTop, plotBottom} = plot.dataset
+      const time = x => +timeMin + (x - +plotLeft) * (+timeMax - +timeMin) / (+plotRight - +plotLeft)
+      const signal = y => +signalMin + (+plotBottom - y) * (+signalMax - +signalMin) / (+plotBottom - +plotTop)
+      return Array.from(plot.querySelectorAll(selector), path => ({
+        sign: path.dataset.peakArea,
+        vertices: Array.from(path.getAttribute('d').matchAll(/[ML]([-0-9e+.]+) ([-0-9e+.]+)/gi),
+          ([, x, y]) => [time(+x), signal(+y)])
+      }))
+    }""", selector)
+
+
+async def check_peak_integration_compact(preview):
+    figure = preview.locator('figure[data-peak-integration][data-compact="true"]')
+    overview = figure.locator('svg[data-peak-overview]')
+    await expect(overview.locator('[data-integrated-peak]')).to_have_count(6)
+    await expect(overview.locator('[data-integrated-peak]:has([data-peak-area="above"])')).to_have_count(6)
+    await expect(overview.locator('[data-chromatogram-signal]')).to_have_attribute('d', re.compile(r'^M.*L'))
+    await expect(figure.locator('[data-peak-handle], [data-peak-editor], button, input, select')).to_have_count(0)
+    await check_compact_figure_bounds(overview, '[data-chromatogram-signal], [data-peak-area]')
+
+
+async def check_peak_integration(preview, touch):
+    figure = preview.locator('figure[data-peak-integration][data-compact="false"]')
+    overview = figure.locator('svg[data-peak-overview]')
+    editor = figure.locator('svg[data-peak-editor]')
+    value = figure.locator('output[data-peak-value="peak-5"]')
+    row = figure.locator('tr[data-peak-row="peak-5"]')
+    await expect(overview.get_by_text('Retention time (min)', exact=True)).to_be_visible()
+    await expect(overview.get_by_text('Detector response (source units)', exact=True)).to_be_visible()
+    await expect(figure.get_by_role('link', name='Coffee LC–DAD dataset')).to_have_attribute(
+        'href', 'https://doi.org/10.5281/zenodo.5412345'
+    )
+    await expect(figure.locator('[data-peak-row]')).to_have_count(6)
+    await expect(editor.locator('[data-peak-handle]')).to_have_count(4)
+    await expect(row).to_have_attribute('data-active', 'true')
+    raw_signal = overview.locator('[data-chromatogram-signal]')
+    await expect(raw_signal).to_have_attribute('d', re.compile(r'^M.*L'))
+    original_signal = await raw_signal.get_attribute('d')
+    [trace] = await chromatogram_geometry(overview, '[data-chromatogram-signal]')
+    readings = [(round(time, 8), round(signal)) for time, signal in trace['vertices']]
+    if len(readings) != 1501 or [readings[0], readings[750], readings[-1]] != [(12, 330072), (17, 235994), (22, 12730)]:
+        raise RuntimeError('The chromatogram must retain the 1,501 native measurements and their minute scale')
+
+    def close(actual, expected, description, tolerance=1e-5):
+        if not math.isclose(actual, expected, rel_tol=0, abs_tol=tolerance):
+            raise RuntimeError(f'{description}: expected {expected}, observed {actual}')
+
+    def measured_at(time):
+        for (a, ya), (b, yb) in zip(readings, readings[1:]):
+            if time == a:
+                return ya
+            if time == b:
+                return yb
+            if a < time < b:
+                return ya + (yb - ya) * (time - a) / (b - a)
+        raise RuntimeError(f'Time {time} outside the measured chromatogram')
+
+    async def check_area():
+        keys = ['start', 'end', 'baseline-start', 'baseline-end', 'positive-area', 'negative-area',
+                'signed-area', 'apex-time', 'apex-height']
+        values = {key: float(await value.get_attribute('data-' + key)) for key in keys}
+        start, end = values['start'], values['end']
+        first, last = values['baseline-start'], values['baseline-end']
+        def baseline(time):
+            if time == start:
+                return first
+            if time == end:
+                return last
+            return first + (last - first) * (time - start) / (end - start)
+
+        clipped = [(start, measured_at(start)), *[(t, y) for t, y in readings if start < t < end], (end, measured_at(end))]
+        corrected = [(t, y - baseline(t)) for t, y in clipped]
+        signed = sum((b - a) * (ya + yb) / 2 for (a, ya), (b, yb) in zip(corrected, corrected[1:]))
+        close(values['signed-area'], signed, 'Independent signed trapezoidal area')
+        apex_t, apex_height = max(corrected, key=lambda point: point[1])
+        close(values['apex-time'], apex_t, 'Corrected apex retention')
+        close(values['apex-height'], apex_height, 'Corrected apex height')
+
+        fills = await chromatogram_geometry(editor, '[data-peak-area]')
+        sums = {'above': 0, 'below': 0}
+        for fill in fills:
+            direction = 1 if fill['sign'] == 'above' else -1
+            points = [(time - start, signal - baseline(time)) for time, signal in fill['vertices']]
+            if any(direction * signal < -1e-6 for _, signal in points):
+                raise RuntimeError(f'Integrated polygon crossed the stated {fill["sign"]} side of its baseline')
+            sums[fill['sign']] += direction * abs(sum(a * yb - ya * b for (a, ya), (b, yb)
+                in zip(points, points[1:] + points[:1])) / 2)
+        close(sums['above'], values['positive-area'], 'Positive polygon area in data coordinates')
+        close(sums['below'], values['negative-area'], 'Negative polygon area in data coordinates')
+        for (a, ya), (b, yb) in zip(corrected, corrected[1:]):
+            if min(abs(ya), abs(yb)) < 1e-7 or ya * yb >= 0:
+                continue
+            time = a + (b - a) * ya / (ya - yb)
+            for sign in ('above', 'below'):
+                if not any(abs(x - time) < 1e-8 and abs(y - baseline(time)) < 1e-5
+                           for fill in fills if fill['sign'] == sign for x, y in fill['vertices']):
+                    raise RuntimeError(f'{sign} polygon misses the interpolated baseline crossing at {time}')
+        await expect(raw_signal).to_have_attribute('d', original_signal)
+        return values
+
+    async def drag(handle, coordinate, expected):
+        await editor.evaluate("plot => plot.scrollIntoView({block: 'center'})")
+        grip = editor.locator(f'[data-peak-handle="{handle}"]')
+        position = await grip.evaluate("""(mark, [coordinate, value]) => {
+          const plot = mark.ownerSVGElement
+          const {timeMin, timeMax, signalMin, signalMax, plotLeft, plotRight, plotTop, plotBottom} = plot.dataset
+          const matrix = plot.getScreenCTM()
+          const start = new DOMPoint(0, 0).matrixTransform(mark.getScreenCTM())
+          const x = +plotLeft + (value - +timeMin) * (+plotRight - +plotLeft) / (+timeMax - +timeMin)
+          const y = +plotBottom - (value - +signalMin) * (+plotBottom - +plotTop) / (+signalMax - +signalMin)
+          const end = new DOMPoint(x, y).matrixTransform(matrix)
+          return {
+            start: [start.x, start.y],
+            end: coordinate === 'time' ? [end.x, start.y] : [start.x, end.y],
+            tolerance: coordinate === 'time'
+              ? 1.75 * (+timeMax - +timeMin) / ((+plotRight - +plotLeft) * matrix.a)
+              : 1.75 * (+signalMax - +signalMin) / ((+plotBottom - +plotTop) * matrix.d)
+          }
+        }""", [coordinate, expected])
+        page = editor.page
+        start, end = position['start'], position['end']
+        browser = page.context.browser
+        if touch and browser and browser.browser_type.name == 'chromium':
+            session = await page.context.new_cdp_session(page)
+            try:
+                await session.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': start[0], 'y': start[1]}]})
+                await session.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': end[0], 'y': end[1]}]})
+                await session.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []})
+            finally:
+                await session.detach()
+        else:
+            await page.mouse.move(*start)
+            await page.mouse.down()
+            await page.mouse.move(*end, steps=5)
+            await page.mouse.up()
+        close(float(await value.get_attribute('data-' + handle)), expected, 'Handle edit in physical plot units', position['tolerance'])
+
+    initial = await check_area()
+    for key, expected in {'start': 19.48666667, 'end': 19.96, 'baseline-start': 140742, 'baseline-end': 357436,
+                          'apex-time': 19.78666667, 'apex-height': 112297.73142717523, 'positive-area': 23127.12714624097,
+                          'negative-area': -1066.193451175666, 'signed-area': 22060.933695065305}.items():
+        close(initial[key], expected, f'Measured Peak 5 {key}')
+    await expect(value).to_have_attribute('data-area-mode', 'above')
+    await expect(value).to_contain_text('source units × min')
+    close(float(await row.get_attribute('data-area')), initial['positive-area'], 'Positive area in result table')
+
+    await drag('start', 'time', 19.55)
+    moved_boundary = await check_area()
+    close(moved_boundary['baseline-start'], measured_at(moved_boundary['start']), 'Boundary follows measured signal')
+    await drag('baseline-start', 'signal', 175000)
+    manual = await check_area()
+    close(manual['baseline-end'], moved_boundary['baseline-end'], 'Opposite anchor unchanged')
+    finish = figure.get_by_role('spinbutton', name='End (min)', exact=True)
+    await finish.fill('19.93')
+    await finish.press('Enter')
+    edited = await check_area()
+    close(edited['end'], 19.93, 'Exact keyboard boundary')
+    close(edited['baseline-start'], manual['baseline-start'], 'Manually fixed start anchor after boundary edit')
+
+    await figure.get_by_role('combobox', name='Area measure', exact=True).select_option('signed')
+    await expect(value).to_have_attribute('data-area-mode', 'signed')
+    close(float(await row.get_attribute('data-area')), edited['signed-area'], 'Signed area in result table')
+    await figure.get_by_role('button', name='Use signal endpoints', exact=True).click()
+    endpoint = await check_area()
+    close(endpoint['baseline-start'], measured_at(endpoint['start']), 'Use recorded start signal')
+    close(endpoint['baseline-end'], measured_at(endpoint['end']), 'Use recorded end signal')
+
+    await figure.get_by_role('button', name='Reset region', exact=True).click()
+    reset = await check_area()
+    if reset != initial:
+        raise RuntimeError('Reset must restore the original interval, baseline, and measured areas')
+    peak_two = figure.get_by_role('button', name='Peak 2', exact=True)
+    await (peak_two.tap() if touch else peak_two.click())
+    await expect(figure.locator('[data-peak-row="peak-2"]')).to_have_attribute('data-active', 'true')
+    await expect(figure.locator('output[data-peak-value="peak-2"]')).to_have_attribute('data-start', '14.49333333')
 
 
 async def check_lcms_compact(preview):

@@ -3572,6 +3572,22 @@
     ]
   },
   {
+    "id": "chromatogram-peak-integration",
+    "name": "Chromatogram peak integration",
+    "url": "https://opensource.pitant.de/charts/#docs=chromatogram-peak-integration",
+    "examples": [
+      {
+        "id": "chromatogram-peak-integration-coffee",
+        "family": "chromatogram-peak-integration",
+        "title": "Coffee Chromatogram Peak Integration",
+        "label": "Measured LC–DAD at 225 nm",
+        "description": "Adjust time boundaries and a sloping baseline on six integration regions in a measured coffee chromatogram.",
+        "url": "https://opensource.pitant.de/charts/#example=chromatogram-peak-integration-coffee",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "lcms-feature-map",
     "name": "LC–MS feature map",
     "url": "https://opensource.pitant.de/charts/#docs=lcms-feature-map",

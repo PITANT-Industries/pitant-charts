@@ -1,4 +1,5 @@
 import allanDeviation from './docs/examples/AllanDeviation.tsx?raw'
+import chromatogramPeakIntegration from './docs/examples/ChromatogramPeakIntegration.tsx?raw'
 import lcMsFeatureMap from './docs/examples/LcMsFeatureMap.tsx?raw'
 import spatialDefectMap from './docs/examples/SpatialDefectMap.tsx?raw'
 import batchGenealogy from './docs/examples/BatchGenealogy.tsx?raw'
@@ -70,6 +71,7 @@ const scientificExamples = new Map([
   ['spatial-defect-map-measured', withCatalogImports(spatialDefectMap)],
   ['spatial-defect-map-simulated', withCatalogImports(spatialDefectMap)],
   ['lcms-feature-map-openms', withCatalogImports(lcMsFeatureMap)],
+  ['chromatogram-peak-integration-coffee', withCatalogImports(chromatogramPeakIntegration)],
   ['spectrum-measured', spectrum],
   ['spectrogram-measured', spectrogram],
   ['correlation-matrix-measured', correlationMatrix],

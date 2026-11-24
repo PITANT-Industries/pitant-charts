@@ -1,0 +1,12 @@
+LC-DAD separation of Kahweol and cafestol oleate and palmitate from coffee
+Guillaume Erny, Marzieh Moeenfard, and Arminda Alves (2021)
+Zenodo, version 1.0
+https://doi.org/10.5281/zenodo.5412345
+
+The measurements are licensed under Creative Commons Attribution 4.0
+International. License text: https://creativecommons.org/licenses/by/4.0/legalcode
+
+PITANT converted a contiguous subset of the first measured coffee injection
+at 225 nm (12–22 minutes) from the MATLAB archive to TypeScript. The retained
+retention times and raw detector readings are unchanged. Peak labels and
+integration intervals are demonstration choices supplied by PITANT.
