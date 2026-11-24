@@ -1,0 +1,87 @@
+.takt-balance {
+  --takt-ink: var(--gallery-ink, var(--foreground, #17242a));
+  --takt-muted: var(--gallery-muted, var(--muted-foreground, #54636b));
+  --takt-rule: var(--gallery-rule, var(--border, #dce3e6));
+  --takt-surface: var(--gallery-surface, var(--card, #fff));
+  --takt-work: #226f82;
+  --takt-excess: #a74434;
+  display: grid;
+  gap: .78rem;
+  min-inline-size: 0;
+  margin: 0;
+  color: var(--takt-ink);
+  font-variant-numeric: tabular-nums;
+  container-type: inline-size;
+}
+
+:where([data-theme='dark'], .dark) .takt-balance {
+  --takt-work: #8fc8d5;
+  --takt-excess: #f1a28f;
+}
+
+.detail-plot:has(.takt-balance),
+.detail-plot:has(.takt-balance) .chart-preview { block-size: auto; overflow: visible; }
+.takt-balance[data-compact='true'] { display: flex; align-items: center; block-size: 100%; }
+.takt-plot { min-inline-size: 0; inline-size: 100%; }
+.takt-plot svg { display: block; inline-size: 100%; block-size: auto; }
+.takt-plot text { font-size: 11px; fill: var(--takt-muted); }
+.takt-grid line, .takt-axis { fill: none; stroke: var(--takt-rule); stroke-width: .8; }
+[data-takt-task] { --takt-fill-strength: 19%; }
+[data-takt-task][data-shade='1'] { --takt-fill-strength: 29%; }
+[data-takt-task][data-shade='2'] { --takt-fill-strength: 37%; }
+[data-takt-segment] {
+  fill: color-mix(in srgb, var(--takt-work) var(--takt-fill-strength), var(--takt-surface));
+  stroke: color-mix(in srgb, var(--takt-work) 51%, var(--takt-surface));
+  stroke-width: .65;
+}
+[data-takt-task][data-selected='true'] [data-takt-segment] { stroke: var(--takt-work); stroke-width: 1.65; }
+.takt-balance[data-compact='false'] [data-takt-task] { cursor: pointer; }
+.takt-plot .takt-task-label { font-size: 10px; fill: var(--takt-ink); pointer-events: none; }
+.takt-overload-stripe { stroke: var(--takt-excess); stroke-width: .9; }
+[data-takt-excess] { pointer-events: none; }
+.takt-limit { stroke: var(--takt-excess); stroke-width: 1.15; stroke-dasharray: 5 3; pointer-events: none; }
+.takt-plot .takt-limit-label { fill: var(--takt-excess); }
+.takt-plot .takt-load-label { fill: var(--takt-ink); font-weight: 620; }
+[data-takt-station][data-overloaded='true'] .takt-load-label { fill: var(--takt-excess); }
+
+.takt-heading { display: flex; justify-content: space-between; align-items: baseline; gap: .3rem .75rem; flex-wrap: wrap; }
+.takt-heading h3 { margin: 0; font-size: .92rem; line-height: 1.4; font-weight: 650; }
+.takt-heading span, .takt-note { color: var(--takt-muted); font-size: .75rem; }
+.takt-metrics { margin: .55rem 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem .55rem; }
+.takt-metrics > div { display: grid; grid-template-rows: subgrid; grid-row: span 2; }
+.takt-metrics dt { font-size: .74rem; color: var(--takt-muted); }
+.takt-metrics dd { margin: 0; font-size: .97rem; font-weight: 640; }
+
+.takt-inspect { border-block: 1px solid var(--takt-rule); padding-block: .7rem; }
+.takt-inspect button, .takt-controls select {
+  border: 1px solid var(--takt-rule);
+  border-radius: .27rem;
+  background: var(--takt-surface);
+  color: var(--takt-ink);
+  min-block-size: 2.1rem;
+  padding: .25rem .45rem;
+  font: inherit;
+  font-size: .76rem;
+}
+.takt-inspect button { cursor: pointer; }
+.takt-inspect button:disabled { opacity: .48; cursor: default; }
+.takt-balance :is(select, button):focus-visible { outline: 2px solid var(--takt-work); outline-offset: 2px; }
+.takt-controls { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, .85fr) auto; align-items: end; gap: .5rem .65rem; margin-block-start: .6rem; }
+.takt-controls label { display: grid; gap: .22rem; font-size: .76rem; color: var(--takt-muted); }
+.takt-controls select { inline-size: 100%; min-inline-size: 0; }
+.takt-controls output { display: flex; flex-direction: column; align-items: flex-end; font-size: .74rem; color: var(--takt-muted); }
+.takt-controls output strong { font-size: .92rem; color: var(--takt-ink); white-space: nowrap; }
+.takt-note { margin: .5rem 0 0; }
+
+.takt-stations { inline-size: 100%; border-collapse: collapse; font-size: .77rem; }
+.takt-stations th, .takt-stations td { text-align: start; border-block-end: 1px solid var(--takt-rule); padding: .4rem .3rem; }
+.takt-stations thead th { font-weight: 550; color: var(--takt-muted); }
+.takt-stations tbody th { font-weight: 620; }
+.takt-stations tr[data-overloaded='true'] td:last-child { color: var(--takt-excess); font-weight: 650; }
+.takt-balance figcaption { color: var(--takt-muted); font-size: .74rem; line-height: 1.6; }
+.takt-balance figcaption p { margin: .3rem 0 0; }
+
+@container (max-width: 390px) {
+  .takt-controls { grid-template-columns: minmax(0, 1fr) auto; }
+  .takt-controls label:first-child { grid-column: 1 / -1; }
+}

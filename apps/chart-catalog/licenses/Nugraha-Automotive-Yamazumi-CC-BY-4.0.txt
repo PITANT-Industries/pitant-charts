@@ -1,0 +1,29 @@
+Andryan Nugraha, Irma Ratna Avianti, and Hubertus Davy Yulianto.
+Supplementary Dataset: Digital Transformation in Automotive Manufacturing:
+Driving Production Efficiency Through Automated Material Handling Systems.
+Zenodo, version 1.0 (2026).
+Dataset DOI: https://doi.org/10.5281/zenodo.22734493
+Versioned record: https://zenodo.org/records/22734493
+License: Creative Commons Attribution 4.0 International
+https://creativecommons.org/licenses/by/4.0/
+
+PITANT adapts the published normalized pre-automation work-element data in
+the workbook's Yamazumi sheet, rows 4–20 and columns D–F. For each operator it
+sums the displayed 0.1-second values for processes 1–4, 5–8, 9–12, and 13,
+the irregular work, material replacement, and tag-recording rows as one
+support parcel, and the walking row. Groups with no assigned time are omitted.
+The adapted station loads are 9.5 s, 10.2 s, and 11.2 s. The sum for Operator 3
+uses the element values. Its workbook total cell is 11.4 s.
+
+The available time (37,800 s), demand (3,600 units), and station capabilities
+are chart scenario inputs. The scenario keeps support and walking at the
+source station, treats each routine parcel as transferable, and holds its
+duration constant during a move. Precedence constraints and post-transfer
+performance fall outside the recorded measurements. This example models the
+published workload at the baseline and illustrates planning alternatives.
+
+Workbook SHA-256:
+9552c9f0f981400e0e01bb32be83af5333b1bd9b2fbe700787b421caa1f98a3d
+
+Regenerate the JSON-shaped TypeScript fixture with
+apps/chart-catalog/scripts/extract-takt-balance.py and the unchanged workbook.

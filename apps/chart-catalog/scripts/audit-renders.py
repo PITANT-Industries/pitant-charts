@@ -223,7 +223,7 @@ async def check_scientific_catalog(browser, local_url, catalog):
         'spatial-defect-map', 'lcms-feature-map', 'chromatogram-peak-integration', 'spectrum', 'spectrogram',
         'spectral-waterfall', 'correlation-matrix',
         'gauge-rr', 'kaplan-meier', 'weibull-probability', 'process-control', 'hotelling-process-monitor',
-        'classifier-threshold-explorer', 'fault-event-replay', 'startup-overlay', 'cumulative-flow',
+        'classifier-threshold-explorer', 'fault-event-replay', 'startup-overlay', 'cumulative-flow', 'takt-balance',
         'campbell-diagram', 'mode-shapes', 'shaft-orbit', 'frequency-response', 'coherence-phase',
         'wavelet-scalogram', 'bearing-envelope', 'eye-diagram', 'allan-deviation', 'phase-plane', 'xrd-peak-tracker',
         'stress-strain-comparison', 'full-field-strain', 'fatigue-sn', 'crack-growth', 'binary-phase-diagram',
@@ -400,6 +400,11 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await check_hotelling_compact(card_plot)
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=hotelling-process-monitor&variant=hotelling-process-monitor-milling'
+                )
+            elif example['family'] == 'takt-balance':
+                await check_takt_balance_compact(card_plot)
+                await expect(card.locator('.example-card-link')).to_have_attribute(
+                    'href', '#docs=takt-balance&variant=takt-balance-assembly'
                 )
             elif example['family'] == 'cumulative-flow':
                 await check_cumulative_flow_compact(card_plot)
@@ -585,6 +590,9 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
             elif example['family'] == 'hotelling-process-monitor':
                 await check_hotelling(plot, touch)
                 code_import = 'HotellingProcessMonitor'
+            elif example['family'] == 'takt-balance':
+                await check_takt_balance(plot, touch)
+                code_import = 'TaktBalance'
             elif example['family'] == 'cumulative-flow':
                 await check_cumulative_flow(plot, touch)
                 code_import = 'CumulativeFlow'
@@ -5910,6 +5918,129 @@ async def check_cumulative_flow(plot, touch):
     await expect(sources).to_contain_text('CC BY 4.0')
     page = plot.page
     provenance = 'licenses/Malburg-Smart-Factory-CC-BY-4.0.txt'
+    notices = await page.request.get(urljoin(page.url, 'THIRD_PARTY_NOTICES.md'))
+    assert notices.ok and f'({provenance})' in await notices.text()
+    data_notice = await page.request.get(urljoin(page.url, provenance))
+    assert data_notice.ok
+    text = await data_notice.text()
+    assert doi in text and 'https://creativecommons.org/licenses/by/4.0/' in text
+
+
+async def check_takt_stack_geometry(chart, expected_loads):
+    diagram = chart.locator('svg[data-takt-plot]')
+    limit = diagram.locator('[data-takt-limit]')
+    await expect(chart).to_have_attribute('data-takt', '10.5')
+    await expect(limit).to_have_attribute('data-takt-limit', '10.5')
+    expected_excess = sum(load > 10.5 for load in expected_loads)
+    await expect(chart).to_have_attribute('data-overloaded', str(expected_excess))
+    await expect(diagram.locator('[data-takt-excess]')).to_have_count(expected_excess)
+    await expect(diagram.locator('[data-takt-segment]')).to_have_count(15)
+    await expect(diagram.locator('[data-takt-station]')).to_have_count(3)
+
+    top, bottom, domain = [
+        float(await diagram.get_attribute(f'data-{key}')) for key in ('top', 'bottom', 'domain')
+    ]
+    scale = (bottom - top) / domain
+    limit_y = bottom - scale * 10.5
+    for axis in ('y1', 'y2'):
+        assert math.isclose(float(await limit.get_attribute(axis)), limit_y, abs_tol=1e-7)
+    assert math.isclose(float(await chart.get_attribute('data-work')), 30.9, abs_tol=1e-9)
+    for index, load in enumerate(expected_loads, start=1):
+        station = diagram.locator(f'[data-takt-station="operator-{index}"]')
+        overloaded = load > 10.5
+        await expect(station).to_have_attribute('data-overloaded', str(overloaded).lower())
+        assert math.isclose(float(await station.get_attribute('data-load')), load, abs_tol=1e-9)
+        segments = await station.locator('[data-takt-segment]').evaluate_all("""rects => rects.map(rect => [
+          Number(rect.parentElement.dataset.seconds), Number(rect.getAttribute('y')), Number(rect.getAttribute('height'))
+        ])""")
+        assert math.isclose(math.fsum(seconds for seconds, _, _ in segments), load, abs_tol=1e-9)
+        offset = 0
+        for seconds, y, height in segments:
+            offset += seconds
+            assert math.isclose(y, bottom - scale * offset, abs_tol=1e-7), (index, seconds, y)
+            assert math.isclose(height, scale * seconds, abs_tol=1e-7), (index, seconds, height)
+        excess = station.locator('[data-takt-excess]')
+        await expect(excess).to_have_count(int(overloaded))
+        if overloaded:
+            y, height = [float(await excess.get_attribute(key)) for key in ('y', 'height')]
+            assert math.isclose(y, bottom - scale * load, abs_tol=1e-7)
+            assert math.isclose(y + height, limit_y, abs_tol=1e-7)
+            await expect(excess).to_have_attribute('fill', re.compile(r'^url\(#.+\)$'))
+
+
+async def check_takt_balance_compact(plot):
+    chart = plot.locator('figure[data-takt-balance][data-compact="true"]')
+    await expect(chart).to_be_visible()
+    await check_takt_stack_geometry(chart, (9.5, 10.2, 11.2))
+    await check_compact_figure_bounds(
+        chart.locator('svg[data-takt-plot]'), '[data-takt-segment], [data-takt-limit], [data-takt-excess]'
+    )
+    await expect(chart.locator('text, button, input, select, a, [data-takt-selection], table')).to_have_count(0)
+
+
+async def check_takt_balance(plot, touch):
+    chart = plot.locator('figure[data-takt-balance][data-compact="false"]')
+    choice = chart.get_by_role('combobox', name='Task', exact=True)
+    station_control = chart.get_by_role('combobox', name='Assigned station')
+    assignment = chart.locator('[data-takt-selection]')
+    diagram = chart.locator('svg[data-takt-plot]')
+    table = chart.get_by_role('table', name='Workload by station')
+    reset = chart.get_by_role('button', name='Reset assignments')
+    process = 'operator-3-process-13'
+
+    async def check_assignment(task, station, seconds):
+        await expect(choice).to_have_value(task)
+        await expect(station_control).to_have_value(station)
+        await expect(assignment).to_have_attribute('data-takt-selection', task)
+        await expect(assignment).to_have_attribute('data-current-station', station)
+        await expect(assignment).to_have_attribute('data-task-seconds', str(seconds))
+        selected = diagram.locator(f'[data-takt-station="{station}"] [data-takt-task="{task}"]')
+        await expect(selected).to_have_attribute('data-selected', 'true')
+        await expect(diagram.locator('[data-takt-task][data-selected="true"]')).to_have_count(1)
+
+    async def check_loads(loads):
+        await check_takt_stack_geometry(chart, loads)
+        for index, expected in enumerate(loads, start=1):
+            row = table.locator(f'[data-takt-load="operator-{index}"]')
+            assert math.isclose(float(await row.get_attribute('data-seconds')), expected, abs_tol=1e-9)
+            await expect(row).to_have_attribute('data-overloaded', str(expected > 10.5).lower())
+
+    await expect(choice.locator('option')).to_have_count(15)
+    await check_loads((9.5, 10.2, 11.2))
+    await check_assignment(process, 'operator-3', 1)
+    await expect(reset).to_be_disabled()
+
+    await station_control.select_option('operator-1')
+    await check_assignment(process, 'operator-1', 1)
+    await check_loads((10.5, 10.2, 10.2))
+    await expect(table.locator('[data-takt-load="operator-1"]')).to_contain_text('At takt')
+    await expect(reset).to_be_enabled()
+
+    await station_control.select_option('operator-2')
+    await check_assignment(process, 'operator-2', 1)
+    await check_loads((9.5, 11.2, 10.2))
+    await reset.click()
+    await check_assignment(process, 'operator-3', 1)
+    await check_loads((9.5, 10.2, 11.2))
+    await expect(reset).to_be_disabled()
+
+    await choice.select_option('operator-1-walking')
+    await check_assignment('operator-1-walking', 'operator-1', 1.9)
+    await expect(station_control.locator('option[value="operator-1"]')).to_be_enabled()
+    for station in ('operator-2', 'operator-3'):
+        await expect(station_control.locator(f'option[value="{station}"]')).to_be_disabled()
+    await expect(assignment).to_contain_text('stays at its current station')
+    if not touch:
+        await diagram.locator(f'[data-takt-task="{process}"]').click()
+        await check_assignment(process, 'operator-3', 1)
+
+    sources = chart.locator('figcaption')
+    doi = 'https://doi.org/10.5281/zenodo.22734493'
+    await expect(sources.locator(f'a[href="{doi}"]')).to_be_visible()
+    await expect(sources).to_contain_text('CC BY 4.0')
+    await expect(sources).to_contain_text('scenario assumptions')
+    page = plot.page
+    provenance = 'licenses/Nugraha-Automotive-Yamazumi-CC-BY-4.0.txt'
     notices = await page.request.get(urljoin(page.url, 'THIRD_PARTY_NOTICES.md'))
     assert notices.ok and f'({provenance})' in await notices.text()
     data_notice = await page.request.get(urljoin(page.url, provenance))

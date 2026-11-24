@@ -3734,6 +3734,22 @@
     ]
   },
   {
+    "id": "takt-balance",
+    "name": "Takt-time balance chart",
+    "url": "https://opensource.pitant.de/charts/#docs=takt-balance",
+    "examples": [
+      {
+        "id": "takt-balance-assembly",
+        "family": "takt-balance",
+        "title": "Automotive Workload Balance",
+        "label": "Published task times and a planning scenario",
+        "description": "Move a published work element between operators and compare the resulting station loads with demand-based takt.",
+        "url": "https://opensource.pitant.de/charts/#example=takt-balance-assembly",
+        "position": 1
+      }
+    ]
+  },
+  {
     "id": "lcms-feature-map",
     "name": "LC–MS feature map",
     "url": "https://opensource.pitant.de/charts/#docs=lcms-feature-map",
