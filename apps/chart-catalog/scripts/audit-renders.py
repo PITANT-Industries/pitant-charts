@@ -14,6 +14,7 @@ from playwright.async_api import async_playwright, expect
 
 CATALOG = Path(__file__).resolve().parents[1] / 'src/catalog-data.json'
 OTTAWA_BEARING_DATASET = re.compile(r'^https://(?:doi\.org/10\.17632/v43hmbwxpm\.2|data\.mendeley\.com/datasets/v43hmbwxpm/2)/?$')
+WAVELET_ORIGINAL_ASSET = re.compile(r'/wavelet-original-waveform(?:-[^/?]+)?\.bin(?:\?.*)?$')
 PROFILES = [
     (f'{size}-{theme}', width, height, theme)
     for size, width, height in [('desktop', 1440, 900), ('mobile', 390, 844)]
@@ -227,11 +228,14 @@ async def check_scientific_catalog(browser, local_url, catalog):
     examples = [example for family in catalog if family['id'] in families for example in family['examples']]
     for width, height, theme in [(390, 844, 'light'), (1440, 900, 'dark')]:
         await check_scientific_profile(browser, local_url, examples, width, height, theme)
+    await check_invalid_original_waveform(browser, local_url)
 
 
 async def check_scientific_profile(browser, local_url, examples, width, height, theme):
     touch = width < 768
     page = await browser.new_page(viewport={'width': width, 'height': height}, has_touch=touch, reduced_motion='reduce')
+    waveform_requests = []
+    page.on('request', lambda request: waveform_requests.append(request.url) if WAVELET_ORIGINAL_ASSET.search(request.url) else None)
     try:
         await page.goto(local_url, wait_until='domcontentloaded', timeout=20000)
         if theme == 'dark':
@@ -416,6 +420,8 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 await expect(card.locator('.example-card-link')).to_have_attribute(
                     'href', '#docs=response-surface&variant=response-surface-thermal'
                 )
+        if waveform_requests:
+            raise RuntimeError('Showing the compact wavelet card must not request the original recording')
         await grid.locator('.example-card-link').first.click(timeout=8000)
         await page.wait_for_url(f'{local_url}#docs=mass-spectrum&variant=mass-spectrum-cms', timeout=8000)
         if touch:
@@ -474,6 +480,8 @@ async def check_scientific_profile(browser, local_url, examples, width, height, 
                 code_import = 'CoherencePhase'
             elif example['family'] == 'wavelet-scalogram':
                 await check_wavelet_scalogram(plot, touch)
+                if not waveform_requests:
+                    raise RuntimeError('The wavelet guide must request the original-rate recording')
                 code_import = 'WaveletScalogram'
             elif example['family'] == 'bearing-envelope':
                 await check_bearing_envelope(plot, touch)
@@ -1117,6 +1125,9 @@ async def check_wavelet_scalogram(plot, touch):
     await check_wavelet_figure(scalogram)
     signal = chart.locator('svg[data-wavelet-signal]')
     await expect(signal).to_be_visible()
+    await expect(signal).to_have_attribute('data-sample-rate', '200000')
+    await expect(signal).to_have_attribute('data-sample-count', '512000')
+    await expect(signal.get_by_text('Waveform (channel units)', exact=True)).to_be_visible()
     trace = signal.locator('path[data-wavelet-signal-trace]')
     await expect(trace).to_have_attribute('d', re.compile(r'^M'))
     readout = chart.locator('output[data-wavelet-readout]')
@@ -1125,22 +1136,72 @@ async def check_wavelet_scalogram(plot, touch):
     frequency = chart.get_by_role('slider', name='Frequency', exact=True)
     window = chart.get_by_role('combobox', name='Waveform window', exact=True)
     await expect(window).to_have_value('0.25')
+    await expect(readout).to_contain_text('200 kHz waveform')
+    sample_anchors = {
+        400: 0.19708191740696052,
+        221200: 0.1339432644718509,
+        511600: 0.2924475979226131,
+    }
 
     async def selection():
-        attributes = await readout.evaluate(
-            "output => ['time', 'frequency', 'power', 'windowStart', 'windowEnd'].map(key => output.dataset[key])"
-        )
-        seconds, hz, power, start, end = map(float, attributes)
+        attributes = await readout.evaluate("""output => [
+          ...['time', 'frequency', 'power', 'windowStart', 'windowEnd',
+            'waveletSampleIndex', 'waveletSampleTime', 'waveletSampleValue'].map(key => Number(output.dataset[key])),
+        ]""")
+        seconds, hz, power, start, end, index, sample_time, sample = attributes
         if not all(map(math.isfinite, (seconds, hz, power, start, end))) or not (
             hz > 0 and -60 <= power <= 0 and start <= seconds <= end and start < end
         ):
             raise RuntimeError(f'Invalid wavelet selection or waveform extent: {attributes}')
+        expected = round((seconds - 3.5) * 200000)
+        if index != expected or not math.isclose(sample_time, 3.5 + expected / 200000, abs_tol=1e-12) or not math.isfinite(sample):
+            raise RuntimeError(f'Wavelet selection at {seconds} s must link to original excerpt sample {expected}: {attributes[5:]}')
+        if expected in sample_anchors and not math.isclose(sample, sample_anchors[expected], rel_tol=1e-12, abs_tol=1e-12):
+            raise RuntimeError(f'Excerpt sample {expected} must preserve its collected Channel_1 value: {sample}')
         return seconds, hz, start, end
 
     initial_time, initial_hz, *_ = await selection()
     initial_power = float(await readout.get_attribute('data-power'))
     if not math.isclose(initial_time, 4.606) or not math.isclose(initial_hz, 1638.68316531) or initial_power != 0:
         raise RuntimeError(f'The example should open on the measured peak, observed {initial_time} s, {initial_hz} Hz, {initial_power} dB')
+
+    for value in ['0.001', '0.01']:
+        previous_trace = await trace.get_attribute('d')
+        await window.select_option(value)
+        seconds, hz, start, end = await selection()
+        if (seconds, hz) != (initial_time, initial_hz) or not math.isclose(end - start, float(value), abs_tol=1e-10):
+            raise RuntimeError(f'Window {value} s should show the selected impact without moving the cursor: {seconds}, {hz}')
+        await expect(trace).not_to_have_attribute('d', previous_trace)
+        if value == '0.001':
+            points, frame, amplitude, marker, time_ticks = await signal.evaluate(r"""svg => {
+              const path = svg.querySelector('[data-wavelet-signal-trace]').getAttribute('d')
+              const points = path.match(/[ML][^ML]+/g).map(pair => pair.slice(1).trim().split(/\s+/).map(Number))
+              const frame = svg.querySelector('rect.scientific-frame')
+              const marker = svg.querySelector('circle.wavelet-sample-marker')
+              const timeTicks = [...svg.querySelectorAll('.scientific-axis g')].flatMap(tick => {
+                const line = tick.querySelector('line')
+                return line.x1.baseVal.value === line.x2.baseVal.value ? [tick.querySelector('text').textContent] : []
+              })
+              return [points, ['x', 'y', 'width', 'height'].map(key => frame[key].baseVal.value),
+                [Number(svg.dataset.amplitudeMin), Number(svg.dataset.amplitudeMax)],
+                [marker.cx.baseVal.value, marker.cy.baseVal.value], timeTicks]
+            }""")
+            left, top, width, height = frame
+            step = width / ((end - start) * 200000)
+            if not 199 <= len(points) <= 201 or any(
+                not math.isclose(b[0] - a[0], step, abs_tol=0.011) for a, b in zip(points, points[1:])
+            ):
+                raise RuntimeError(f'The 1 ms trace must display individual original-rate samples, observed {len(points)} vertices')
+            lower, upper = amplitude
+            expected_x = left + width * (initial_time - start) / (end - start)
+            expected_y = top + height * (upper - sample_anchors[221200]) / (upper - lower)
+            if not all(math.isclose(actual, expected, abs_tol=0.012) for actual, expected in zip(marker, [expected_x, expected_y])) or not any(
+                math.isclose(x, expected_x, abs_tol=0.012) and math.isclose(y, expected_y, abs_tol=0.012) for x, y in points
+            ):
+                raise RuntimeError('The original sample value and its marker must agree with the displayed waveform coordinates')
+            if len(time_ticks) < 2 or len(time_ticks) != len(set(time_ticks)):
+                raise RuntimeError(f'The 1 ms window requires distinguishable time labels: {time_ticks}')
+    await window.select_option('0.25')
 
     await time.press('Home')
     await frequency.press('Home')
@@ -1183,6 +1244,27 @@ async def check_wavelet_scalogram(plot, touch):
         if (seconds, hz) != (selected_time, selected_hz) or not math.isclose(end - start, float(value), abs_tol=0.001):
             raise RuntimeError(f'Window {value} s should resize the waveform and preserve selection: {seconds} s, {hz} Hz, {end - start} s')
         await expect(trace).not_to_have_attribute('d', previous_trace)
+
+
+async def check_invalid_original_waveform(browser, local_url):
+    page = await browser.new_page(viewport={'width': 1440, 'height': 900}, reduced_motion='reduce')
+    try:
+        await page.route(WAVELET_ORIGINAL_ASSET, lambda route: route.fulfill(
+            content_type='application/octet-stream', body=b'Invalid original recording',
+        ))
+        await page.goto(f'{local_url}#docs=wavelet-scalogram&variant=wavelet-scalogram-bearing',
+                        wait_until='domcontentloaded', timeout=20000)
+        plot = page.locator('#docs-preview .docs-example-plot[data-example-id="wavelet-scalogram-bearing"]')
+        await expect(plot.get_by_text(
+            'Original-rate recording unavailable. Showing the processed 12.5 kHz waveform.', exact=True,
+        )).to_be_visible()
+        waveform = plot.locator('svg[data-wavelet-signal]')
+        await expect(waveform).to_have_attribute('data-sample-rate', '12500')
+        await expect(waveform).to_have_attribute('data-sample-count', '32000')
+        await expect(plot.locator('output[data-wavelet-readout]')).to_contain_text('12.5 kHz waveform')
+        await expect(plot.locator('image[data-wavelet-raster]')).to_have_attribute('href', re.compile(r'^data:image/png;base64,'))
+    finally:
+        await page.close()
 
 
 async def check_envelope_axes(panel, x_label, y_label):

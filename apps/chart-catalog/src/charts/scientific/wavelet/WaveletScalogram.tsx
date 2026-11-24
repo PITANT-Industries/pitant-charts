@@ -8,7 +8,7 @@ export interface WaveletSignal {
   startSeconds: number
   sampleRateHz: number
   unit: string
-  samples: readonly number[]
+  samples: readonly number[] | Float64Array
 }
 
 export interface WaveletScalogramData {
@@ -37,11 +37,15 @@ const palette = [
   [229, 80, 100], [251, 135, 97], [254, 194, 135], [252, 253, 191],
 ] as const
 const windowOptions = [
+  { seconds: 0.001, label: '1 ms' },
+  { seconds: 0.01, label: '10 ms' },
   { seconds: 0.05, label: '50 ms' },
   { seconds: 0.25, label: '250 ms' },
   { seconds: 1, label: '1 s' },
 ]
 const format = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 })
+const detailedTimeFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 })
+const sampleFormat = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 6 })
 const powerFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 })
 
 function blend(low: number, high: number, weight: number) {
@@ -290,9 +294,13 @@ function ScalogramPlot({ data, domains, time, frequency, window, compact, label,
   )
 }
 
-function waveformPath(signal: WaveletSignal, range: Range, width: number, x: (time: number) => number, y: (value: number) => number) {
+function waveformIndices(signal: WaveletSignal, range: Range) {
   const first = Math.max(0, Math.ceil((range[0] - signal.startSeconds) * signal.sampleRateHz))
   const last = Math.min(signal.samples.length - 1, Math.floor((range[1] - signal.startSeconds) * signal.sampleRateHz))
+  return [first, last] as const
+}
+
+function waveformPath(signal: WaveletSignal, [first, last]: Range, width: number, x: (time: number) => number, y: (value: number) => number) {
   const block = Math.max(1, Math.ceil((last - first + 1) / width))
   const path: string[] = []
   function add(index: number) {
@@ -312,30 +320,48 @@ function waveformPath(signal: WaveletSignal, range: Range, width: number, x: (ti
   return path.join(' ')
 }
 
-function SignalPlot({ signal, window, amplitude, selectedTime }: {
+function SignalPlot({ signal, window, amplitude, selectedTime, sampleIndex }: {
   signal: WaveletSignal
   window: Range
   amplitude: Range
   selectedTime: number
+  sampleIndex: number
 }) {
   const { plot, width, height } = usePlotSize<HTMLDivElement>(780, 192)
   const left = width < 375 ? 54 : 61
   const right = Math.max(left + 1, width - 21)
   const top = 24
   const bottom = Math.max(top + 1, height - 41)
+  const indices = waveformIndices(signal, window)
+  const detailed = window[1] - window[0] < .04
+  let range = amplitude
+  if (detailed && indices[0] <= indices[1]) {
+    let low = signal.samples[indices[0]]
+    let high = low
+    for (let index = indices[0] + 1; index <= indices[1]; index++) {
+      low = Math.min(low, signal.samples[index])
+      high = Math.max(high, signal.samples[index])
+    }
+    const padding = (high - low) * .08 || Math.max(Math.abs(low) * .05, .001)
+    range = [low - padding, high + padding]
+  }
   const x = (value: number) => blend(left, right, (value - window[0]) / (window[1] - window[0]))
-  const y = (value: number) => blend(bottom, top, (value - amplitude[0]) / (amplitude[1] - amplitude[0]))
+  const y = (value: number) => blend(bottom, top, (value - range[0]) / (range[1] - range[0]))
   const title = signal.unit ? `Waveform (${signal.unit})` : 'Waveform'
+  const timeFormat = detailed ? detailedTimeFormat : format
+  const sampleTime = signal.startSeconds + sampleIndex / signal.sampleRateHz
   return (
     <div className="wavelet-signal scientific-plot" ref={plot}>
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" data-wavelet-signal="" aria-label="Waveform near the selected time">
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" data-wavelet-signal="" data-sample-rate={signal.sampleRateHz}
+        data-sample-count={signal.samples.length} data-amplitude-min={range[0]} data-amplitude-max={range[1]}
+        aria-label="Waveform near the selected time">
         <g className="scientific-axis" aria-hidden="true">
           <rect className="scientific-frame" x={left} y={top} width={right - left} height={bottom - top} />
           <text className="scientific-panel-title" x={left} y={15}>(b) Waveform near selected time</text>
           <text className="scientific-axis-label" transform={`translate(13 ${(top + bottom) / 2}) rotate(-90)`} textAnchor="middle">
             {title}
           </text>
-          {axisTicks(amplitude, 4).map((value) => (
+          {axisTicks(range, 4).map((value) => (
             <g key={value}>
               <line className="scientific-tick" x1={left - 4} x2={left} y1={y(value)} y2={y(value)} />
               <text x={left - 8} y={y(value) + 4} textAnchor="end">{format.format(value)}</text>
@@ -344,15 +370,17 @@ function SignalPlot({ signal, window, amplitude, selectedTime }: {
           {axisTicks(window, width < 420 ? 3 : 6).map((value) => (
             <g key={value}>
               <line className="scientific-tick" x1={x(value)} x2={x(value)} y1={bottom} y2={bottom + 4} />
-              <text x={x(value)} y={bottom + 17} textAnchor="middle">{format.format(value)}</text>
+              <text x={x(value)} y={bottom + 17} textAnchor="middle">{timeFormat.format(value)}</text>
             </g>
           ))}
           <text className="scientific-axis-label" x={(left + right) / 2} y={height - 6} textAnchor="middle">Time (s)</text>
         </g>
-        <line className="scientific-reference" x1={left} x2={right} y1={y(0)} y2={y(0)} />
+        {range[0] <= 0 && 0 <= range[1] && <line className="scientific-reference" x1={left} x2={right} y1={y(0)} y2={y(0)} />}
         <line className="scientific-reference" x1={x(selectedTime)} x2={x(selectedTime)} y1={top} y2={bottom} />
         <path className="wavelet-signal-trace" data-wavelet-signal-trace=""
-          d={waveformPath(signal, window, right - left, x, y)} />
+          d={waveformPath(signal, indices, right - left, x, y)} />
+        <circle className="wavelet-sample-marker" data-wavelet-sample-marker=""
+          cx={x(sampleTime)} cy={y(signal.samples[sampleIndex])} r="3.1" />
       </svg>
     </div>
   )
@@ -372,10 +400,17 @@ function WaveletFigure({ data, domains, label, compact = false, initialTimeSecon
   const selectedTime = data.timeSeconds[time]
   const selectedFrequency = data.frequencyHz[frequency]
   const selectedPower = data.powerDb[frequency][time]
-  const stop = signalEnd(data.waveform)
-  const duration = Math.min(windowSeconds, stop - data.waveform.startSeconds)
-  const windowStart = Math.min(stop - duration, Math.max(data.waveform.startSeconds, selectedTime - duration / 2))
+  const signal = data.waveform
+  const stop = signalEnd(signal)
+  const windows = windowOptions.filter(({ seconds }) => seconds >= .05 || seconds * signal.sampleRateHz >= 2)
+  const activeWindow = windows.some(({ seconds }) => seconds === windowSeconds) ? windowSeconds : .25
+  const duration = Math.min(activeWindow, stop - signal.startSeconds)
+  const windowStart = Math.min(stop - duration, Math.max(signal.startSeconds, selectedTime - duration / 2))
   const window: Range = [windowStart, windowStart + duration]
+  const sampleIndex = Math.max(0, Math.min(signal.samples.length - 1, Math.round((selectedTime - signal.startSeconds) * signal.sampleRateHz)))
+  const sampleTime = signal.startSeconds + sampleIndex / signal.sampleRateHz
+  const sampleValue = signal.samples[sampleIndex]
+  const rate = signal.sampleRateHz >= 1000 ? `${format.format(signal.sampleRateHz / 1000)} kHz` : `${format.format(signal.sampleRateHz)} Hz`
   const edgeSeconds = data.coiEdgeSeconds?.[frequency]
   const edgeAffected = edgeSeconds !== undefined &&
     Math.min(selectedTime - data.waveform.startSeconds, stop - selectedTime) < edgeSeconds
@@ -390,12 +425,14 @@ function WaveletFigure({ data, domains, label, compact = false, initialTimeSecon
       {!compact && (
         <>
           {data.coiEdgeSeconds && <p className="wavelet-legend">Dashed boundaries mark the cone of influence.</p>}
-          <SignalPlot signal={data.waveform} window={window} amplitude={domains.signal} selectedTime={selectedTime} />
+          <SignalPlot signal={signal} window={window} amplitude={domains.signal} selectedTime={selectedTime} sampleIndex={sampleIndex} />
           <div className="wavelet-inspector">
             <output data-wavelet-readout="" data-time={selectedTime} data-frequency={selectedFrequency}
-              data-power={selectedPower} data-window-start={window[0]} data-window-end={window[1]}>
+              data-power={selectedPower} data-window-start={window[0]} data-window-end={window[1]}
+              data-wavelet-sample-index={sampleIndex} data-wavelet-sample-time={sampleTime} data-wavelet-sample-value={sampleValue}>
               <strong>{format.format(selectedTime)} s</strong>
               <span>{powerFormat.format(selectedFrequency)} Hz · {powerFormat.format(selectedPower)} dB</span>
+              <span>{rate} waveform · {sampleFormat.format(sampleValue)} {signal.unit}</span>
               {edgeAffected && <span>Near the transform boundary</span>}
             </output>
             <div className="wavelet-controls">
@@ -410,8 +447,8 @@ function WaveletFigure({ data, domains, label, compact = false, initialTimeSecon
                   onChange={(event) => setFrequencyIndex(event.currentTarget.valueAsNumber)} />
               </label>
               <label>Waveform window
-                <select value={windowSeconds} onChange={(event) => setWindowSeconds(Number(event.currentTarget.value))}>
-                  {windowOptions.map(({ seconds, label }) => <option key={seconds} value={seconds}>{label}</option>)}
+                <select value={activeWindow} onChange={(event) => setWindowSeconds(Number(event.currentTarget.value))}>
+                  {windows.map(({ seconds, label }) => <option key={seconds} value={seconds}>{label}</option>)}
                 </select>
               </label>
             </div>
