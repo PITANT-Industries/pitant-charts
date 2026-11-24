@@ -270,6 +270,31 @@
       { "label": "Andrew Fitch and Catherine Dejoie (2021), pseudo-Voigt fits of powder diffraction peak centers and widths, Figure 8", "href": "https://journals.iucr.org/j/issues/2021/04/00/kc5125/" }
     ]
   },
+  "mass-spectrum-mirror": {
+    "summary": "Compare two tandem mass spectra and inspect the measured mass difference between paired peaks.",
+    "useWhen": "Compare a measured query with a reference spectrum, or inspect how fragment intensities and observed peaks change with acquisition conditions.",
+    "data": "Supply a query and reference, each with a label and a list of centroid peaks with positive, distinct m/z coordinates and finite, nonnegative intensities. At least one intensity in each spectrum must be positive. Add acquisition conditions and the original source link to each spectrum.",
+    "reading": "The query spectrum appears above the center band and the reference below it. Each spectrum is scaled to its own strongest peak, shown at 100% relative intensity. Change Fragment tolerance to update which peaks pair. Click the plot or use Inspect fragment to read each peak’s m/z, relative intensity, and the signed mass difference (query minus reference).",
+    "notes": [
+      "The example compares 23 peaks from a 40 V scan with 15 peaks from a 60 V scan of the caffeine reference standard. Both spectra were acquired by the German Federal Institute of Hydrology on a SCIEX TripleTOF 5600 using positive electrospray ionization and collision-induced dissociation of [M+H]+ at precursor m/z 195.0877.",
+      "Pairs are assigned in order of increasing absolute m/z difference within the chosen tolerance. Each peak can be assigned once. The m/z calculations use the recorded peak coordinates and ignore intensity when assigning pairs.",
+      "At a tolerance of 0.020 m/z, the measured spectra contain 12 paired peaks, 11 query-only peaks, and 3 reference-only peaks. At 0.002 m/z, there are 10 pairs. The query peak at m/z 110.0718 and reference peak at m/z 110.0687 differ by 0.0031 m/z.",
+      "The strongest query peak is at m/z 138.0657 and has no partner at the default tolerance. The strongest reference peak, at m/z 42.0443, pairs with the query peak at m/z 42.0440. The code example uses a subset of the measured peak tables."
+    ],
+    "properties": [
+      { "name": "data", "type": "MassSpectrumMirrorData", "description": "Required. Supply query and reference spectra, each with a label, peaks of { mz, intensity }, optional acquisition text, and an optional source with label and href." },
+      { "name": "initialToleranceMz", "type": "number", "description": "Set the initial maximum absolute m/z difference for a peak pair. Defaults to 0.02." },
+      { "name": "tolerancesMz", "type": "readonly number[]", "description": "Set the available matching tolerances in m/z units. The defaults are 0.002, 0.005, 0.01, 0.02, 0.05, and 0.1." },
+      { "name": "label", "type": "string", "description": "Describe both spectra and their comparison for assistive technology." },
+      { "name": "compact", "type": "boolean", "description": "Show the mirrored spectra in a compact space such as a gallery card." }
+    ],
+    "sources": [
+      { "label": "Björn Ehlig, Ole Lessmann, Kevin S. Jewell, and Arne Wick (2026), MassBank caffeine spectrum at 40 V (CC BY 4.0)", "href": "https://github.com/MassBank/MassBank-data/blob/72980b3af504cfd1e89ac54d7698d3da45d85a58/BAFG/MSBNK-BAFG-CSL2311094663.txt" },
+      { "label": "Björn Ehlig, Ole Lessmann, Kevin S. Jewell, and Arne Wick (2026), MassBank caffeine spectrum at 60 V (CC BY 4.0)", "href": "https://github.com/MassBank/MassBank-data/blob/72980b3af504cfd1e89ac54d7698d3da45d85a58/BAFG/MSBNK-BAFG-CSL2311094661.txt" },
+      { "label": "Collective Spectral Library 26.2, the dataset behind the MassBank records (CC BY 4.0)", "href": "https://doi.org/10.5281/zenodo.20426911" },
+      { "label": "Kevin S. Jewell et al. (2020), LC–ESI–QTOF tandem mass spectrometry acquisition method", "href": "https://doi.org/10.1002/rcm.8541" }
+    ]
+  },
   "stress-strain-comparison": {
     "summary": "Compare tensile curves on shared engineering axes and inspect the 0.2% proof stress and reported elongation after fracture.",
     "useWhen": "Compare recorded tensile responses across heat treatments or inspect how an elastic fit defines an offset proof stress.",
