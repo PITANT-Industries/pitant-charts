@@ -21,6 +21,13 @@ const layout = createChartLayout({
   yRange: [-10, 10],
 })
 
+const rotatedLayout = createChartLayout({
+  width: 800,
+  height: 420,
+  padding: 0,
+  orientation: 'rotated',
+})
+
 function fakeContainerRef(): RefObject<ChartContainerRef | null> {
   const canvas = document.createElement('canvas')
   vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
@@ -82,10 +89,11 @@ function fireWheelAt(
   fireEvent(layer, event)
 }
 
-function plotPointer(x: number, y: number) {
+function plotPointer(x: number, y: number, activeLayout = layout) {
+  const { plotArea } = activeLayout
   return {
-    clientX: 10 + layout.plotArea.x + layout.plotArea.width * x,
-    clientY: 20 + layout.plotArea.y + layout.plotArea.height * y,
+    clientX: 10 + plotArea.x + plotArea.width * x,
+    clientY: 20 + plotArea.y + plotArea.height * y,
     pointerId: 1,
   }
 }
@@ -105,6 +113,48 @@ describe('ChartRegionZoomLayer', () => {
     fireEvent.pointerUp(layer, { clientX: endX, clientY, pointerId: 1 })
 
     expect(onRangeChange).toHaveBeenCalledWith([1025, 1075])
+  })
+
+  it('selects time vertically and displays its horizontal crosshair on a rotated plot', () => {
+    const onSelectionChange = vi.fn()
+    const { layer, onRangeChange } = renderLayer(vi.fn(), {
+      crosshair: { y: false },
+      layout: rotatedLayout,
+      onSelectionChange,
+    })
+    const start = plotPointer(0.3, 0.25, rotatedLayout)
+    const end = plotPointer(0.3, 0.75, rotatedLayout)
+    fireEvent.pointerDown(layer, { ...start, button: 0 })
+    fireEvent.pointerMove(layer, end)
+
+    expect(screen.getByTestId('chart-crosshair-horizontal')).toBeTruthy()
+    expect(screen.queryByTestId('chart-crosshair-vertical')).toBeNull()
+    const selection = screen.getByTestId('chart-region-zoom-selection')
+    expect(selection.style.width).toBe(`${rotatedLayout.plotArea.width}px`)
+    expect(selection.style.height).toBe(`${rotatedLayout.plotArea.height / 2}px`)
+    fireEvent.pointerUp(layer, end)
+
+    expect(onSelectionChange).toHaveBeenCalledWith({ xRange: [1025, 1075] })
+    expect(onRangeChange).toHaveBeenCalledWith([1025, 1075])
+  })
+
+  it('pans time vertically with a touch and anchors rotated wheel zoom to the time under the cursor', () => {
+    const { layer, onRangeChange } = renderLayer(vi.fn(), {
+      layout: rotatedLayout,
+      xOrigin: 1020,
+      xRange: [0, 60],
+    })
+    const start = plotPointer(0.8, 0.25, rotatedLayout)
+    const end = plotPointer(0.8, 0.5, rotatedLayout)
+    fireEvent.pointerDown(layer, { ...start, button: 0, pointerType: 'touch' })
+    fireEvent.pointerMove(layer, { ...end, pointerType: 'touch' })
+    expect(onRangeChange).toHaveBeenLastCalledWith([1005, 1065])
+    fireEvent.pointerUp(layer, { ...end, pointerType: 'touch' })
+
+    fireWheelAt(layer, { ...start, deltaY: -100 })
+    const zoomed = onRangeChange.mock.lastCall?.[0]
+    expect(zoomed?.[0]).toBeCloseTo(1035 - 15 * Math.exp(-0.2))
+    expect(zoomed?.[1]).toBeCloseTo(1035 + 45 * Math.exp(-0.2))
   })
 
   it('selects and zooms both dimensions using plot coordinates', () => {

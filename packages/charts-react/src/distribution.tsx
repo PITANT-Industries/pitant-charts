@@ -67,6 +67,7 @@ export interface DistributionMarkerConfig {
 }
 
 export interface DistributionConfig {
+  orientation?: 'rotated'
   plugins?: readonly ChartFramePlugin<DistributionRenderPlan>[]
   series: DistributionSeriesConfig[]
   markers?: DistributionMarkerConfig[]
@@ -139,6 +140,7 @@ export function useDistribution(options: UseDistributionOptions): UseDistributio
   const [stats, setStats] = useState<DistributionStats>(EMPTY_DISTRIBUTION_STATS)
   const { context, ready, error } = useRenderer({
     containerRef,
+    plugins: config.plugins,
     renderer: config.renderer ?? 'auto',
   })
   const { visibilityMap, toggleSeries } = useSeriesVisibility(config.series)
@@ -323,6 +325,7 @@ function createDistributionLayout(
   return createChartLayout({
     width,
     height,
+    ...(config.orientation ? { orientation: config.orientation } : {}),
     padding: 8,
     xRange: renderPlan.xRelativeRange,
     yRange: renderPlan.yRange,
@@ -334,7 +337,7 @@ function createDistributionLayout(
     },
     xAxis: {
       visible: true,
-      size: 34,
+      size: config.orientation === 'rotated' ? 'auto' : 34,
       tickCount: 6,
       ...config.xAxis,
       ...(config.xAxis?.scale ||

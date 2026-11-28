@@ -191,6 +191,7 @@ export function useDigitalChannel(options: UseDigitalChannelOptions): UseDigital
   const sync = useChartSync(chartKey)
   const { context, ready, error } = useRenderer({
     containerRef,
+    plugins: config.plugins,
     renderer: config.renderer ?? 'auto',
   })
   const { visibilityMap, toggleSeries } = useSyncedSeriesVisibility(config.channels, sync)

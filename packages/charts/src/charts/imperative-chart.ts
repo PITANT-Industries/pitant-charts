@@ -1,6 +1,12 @@
 import { createRenderContext } from '../renderer/create-render-context.js'
 import type { RenderContext, RendererType } from '../renderer/types.js'
-import { type ChartCommandFrame, type ChartFrameOptions, renderChartFrame } from './chart-frame.js'
+import {
+  type ChartCommandFrame,
+  type ChartFrameOptions,
+  type ChartFramePlugin,
+  ChartPluginLifecycle,
+  renderChartFrame,
+} from './chart-frame.js'
 
 interface ChartInputs<TData, TRender, TFrame> {
   data: TData
@@ -40,6 +46,8 @@ export class ImperativeChart<TData, TRender, TFrame extends ChartFrameOptions<TP
   private _pendingSize: PendingSize | undefined
   private _disposed = false
   private readonly _ownsContext: boolean
+  private readonly _pluginLifecycle: ChartPluginLifecycle
+  private _mountedPlugins: readonly ChartFramePlugin<TPlan>[] | undefined
 
   constructor(
     context: RenderContext,
@@ -49,8 +57,10 @@ export class ImperativeChart<TData, TRender, TFrame extends ChartFrameOptions<TP
     this.context = context
     this._inputs = options
     this._ownsContext = options.ownsContext === true
+    this._pluginLifecycle = new ChartPluginLifecycle(context)
     this._renderPlan = _pipeline.buildPlan(this._inputs.data, this._inputs.render)
     if (options.autoRender !== false) this._draw(false)
+    else this._updatePlugins(options.frame.plugins)
   }
 
   get data(): TData {
@@ -149,7 +159,11 @@ export class ImperativeChart<TData, TRender, TFrame extends ChartFrameOptions<TP
     this._cache = undefined
     this._pendingRender = undefined
     this._pendingSize = undefined
-    if (this._ownsContext) this.context.dispose()
+    try {
+      this._pluginLifecycle.dispose()
+    } finally {
+      if (this._ownsContext) this.context.dispose()
+    }
   }
 
   private _updateInputs(inputs: ChartInputs<TData, TRender, TFrame>): TPlan {
@@ -179,20 +193,34 @@ export class ImperativeChart<TData, TRender, TFrame extends ChartFrameOptions<TP
       : this._renderPlan
     const { width, height, dpr } = this.context
     const cached = replan ? undefined : this._cache
-    const frame =
-      cached?.dpr === dpr && cached.frame.width === width && cached.frame.height === height
-        ? cached.frame
-        : this._pipeline.buildFrame(plan, width, height, this._inputs.frame)
-    renderChartFrame(
-      this.context,
-      frame,
-      plan,
-      this._inputs.frame.plugins,
-      this._pipeline.clipPlot?.(plan) || frame.transform.hasProjection,
-    )
-    this._renderPlan = plan
-    this._cache = { frame, dpr }
-    return plan
+    const plugins = this._inputs.frame.plugins
+    const previousPlugins = this._mountedPlugins
+    try {
+      this._updatePlugins(plugins)
+      const frame =
+        cached?.dpr === dpr && cached.frame.width === width && cached.frame.height === height
+          ? cached.frame
+          : this._pipeline.buildFrame(plan, width, height, this._inputs.frame)
+      renderChartFrame(
+        this.context,
+        frame,
+        plan,
+        plugins,
+        this._pipeline.clipPlot?.(plan) || frame.transform.hasProjection || frame.transform.rotated,
+      )
+      this._renderPlan = plan
+      this._cache = { frame, dpr }
+      return plan
+    } catch (error) {
+      this._updatePlugins(previousPlugins)
+      throw error
+    }
+  }
+
+  private _updatePlugins(plugins: readonly ChartFramePlugin<TPlan>[] | undefined): void {
+    if (plugins === this._mountedPlugins) return
+    this._mountedPlugins = plugins
+    this._pluginLifecycle.update(plugins)
   }
 
   private _assertActive(): void {

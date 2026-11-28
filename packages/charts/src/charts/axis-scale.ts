@@ -7,7 +7,8 @@ export interface AxisProjection {
 export type ChartScale = (
   | { type: 'linear' }
   | { type: 'log'; base?: number }
-  | { type: 'asinh'; threshold?: number }
+  /** Industrial TimeSeries resolves an automatic threshold from visible Y samples. */
+  | { type: 'asinh'; threshold?: number | 'auto' }
   | { type: 'ordinal'; values: readonly number[] }
   | { type: 'custom'; forward: (value: number) => number; inverse: (value: number) => number }
 ) & { reverse?: boolean }
@@ -66,7 +67,7 @@ function valueMapping(scale: ChartScale): ValueMapping {
       return { forward: (value) => Math.log(value) / divisor, inverse: (value) => base ** value }
     }
     case 'asinh': {
-      const threshold = scale.threshold ?? 1
+      const threshold = scale.threshold === 'auto' ? 1 : (scale.threshold ?? 1)
       if (!Number.isFinite(threshold) || threshold <= 0) {
         throw new RangeError('Asinh scale threshold must be positive.')
       }

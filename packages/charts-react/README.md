@@ -199,6 +199,12 @@ Set `hoverLock` for click-to-pin, `snapToSample` for nearest-sample snapping, or
 `focusClosestSeries` to dim other traces near the cursor. Y zoom acts on the
 primary value axis. Use `setVisibleYRange(null)` to restore its original range.
 
+Set `config.orientation: 'rotated'` to show time from top to bottom and
+values increasing left to right. Selection modes and crosshair options
+still refer to the data axes. Drag along the vertical time axis to zoom,
+use Up and Down to pan, and use Shift with the wheel to pan. The overview
+slider follows the time axis when enabled.
+
 A `TimeSeries` series or `DigitalChannel` channel can set `hoverIndex` to `'previous'`, `'next'`, `'exact'`, or a
 callback. The callback receives that field's raw timestamps, values, quality
 flags, sample kinds, and nearest index. Return a zero-based index, `undefined`
@@ -224,6 +230,33 @@ Set `pixelRatio` on a chart for a fixed interactive backing-store ratio.
 Export options can request their own ratio. Add `config.plugins` to extend the
 chart's command frame or run code around native drawing. Use `extendFrame` for
 geometry that must appear in Canvas2D, WebGPU, and SVG.
+A plugin can also implement `mount(context)` and return a cleanup function
+for live renderer resources. React calls cleanup when the plugin is removed
+or the renderer is disposed. Keep plugin objects stable to retain their
+mounts across React renders. Frame export uses drawing hooks independently of
+the live mount.
+
+## Numeric heatmap
+
+Use `Heatmap` for a Z value over an X/Y cell. Provide explicit grid edges
+for nonuniform cells or a list of sparse rectangular cells. For a dense grid
+the default value order is one row of X cells for each Y interval.
+
+```tsx
+import { Heatmap } from '@pitant/charts-react'
+
+<Heatmap
+  data={{
+    xEdges: new Float64Array([0, 1, 4]),
+    yEdges: new Float64Array([0, 2, 5]),
+    values: new Float32Array([1, 2, NaN, 4]),
+  }}
+  config={{ xAxis: { label: 'Distance' }, yAxis: { label: 'Pressure' } }}
+/>
+```
+
+For sparse input, use `data={{ cells: [{ xRange: [0, 1], yRange: [2, 5], value: 4 }] }}`.
+The chart works with Canvas2D, WebGPU and PNG and SVG export.
 
 ## PNG And SVG Export
 

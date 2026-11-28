@@ -92,6 +92,48 @@ describe('ChartDataZoom', () => {
     expect(onRangeChange).toHaveBeenCalledWith([30, 50])
   })
 
+  it('displays and drags the time window vertically on a rotated chart', () => {
+    const rotated = createChartLayout({
+      width: 100,
+      height: 200,
+      padding: 0,
+      orientation: 'rotated',
+    })
+    const onRangeChange = vi.fn()
+    render(
+      <ChartDataZoom
+        fullRange={[0, 100]}
+        layout={rotated}
+        onRangeChange={onRangeChange}
+        timestamps={timestamps}
+        values={values}
+        visibleRange={[20, 40]}
+      />,
+    )
+    const slider = screen.getByRole('slider')
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      bottom: 210,
+      height: 200,
+      left: 5,
+      right: 21,
+      top: 10,
+      width: 16,
+      x: 5,
+      y: 10,
+      toJSON: () => ({}),
+    })
+
+    expect(slider.getAttribute('aria-orientation')).toBe('vertical')
+    const window = screen.getByTestId('chart-data-zoom-window')
+    expect(window.style.top).toBe('40px')
+    expect(window.style.height).toBe('40px')
+    fireEvent.pointerDown(slider, { button: 0, clientX: 10, clientY: 70, pointerId: 1 })
+    fireEvent.pointerMove(slider, { clientX: 10, clientY: 90, pointerId: 1 })
+    const range = onRangeChange.mock.lastCall?.[0]
+    expect(range?.[0]).toBeCloseTo(30)
+    expect(range?.[1]).toBeCloseTo(50)
+  })
+
   it('resizes the selected window from either handle', () => {
     const { dataZoom, onRangeChange } = renderDataZoom()
 

@@ -333,8 +333,9 @@ describe('useTimeSeries', () => {
     ])
   })
 
-  it('snaps to the closest sample and focuses the closest series in its own axis scale', () => {
+  it.each([false, true])('snaps and focuses using the series scale with rotation %s', (rotated) => {
     const config: TimeSeriesConfig = {
+      ...(rotated ? { orientation: 'rotated' } : {}),
       series: [
         { key: 'temp', label: 'Temperature', field: 'temp' },
         { key: 'pressure', label: 'Pressure', field: 'pressure', yAxisKey: 'pressure' },
@@ -351,8 +352,16 @@ describe('useTimeSeries', () => {
     const { layout } = result.current
     const snapped = result.current.snapHover(pointerAt(1014))
     expect(snapped.dataX).toBe(1010)
-    const pressureY = (1 - 2 / 3) * layout.plotArea.height
-    act(() => result.current.handleHoverChange({ ...snapped, plotY: pressureY }))
+    if (rotated) {
+      expect(snapped.plotRatioY).toBe(0.5)
+      expect(snapped.chartY).toBe(layout.plotArea.y + layout.plotArea.height / 2)
+    } else {
+      expect(snapped.plotRatioX).toBe(0.5)
+    }
+    const valueCoordinate = rotated
+      ? { plotX: (2 / 3) * layout.plotArea.width }
+      : { plotY: (1 - 2 / 3) * layout.plotArea.height }
+    act(() => result.current.handleHoverChange({ ...snapped, ...valueCoordinate }))
     expect(result.current.focusedSeriesKey).toBe('pressure')
     act(() => result.current.handleHoverChange(null))
     expect(result.current.focusedSeriesKey).toBe(null)

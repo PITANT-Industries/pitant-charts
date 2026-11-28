@@ -78,6 +78,7 @@ export interface SpectrumFrequencyBandConfig {
 }
 
 export interface SpectrumConfig {
+  orientation?: 'rotated'
   plugins?: readonly ChartFramePlugin<SpectrumRenderPlan>[]
   series: SpectrumSeriesConfig[]
   peakMarkers?: SpectrumPeakMarkerConfig[]
@@ -151,6 +152,7 @@ export function useSpectrum(options: UseSpectrumOptions): UseSpectrumReturn {
   const [stats, setStats] = useState<SpectrumStats>(EMPTY_SPECTRUM_STATS)
   const { context, ready, error } = useRenderer({
     containerRef,
+    plugins: config.plugins,
     renderer: config.renderer ?? 'auto',
   })
   const { visibilityMap, toggleSeries } = useSeriesVisibility(config.series)
@@ -352,6 +354,7 @@ function createSpectrumLayout(
   return createChartLayout({
     width,
     height,
+    ...(config.orientation ? { orientation: config.orientation } : {}),
     padding: 8,
     xRange: renderPlan.xRelativeRange,
     yRange: renderPlan.yRange,
@@ -363,7 +366,7 @@ function createSpectrumLayout(
     },
     xAxis: {
       visible: true,
-      size: 34,
+      size: config.orientation === 'rotated' ? 'auto' : 34,
       tickCount: 6,
       ...config.xAxis,
       ...(config.xAxis?.scale ||

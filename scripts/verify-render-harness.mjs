@@ -1023,6 +1023,7 @@ async function stopChildren(childrenToStop) {
         }),
     ),
   )
+  for (const child of childrenToStop) child.stderr?.destroy()
 }
 
 function killChildTree(child, signal) {

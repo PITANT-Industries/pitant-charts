@@ -2,12 +2,41 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   buildSpectrumCommandFrame,
   buildSpectrumRenderPlan,
+  ChartPluginLifecycle,
   commandFrameToSvg,
   renderSpectrumPlan,
 } from '../index.js'
 import type { RenderContext } from '../renderer/types.js'
 
 describe('chart frame plugins', () => {
+  it('keeps mounted plugin identities across updates and cleans up in reverse order', () => {
+    const context = {} as RenderContext
+    const calls: string[] = []
+    const plugin = (name: string) => ({
+      mount: (activeContext: RenderContext) => {
+        expect(activeContext).toBe(context)
+        calls.push(`mount ${name}`)
+        return () => calls.push(`dispose ${name}`)
+      },
+    })
+    const first = plugin('first')
+    const second = plugin('second')
+    const third = plugin('third')
+    const plugins = new ChartPluginLifecycle(context)
+    plugins.update([first, second, second])
+    plugins.update([second, third])
+    plugins.dispose()
+    plugins.dispose()
+    expect(calls).toEqual([
+      'mount first',
+      'mount second',
+      'mount third',
+      'dispose first',
+      'dispose third',
+      'dispose second',
+    ])
+  })
+
   it('exports added commands and runs native hooks in rendering order', () => {
     const plan = buildSpectrumRenderPlan({ series: [] })
     const calls: string[] = []

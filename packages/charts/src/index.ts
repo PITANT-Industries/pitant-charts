@@ -26,6 +26,24 @@ export type {
   ChartFrameOptions,
   ChartFramePlugin,
 } from './charts/chart-frame.js'
+export { ChartPluginLifecycle } from './charts/chart-frame.js'
+export type {
+  HeatmapCell,
+  HeatmapChartCreateOptions,
+  HeatmapChartOptions,
+  HeatmapDataSet,
+  HeatmapFrameOptions,
+  HeatmapGridData,
+  HeatmapRenderOptions,
+  HeatmapRenderPlan,
+  HeatmapSparseData,
+} from './charts/heatmap.js'
+export {
+  buildHeatmapCommandFrame,
+  buildHeatmapRenderPlan,
+  HeatmapChart,
+  renderHeatmapPlan,
+} from './charts/heatmap.js'
 export type {
   AddTimeSeriesDerivedColumnsOptions,
   AxisLayoutOptions,

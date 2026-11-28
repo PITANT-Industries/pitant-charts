@@ -133,6 +133,7 @@ export function useCorrelationMatrix(
   const [stats, setStats] = useState<CorrelationMatrixStats>(EMPTY_CORRELATION_STATS)
   const { context, ready, error } = useRenderer({
     containerRef,
+    plugins: config.plugins,
     renderer: config.renderer ?? 'auto',
   })
   const labelsVisible = config.labels?.visible !== false

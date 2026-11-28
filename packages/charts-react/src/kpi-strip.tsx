@@ -137,6 +137,7 @@ export function useKpiStrip(options: UseKpiStripOptions): UseKpiStripReturn {
   const [stats, setStats] = useState<KpiStripStats>(EMPTY_KPI_STRIP_STATS)
   const { context, ready, error } = useRenderer({
     containerRef,
+    plugins: config.plugins,
     renderer: config.renderer ?? 'auto',
   })
 

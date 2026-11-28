@@ -52,6 +52,7 @@ export interface ScatterPlotSeriesConfig extends SeriesConfig {
 }
 
 export interface ScatterPlotConfig {
+  orientation?: 'rotated'
   plugins?: readonly ChartFramePlugin<ScatterPlotRenderPlan>[]
   series: ScatterPlotSeriesConfig[]
   xAxis?: AxisConfig & {
@@ -136,6 +137,7 @@ export function useScatterPlot(options: UseScatterPlotOptions): UseScatterPlotRe
   const [stats, setStats] = useState<ScatterPlotStats>(EMPTY_SCATTER_STATS)
   const { context, ready, error } = useRenderer({
     containerRef,
+    plugins: config.plugins,
     renderer: config.renderer ?? 'auto',
   })
   const { visibilityMap, toggleSeries } = useSeriesVisibility(config.series)
@@ -306,6 +308,7 @@ function createScatterPlotLayout(
   return createChartLayout({
     width,
     height,
+    ...(config.orientation ? { orientation: config.orientation } : {}),
     padding: 8,
     xRange: renderPlan.xRelativeRange,
     yRange: renderPlan.yRange,
@@ -317,7 +320,7 @@ function createScatterPlotLayout(
     },
     xAxis: {
       visible: true,
-      size: 34,
+      size: config.orientation === 'rotated' ? 'auto' : 34,
       tickCount: 6,
       ...config.xAxis,
       ...(config.xAxis?.scale ||

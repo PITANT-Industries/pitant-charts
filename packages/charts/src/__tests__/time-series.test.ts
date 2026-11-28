@@ -16,6 +16,31 @@ import {
 } from '../index.js'
 
 describe('time-series chart planning', () => {
+  it('draws rotated bars along the value axis with the configured CSS thickness', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([2, 8]),
+        columns: { pressure: new Float64Array([20, 60]) },
+        series: [
+          {
+            key: 'pressure',
+            field: 'pressure',
+            label: 'Pressure',
+            mark: 'bar',
+            barStyle: () => ({ width: 10 }),
+          },
+        ],
+      },
+      { xRange: [0, 10], yRange: [0, 100] },
+    )
+    const frame = buildTimeSeriesCommandFrame(plan, 200, 100, {
+      layout: { width: 200, height: 100, padding: 0, orientation: 'rotated' },
+      guides: false,
+    })
+    const bars = frame.commands.sorted().find((command) => command.kind === 'marks')
+    expect(bars?.kind === 'marks' && [...bars.bounds]).toEqual([0, 15, 40, 10, 0, 75, 120, 10])
+  })
+
   it('builds line segments with rebased x coordinates for epoch timestamps', () => {
     const timestamps = new Float64Array([1_700_000_000_000, 1_700_000_000_010, 1_700_000_000_020])
     const plan = buildTimeSeriesRenderPlan({
@@ -863,6 +888,69 @@ describe('time-series chart planning', () => {
       })
       expect(command).toMatchObject({ transform: secondary.transform })
     }
+  })
+
+  it('resolves automatic asinh thresholds independently from visible plotted samples', () => {
+    const data = {
+      timestamps: new Float64Array([0, 1, 2, 3, 4]),
+      columns: {
+        a: new Float64Array([0.0001, 0, -0.25, 4, 10]),
+        b: new Float64Array([0.0002, -1.5, 0.05, 12, Number.NaN]),
+        hidden: new Float64Array([0.00001, 0.00001, 0.00001, 0.00001, 0.00001]),
+        zero: new Float64Array(5),
+      },
+      series: [
+        { key: 'a', field: 'a', label: 'A' },
+        { key: 'b', field: 'b', label: 'B', yAxisKey: 'b' },
+        { key: 'hidden', field: 'hidden', label: 'Hidden', visible: false },
+        { key: 'zero', field: 'zero', label: 'Zero', yAxisKey: 'zero' },
+      ],
+    }
+    const plan = buildTimeSeriesRenderPlan(data, {
+      xRange: [1, 4],
+      yAxes: [
+        { key: 'a', scale: { type: 'asinh', threshold: 'auto', reverse: true } },
+        { key: 'b', range: [1, 13], scale: { type: 'asinh', threshold: 'auto' } },
+        { key: 'zero', scale: { type: 'asinh', threshold: 'auto' } },
+        { key: 'explicit', scale: { type: 'asinh', threshold: 5 } },
+      ],
+    })
+    expect(plan.yAxes?.map(({ scale }) => scale)).toEqual([
+      { type: 'asinh', threshold: 0.25, reverse: true },
+      { type: 'asinh', threshold: 12 },
+      { type: 'asinh', threshold: 1 },
+      { type: 'asinh', threshold: 5 },
+    ])
+    expect(plan.yScale).toBeUndefined()
+    const frame = buildTimeSeriesCommandFrame(plan, 800, 200)
+    const [bottom, top] = plan.yRange
+    const source = frame.layout?.yAxes?.[0]?.projection
+    expect(source?.toRatio(1)).toBeCloseTo(
+      (Math.asinh(top / 0.25) - Math.asinh(1 / 0.25)) /
+        (Math.asinh(top / 0.25) - Math.asinh(bottom / 0.25)),
+    )
+  })
+
+  it('uses the resolved automatic scale on the implicit Y axis', () => {
+    const data = {
+      timestamps: new Float64Array([0, 1, 2, 3]),
+      columns: { a: new Float64Array([0, -0.125, 0.25, 100]) },
+      series: [{ key: 'a', field: 'a', label: 'A' }],
+    }
+    const plan = buildTimeSeriesRenderPlan(data, {
+      yRange: [-0.125, 100],
+      yScale: { type: 'asinh', threshold: 'auto' },
+    })
+    expect(plan.yScale).toEqual({ type: 'asinh', threshold: 0.125 })
+    const frame = buildTimeSeriesCommandFrame(plan, 400, 200)
+    expect(frame.transform.hasProjection).toBe(true)
+    expect(frame.transform.mapY(0)).toBeCloseTo(
+      -Math.asinh(-1) / (Math.asinh(800) - Math.asinh(-1)),
+    )
+    const explicit = buildTimeSeriesRenderPlan(data, {
+      yScale: { type: 'asinh', threshold: 4 },
+    })
+    expect(explicit.yScale).toBeUndefined()
   })
 
   it('infers a positive log domain and uses its floor for an implicit zero baseline', () => {

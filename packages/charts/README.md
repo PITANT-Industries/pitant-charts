@@ -179,10 +179,18 @@ rebuild it on the next redraw. `TimeSeriesChart` also provides `removeSeries`,
 ## Scale and frame customization
 
 Cartesian frame layouts accept linear, logarithmic, asinh, ordinal and custom
-invertible scales. Set `reverse: true` on a scale to reverse its direction. Use
+invertible scales. Set `reverse: true` on a scale to reverse its direction.
+For an industrial TimeSeries Y axis, set
+`scale: { type: 'asinh', threshold: 'auto' }` to choose the smallest nonzero
+absolute value among finite plotted samples visible on that axis. The automatic
+threshold falls back to 1 when the window has no eligible samples. Omitted and
+explicit numeric thresholds keep their fixed behavior. Use
 `xAxis.side: 'top'` or `yAxis.side: 'right'` to change axis placement. The tick
 configuration supports explicit values, CSS-pixel spacing, a formatter, and
 soft or hard bounds through `rangePolicy`.
+
+Set `layout.orientation: 'rotated'` to plot X downward and Y to the right.
+The layout, pointer projections, marks and image exports use the same orientation.
 
 Set `xAxis.calendar: { timeZone: 'Europe/Berlin' }` for calendar ticks on dated
 millisecond data. For a layout using relative X values, set `xAxis.valueOffset`
@@ -193,6 +201,8 @@ All eight imperative chart classes accept `frame.plugins`. Implement
 `extendFrame(frame, plan)` to append render commands that appear in live charts
 and exports. `beforeDraw` and `afterDraw` run inside the native rendering frame
 for work that needs the rendering context.
+Use `mount(context)` for live setup and return a function to release resources
+when the plugin is removed or the chart is disposed.
 
 ### Style individual points and bars
 

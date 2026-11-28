@@ -101,6 +101,23 @@ export type {
 } from './distribution-chart.js'
 export { DistributionChart } from './distribution-chart.js'
 export type {
+  HeatmapCell,
+  HeatmapChartCreateOptions,
+  HeatmapChartOptions,
+  HeatmapDataSet,
+  HeatmapFrameOptions,
+  HeatmapGridData,
+  HeatmapRenderOptions,
+  HeatmapRenderPlan,
+  HeatmapSparseData,
+} from './heatmap.js'
+export {
+  buildHeatmapCommandFrame,
+  buildHeatmapRenderPlan,
+  HeatmapChart,
+  renderHeatmapPlan,
+} from './heatmap.js'
+export type {
   KpiPlannedItem,
   KpiSparkline,
   KpiStatus,

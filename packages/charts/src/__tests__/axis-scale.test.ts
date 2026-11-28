@@ -9,6 +9,37 @@ import { mapChartPointToDataPoint, mapDataPointToChartPoint } from '../charts/po
 import { RenderCommandList, ZLayer } from '../renderer/render-command-list.js'
 
 describe('axis scales', () => {
+  it('rotates scales, their gutters, tick pixels and pointer mapping together', () => {
+    const xRange = [0, 100] as const
+    const yRange = [1, 1000] as const
+    const layout = createChartLayout({
+      width: 500,
+      height: 260,
+      orientation: 'rotated',
+      padding: { left: 12, bottom: 20 },
+      xRange,
+      yRange,
+      xAxis: { visible: true, tickValues: [25] },
+      yAxis: { visible: true, scale: { type: 'log' }, tickValues: [100] },
+    })
+    const { plotArea } = layout
+    const transform = createPlotViewportTransform(xRange, yRange, 500, 260, plotArea, layout)
+    const point = transform.dataToPixel(25, 100)
+    expect(layout.xAxisArea?.x).toBe(12)
+    expect(layout.yAxisArea?.y).toBeLessThan(plotArea.y)
+    expect(point.x).toBeCloseTo(plotArea.x + (2 / 3) * plotArea.width)
+    expect(point.y).toBeCloseTo(plotArea.y + 0.25 * plotArea.height)
+    expect(layout.xTicks[0]?.position).toBeCloseTo(point.y)
+    expect(layout.yTicks[0]?.position).toBeCloseTo(point.x)
+    const pointer = mapChartPointToDataPoint({ ...point, layout, xRange, yRange })
+    expect(pointer.x).toBeCloseTo(25)
+    expect(pointer.y).toBeCloseTo(100)
+    const restored = transform.pixelToData(point.x, point.y)
+    expect(restored.x).toBeCloseTo(25)
+    expect(restored.y).toBeCloseTo(100)
+    expect(mapDataPointToChartPoint({ x: 25, y: 100, layout, xRange, yRange })).toEqual(point)
+  })
+
   it('keeps log ticks, rendered coordinates, and interactions on the same reversed axis', () => {
     const xRange = [0, 9] as const
     const yRange = [1, 1000] as const

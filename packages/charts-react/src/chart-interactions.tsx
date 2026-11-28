@@ -161,6 +161,8 @@ export function ChartRegionZoomLayer({
   const minDragPx = selection?.minDragPx ?? MIN_DRAG_PX
   const adaptivePx = selection?.adaptivePx ?? 0
   const zoomSelection = selection?.zoom !== false
+  const rotated = layout.orientation === 'rotated'
+  const timeAxisLength = rotated ? layout.plotArea.height : layout.plotArea.width
   const touchPointsRef = useRef<Map<number, TouchPoint>>(new Map())
   const touchGestureRef = useRef<TouchGesture | null>(null)
 
@@ -186,13 +188,22 @@ export function ChartRegionZoomLayer({
   const selectionRect = useMemo(() => {
     const plot = layout.plotArea
     if (drag?.mode === 'region-zoom') {
-      const { x, y } = selectedAxes(drag.start, drag.current, selectionMode, minDragPx, adaptivePx)
+      const { x, y } = selectedAxes(
+        drag.start,
+        drag.current,
+        selectionMode,
+        minDragPx,
+        adaptivePx,
+        rotated,
+      )
       if (!x && !y) return null
+      const horizontal = rotated ? y : x
+      const vertical = rotated ? x : y
       return {
-        left: plot.x + (x ? Math.min(drag.start.plotX, drag.current.plotX) : 0),
-        top: plot.y + (y ? Math.min(drag.start.plotY, drag.current.plotY) : 0),
-        width: x ? Math.abs(drag.start.plotX - drag.current.plotX) : plot.width,
-        height: y ? Math.abs(drag.start.plotY - drag.current.plotY) : plot.height,
+        left: plot.x + (horizontal ? Math.min(drag.start.plotX, drag.current.plotX) : 0),
+        top: plot.y + (vertical ? Math.min(drag.start.plotY, drag.current.plotY) : 0),
+        width: horizontal ? Math.abs(drag.start.plotX - drag.current.plotX) : plot.width,
+        height: vertical ? Math.abs(drag.start.plotY - drag.current.plotY) : plot.height,
       }
     }
     const ranges = normalizeChartSelection(
@@ -229,6 +240,7 @@ export function ChartRegionZoomLayer({
     drag,
     layout,
     minDragPx,
+    rotated,
     selectedRanges,
     selectionMode,
     storedSelection,
@@ -239,12 +251,12 @@ export function ChartRegionZoomLayer({
 
   const crosshairX = typeof crosshair === 'object' ? crosshair.x !== false : crosshair
   const crosshairY = typeof crosshair === 'object' ? crosshair.y !== false : crosshair
-  const cursorX = crosshairX
+  const cursorX = (rotated ? crosshairY : crosshairX)
     ? hover?.insidePlot
       ? layout.plotArea.x + hover.plotX
       : syncedCursorX
     : null
-  const cursorY = crosshairY
+  const cursorY = (rotated ? crosshairX : crosshairY)
     ? hover?.insidePlot
       ? layout.plotArea.y + hover.plotY
       : syncedCursorY
@@ -280,16 +292,13 @@ export function ChartRegionZoomLayer({
         event.currentTarget.setPointerCapture?.(event.pointerId)
         setDrag(null)
         updateHover(null)
-        touchPointsRef.current.set(event.pointerId, {
-          plotX: coordinates.plotX,
-          plotY: coordinates.plotY,
-        })
+        touchPointsRef.current.set(event.pointerId, gesturePoint(coordinates, rotated))
 
         const currentRange: readonly [number, number] = [xOrigin + xRange[0], xOrigin + xRange[1]]
         touchGestureRef.current = buildTouchGesture(
           touchPointsRef.current,
           currentRange,
-          layout.plotArea.width,
+          timeAxisLength,
         )
         return
       }
@@ -310,8 +319,9 @@ export function ChartRegionZoomLayer({
     [
       enabled,
       getCoordinates,
-      layout.plotArea.width,
       pan,
+      rotated,
+      timeAxisLength,
       touchNavigation,
       updateHover,
       xOrigin,
@@ -329,21 +339,18 @@ export function ChartRegionZoomLayer({
 
         event.preventDefault()
         updateHover(null)
-        touchPointsRef.current.set(event.pointerId, {
-          plotX: coordinates.plotX,
-          plotY: coordinates.plotY,
-        })
+        touchPointsRef.current.set(event.pointerId, gesturePoint(coordinates, rotated))
 
         const currentRange: readonly [number, number] = [xOrigin + xRange[0], xOrigin + xRange[1]]
         const gesture =
           touchGestureRef.current ??
-          buildTouchGesture(touchPointsRef.current, currentRange, layout.plotArea.width)
+          buildTouchGesture(touchPointsRef.current, currentRange, timeAxisLength)
         if (!gesture) return
 
         const nextRange = rangeFromTouchGesture(
           touchPointsRef.current,
           gesture,
-          layout.plotArea.width,
+          timeAxisLength,
           fullRange,
         )
         if (nextRange && !rangesEqual(nextRange, currentRange)) {
@@ -359,8 +366,10 @@ export function ChartRegionZoomLayer({
         event.preventDefault()
         const nextRange = panRangeByPixels({
           range: drag.startRange,
-          deltaPixels: drag.start.plotX - coordinates.plotX,
-          plotWidth: layout.plotArea.width,
+          deltaPixels: rotated
+            ? drag.start.plotY - coordinates.plotY
+            : drag.start.plotX - coordinates.plotX,
+          plotWidth: timeAxisLength,
           bounds: fullRange,
         })
         if (!rangesEqual(nextRange, [xOrigin + xRange[0], xOrigin + xRange[1]])) {
@@ -379,8 +388,9 @@ export function ChartRegionZoomLayer({
       enabled,
       fullRange,
       getCoordinates,
-      layout.plotArea.width,
       onRangeChange,
+      rotated,
+      timeAxisLength,
       touchNavigation,
       updateHover,
       xOrigin,
@@ -409,7 +419,14 @@ export function ChartRegionZoomLayer({
         return
       }
 
-      const { x, y } = selectedAxes(drag.start, coordinates, selectionMode, minDragPx, adaptivePx)
+      const { x, y } = selectedAxes(
+        drag.start,
+        coordinates,
+        selectionMode,
+        minDragPx,
+        adaptivePx,
+        rotated,
+      )
       if (x || y) {
         updateHover(coordinates)
         const ranges: ChartRangeSelection = {}
@@ -454,6 +471,7 @@ export function ChartRegionZoomLayer({
       onRangeChange,
       onSelectionChange,
       onYRangeChange,
+      rotated,
       selection,
       selectionMode,
       updateHover,
@@ -509,13 +527,13 @@ export function ChartRegionZoomLayer({
         : false
       if (!coordinates.insidePlot && !overXAxis) return
 
-      const panDelta = pan ? normalizeWheelPanDelta(event) : 0
+      const panDelta = pan ? normalizeWheelPanDelta(event, rotated) : 0
       if (Math.abs(panDelta) >= Number.EPSILON) {
         event.preventDefault()
         const nextRange = panRangeByPixels({
           range: [xOrigin + xRange[0], xOrigin + xRange[1]],
           deltaPixels: panDelta,
-          plotWidth: layout.plotArea.width,
+          plotWidth: timeAxisLength,
           bounds: fullRange,
         })
         if (!rangesEqual(nextRange, [xOrigin + xRange[0], xOrigin + xRange[1]])) {
@@ -556,10 +574,11 @@ export function ChartRegionZoomLayer({
       enabled,
       fullRange,
       getCoordinates,
-      layout.plotArea.width,
       layout.xAxisArea,
       onRangeChange,
       pan,
+      rotated,
+      timeAxisLength,
       wheelZoom,
       xOrigin,
       xRange,
@@ -579,7 +598,7 @@ export function ChartRegionZoomLayer({
       const smallPan = span * KEYBOARD_PAN_RATIO
       const largePan = span * KEYBOARD_LARGE_PAN_RATIO
 
-      switch (event.key) {
+      switch (rangeNavigationKey(event.key, rotated)) {
         case 'ArrowLeft':
           nextRange = panRangeByValue(
             currentRange,
@@ -626,7 +645,7 @@ export function ChartRegionZoomLayer({
         onRangeChange(nextRange)
       }
     },
-    [enabled, fullRange, keyboardNavigation, onRangeChange, reset, xOrigin, xRange],
+    [enabled, fullRange, keyboardNavigation, onRangeChange, reset, rotated, xOrigin, xRange],
   )
 
   if (!enabled) return null
@@ -651,7 +670,7 @@ export function ChartRegionZoomLayer({
     >
       {cursorX !== null ? (
         <div
-          className="pitant-chart-crosshair-x"
+          className={rotated ? 'pitant-chart-crosshair-y' : 'pitant-chart-crosshair-x'}
           data-testid="chart-crosshair-vertical"
           style={{
             ...crosshairLineStyle,
@@ -664,7 +683,7 @@ export function ChartRegionZoomLayer({
       ) : null}
       {cursorY !== null ? (
         <div
-          className="pitant-chart-crosshair-y"
+          className={rotated ? 'pitant-chart-crosshair-x' : 'pitant-chart-crosshair-y'}
           data-testid="chart-crosshair-horizontal"
           style={{
             ...crosshairLineStyle,
@@ -692,9 +711,12 @@ function selectedAxes(
   mode: NonNullable<ChartSelectionOptions['mode']>,
   minDragPx: number,
   adaptivePx: number,
+  rotated: boolean,
 ): { x: boolean; y: boolean } {
-  const dx = Math.abs(end.plotX - start.plotX)
-  const dy = Math.abs(end.plotY - start.plotY)
+  const horizontal = Math.abs(end.plotX - start.plotX)
+  const vertical = Math.abs(end.plotY - start.plotY)
+  const dx = rotated ? vertical : horizontal
+  const dy = rotated ? horizontal : vertical
   const x = mode !== 'y' && dx > 0 && dx >= minDragPx
   const y = mode !== 'x' && dy > 0 && dy >= minDragPx
   if (!x || !y || adaptivePx <= 0) return { x, y }
@@ -727,7 +749,12 @@ function normalizeWheelDelta(event: ReactWheelEvent<HTMLElement>): number {
   return event.deltaY
 }
 
-function normalizeWheelPanDelta(event: ReactWheelEvent<HTMLElement>): number {
+function normalizeWheelPanDelta(event: ReactWheelEvent<HTMLElement>, rotated: boolean): number {
+  if (rotated) {
+    return event.shiftKey
+      ? normalizeWheelAxisDelta(event.deltaY || event.deltaX, event.deltaMode)
+      : 0
+  }
   const xDelta = normalizeWheelAxisDelta(event.deltaX, event.deltaMode)
   if (Math.abs(xDelta) >= Number.EPSILON) return xDelta
   if (!event.shiftKey) return 0
@@ -747,6 +774,28 @@ function rectContainsPoint(
   y: number,
 ): boolean {
   return x >= rect.x && y >= rect.y && x <= rect.x + rect.width && y <= rect.y + rect.height
+}
+
+function rangeNavigationKey(key: string, rotated: boolean): string {
+  if (!rotated) return key
+  switch (key) {
+    case 'ArrowUp':
+      return 'ArrowLeft'
+    case 'ArrowDown':
+      return 'ArrowRight'
+    case 'ArrowRight':
+      return 'ArrowUp'
+    case 'ArrowLeft':
+      return 'ArrowDown'
+    default:
+      return key
+  }
+}
+
+function gesturePoint(point: ChartPointerCoordinates, rotated: boolean): TouchPoint {
+  return rotated
+    ? { plotX: point.plotY, plotY: point.plotX }
+    : { plotX: point.plotX, plotY: point.plotY }
 }
 
 function buildTouchGesture(

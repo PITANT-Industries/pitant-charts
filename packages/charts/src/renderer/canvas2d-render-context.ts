@@ -216,6 +216,17 @@ export class Canvas2DRenderContext implements RenderContext {
     this._ctx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0)
     if (!this._transform) return
     const { scaleX, scaleY, translateX, translateY } = this._transform
+    if (this._transform.rotated) {
+      this._ctx.transform(
+        0,
+        scaleX,
+        -scaleY,
+        0,
+        this._width / 2 - scaleY * translateY,
+        this._height / 2 + scaleX * translateX,
+      )
+      return
+    }
     this._ctx.transform(
       scaleX,
       0,

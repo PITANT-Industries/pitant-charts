@@ -123,13 +123,14 @@ export function buildTimeSeriesBarBounds(
   transform: ViewTransform | undefined,
 ): Float32Array {
   const bounds = new Float32Array(sampleCount(segments) * 4)
+  const rotated = transform?.rotated
   let write = 0
-  visitBarPositions(segments, baseline, transform, (_, _offset, x, top, height, spacing) => {
+  visitBarPositions(segments, baseline, transform, (_, _offset, center, start, length, spacing) => {
     const width = spacing * widthRatio
-    bounds[write++] = x - width / 2
-    bounds[write++] = top
-    bounds[write++] = width
-    bounds[write++] = height
+    bounds[write++] = rotated ? start : center - width / 2
+    bounds[write++] = rotated ? center - width / 2 : start
+    bounds[write++] = rotated ? length : width
+    bounds[write++] = rotated ? width : length
   })
   return bounds.subarray(0, write)
 }
@@ -176,11 +177,12 @@ export function buildStyledTimeSeriesBarBatches(
   transform: ViewTransform | undefined,
 ): TimeSeriesMarkBatch[] {
   const runs: MarkRun[] = []
+  const rotated = transform?.rotated
   visitBarPositions(
     series.segments,
     baseline,
     transform,
-    (segment, offset, x, top, height, spacing, base) => {
+    (segment, offset, center, start, length, spacing, base) => {
       const sample = markSample(series, segment, offset, base)
       const style = sample && series.barStyle?.(sample)
       if (style?.visible === false) return
@@ -190,7 +192,9 @@ export function buildStyledTimeSeriesBarBatches(
         0.01,
         Number.POSITIVE_INFINITY,
       )
-      markRun(runs, style?.color ?? color, 'rect').bounds.push(x - width / 2, top, width, height)
+      const bounds = markRun(runs, style?.color ?? color, 'rect').bounds
+      if (rotated) bounds.push(start, center - width / 2, length, width)
+      else bounds.push(center - width / 2, start, width, length)
     },
   )
   return packMarkRuns(runs)
@@ -273,14 +277,17 @@ function visitBarPositions(
   visit: (
     segment: TimeSeriesLineSegment,
     offset: number,
-    x: number,
-    top: number,
-    height: number,
+    center: number,
+    start: number,
+    length: number,
     spacing: number,
     baseline: number,
   ) => void,
 ): void {
-  const baselineY = transform ? transform.dataToPixel(0, baseline).y : baseline
+  const rotated = transform?.rotated === true
+  const centerAxis = rotated ? 'y' : 'x'
+  const valueAxis = rotated ? 'x' : 'y'
+  const baselineY = transform ? transform.dataToPixel(0, baseline)[valueAxis] : baseline
   for (const segment of segments) {
     const { buffer, lower } = segment
     if (buffer.length < 2) continue
@@ -289,24 +296,24 @@ function visitBarPositions(
     for (let i = 0; i < buffer.length; i += 2) {
       const next = i + 2 < buffer.length ? project(buffer, i + 2, transform) : undefined
       const spacing = Math.min(
-        projectedDistance(current.x, previousX),
-        projectedDistance(current.x, next?.x),
+        projectedDistance(current[centerAxis], previousX),
+        projectedDistance(current[centerAxis], next?.[centerAxis]),
       )
-      const stackedY = lower ? project(lower, i, transform).y : baselineY
+      const stackedY = lower ? project(lower, i, transform)[valueAxis] : baselineY
       const baseY = Number.isFinite(stackedY) ? stackedY : baselineY
-      const height = Math.abs(current.y - baseY)
-      if (Number.isFinite(current.x) && height > 0 && Number.isFinite(height)) {
+      const length = Math.abs(current[valueAxis] - baseY)
+      if (Number.isFinite(current[centerAxis]) && length > 0 && Number.isFinite(length)) {
         visit(
           segment,
           i,
-          current.x,
-          Math.min(current.y, baseY),
-          height,
+          current[centerAxis],
+          Math.min(current[valueAxis], baseY),
+          length,
           Number.isFinite(spacing) ? spacing : 8,
           Number.isFinite(stackedY) ? (lower?.[i + 1] ?? baseline) : baseline,
         )
       }
-      previousX = current.x
+      previousX = current[centerAxis]
       if (next) current = next
     }
   }
@@ -322,7 +329,7 @@ function splineSubdivisions(
   if (!transform) return 6
   const a = project(buffer, offset, transform)
   const b = project(buffer, offset + 2, transform)
-  const pixels = Math.abs(a.x - b.x)
+  const pixels = Math.abs(transform.rotated ? a.y - b.y : a.x - b.x)
   return Number.isFinite(pixels) ? Math.max(1, Math.min(16, Math.ceil(pixels / 8))) : 1
 }
 

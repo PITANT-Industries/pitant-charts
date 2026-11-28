@@ -106,6 +106,32 @@ describe('ChartSyncGroup', () => {
     })
   })
 
+  it('maps the same synchronized ratios to a rotated receiving plot', () => {
+    const layout = createChartLayout({
+      width: 200,
+      height: 100,
+      padding: 0,
+      orientation: 'rotated',
+    })
+    const state = {
+      cursorTimestamp: 725,
+      cursorPosition: { xRatio: 0.25, yRatio: 0.75, y: 15 },
+      xRange: null,
+      source: 'leader',
+    }
+    const viewport = { layout, xRange: [0, 100] as const, yRange: [0, 20] as const, xOrigin: 700 }
+    expect(resolveSyncedCursor(state, { x: 'relative', y: 'relative' }, viewport)).toEqual({
+      timestamp: 725,
+      x: 50,
+      y: 25,
+    })
+    expect(resolveSyncedCursor(state, { x: 'value', y: 'value' }, viewport)).toEqual({
+      timestamp: 725,
+      x: 150,
+      y: 25,
+    })
+  })
+
   // ── Basic rendering ──────────────────────────────────────
 
   it('renders children', () => {

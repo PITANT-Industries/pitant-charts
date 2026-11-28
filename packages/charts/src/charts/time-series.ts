@@ -581,6 +581,8 @@ export interface TimeSeriesRenderPlan {
   xOrigin: number
   xRelativeRange: NumericRange
   yRange: NumericRange
+  /** Resolved automatic scale for the implicit primary Y axis. */
+  yScale?: ChartScale
   yAxes?: readonly TimeSeriesPlannedYAxis[]
   series: readonly TimeSeriesPlannedSeries[]
   bands: readonly TimeSeriesPlannedBand[]
@@ -666,6 +668,7 @@ interface TimeSeriesAxisState {
   options: TimeSeriesYAxisOptions
   min: number
   max: number
+  minMagnitude: number
   range: NumericRange
 }
 
@@ -674,6 +677,7 @@ function createAxisState(options: TimeSeriesYAxisOptions): TimeSeriesAxisState {
     options,
     min: Number.POSITIVE_INFINITY,
     max: Number.NEGATIVE_INFINITY,
+    minMagnitude: Number.POSITIVE_INFINITY,
     range: [0, 1],
   }
 }
@@ -727,6 +731,45 @@ function resolveAxisRange(
     Math.max(Number.MIN_VALUE, Math.exp(minLog - logPadding)),
     Math.min(Number.MAX_VALUE, Math.exp(maxLog + logPadding)),
   ]
+}
+
+function automaticAsinh(
+  scale: ChartScale | undefined,
+): scale is Extract<ChartScale, { type: 'asinh' }> {
+  return scale?.type === 'asinh' && scale.threshold === 'auto'
+}
+
+function includeVisibleMagnitudes(
+  axis: TimeSeriesAxisState,
+  timestamps: Float64Array,
+  values: Float64Array,
+  count: number,
+  [start, end]: NumericRange,
+  yBounds: NumericRange | undefined,
+): void {
+  const [min, max] = yBounds ? normalizeRange(yBounds) : [-Infinity, Infinity]
+  for (let index = 0; index < count; index++) {
+    const x = timestamps[index]
+    const y = values[index]
+    if (
+      !isFiniteNumber(x) ||
+      x < start ||
+      x > end ||
+      !isFiniteNumber(y) ||
+      y === 0 ||
+      y < min ||
+      y > max
+    )
+      continue
+    axis.minMagnitude = Math.min(axis.minMagnitude, Math.abs(y))
+  }
+}
+
+function resolveAutomaticYScale(axis: TimeSeriesAxisState): ChartScale | undefined {
+  const scale = axis.options.scale
+  if (!automaticAsinh(scale)) return undefined
+  const threshold = Number.isFinite(axis.minMagnitude) ? axis.minMagnitude : 1
+  return { ...scale, threshold }
 }
 
 function propagateDependentExtents(axisStates: ReadonlyMap<string, TimeSeriesAxisState>): void {
@@ -902,6 +945,16 @@ export function buildTimeSeriesRenderPlan(
 
     if (build.includedSampleCount > 0) {
       includeAxisExtent(axis, build.minY, build.maxY)
+      if (automaticAsinh(axis.options.scale)) {
+        includeVisibleMagnitudes(
+          axis,
+          timestamps,
+          values,
+          pointCount,
+          xRange,
+          axis.options.range ?? (axis === primaryAxis ? options.yRange : undefined),
+        )
+      }
       if (
         !stack &&
         (series.mark === 'bar' ||
@@ -1022,9 +1075,12 @@ export function buildTimeSeriesRenderPlan(
   const yAxes = axisStates?.size
     ? Array.from(axisStates.values(), (axis): TimeSeriesPlannedYAxis => {
         if (axis !== primaryAxis) axis.range = resolveAxisRange(axis, undefined, undefined)
+        const scale = resolveAutomaticYScale(axis)
+        if (scale) axis.options = { ...axis.options, scale }
         return planNamedYAxis(axis, axisStates, warnings)
       })
     : undefined
+  const yScale = yAxes ? undefined : resolveAutomaticYScale(primaryAxis)
   const yRange = primaryAxis.range
 
   for (let annotationIndex = 0; annotationIndex < annotations.length; annotationIndex++) {
@@ -1224,6 +1280,7 @@ export function buildTimeSeriesRenderPlan(
     xOrigin,
     xRelativeRange,
     yRange,
+    ...(yScale ? { yScale } : {}),
     ...(yAxes ? { yAxes } : {}),
     series: plannedSeries,
     bands: plannedBands,
@@ -1556,9 +1613,18 @@ export function buildTimeSeriesCommandFrame(
           : {}),
         ...axis,
         ...axisLayout.get(axis.key),
+        ...(automaticAsinh(axisLayout.get(axis.key)?.scale) && axis.scale
+          ? { scale: axis.scale }
+          : {}),
         key: axis.key,
         range: axis.range,
       })),
+    }
+  } else if (plan.yScale && !(layoutOptions && 'plotArea' in layoutOptions)) {
+    const base = layoutOptions ?? { width, height, xAxis: { visible: true } }
+    layoutOptions = {
+      ...base,
+      yAxis: { visible: true, ...base.yAxis, scale: plan.yScale },
     }
   }
   const layout = resolveChartLayout(layoutOptions, width, height, plan.xRelativeRange, plan.yRange)
@@ -1574,6 +1640,7 @@ export function buildTimeSeriesCommandFrame(
           return [
             axis.key,
             createPlotViewportTransform(plan.xRelativeRange, axis.range, width, height, plotArea, {
+              ...(layout?.orientation ? { orientation: layout.orientation } : {}),
               ...(layout?.xProjection ? { xProjection: layout.xProjection } : {}),
               ...(projection ? { yProjection: projection } : {}),
             }),
@@ -2627,7 +2694,7 @@ export function renderTimeSeriesPlan(
     frame,
     plan,
     options.plugins,
-    !!plan.yAxes?.length || frame.transform.hasProjection,
+    !!plan.yAxes?.length || frame.transform.hasProjection || frame.transform.rotated,
   )
 }
 

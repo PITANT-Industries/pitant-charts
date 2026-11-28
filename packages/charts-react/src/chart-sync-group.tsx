@@ -15,7 +15,9 @@ export interface ChartSyncCursorOptions {
 }
 
 export interface ChartSyncCursorPosition {
+  /** Progress from the lower to the upper X domain bound, following the X scale. */
   xRatio: number
+  /** Progress from the upper to the lower Y domain bound, following the Y scale. */
   yRatio: number
   y: number
 }
@@ -235,10 +237,18 @@ export function resolveSyncedCursor(
     layout,
     xValueOffset: xOrigin,
   })
-  let y: number | null = null
+  const rotated = layout.orientation === 'rotated'
+  const timePixel = rotated ? point.y : point.x
+  const visibleTime = timestamp !== null && Number.isFinite(timePixel) ? timePixel : null
+  let visibleValue: number | null = null
   if (position && yMode !== 'none' && state.cursorTimestamp !== null) {
-    const pixel = yMode === 'relative' ? plotArea.y + position.yRatio * plotArea.height : point.y
-    if (pixel >= plotArea.y && pixel <= plotArea.y + plotArea.height) y = pixel
+    const start = rotated ? plotArea.x : plotArea.y
+    const length = rotated ? plotArea.width : plotArea.height
+    const relative = rotated ? 1 - position.yRatio : position.yRatio
+    const pixel = yMode === 'relative' ? start + relative * length : rotated ? point.x : point.y
+    if (pixel >= start && pixel <= start + length) visibleValue = pixel
   }
-  return { timestamp, x: timestamp !== null && Number.isFinite(point.x) ? point.x : null, y }
+  return rotated
+    ? { timestamp, x: visibleValue, y: visibleTime }
+    : { timestamp, x: visibleTime, y: visibleValue }
 }

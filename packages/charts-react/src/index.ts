@@ -122,17 +122,22 @@ export type {
   UseScatterPlotReturn,
 } from './scatter-plot.js'
 export { ScatterPlot, useScatterPlot } from './scatter-plot.js'
-// Spectrogram
+// Spectrogram and Heatmap
 export type {
+  HeatmapConfig,
+  HeatmapProps,
+  HeatmapStats,
   SpectrogramColorStopConfig,
   SpectrogramConfig,
   SpectrogramMatrixData,
   SpectrogramProps,
   SpectrogramStats,
+  UseHeatmapOptions,
+  UseHeatmapReturn,
   UseSpectrogramOptions,
   UseSpectrogramReturn,
 } from './spectrogram.js'
-export { Spectrogram, useSpectrogram } from './spectrogram.js'
+export { Heatmap, Spectrogram, useHeatmap, useSpectrogram } from './spectrogram.js'
 // Spectrum
 export type {
   SpectrumColumnData,

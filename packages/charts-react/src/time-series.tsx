@@ -298,6 +298,8 @@ export type TimeSeriesYAxisConfig = TimeSeriesYAxisOptions
 
 export interface TimeSeriesConfig {
   series: TimeSeriesSeriesConfig[]
+  /** Run time top to bottom and values left to right. */
+  orientation?: 'rotated'
   derivedSeries?: TimeSeriesDerivedSeriesConfig[]
   bands?: TimeSeriesBandConfig[]
   annotations?: TimeSeriesAnnotationConfig[]
@@ -462,6 +464,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
   const sync = useChartSync(chartKey)
   const { context, ready, error } = useRenderer({
     containerRef,
+    plugins: config.plugins,
     renderer: config.renderer ?? 'auto',
   })
   const derivedColumns = useMemo(
@@ -792,12 +795,16 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
         xValueOffset: renderPlan.xOrigin,
         clampToPlot: true,
       })
-      const plotX = point.x - layout.plotArea.x
+      const { plotArea } = layout
+      const plotX = point.x - plotArea.x
+      const plotY = point.y - plotArea.y
+      const snappedPoint =
+        layout.orientation === 'rotated'
+          ? { chartY: point.y, plotY, plotRatioY: plotY / Math.max(1, plotArea.height) }
+          : { chartX: point.x, plotX, plotRatioX: plotX / Math.max(1, plotArea.width) }
       return {
         ...selected,
-        chartX: point.x,
-        plotX,
-        plotRatioX: plotX / Math.max(1, layout.plotArea.width),
+        ...snappedPoint,
         dataX: nearest.timestamp,
         relativeDataX: nearest.timestamp - renderPlan.xOrigin,
       }
@@ -842,9 +849,10 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
       if (focused !== focusedSeriesKey) sync.updateSeriesFocus(focused)
       setSyncedCursorX(null)
       setSyncedCursorY(null)
+      const rotated = layout.orientation === 'rotated'
       sync.updateCursor(payload?.timestamp ?? null, {
-        xRatio: coordinates.plotRatioX,
-        yRatio: coordinates.plotRatioY,
+        xRatio: rotated ? coordinates.plotRatioY : coordinates.plotRatioX,
+        yRatio: rotated ? 1 - coordinates.plotRatioX : coordinates.plotRatioY,
         y: coordinates.dataY,
       })
     },
@@ -879,8 +887,11 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
         : null
     setTooltipPayload(payload)
     setTooltipPosition(
-      payload && cursor.x !== null
-        ? { x: cursor.x, y: cursor.y ?? layout.plotArea.y + layout.plotArea.height / 2 }
+      payload
+        ? {
+            x: cursor.x ?? layout.plotArea.x + layout.plotArea.width / 2,
+            y: cursor.y ?? layout.plotArea.y + layout.plotArea.height / 2,
+          }
         : null,
     )
     setSyncedCursorX(cursor.x)
@@ -1225,6 +1236,7 @@ function createTimeSeriesLayout(
   return createChartLayout({
     width,
     height,
+    ...(config.orientation ? { orientation: config.orientation } : {}),
     padding: 8,
     xRange: renderPlan.xRelativeRange,
     yRange: renderPlan.yRange,
@@ -1246,6 +1258,7 @@ function createTimeSeriesLayout(
       size: 58,
       tickCount: 5,
       ...config.yAxis,
+      ...(renderPlan.yScale ? { scale: renderPlan.yScale } : {}),
     },
     ...(yAxes !== undefined ? { yAxes } : {}),
     grid: { visible: true },
@@ -1379,6 +1392,8 @@ function findClosestSeries(
   let nearest: string | null = null
   let distance = typeof proximity === 'number' ? proximity : 24
   const { plotArea } = layout
+  const rotated = layout.orientation === 'rotated'
+  const pointerValuePosition = rotated ? coordinates.plotX : coordinates.plotY
   for (const row of tooltip.series) {
     if (row.value === null) continue
     const series = plan.series.find((candidate) => candidate.key === row.key)
@@ -1390,8 +1405,8 @@ function findClosestSeries(
     const range = axis?.range ?? plan.yRange
     const ratio = projection?.toRatio(row.value) ?? (row.value - range[0]) / (range[1] - range[0])
     if (!Number.isFinite(ratio) || ratio < 0 || ratio > 1) continue
-    const sampleY = (1 - ratio) * plotArea.height
-    const delta = Math.abs(coordinates.plotY - sampleY)
+    const valuePosition = rotated ? ratio * plotArea.width : (1 - ratio) * plotArea.height
+    const delta = Math.abs(pointerValuePosition - valuePosition)
     if (delta <= distance) {
       distance = delta
       nearest = row.key

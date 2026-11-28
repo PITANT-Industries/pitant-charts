@@ -212,13 +212,7 @@ export class WebGPURenderContext implements RenderContext {
 
     const pattern = normalizeLineDash(options.dash)
     const dashed = pattern
-      ? packDashedLine(
-          buffer,
-          pattern,
-          (this._width * this._dpr * (this._transformMatrix[0] as number)) / 2,
-          (this._height * this._dpr * (this._transformMatrix[5] as number)) / 2,
-          this._dpr,
-        )
+      ? packDashedLine(buffer, pattern, this._axisPixelScale(0), this._axisPixelScale(4), this._dpr)
       : undefined
     const { pipeline, frameBindGroupLayout, lineBindGroupLayout } =
       this._pipelineManager.getLinePipeline()
@@ -382,9 +376,16 @@ export class WebGPURenderContext implements RenderContext {
   setTransform(transform: ViewTransform): void {
     const matrix = transform.toMatrix4()
     // CSS pixel Y increases downward, while WebGPU clip-space Y increases upward.
+    matrix[1] = -(matrix[1] as number)
     matrix[5] = -(matrix[5] as number)
     matrix[13] = -(matrix[13] as number)
     this._transformMatrix = matrix
+  }
+
+  private _axisPixelScale(index: 0 | 4): number {
+    const x = this._transformMatrix[index] as number
+    const y = this._transformMatrix[index + 1] as number
+    return (this._dpr / 2) * Math.hypot(this._width * x, this._height * y)
   }
 
   setClipRect(rect: RenderClipRect | null): void {

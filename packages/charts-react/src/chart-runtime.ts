@@ -1,6 +1,8 @@
 'use client'
 
 import {
+  type ChartFramePlugin,
+  ChartPluginLifecycle,
   type ColumnarData,
   type CommandFrameSvgInput,
   commandFrameToSvg,
@@ -41,12 +43,20 @@ export const EMPTY_RANGE: readonly [number, number] = [0, 0]
 export interface UseRendererOptions {
   containerRef: RefObject<ChartContainerRef | null>
   renderer?: RendererType | 'auto'
+  plugins?: readonly Pick<ChartFramePlugin<unknown>, 'mount'>[] | undefined
 }
 
 export interface UseRendererReturn {
   context: RenderContext | null
   ready: boolean
   error: Error | null
+}
+
+interface RendererSession {
+  context: RenderContext
+  lifecycle: ChartPluginLifecycle
+  containerRef: UseRendererOptions['containerRef']
+  renderer: NonNullable<UseRendererOptions['renderer']>
 }
 
 export interface ColumnarChartData {
@@ -92,9 +102,12 @@ export interface ExportImageRenderers {
   renderSvg?: (options: ResolvedExportOptions) => string | CommandFrameSvgInput
 }
 
-export function useRenderer({ containerRef, renderer }: UseRendererOptions): UseRendererReturn {
-  const [context, setContext] = useState<RenderContext | null>(null)
-  const [ready, setReady] = useState(false)
+export function useRenderer({
+  containerRef,
+  plugins,
+  renderer = 'auto',
+}: UseRendererOptions): UseRendererReturn {
+  const [session, setSession] = useState<RendererSession | null>(null)
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
@@ -102,23 +115,25 @@ export function useRenderer({ containerRef, renderer }: UseRendererOptions): Use
     if (!canvas) return
 
     let disposed = false
+    let resource: RendererSession | undefined
 
     async function init(target: HTMLCanvasElement) {
       try {
-        const ctx = await createRenderContext(target, { renderer: renderer ?? 'auto' })
+        const context = await createRenderContext(target, { renderer })
         if (disposed) {
-          ctx.dispose()
+          context.dispose()
           return
         }
-        setContext(ctx)
-        setReady(true)
+        resource = {
+          context,
+          lifecycle: new ChartPluginLifecycle(context),
+          containerRef,
+          renderer,
+        }
+        setSession(resource)
         setError(null)
       } catch (err) {
-        if (!disposed) {
-          setContext(null)
-          setReady(false)
-          setError(err instanceof Error ? err : new Error(String(err)))
-        }
+        if (!disposed) setError(err instanceof Error ? err : new Error(String(err)))
       }
     }
 
@@ -126,15 +141,25 @@ export function useRenderer({ containerRef, renderer }: UseRendererOptions): Use
 
     return () => {
       disposed = true
-      setReady(false)
-      setContext((current) => {
-        current?.dispose()
-        return null
-      })
+      if (!resource) return
+      setSession((current) => (current === resource ? null : current))
+      try {
+        resource.lifecycle.dispose()
+      } finally {
+        resource.context.dispose()
+      }
     }
   }, [containerRef, renderer])
 
-  return { context, ready, error }
+  const active =
+    session?.containerRef === containerRef && session.renderer === renderer ? session : null
+
+  // Update the mounted plugins before subsequent live drawing effects run.
+  useEffect(() => {
+    active?.lifecycle.update(plugins)
+  }, [active, plugins])
+
+  return { context: active?.context ?? null, ready: active !== null, error }
 }
 
 export function useColumnarViewport<TData extends ColumnarChartData>(

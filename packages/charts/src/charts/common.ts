@@ -94,6 +94,8 @@ export interface GridLayoutOptions {
 export interface ChartLayoutOptions {
   width: number
   height: number
+  /** Rotate the Cartesian layout so X runs downward and Y runs to the right. */
+  orientation?: 'rotated'
   padding?: number | Partial<EdgeInsets>
   xRange?: NumericRange
   yRange?: NumericRange
@@ -131,6 +133,7 @@ export interface ChartLayout {
   bounds: ChartRect
   contentArea: ChartRect
   plotArea: ChartRect
+  orientation?: 'rotated'
   overlayArea: ChartRect
   xAxisArea: ChartRect | null
   yAxisArea: ChartRect | null
@@ -245,6 +248,7 @@ export function createViewportTransform(
 }
 
 export function createChartLayout(options: ChartLayoutOptions): ChartLayout {
+  if (options.orientation === 'rotated') return createRotatedChartLayout(options)
   const bounds: ChartRect = {
     x: 0,
     y: 0,
@@ -453,6 +457,81 @@ export function createChartLayout(options: ChartLayoutOptions): ChartLayout {
   }
 }
 
+const ROTATED_LEGEND_POSITION: Record<LegendPosition, LegendPosition> = {
+  top: 'left',
+  right: 'top',
+  bottom: 'right',
+  left: 'bottom',
+}
+
+function createRotatedChartLayout(options: ChartLayoutOptions): ChartLayout {
+  const {
+    orientation,
+    padding,
+    legend,
+    xAxis,
+    minPlotWidth,
+    minPlotHeight,
+    width,
+    height,
+    ...layoutOptions
+  } = options
+  const insets = resolveInsets(padding ?? 8)
+  const layout = createChartLayout({
+    ...layoutOptions,
+    width: height,
+    height: width,
+    ...(xAxis && {
+      xAxis: { ...xAxis, size: axisSize(xAxis, options.xRange ?? [0, 1], 56, false) },
+    }),
+    padding: { top: insets.right, right: insets.bottom, bottom: insets.left, left: insets.top },
+    minPlotHeight: minPlotWidth ?? 64,
+    minPlotWidth: minPlotHeight ?? 48,
+    ...(legend
+      ? {
+          legend: {
+            ...legend,
+            size:
+              legend.size ??
+              ((legend.position ?? 'top') === 'top' || legend.position === 'bottom' ? 38 : 128),
+            position: ROTATED_LEGEND_POSITION[legend.position ?? 'top'],
+          },
+        }
+      : {}),
+  })
+  const viewportWidth = layout.bounds.height
+  const rotate = ({ x, y, width: w, height: h }: ChartRect): ChartRect => ({
+    x: viewportWidth - y - h,
+    y: x,
+    width: h,
+    height: w,
+  })
+  const rotateArea = (rect: ChartRect | null) => (rect ? rotate(rect) : null)
+  const rotateTicks = (ticks: readonly AxisTick[]) =>
+    ticks.map((tick) => ({ ...tick, position: viewportWidth - tick.position }))
+  return {
+    ...layout,
+    orientation: orientation ?? 'rotated',
+    bounds: rotate(layout.bounds),
+    contentArea: rotate(layout.contentArea),
+    plotArea: rotate(layout.plotArea),
+    overlayArea: rotate(layout.overlayArea),
+    xAxisArea: rotateArea(layout.xAxisArea),
+    yAxisArea: rotateArea(layout.yAxisArea),
+    legendArea: rotateArea(layout.legendArea),
+    yTicks: rotateTicks(layout.yTicks),
+    ...(layout.yAxes
+      ? {
+          yAxes: layout.yAxes.map((axis) => ({
+            ...axis,
+            area: rotateArea(axis.area),
+            ticks: rotateTicks(axis.ticks),
+          })),
+        }
+      : {}),
+  }
+}
+
 export function resolveChartLayout(
   layout: ChartLayout | ChartLayoutOptions | undefined,
   width: number,
@@ -477,25 +556,31 @@ export function createPlotViewportTransform(
   canvasWidth: number,
   canvasHeight: number,
   plotArea: ChartRect,
-  projections?: Pick<ChartLayout, 'xProjection' | 'yProjection'>,
+  projections?: Pick<ChartLayout, 'orientation' | 'xProjection' | 'yProjection'>,
 ): ViewTransform {
   const [xMin, xMax] = projections?.xProjection ? [0, 1] : expandRange(xRange, 0)
   const [yMin, yMax] = projections?.yProjection ? [0, 1] : expandRange(yRange, 0)
-  const fullWidth = Math.max(1, canvasWidth)
-  const fullHeight = Math.max(1, canvasHeight)
-  const plotWidth = Math.max(1, plotArea.width)
-  const plotHeight = Math.max(1, plotArea.height)
+  const rotated = projections?.orientation === 'rotated'
+  const width = Math.max(1, canvasWidth)
+  const height = Math.max(1, canvasHeight)
+  const fullWidth = rotated ? height : width
+  const fullHeight = rotated ? width : height
+  const plotWidth = Math.max(1, rotated ? plotArea.height : plotArea.width)
+  const plotHeight = Math.max(1, rotated ? plotArea.width : plotArea.height)
+  const plotX = rotated ? plotArea.y : plotArea.x
+  const plotY = rotated ? width - plotArea.x - plotArea.width : plotArea.y
   const xSpan = Math.max(Number.EPSILON, xMax - xMin)
   const ySpan = Math.max(Number.EPSILON, yMax - yMin)
   const scaleX = plotWidth / xSpan
   const scaleY = -plotHeight / ySpan
-  const transform = new ViewTransform(fullWidth, fullHeight)
+  const transform = new ViewTransform(width, height)
 
+  transform.setRotated(rotated)
   transform.setProjections(projections?.xProjection, projections?.yProjection)
   transform.setScale(scaleX, scaleY)
   transform.setTranslate(
-    (plotArea.x - fullWidth / 2) / scaleX - xMin,
-    (plotArea.y + plotHeight - fullHeight / 2) / scaleY - yMin,
+    (plotX - fullWidth / 2) / scaleX - xMin,
+    (plotY + plotHeight - fullHeight / 2) / scaleY - yMin,
   )
 
   return transform
@@ -584,6 +669,7 @@ function addSecondaryGrids(
   const axes = layout.yAxes
   if (!axes || axes.length < 2) return
   const { x, width } = layout.plotArea
+  const { y, height } = layout.plotArea
   let pixels: ViewTransform | undefined
   for (let index = 1; index < axes.length; index++) {
     const axis = axes[index]
@@ -595,8 +681,12 @@ function addSecondaryGrids(
     }
     const style = mergeGridStyle(defaults, axis.grid)
     for (const tick of axis.ticks) {
-      const y = tick.position
-      commands.addLine(new Float32Array([x, y, x + width, y]), style, ZLayer.Fill, pixels)
+      const position = tick.position
+      const points =
+        layout.orientation === 'rotated'
+          ? [position, y, position, y + height]
+          : [x, position, x + width, position]
+      commands.addLine(new Float32Array(points), style, ZLayer.Fill, pixels)
     }
   }
 }
@@ -981,6 +1071,10 @@ function addAxisTextToCommandList(
     fontSize: number
   },
 ): void {
+  if (layout.orientation === 'rotated') {
+    addRotatedAxisText(commands, layout, style)
+    return
+  }
   if (layout.xAxisArea) {
     const atTop = layout.xAxisSide === 'top'
     const textColor = layout.xTextColor ?? style.color
@@ -1059,6 +1153,75 @@ function addAxisTextToCommandList(
           baseline: 'top',
         },
         ZLayer.Text,
+      )
+    }
+  }
+}
+
+function addRotatedAxisText(
+  commands: RenderCommandList,
+  layout: ChartLayout,
+  style: { color: RgbaColor; font: string; fontSize: number },
+): void {
+  const xAxis = layout.xAxisArea
+  if (xAxis) {
+    const right = layout.xAxisSide === 'top'
+    const x = right ? xAxis.x + 6 : xAxis.x + xAxis.width - 6
+    const color = layout.xTextColor ?? style.color
+    for (const tick of layout.xTicks) {
+      commands.addText(tick.label, x, tick.position, {
+        ...style,
+        color,
+        align: right ? 'left' : 'right',
+        baseline: 'middle',
+        ...(layout.xTickRotation ? { rotation: layout.xTickRotation } : {}),
+      })
+    }
+    if (layout.xAxisLabel) {
+      commands.addText(layout.xAxisLabel, xAxis.x + xAxis.width / 2, xAxis.y + xAxis.height / 2, {
+        ...style,
+        color,
+        align: 'center',
+        baseline: right ? 'bottom' : 'top',
+        rotation: -90,
+      })
+    }
+  }
+  const yAxes = layout.yAxes ?? [
+    {
+      side: layout.yAxisSide ?? 'left',
+      area: layout.yAxisArea,
+      ticks: layout.yTicks,
+      label: layout.yAxisLabel,
+      tickRotation: layout.yTickRotation,
+      textColor: layout.yTextColor,
+    },
+  ]
+  for (const { side, area, ticks, label, tickRotation, textColor } of yAxes) {
+    if (!area) continue
+    const bottom = side === 'right'
+    const color = textColor ?? style.color
+    const y = bottom ? area.y + 6 : area.y + area.height - 6
+    for (const tick of ticks) {
+      commands.addText(tick.label, tick.position, y, {
+        ...style,
+        color,
+        align: 'center',
+        baseline: bottom ? 'top' : 'bottom',
+        ...(tickRotation ? { rotation: tickRotation } : {}),
+      })
+    }
+    if (label) {
+      commands.addText(
+        label,
+        area.x + area.width / 2,
+        bottom ? area.y + area.height - 2 : area.y + 2,
+        {
+          ...style,
+          color,
+          align: 'center',
+          baseline: bottom ? 'bottom' : 'top',
+        },
       )
     }
   }
