@@ -94,8 +94,11 @@ jobs:
 
       - name: Browser pixel smoke
         run: bun run harness:verify -- --renderers=${{ matrix.renderer }}
+        env:
+          PITANT_SOFTWARE_WEBGPU: ${{ matrix.renderer == 'webgpu' && '1' || '0' }}
 
-      - name: Browser FPS smoke
+      - name: Canvas2D FPS smoke
+        if: matrix.renderer == 'canvas2d'
         run: bun run harness:fps -- --renderers=${{ matrix.renderer }}
 
   cross-browser-smoke:

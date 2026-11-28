@@ -86,6 +86,8 @@ const requestedProfiles =
   args.profiles ??
   (visualMode ? DEFAULT_VISUAL_PROFILES : fpsMode ? DEFAULT_FPS_PROFILES : DEFAULT_VERIFY_PROFILES)
 const requestedRenderers = args.renderers ?? DEFAULT_RENDERERS
+const softwareWebgpu =
+  process.env.PITANT_SOFTWARE_WEBGPU === '1' && requestedRenderers.includes('webgpu')
 const visualBaseline =
   args.visual === true && args.updateVisualBaseline !== true ? await loadVisualBaseline() : null
 
@@ -125,6 +127,16 @@ try {
       '--disable-background-networking',
       '--disable-dev-shm-usage',
       '--enable-unsafe-webgpu',
+      ...(softwareWebgpu
+        ? [
+            '--enable-unsafe-swiftshader',
+            '--enable-features=Vulkan',
+            '--use-angle=swiftshader',
+            '--use-vulkan=swiftshader',
+            '--use-webgpu-adapter=swiftshader',
+            '--disable-vulkan-surface',
+          ]
+        : []),
       `--remote-debugging-address=127.0.0.1`,
       `--remote-debugging-port=${debugPort}`,
       `--user-data-dir=${profileDir}`,
@@ -162,6 +174,9 @@ try {
       tab,
       '(async () => Boolean(await navigator.gpu?.requestAdapter()))()',
     )
+    if (softwareWebgpu && !webgpuAvailable) {
+      throw new Error('The requested SwiftShader WebGPU adapter is unavailable.')
+    }
   }
   const results = []
 

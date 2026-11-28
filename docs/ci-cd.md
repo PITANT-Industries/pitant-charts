@@ -13,6 +13,8 @@ The Bun version comes from `packageManager` in the root `package.json`. The work
 
 GitHub-hosted runners use `PITANT_BENCH_PROFILE=ci`. Local performance verification uses the strict profile by default. The catalog browser audit covers all 338 examples at desktop and mobile widths in light and dark themes.
 
+Linux CI uses SwiftShader for WebGPU pixel checks and gates frame rate on Canvas2D. Run `bun run harness:fps -- --renderers=webgpu` on a GPU-equipped machine to measure hardware WebGPU frame rate. [Chromium WebGPU pixel test configuration](https://chromium.googlesource.com/chromium/src/+/master/content/test/gpu/gpu_tests/pixel_test_pages.py)
+
 ## Reproduce checks locally
 
 ```sh
