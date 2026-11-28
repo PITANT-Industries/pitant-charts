@@ -21,6 +21,13 @@ const layout = createChartLayout({
   yRange: [-10, 10],
 })
 
+const rotatedLayout = createChartLayout({
+  width: 800,
+  height: 420,
+  padding: 0,
+  orientation: 'rotated',
+})
+
 function fakeContainerRef(): RefObject<ChartContainerRef | null> {
   const canvas = document.createElement('canvas')
   vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
@@ -55,13 +62,7 @@ function renderLayer(onRangeChange = vi.fn(), overrides: Partial<ChartRegionZoom
     xRange: overrides.xRange ?? [0, 100],
     yRange: overrides.yRange ?? [-10, 10],
   }
-  if (overrides.wheelZoom !== undefined) props.wheelZoom = overrides.wheelZoom
-  if (overrides.crosshair !== undefined) props.crosshair = overrides.crosshair
-  if (overrides.onHoverChange !== undefined) props.onHoverChange = overrides.onHoverChange
-  if (overrides.syncedCursorX !== undefined) props.syncedCursorX = overrides.syncedCursorX
-  if (overrides.touchNavigation !== undefined) props.touchNavigation = overrides.touchNavigation
-
-  render(<ChartRegionZoomLayer {...props} />)
+  render(<ChartRegionZoomLayer {...props} {...overrides} />)
   return { layer: screen.getByTestId('chart-region-zoom-layer'), onRangeChange }
 }
 
@@ -88,6 +89,15 @@ function fireWheelAt(
   fireEvent(layer, event)
 }
 
+function plotPointer(x: number, y: number, activeLayout = layout) {
+  const { plotArea } = activeLayout
+  return {
+    clientX: 10 + plotArea.x + plotArea.width * x,
+    clientY: 20 + plotArea.y + plotArea.height * y,
+    pointerId: 1,
+  }
+}
+
 describe('ChartRegionZoomLayer', () => {
   it('zooms to a dragged plot region', () => {
     const { layer, onRangeChange } = renderLayer()
@@ -103,6 +113,127 @@ describe('ChartRegionZoomLayer', () => {
     fireEvent.pointerUp(layer, { clientX: endX, clientY, pointerId: 1 })
 
     expect(onRangeChange).toHaveBeenCalledWith([1025, 1075])
+  })
+
+  it('selects time vertically and displays its horizontal crosshair on a rotated plot', () => {
+    const onSelectionChange = vi.fn()
+    const { layer, onRangeChange } = renderLayer(vi.fn(), {
+      crosshair: { y: false },
+      layout: rotatedLayout,
+      onSelectionChange,
+    })
+    const start = plotPointer(0.3, 0.25, rotatedLayout)
+    const end = plotPointer(0.3, 0.75, rotatedLayout)
+    fireEvent.pointerDown(layer, { ...start, button: 0 })
+    fireEvent.pointerMove(layer, end)
+
+    expect(screen.getByTestId('chart-crosshair-horizontal')).toBeTruthy()
+    expect(screen.queryByTestId('chart-crosshair-vertical')).toBeNull()
+    const selection = screen.getByTestId('chart-region-zoom-selection')
+    expect(selection.style.width).toBe(`${rotatedLayout.plotArea.width}px`)
+    expect(selection.style.height).toBe(`${rotatedLayout.plotArea.height / 2}px`)
+    fireEvent.pointerUp(layer, end)
+
+    expect(onSelectionChange).toHaveBeenCalledWith({ xRange: [1025, 1075] })
+    expect(onRangeChange).toHaveBeenCalledWith([1025, 1075])
+  })
+
+  it('pans time vertically with a touch and anchors rotated wheel zoom to the time under the cursor', () => {
+    const { layer, onRangeChange } = renderLayer(vi.fn(), {
+      layout: rotatedLayout,
+      xOrigin: 1020,
+      xRange: [0, 60],
+    })
+    const start = plotPointer(0.8, 0.25, rotatedLayout)
+    const end = plotPointer(0.8, 0.5, rotatedLayout)
+    fireEvent.pointerDown(layer, { ...start, button: 0, pointerType: 'touch' })
+    fireEvent.pointerMove(layer, { ...end, pointerType: 'touch' })
+    expect(onRangeChange).toHaveBeenLastCalledWith([1005, 1065])
+    fireEvent.pointerUp(layer, { ...end, pointerType: 'touch' })
+
+    fireWheelAt(layer, { ...start, deltaY: -100 })
+    const zoomed = onRangeChange.mock.lastCall?.[0]
+    expect(zoomed?.[0]).toBeCloseTo(1035 - 15 * Math.exp(-0.2))
+    expect(zoomed?.[1]).toBeCloseTo(1035 + 45 * Math.exp(-0.2))
+  })
+
+  it('selects and zooms both dimensions using plot coordinates', () => {
+    const onYRangeChange = vi.fn()
+    const onSelectionChange = vi.fn()
+    const { layer, onRangeChange } = renderLayer(vi.fn(), {
+      selection: { mode: 'xy' },
+      onSelectionChange,
+      onYRangeChange,
+    })
+    const start = plotPointer(0.25, 0.25)
+    const end = plotPointer(0.75, 0.75)
+    fireEvent.pointerDown(layer, { ...start, button: 0 })
+    fireEvent.pointerMove(layer, end)
+
+    const selection = screen.getByTestId('chart-region-zoom-selection')
+    expect(selection.style.height).toBe(`${String(layout.plotArea.height / 2)}px`)
+    fireEvent.pointerUp(layer, end)
+
+    expect(onSelectionChange).toHaveBeenCalledWith({ xRange: [1025, 1075], yRange: [-5, 5] })
+    expect(onRangeChange).toHaveBeenCalledWith([1025, 1075])
+    expect(onYRangeChange).toHaveBeenCalledWith([-5, 5])
+  })
+
+  it('keeps an adaptive Y selection without changing the viewport', () => {
+    const onYRangeChange = vi.fn()
+    const onSelectionChange = vi.fn()
+    const { layer, onRangeChange } = renderLayer(vi.fn(), {
+      selection: { mode: 'xy', adaptivePx: 50, minDragPx: 5, zoom: false },
+      onSelectionChange,
+      onYRangeChange,
+    })
+    const start = plotPointer(0.3, 0.125)
+    const end = plotPointer(0.325, 0.875)
+    fireEvent.pointerDown(layer, { ...start, button: 0 })
+    fireEvent.pointerUp(layer, end)
+
+    expect(onSelectionChange).toHaveBeenCalledWith({ yRange: [-7.5, 7.5] })
+    expect(onRangeChange).not.toHaveBeenCalled()
+    expect(onYRangeChange).not.toHaveBeenCalled()
+    expect(screen.getByTestId('chart-region-zoom-selection').style.width).toBe(
+      `${String(layout.plotArea.width)}px`,
+    )
+  })
+
+  it('renders a programmatic rectangle and can constrain or reject a drag', () => {
+    const constrain = vi.fn(() => null)
+    const { layer, onRangeChange } = renderLayer(vi.fn(), {
+      selectedRanges: { xRange: [1025, 1075], yRange: [-5, 5] },
+      selection: { mode: 'xy', constrain },
+    })
+    expect(screen.getByTestId('chart-region-zoom-selection').style.height).toBe(
+      `${String(layout.plotArea.height / 2)}px`,
+    )
+    fireEvent.pointerDown(layer, { ...plotPointer(0.25, 0.25), button: 0 })
+    fireEvent.pointerUp(layer, plotPointer(0.75, 0.75))
+
+    expect(constrain).toHaveBeenCalledWith({ xRange: [1025, 1075], yRange: [-5, 5] })
+    expect(onRangeChange).not.toHaveBeenCalled()
+  })
+
+  it('can pin hover and configure each crosshair independently', () => {
+    const onHoverChange = vi.fn()
+    const { layer } = renderLayer(vi.fn(), {
+      onHoverChange,
+      hoverLock: true,
+      crosshair: { y: false },
+    })
+    const start = plotPointer(0.25, 0.25)
+    fireEvent.pointerDown(layer, { ...start, button: 0 })
+    fireEvent.pointerUp(layer, start)
+    expect(screen.getByTestId('chart-crosshair-vertical')).toBeTruthy()
+    expect(screen.queryByTestId('chart-crosshair-horizontal')).toBeNull()
+    expect(onHoverChange.mock.lastCall?.[0]?.dataX).toBe(1025)
+    fireEvent.pointerMove(layer, plotPointer(0.75, 0.75))
+    fireEvent.pointerLeave(layer)
+    expect(onHoverChange.mock.lastCall?.[0]?.dataX).toBe(1025)
+    fireEvent.keyDown(layer, { key: 'Escape' })
+    expect(onHoverChange.mock.lastCall?.[0]).toBe(null)
   })
 
   it('resets to the full range on double click', () => {

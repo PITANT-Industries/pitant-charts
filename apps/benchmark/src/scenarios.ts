@@ -1616,13 +1616,15 @@ scenarios['018_interaction_range_1000_cycles'] = () => {
   const iterations = 1_000
   const runs = 10
   const latencyTarget = 2 // ms for one frame-safe burst of 1000 range updates
-  const heapTarget = 2 // MB after 10k range updates
+  const heapTarget = 2 // MB retained after 10k range updates
   const bounds: readonly [number, number] = [0, 86_400_000]
   const plotWidth = 1200
   const initialRange: readonly [number, number] = [18_000_000, 24_000_000]
 
   runInteractionRangeCycle(initialRange, bounds, plotWidth, iterations)
 
+  // Measure retained memory independently of garbage from earlier scenarios.
+  Bun.gc(true)
   const heapStart = process.memoryUsage().heapUsed
   const times: number[] = []
   let finalRange = initialRange
@@ -1631,6 +1633,7 @@ scenarios['018_interaction_range_1000_cycles'] = () => {
     finalRange = runInteractionRangeCycle(finalRange, bounds, plotWidth, iterations)
     times.push(performance.now() - start)
   }
+  Bun.gc(true)
   const heapDeltaMb = Math.max(0, process.memoryUsage().heapUsed - heapStart) / 1024 / 1024
   const medianMs = median(times)
   const finite = Number.isFinite(finalRange[0]) && Number.isFinite(finalRange[1])
@@ -1646,7 +1649,7 @@ scenarios['018_interaction_range_1000_cycles'] = () => {
     },
     {
       scenario: '018_interaction_range_1000_cycles_heap',
-      metric: `${runs * iterations} range updates heap delta`,
+      metric: `${runs * iterations} range updates retained heap delta`,
       value: Math.round(heapDeltaMb * 1000) / 1000,
       unit: 'MB',
       target: heapTarget,

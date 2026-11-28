@@ -4,6 +4,7 @@ import {
   addTimeSeriesDerivedColumns,
   buildTimeSeriesCommandFrame,
   buildTimeSeriesRenderPlan,
+  type ChartFramePlugin,
   type ChartLayout,
   type ChartPointerCoordinates,
   type TimeSeriesAnnotation as CoreTimeSeriesAnnotation,
@@ -18,18 +19,25 @@ import {
   createChartLayout,
   DEFAULT_CHART_COLORS,
   mapDataPointToChartPoint,
+  type NumericRange,
   type RgbaColor,
   renderTimeSeriesPlan,
   type TimeSeriesAnomalyTrackPlacement,
   type TimeSeriesAnomalyTrackReviewerState,
+  type TimeSeriesBarStyleCallback,
   type TimeSeriesDerivedColumnKind,
   type TimeSeriesEventMarkerPlacement,
   type TimeSeriesEventMarkerType,
   type TimeSeriesInterpolation,
+  type TimeSeriesMark,
+  type TimeSeriesPathBuilder,
+  type TimeSeriesPointOptions,
   type TimeSeriesRenderOptions,
   type TimeSeriesRenderPlan,
   type TimeSeriesSpcChartKind,
   type TimeSeriesSpcRuleSeverity,
+  type TimeSeriesStackOptions,
+  type TimeSeriesYAxisOptions,
 } from '@pitant/charts'
 import {
   type JSX,
@@ -45,7 +53,12 @@ import {
 import type { ChartContainerProps, ChartContainerRef } from './chart-container.js'
 import { ChartContainer } from './chart-container.js'
 import { ChartDataZoom } from './chart-data-zoom.js'
-import { ChartRegionZoomLayer } from './chart-interactions.js'
+import {
+  type ChartRangeSelection,
+  ChartRegionZoomLayer,
+  type ChartRegionZoomLayerProps,
+  normalizeChartSelection,
+} from './chart-interactions.js'
 import type { ChartLegendItem } from './chart-legend.js'
 import {
   EMPTY_RANGE,
@@ -56,14 +69,16 @@ import {
   useColumnarViewport,
   useLegendItems,
   useRenderer,
-  useSeriesVisibility,
+  useSyncedSeriesVisibility,
 } from './chart-runtime.js'
-import { useChartSync } from './chart-sync-group.js'
-import type { ChartTooltipPayload } from './chart-tooltip.js'
+import { resolveSyncedCursor, useChartSync } from './chart-sync-group.js'
+import type { ChartTooltipPayload, ChartTooltipProps } from './chart-tooltip.js'
 import { ChartTooltip } from './chart-tooltip.js'
 import {
   buildColumnarTooltipPayload,
   type ColumnarTooltipProvenanceMap,
+  findNearestColumnarTimestamp,
+  type SeriesHoverIndex,
 } from './chart-tooltip-data.js'
 import type {
   AxisConfig,
@@ -77,16 +92,31 @@ export interface TimeSeriesColumnData {
   timestamps: Float64Array
   columns: Record<string, Float64Array>
   quality?: Record<string, Uint8Array>
+  sampleKinds?: Record<string, Uint8Array>
+  seriesTimestamps?: Record<string, Float64Array>
   provenance?: ColumnarTooltipProvenanceMap
   gaps?: ReadonlyArray<{ startIndex: number; endIndex: number }>
 }
 
 export interface TimeSeriesSeriesConfig extends SeriesConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   field: string
   rgba?: RgbaColor
   lineWidth?: number
   interpolation?: TimeSeriesInterpolation
+  dash?: readonly number[]
   gapThreshold?: number
+  mark?: TimeSeriesMark
+  baseline?: number
+  fillRgba?: RgbaColor
+  barWidthRatio?: number
+  barStyle?: TimeSeriesBarStyleCallback
+  points?: TimeSeriesPointOptions
+  spanGaps?: boolean
+  path?: TimeSeriesPathBuilder
+  /** Choose the raw sample inspected at the cursor. Defaults to nearest. */
+  hoverIndex?: SeriesHoverIndex
 }
 
 export interface TimeSeriesDerivedSeriesConfig extends Omit<TimeSeriesSeriesConfig, 'field'> {
@@ -101,6 +131,8 @@ export interface TimeSeriesDerivedSeriesConfig extends Omit<TimeSeriesSeriesConf
 }
 
 export interface TimeSeriesValueBandConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   kind: 'value-band'
   key: string
   label?: string
@@ -115,6 +147,8 @@ export interface TimeSeriesValueBandConfig {
 }
 
 export interface TimeSeriesEnvelopeBandConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   kind: 'envelope'
   key: string
   label?: string
@@ -146,6 +180,8 @@ export interface TimeSeriesXLineAnnotationConfig extends TimeSeriesBaseAnnotatio
 }
 
 export interface TimeSeriesYLineAnnotationConfig extends TimeSeriesBaseAnnotationConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   kind: 'y-line'
   y: number
   rgba?: RgbaColor
@@ -162,6 +198,8 @@ export interface TimeSeriesXRangeAnnotationConfig extends TimeSeriesBaseAnnotati
 }
 
 export interface TimeSeriesYRangeAnnotationConfig extends TimeSeriesBaseAnnotationConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   kind: 'y-range'
   yStart: number
   yEnd: number
@@ -171,6 +209,8 @@ export interface TimeSeriesYRangeAnnotationConfig extends TimeSeriesBaseAnnotati
 }
 
 export interface TimeSeriesRulerAnnotationConfig extends TimeSeriesBaseAnnotationConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   kind: 'ruler'
   xStart: number
   xEnd: number
@@ -230,6 +270,8 @@ export interface TimeSeriesSpcRuleMarkerConfig {
 }
 
 export interface TimeSeriesSpcTrackConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   key: string
   label?: string
   chartKind?: TimeSeriesSpcChartKind
@@ -252,8 +294,12 @@ export interface TimeSeriesSpcTrackConfig {
   includeInYRange?: boolean
 }
 
+export type TimeSeriesYAxisConfig = TimeSeriesYAxisOptions
+
 export interface TimeSeriesConfig {
   series: TimeSeriesSeriesConfig[]
+  /** Run time top to bottom and values left to right. */
+  orientation?: 'rotated'
   derivedSeries?: TimeSeriesDerivedSeriesConfig[]
   bands?: TimeSeriesBandConfig[]
   annotations?: TimeSeriesAnnotationConfig[]
@@ -267,6 +313,10 @@ export interface TimeSeriesConfig {
     range?: readonly [number, number]
     paddingRatio?: number
   }
+  /** Named Y axes in display order. The first is the primary axis. */
+  yAxes?: readonly TimeSeriesYAxisConfig[]
+  plugins?: readonly ChartFramePlugin<TimeSeriesRenderPlan>[]
+  stack?: TimeSeriesStackOptions
   renderer?: 'webgpu' | 'canvas2d' | 'auto'
   interpolation?: TimeSeriesInterpolation
 }
@@ -281,6 +331,25 @@ export interface TimeSeriesStats extends ChartStats {
   dataLoading: boolean
 }
 
+export interface TimeSeriesInteractionOptions
+  extends Pick<
+    ChartRegionZoomLayerProps,
+    | 'crosshair'
+    | 'hoverLock'
+    | 'keyboardNavigation'
+    | 'onSelectionChange'
+    | 'pan'
+    | 'selectedRanges'
+    | 'selection'
+    | 'snapHover'
+    | 'touchNavigation'
+    | 'wheelZoom'
+  > {
+  snapToSample?: boolean
+  /** Dim other series when a sample is within the given CSS pixel distance. */
+  focusClosestSeries?: boolean | number
+}
+
 export interface UseTimeSeriesOptions {
   config: TimeSeriesConfig
   data: TimeSeriesColumnData
@@ -288,6 +357,7 @@ export interface UseTimeSeriesOptions {
   chartKey?: string
   streaming?: StreamingConfig
   resizeKey?: unknown
+  interaction?: TimeSeriesInteractionOptions
 }
 
 export interface UseTimeSeriesReturn {
@@ -295,11 +365,21 @@ export interface UseTimeSeriesReturn {
   setData: (data: TimeSeriesColumnData) => void
   visibleRange: readonly [number, number]
   setVisibleRange: (range: readonly [number, number]) => void
+  selectedRanges: ChartRangeSelection | null
+  /** Set an inspection rectangle without changing either viewport. */
+  setSelection: (selection: ChartRangeSelection | null) => void
+  handleSelectionChange: (selection: ChartRangeSelection | null) => void
+  visibleYRange: NumericRange | null
+  /** Set null to restore the configured or automatically fitted primary Y range. */
+  setVisibleYRange: (range: NumericRange | null) => void
+  snapHover: (coordinates: ChartPointerCoordinates) => ChartPointerCoordinates
+  focusedSeriesKey: string | null
   legendItems: readonly ChartLegendItem[]
-  toggleSeries: (key: string) => void
+  toggleSeries: (key: string, visible?: boolean) => void
   tooltipPayload: ChartTooltipPayload | null
   tooltipPosition: { x: number; y: number } | null
   syncedCursorX: number | null
+  syncedCursorY: number | null
   handleHoverChange: (coordinates: ChartPointerCoordinates | null) => void
   exportImage: (format: 'png' | 'svg', options?: ExportOptions) => Promise<Blob>
   stats: TimeSeriesStats
@@ -326,6 +406,9 @@ export interface TimeSeriesProps
   onResize?: (width: number, height: number, dpr: number) => void
   chartKey?: string
   dataZoom?: boolean
+  pixelRatio?: number
+  tooltip?: Omit<ChartTooltipProps, 'payload' | 'position'>
+  interaction?: TimeSeriesInteractionOptions
   children?: ReactNode | ((chart: UseTimeSeriesReturn) => ReactNode)
 }
 
@@ -342,15 +425,46 @@ const EMPTY_TIMESERIES_STATS: TimeSeriesStats = {
 }
 
 export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesReturn {
-  const { chartKey = 'time-series', config, containerRef, resizeKey, streaming } = options
+  const {
+    chartKey = 'time-series',
+    config,
+    containerRef,
+    interaction,
+    resizeKey,
+    streaming,
+  } = options
   const [visibleRange, setVisibleRangeState] = useState<readonly [number, number]>(EMPTY_RANGE)
+  const [selection, setSelectionState] = useState<ChartRangeSelection | null>(null)
+  const controlledSelection = interaction?.selectedRanges
+  const selectionIsControlled = controlledSelection !== undefined
+  const onSelectionChange = interaction?.onSelectionChange
+  const keepDragSelection = interaction?.selection?.zoom === false
+  const setSelection = useCallback(
+    (ranges: ChartRangeSelection | null) => {
+      const normalized = normalizeChartSelection(ranges)
+      if (!selectionIsControlled) setSelectionState(normalized)
+      onSelectionChange?.(normalized)
+    },
+    [onSelectionChange, selectionIsControlled],
+  )
+  const handleSelectionChange = useCallback(
+    (ranges: ChartRangeSelection | null) => {
+      if (ranges === null || keepDragSelection) setSelection(ranges)
+      else onSelectionChange?.(ranges)
+    },
+    [keepDragSelection, onSelectionChange, setSelection],
+  )
+  const [visibleYRange, setVisibleYRangeState] = useState<NumericRange | null>(null)
   const [stats, setStats] = useState<TimeSeriesStats>(EMPTY_TIMESERIES_STATS)
   const [tooltipPayload, setTooltipPayload] = useState<ChartTooltipPayload | null>(EMPTY_TOOLTIP)
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null)
   const [syncedCursorX, setSyncedCursorX] = useState<number | null>(null)
+  const [syncedCursorY, setSyncedCursorY] = useState<number | null>(null)
+  const [focusedSeriesKey, setFocusedSeriesKey] = useState<string | null>(null)
   const sync = useChartSync(chartKey)
   const { context, ready, error } = useRenderer({
     containerRef,
+    plugins: config.plugins,
     renderer: config.renderer ?? 'auto',
   })
   const derivedColumns = useMemo(
@@ -365,17 +479,13 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     () => addTimeSeriesDerivedColumns(options.data, derivedColumns),
     [derivedColumns, options.data],
   )
-  const { visibilityMap, toggleSeries } = useSeriesVisibility(effectiveSeries)
-  const legendItems = useLegendItems(effectiveSeries, visibilityMap)
-  const tooltipSeries = useMemo(
-    () =>
-      effectiveSeries.map((series) => ({
-        ...series,
-        visible: visibilityMap[series.key] ?? series.visible !== false,
-      })),
-    [effectiveSeries, visibilityMap],
-  )
+  const { visibilityMap, toggleSeries } = useSyncedSeriesVisibility(effectiveSeries, sync)
 
+  useEffect(() => {
+    if (!sync.canReceive('focus') || sync.focusSource === undefined) return
+    const key = sync.syncState.focusedSeriesKey
+    setFocusedSeriesKey(key ? sync.resolveSeriesKey(key, sync.focusSource) : null)
+  }, [sync.canReceive, sync.focusSource, sync.resolveSeriesKey, sync.syncState.focusedSeriesKey])
   const planSeries: CoreTimeSeriesSeries[] = useMemo(
     () =>
       effectiveSeries.map((series, index) => {
@@ -387,9 +497,19 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
             series.rgba ?? (DEFAULT_CHART_COLORS[index % DEFAULT_CHART_COLORS.length] as RgbaColor),
           visible: visibilityMap[series.key] ?? series.visible !== false,
         }
+        if (series.yAxisKey !== undefined) planned.yAxisKey = series.yAxisKey
         if (series.lineWidth !== undefined) planned.lineWidth = series.lineWidth
+        if (series.dash !== undefined) planned.dash = series.dash
         if (series.interpolation !== undefined) planned.interpolation = series.interpolation
         if (series.gapThreshold !== undefined) planned.gapThreshold = series.gapThreshold
+        if (series.mark !== undefined) planned.mark = series.mark
+        if (series.baseline !== undefined) planned.baseline = series.baseline
+        if (series.fillRgba !== undefined) planned.fillColor = series.fillRgba
+        if (series.barWidthRatio !== undefined) planned.barWidthRatio = series.barWidthRatio
+        if (series.barStyle !== undefined) planned.barStyle = series.barStyle
+        if (series.points !== undefined) planned.points = series.points
+        if (series.spanGaps !== undefined) planned.spanGaps = series.spanGaps
+        if (series.path !== undefined) planned.path = series.path
         return planned
       }),
     [effectiveSeries, visibilityMap],
@@ -418,7 +538,14 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
 
   const activeXRange =
     visibleRange[0] < visibleRange[1] ? (visibleRange as readonly [number, number]) : undefined
-  const activeYRange = config.yAxis?.range
+  const activeYRange = visibleYRange ?? config.yAxis?.range
+  const namedYAxes = useMemo(() => {
+    if (!config.yAxes || !visibleYRange) return config.yAxes
+    const primaryIndex = config.yAxes.findIndex((axis) => axis.key.trim().length > 0)
+    return config.yAxes.map((axis, index) =>
+      index === primaryIndex ? { ...axis, range: visibleYRange } : axis,
+    )
+  }, [config.yAxes, visibleYRange])
   const visibleFields = useMemo(() => {
     const fields = new Set<string>()
     for (const series of planSeries) {
@@ -453,10 +580,13 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     const renderOptions: TimeSeriesRenderOptions = {}
     if (activeXRange) renderOptions.xRange = activeXRange
     if (activeYRange) renderOptions.yRange = activeYRange
+    if (namedYAxes !== undefined) renderOptions.yAxes = namedYAxes
     if (config.xAxis?.gapThreshold !== undefined) {
       renderOptions.gapThreshold = config.xAxis.gapThreshold
     }
     if (config.interpolation !== undefined) renderOptions.interpolation = config.interpolation
+    if (config.stack !== undefined) renderOptions.stack = config.stack
+    if (config.yAxis?.scale !== undefined) renderOptions.yScale = config.yAxis.scale
     if (config.yAxis?.paddingRatio !== undefined) {
       renderOptions.yPaddingRatio = config.yAxis.paddingRatio
     }
@@ -465,6 +595,12 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
       {
         timestamps: viewport.data.timestamps,
         columns: viewport.data.columns,
+        ...(viewport.data.sampleKinds !== undefined
+          ? { sampleKinds: viewport.data.sampleKinds }
+          : {}),
+        ...(viewport.data.seriesTimestamps !== undefined
+          ? { seriesTimestamps: viewport.data.seriesTimestamps }
+          : {}),
         series: planSeries,
         bands: planBands,
         annotations: planAnnotations,
@@ -478,8 +614,11 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     activeXRange,
     activeYRange,
     config.interpolation,
+    config.stack,
     config.xAxis?.gapThreshold,
     config.yAxis?.paddingRatio,
+    config.yAxis?.scale,
+    namedYAxes,
     planAnnotations,
     planAnomalyTracks,
     planBands,
@@ -488,6 +627,43 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     planSeries,
     viewport.data,
   ])
+
+  const tooltipSeries = useMemo(() => {
+    const axes = new Map(renderPlan.yAxes?.map((axis) => [axis.key, axis]))
+    const primaryKey = renderPlan.yAxes?.[0]?.key ?? 'y'
+    return effectiveSeries.map((series) => {
+      const axisKey = series.yAxisKey ?? primaryKey
+      const axis = axes.get(axisKey)
+      const isPrimary = axisKey === primaryKey
+      const axisConfigured = isPrimary || axis !== undefined
+      const formatValue = axis?.formatValue ?? (isPrimary ? config.yAxis?.formatValue : undefined)
+      return {
+        ...series,
+        axisConfigured,
+        visible: axisConfigured && (visibilityMap[series.key] ?? series.visible !== false),
+        ...(formatValue !== undefined ? { formatValue } : {}),
+      }
+    })
+  }, [config.yAxis?.formatValue, effectiveSeries, renderPlan.yAxes, visibilityMap])
+  const allLegendItems = useLegendItems(effectiveSeries, visibilityMap)
+  const legendItems = useMemo(
+    () => allLegendItems.filter((_, index) => tooltipSeries[index]?.axisConfigured),
+    [allLegendItems, tooltipSeries],
+  )
+
+  const fullRange = useMemo(() => fullTimeSeriesRange(viewport.rawData), [viewport.rawData])
+  const drawPlan = useMemo(
+    () =>
+      focusedSeriesKey !== null && renderPlan.series.some(({ key }) => key === focusedSeriesKey)
+        ? {
+            ...renderPlan,
+            series: renderPlan.series.map((series) =>
+              series.key === focusedSeriesKey ? series : dimTimeSeries(series),
+            ),
+          }
+        : renderPlan,
+    [focusedSeriesKey, renderPlan],
+  )
 
   const layout = useMemo(() => {
     void resizeKey
@@ -526,7 +702,10 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     }
 
     const started = performance.now()
-    renderTimeSeriesPlan(context, renderPlan, { layout })
+    renderTimeSeriesPlan(context, drawPlan, {
+      layout,
+      ...(config.plugins !== undefined ? { plugins: config.plugins } : {}),
+    })
     const renderTime = performance.now() - started
 
     setStats({
@@ -541,7 +720,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
       returnedPointCount: viewport.returnedPointCount,
       dataLoading: viewport.loading,
     })
-  }, [containerRef, context, layout, renderPlan, resizeKey, viewport])
+  }, [config.plugins, containerRef, context, drawPlan, layout, renderPlan, resizeKey, viewport])
 
   const setData = useCallback(
     (nextData: TimeSeriesColumnData) => {
@@ -582,12 +761,56 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
   )
 
   useEffect(() => {
-    if (!sync.isSynced || sync.syncState.source === chartKey) return
+    if (!sync.canReceive('xRange')) return
     const range = sync.syncState.xRange
     if (!range) return
-
     setVisibleRangeState((current) => (rangesEqual(current, range) ? current : range))
-  }, [chartKey, sync.isSynced, sync.syncState.source, sync.syncState.xRange])
+  }, [sync.canReceive, sync.syncState.xRange])
+
+  const setVisibleYRange = useCallback(
+    (range: NumericRange | null) => {
+      if (range && (!range.every(Number.isFinite) || range[0] >= range[1])) return
+      setVisibleYRangeState(range)
+      sync.updateYRange(range)
+    },
+    [sync.updateYRange],
+  )
+
+  useEffect(() => {
+    if (sync.canReceive('yRange')) setVisibleYRangeState(sync.syncState.yRange ?? null)
+  }, [sync.canReceive, sync.syncState.yRange])
+
+  const snapHover = useCallback(
+    (coordinates: ChartPointerCoordinates): ChartPointerCoordinates => {
+      const selected = interaction?.snapHover?.(coordinates) ?? coordinates
+      if (!interaction?.snapToSample) return selected
+      const nearest = findNearestColumnarTimestamp(viewport.rawData, selected.dataX)
+      if (!nearest || !timestampInRange(nearest.timestamp, renderPlan.xRange)) return selected
+      const point = mapDataPointToChartPoint({
+        x: nearest.timestamp,
+        y: selected.dataY,
+        layout,
+        xRange: renderPlan.xRelativeRange,
+        yRange: renderPlan.yRange,
+        xValueOffset: renderPlan.xOrigin,
+        clampToPlot: true,
+      })
+      const { plotArea } = layout
+      const plotX = point.x - plotArea.x
+      const plotY = point.y - plotArea.y
+      const snappedPoint =
+        layout.orientation === 'rotated'
+          ? { chartY: point.y, plotY, plotRatioY: plotY / Math.max(1, plotArea.height) }
+          : { chartX: point.x, plotX, plotRatioX: plotX / Math.max(1, plotArea.width) }
+      return {
+        ...selected,
+        ...snappedPoint,
+        dataX: nearest.timestamp,
+        relativeDataX: nearest.timestamp - renderPlan.xOrigin,
+      }
+    },
+    [interaction, layout, renderPlan, viewport.rawData],
+  )
 
   const handleHoverChange = useCallback(
     (coordinates: ChartPointerCoordinates | null) => {
@@ -595,6 +818,9 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
         setTooltipPayload(null)
         setTooltipPosition(null)
         setSyncedCursorX(null)
+        setSyncedCursorY(null)
+        setFocusedSeriesKey(null)
+        if (focusedSeriesKey !== null) sync.updateSeriesFocus(null)
         sync.updateCursor(null)
         return
       }
@@ -604,59 +830,81 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
         series: tooltipSeries,
         timestamp: coordinates.dataX,
         formatX: config.xAxis?.formatValue,
-        formatY: config.yAxis?.formatValue,
       })
       setTooltipPayload(payload)
       setTooltipPosition(payload ? { x: coordinates.chartX, y: coordinates.chartY } : null)
+      const focused =
+        payload &&
+        interaction?.focusClosestSeries !== undefined &&
+        interaction.focusClosestSeries !== false
+          ? findClosestSeries(
+              payload,
+              coordinates,
+              renderPlan,
+              layout,
+              interaction.focusClosestSeries,
+            )
+          : null
+      setFocusedSeriesKey(focused)
+      if (focused !== focusedSeriesKey) sync.updateSeriesFocus(focused)
       setSyncedCursorX(null)
-      sync.updateCursor(payload?.timestamp ?? null)
+      setSyncedCursorY(null)
+      const rotated = layout.orientation === 'rotated'
+      sync.updateCursor(payload?.timestamp ?? null, {
+        xRatio: rotated ? coordinates.plotRatioY : coordinates.plotRatioX,
+        yRatio: rotated ? 1 - coordinates.plotRatioX : coordinates.plotRatioY,
+        y: coordinates.dataY,
+      })
     },
-    [config.xAxis?.formatValue, config.yAxis?.formatValue, sync, tooltipSeries, viewport.rawData],
+    [
+      config.xAxis?.formatValue,
+      focusedSeriesKey,
+      interaction?.focusClosestSeries,
+      layout,
+      renderPlan,
+      sync,
+      tooltipSeries,
+      viewport.rawData,
+    ],
   )
 
   useEffect(() => {
-    if (!sync.isSynced || sync.syncState.source === chartKey) return
-    const timestamp = sync.syncState.cursorTimestamp
-    if (timestamp === null || !timestampInRange(timestamp, renderPlan.xRange)) {
-      setTooltipPayload(null)
-      setTooltipPosition(null)
-      setSyncedCursorX(null)
-      return
-    }
-
-    const payload = buildColumnarTooltipPayload({
-      data: viewport.rawData,
-      series: tooltipSeries,
-      timestamp,
-      formatX: config.xAxis?.formatValue,
-      formatY: config.yAxis?.formatValue,
-    })
-    const yMid = (renderPlan.yRange[0] + renderPlan.yRange[1]) / 2
-    const point = mapDataPointToChartPoint({
-      x: timestamp,
-      y: yMid,
+    if (!sync.canReceive('cursor')) return
+    const cursor = resolveSyncedCursor(sync.syncState, sync.cursorOptions, {
       layout,
       xRange: renderPlan.xRelativeRange,
       yRange: renderPlan.yRange,
-      xValueOffset: renderPlan.xOrigin,
-      clampToPlot: true,
+      xOrigin: renderPlan.xOrigin,
     })
-
+    const payload =
+      cursor.timestamp !== null
+        ? buildColumnarTooltipPayload({
+            data: viewport.rawData,
+            series: tooltipSeries,
+            timestamp: cursor.timestamp,
+            formatX: config.xAxis?.formatValue,
+          })
+        : null
     setTooltipPayload(payload)
-    setTooltipPosition(payload ? { x: point.x, y: point.y } : null)
-    setSyncedCursorX(payload ? point.x : null)
+    setTooltipPosition(
+      payload
+        ? {
+            x: cursor.x ?? layout.plotArea.x + layout.plotArea.width / 2,
+            y: cursor.y ?? layout.plotArea.y + layout.plotArea.height / 2,
+          }
+        : null,
+    )
+    setSyncedCursorX(cursor.x)
+    setSyncedCursorY(cursor.y)
   }, [
-    chartKey,
     config.xAxis?.formatValue,
-    config.yAxis?.formatValue,
     layout,
     renderPlan.xOrigin,
-    renderPlan.xRange,
     renderPlan.xRelativeRange,
     renderPlan.yRange,
-    sync.isSynced,
-    sync.syncState.cursorTimestamp,
-    sync.syncState.source,
+    sync.canReceive,
+    sync.cursorOptions,
+    sync.syncState,
     tooltipSeries,
     viewport.rawData,
   ])
@@ -672,11 +920,15 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
             dimensions.width,
             dimensions.height,
           )
-          renderTimeSeriesPlan(exportContext, renderPlan, { layout: exportLayout })
+          renderTimeSeriesPlan(exportContext, renderPlan, {
+            layout: exportLayout,
+            ...(config.plugins !== undefined ? { plugins: config.plugins } : {}),
+          })
         },
         renderSvg: (dimensions) =>
           commandFrameToSvg(
             buildTimeSeriesCommandFrame(renderPlan, dimensions.width, dimensions.height, {
+              ...(config.plugins !== undefined ? { plugins: config.plugins } : {}),
               layout: createTimeSeriesLayout(
                 config,
                 renderPlan,
@@ -696,11 +948,19 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     setData,
     visibleRange,
     setVisibleRange,
+    selectedRanges: controlledSelection === undefined ? selection : controlledSelection,
+    setSelection,
+    handleSelectionChange,
+    visibleYRange,
+    setVisibleYRange,
+    snapHover,
+    focusedSeriesKey,
     legendItems,
     toggleSeries,
     tooltipPayload,
     tooltipPosition,
     syncedCursorX,
+    syncedCursorY,
     handleHoverChange,
     exportImage,
     stats,
@@ -709,7 +969,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     config,
     renderPlan,
     dataRange: renderPlan.xRange,
-    fullRange: rangeFromTimestamps(viewport.rawData.timestamps),
+    fullRange,
     gaps: viewport.gaps,
     renderedPointCount: renderPlan.renderedPointCount,
     layout,
@@ -735,18 +995,17 @@ function toCoreTimeSeriesDerivedColumn(
 function toDerivedTimeSeriesSeriesConfig(
   series: TimeSeriesDerivedSeriesConfig,
 ): TimeSeriesSeriesConfig {
-  const derived: TimeSeriesSeriesConfig = {
-    key: series.key,
-    label: series.label,
-    field: series.field ?? series.key,
-  }
-  if (series.color !== undefined) derived.color = series.color
-  if (series.visible !== undefined) derived.visible = series.visible
-  if (series.rgba !== undefined) derived.rgba = series.rgba
-  if (series.lineWidth !== undefined) derived.lineWidth = series.lineWidth
-  if (series.interpolation !== undefined) derived.interpolation = series.interpolation
-  if (series.gapThreshold !== undefined) derived.gapThreshold = series.gapThreshold
-  return derived
+  const {
+    kind: _kind,
+    sourceField: _sourceField,
+    windowSize: _windowSize,
+    minimumSamples: _minimumSamples,
+    per: _per,
+    scale: _scale,
+    offset: _offset,
+    ...seriesConfig
+  } = series
+  return { ...seriesConfig, field: series.field ?? series.key }
 }
 
 function toCoreTimeSeriesBand(band: TimeSeriesBandConfig): CoreTimeSeriesBand {
@@ -757,6 +1016,7 @@ function toCoreTimeSeriesBand(band: TimeSeriesBandConfig): CoreTimeSeriesBand {
       yStart: band.yStart,
       yEnd: band.yEnd,
     }
+    if (band.yAxisKey !== undefined) coreBand.yAxisKey = band.yAxisKey
     if (band.label !== undefined) coreBand.label = band.label
     if (band.xRange !== undefined) coreBand.xRange = band.xRange
     if (band.fillRgba !== undefined) coreBand.fillColor = band.fillRgba
@@ -773,6 +1033,7 @@ function toCoreTimeSeriesBand(band: TimeSeriesBandConfig): CoreTimeSeriesBand {
     lowerField: band.lowerField,
     upperField: band.upperField,
   }
+  if (band.yAxisKey !== undefined) coreBand.yAxisKey = band.yAxisKey
   if (band.label !== undefined) coreBand.label = band.label
   if (band.fillRgba !== undefined) coreBand.fillColor = band.fillRgba
   if (band.lineRgba !== undefined) coreBand.lineColor = band.lineRgba
@@ -804,6 +1065,7 @@ function toCoreTimeSeriesAnnotation(
       key: annotation.key,
       y: annotation.y,
     }
+    if (annotation.yAxisKey !== undefined) coreAnnotation.yAxisKey = annotation.yAxisKey
     assignCommonAnnotationConfig(coreAnnotation, annotation)
     if (annotation.rgba !== undefined) coreAnnotation.color = annotation.rgba
     if (annotation.lineWidth !== undefined) coreAnnotation.lineWidth = annotation.lineWidth
@@ -831,6 +1093,7 @@ function toCoreTimeSeriesAnnotation(
       yStart: annotation.yStart,
       yEnd: annotation.yEnd,
     }
+    if (annotation.yAxisKey !== undefined) coreAnnotation.yAxisKey = annotation.yAxisKey
     assignCommonAnnotationConfig(coreAnnotation, annotation)
     if (annotation.fillRgba !== undefined) coreAnnotation.fillColor = annotation.fillRgba
     if (annotation.lineRgba !== undefined) coreAnnotation.lineColor = annotation.lineRgba
@@ -846,6 +1109,7 @@ function toCoreTimeSeriesAnnotation(
     yStart: annotation.yStart,
     yEnd: annotation.yEnd,
   }
+  if (annotation.yAxisKey !== undefined) coreAnnotation.yAxisKey = annotation.yAxisKey
   assignCommonAnnotationConfig(coreAnnotation, annotation)
   if (annotation.rgba !== undefined) coreAnnotation.color = annotation.rgba
   if (annotation.lineWidth !== undefined) coreAnnotation.lineWidth = annotation.lineWidth
@@ -927,6 +1191,7 @@ function toCoreTimeSeriesSpcTrack(track: TimeSeriesSpcTrackConfig): CoreTimeSeri
     centerLine: track.centerLine,
   }
   if (track.label !== undefined) coreTrack.label = track.label
+  if (track.yAxisKey !== undefined) coreTrack.yAxisKey = track.yAxisKey
   if (track.chartKind !== undefined) coreTrack.chartKind = track.chartKind
   if (track.upperControlLimit !== undefined) coreTrack.upperControlLimit = track.upperControlLimit
   if (track.lowerControlLimit !== undefined) coreTrack.lowerControlLimit = track.lowerControlLimit
@@ -956,10 +1221,22 @@ function createTimeSeriesLayout(
   width: number,
   height: number,
 ): ChartLayout {
-  const formatX = config.xAxis?.formatValue
+  const { side: legacySide, ...primaryAxis } = config.yAxis ?? {}
+  const primaryDefaults = {
+    ...primaryAxis,
+    ...(legacySide === 'left' || legacySide === 'right' ? { side: legacySide } : {}),
+  }
+  const yAxes = renderPlan.yAxes?.map((axis, index) => ({
+    visible: true,
+    size: 58,
+    tickCount: 5,
+    ...(index === 0 ? primaryDefaults : undefined),
+    ...axis,
+  }))
   return createChartLayout({
     width,
     height,
+    ...(config.orientation ? { orientation: config.orientation } : {}),
     padding: 8,
     xRange: renderPlan.xRelativeRange,
     yRange: renderPlan.yRange,
@@ -973,23 +1250,18 @@ function createTimeSeriesLayout(
       visible: true,
       size: 34,
       tickCount: 6,
-      ...(config.xAxis?.label !== undefined ? { label: config.xAxis.label } : {}),
-      ...(formatX
-        ? { formatValue: (relativeX: number) => formatX(relativeX + renderPlan.xOrigin) }
-        : {}),
+      ...config.xAxis,
+      valueOffset: renderPlan.xOrigin,
     },
     yAxis: {
       visible: true,
       size: 58,
       tickCount: 5,
-      ...(config.yAxis?.label !== undefined ? { label: config.yAxis.label } : {}),
-      ...(config.yAxis?.formatValue !== undefined ? { formatValue: config.yAxis.formatValue } : {}),
+      ...config.yAxis,
+      ...(renderPlan.yScale ? { scale: renderPlan.yScale } : {}),
     },
-    grid: {
-      visible: true,
-      xTickCount: 6,
-      yTickCount: 5,
-    },
+    ...(yAxes !== undefined ? { yAxes } : {}),
+    grid: { visible: true },
   })
 }
 
@@ -1010,10 +1282,13 @@ export function TimeSeries(props: TimeSeriesProps): JSX.Element {
     config,
     data,
     dataZoom = false,
+    interaction,
     onResize,
+    pixelRatio,
     renderer,
     streaming,
     style,
+    tooltip,
   } = props
   const containerRef = useRef<ChartContainerRef | null>(null)
   const generatedChartKey = useId()
@@ -1030,6 +1305,7 @@ export function TimeSeries(props: TimeSeriesProps): JSX.Element {
     resizeKey,
   }
   if (streaming !== undefined) chartOptions.streaming = streaming
+  if (interaction !== undefined) chartOptions.interaction = interaction
   const chart = useTimeSeries(chartOptions)
   const dataZoomSeries = useMemo(
     () => resolveTimeSeriesDataZoomSeries(data, chart.config.series, chart.legendItems),
@@ -1049,18 +1325,25 @@ export function TimeSeries(props: TimeSeriesProps): JSX.Element {
       ref={containerRef}
       ariaLabel={ariaLabel}
       onResize={handleResize}
+      {...(pixelRatio !== undefined ? { pixelRatio } : {})}
       {...(ariaDescribedBy !== undefined ? { ariaDescribedBy } : {})}
       {...(aspectRatio !== undefined ? { aspectRatio } : {})}
       {...(className !== undefined ? { className } : {})}
       {...(style !== undefined ? { style } : {})}
     >
       <ChartRegionZoomLayer
+        {...interaction}
         containerRef={containerRef}
         fullRange={chart.fullRange}
         layout={chart.layout}
         onHoverChange={chart.handleHoverChange}
         onRangeChange={chart.setVisibleRange}
+        onSelectionChange={chart.handleSelectionChange}
+        selectedRanges={chart.selectedRanges}
+        onYRangeChange={chart.setVisibleYRange}
+        snapHover={chart.snapHover}
         syncedCursorX={chart.syncedCursorX}
+        syncedCursorY={chart.syncedCursorY}
         xOrigin={chart.renderPlan.xOrigin}
         xRange={chart.renderPlan.xRelativeRange}
         yRange={chart.renderPlan.yRange}
@@ -1071,15 +1354,77 @@ export function TimeSeries(props: TimeSeriesProps): JSX.Element {
           fullRange={chart.fullRange}
           layout={chart.layout}
           onRangeChange={chart.setVisibleRange}
-          timestamps={data.timestamps}
+          timestamps={dataZoomSeries?.timestamps ?? data.timestamps}
           values={dataZoomSeries?.values}
           visibleRange={activeDataZoomRange(chart.visibleRange, chart.fullRange)}
         />
       ) : null}
-      <ChartTooltip payload={chart.tooltipPayload} position={chart.tooltipPosition} />
+      <ChartTooltip {...tooltip} payload={chart.tooltipPayload} position={chart.tooltipPosition} />
       {typeof children === 'function' ? children(chart) : children}
     </ChartContainer>
   )
+}
+
+function dimTimeSeries(
+  series: TimeSeriesRenderPlan['series'][number],
+): TimeSeriesRenderPlan['series'][number] {
+  return {
+    ...series,
+    style: { ...series.style, color: dimColor(series.style.color) },
+    ...(series.fillColor !== undefined ? { fillColor: dimColor(series.fillColor) } : {}),
+    ...(series.points?.color !== undefined
+      ? { points: { ...series.points, color: dimColor(series.points.color) } }
+      : {}),
+  }
+}
+
+function dimColor([r, g, b, alpha]: RgbaColor): RgbaColor {
+  return [r, g, b, alpha * 0.25]
+}
+
+function findClosestSeries(
+  tooltip: ChartTooltipPayload,
+  coordinates: ChartPointerCoordinates,
+  plan: TimeSeriesRenderPlan,
+  layout: ChartLayout,
+  proximity: boolean | number,
+): string | null {
+  let nearest: string | null = null
+  let distance = typeof proximity === 'number' ? proximity : 24
+  const { plotArea } = layout
+  const rotated = layout.orientation === 'rotated'
+  const pointerValuePosition = rotated ? coordinates.plotX : coordinates.plotY
+  for (const row of tooltip.series) {
+    if (row.value === null) continue
+    const series = plan.series.find((candidate) => candidate.key === row.key)
+    if (!series) continue
+    const axis = plan.yAxes?.find(({ key }) => key === series.yAxisKey)
+    const projection = axis
+      ? layout.yAxes?.find(({ key }) => key === axis.key)?.projection
+      : layout.yProjection
+    const range = axis?.range ?? plan.yRange
+    const ratio = projection?.toRatio(row.value) ?? (row.value - range[0]) / (range[1] - range[0])
+    if (!Number.isFinite(ratio) || ratio < 0 || ratio > 1) continue
+    const valuePosition = rotated ? ratio * plotArea.width : (1 - ratio) * plotArea.height
+    const delta = Math.abs(pointerValuePosition - valuePosition)
+    if (delta <= distance) {
+      distance = delta
+      nearest = row.key
+    }
+  }
+  return nearest
+}
+
+function fullTimeSeriesRange(data: TimeSeriesColumnData): NumericRange {
+  let start = Number.POSITIVE_INFINITY
+  let end = Number.NEGATIVE_INFINITY
+  for (const timeline of [data.timestamps, ...Object.values(data.seriesTimestamps ?? {})]) {
+    if (timeline.length === 0) continue
+    const range = rangeFromTimestamps(timeline)
+    start = Math.min(start, range[0])
+    end = Math.max(end, range[1])
+  }
+  return Number.isFinite(start) && Number.isFinite(end) ? [start, end] : EMPTY_RANGE
 }
 
 function rangeFromTimestamps(timestamps: Float64Array): readonly [number, number] {
@@ -1111,12 +1456,19 @@ function resolveTimeSeriesDataZoomSeries(
   data: TimeSeriesColumnData,
   series: readonly TimeSeriesSeriesConfig[],
   legendItems: readonly ChartLegendItem[],
-): { values: Float64Array; color: string } | undefined {
+): { values: Float64Array; color: string; timestamps: Float64Array } | undefined {
   for (const item of legendItems) {
     if (!item.visible) continue
     const match = series.find((candidate) => candidate.key === item.key)
-    const values = match ? data.columns[match.field] : undefined
-    if (values) return { values, color: item.color }
+    if (!match) continue
+    const values = data.columns[match.field]
+    if (values) {
+      return {
+        values,
+        color: item.color,
+        timestamps: data.seriesTimestamps?.[match.field] ?? data.timestamps,
+      }
+    }
   }
 
   return undefined

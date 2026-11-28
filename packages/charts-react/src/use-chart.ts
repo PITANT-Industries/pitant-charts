@@ -1,6 +1,6 @@
 'use client'
 
-import type { RenderContext, RendererType } from '@pitant/charts'
+import type { AxisLayoutOptions, RenderContext, RendererType } from '@pitant/charts'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChartContainerRef } from './chart-container.js'
 import type { ChartLegendItem } from './chart-legend.js'
@@ -20,12 +20,7 @@ export interface SeriesConfig {
   visible?: boolean
 }
 
-export interface AxisConfig {
-  /** Axis label */
-  label?: string
-  /** Value formatter for tick labels */
-  formatValue?: (value: number) => string
-}
+export interface AxisConfig extends Omit<AxisLayoutOptions, 'valueOffset'> {}
 
 export interface ChartConfig {
   /** Series definitions */
@@ -178,7 +173,8 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
     const container = containerRef.current
     if (!container?.canvas) return
 
-    let disposed = false
+    const controller = new AbortController()
+    const { signal } = controller
     setReady(false)
     setError(null)
 
@@ -187,8 +183,9 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
         const { createRenderContext } = await import('@pitant/charts')
         const ctx = await createRenderContext(canvas, {
           renderer: config.renderer ?? 'auto',
+          signal,
         })
-        if (disposed) {
+        if (signal.aborted) {
           ctx.dispose()
           return
         }
@@ -196,7 +193,7 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
         setReady(true)
         setError(null)
       } catch (err) {
-        if (!disposed) {
+        if (!signal.aborted) {
           renderCtxRef.current = null
           setReady(false)
           setError(err instanceof Error ? err : new Error(String(err)))
@@ -207,7 +204,7 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
     void init(container.canvas)
 
     return () => {
-      disposed = true
+      controller.abort()
       renderCtxRef.current?.dispose()
       renderCtxRef.current = null
       setReady(false)

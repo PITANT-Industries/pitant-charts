@@ -1,14 +1,12 @@
 import { RenderCommandList, ZLayer } from '../renderer/render-command-list.js'
 import type { LineOptions, RenderContext } from '../renderer/types.js'
 import type { ViewTransform } from '../renderer/view-transform.js'
+import { type ChartFrameOptions, extendChartFrame, renderChartFrame } from './chart-frame.js'
 import {
   addChartGuidesToCommandList,
-  type ChartGuideOptions,
   type ChartLayout,
-  type ChartLayoutOptions,
   createPlotViewportTransform,
   createViewportTransform,
-  drawCommandList,
   finiteRange,
   getDefaultColor,
   isFiniteNumber,
@@ -81,10 +79,7 @@ export interface DigitalChannelRenderPlan {
   warnings: readonly string[]
 }
 
-export interface DigitalChannelFrameOptions {
-  layout?: ChartLayout | ChartLayoutOptions
-  guides?: ChartGuideOptions | false
-}
+export type DigitalChannelFrameOptions = ChartFrameOptions<DigitalChannelRenderPlan>
 
 export interface DigitalChannelCommandFrame {
   width: number
@@ -226,21 +221,26 @@ export function buildDigitalChannelCommandFrame(
   }
   addDigitalChannelToCommandList(commands, plan)
 
-  return {
-    width,
-    height,
-    layout,
-    commands,
-    transform: layout
-      ? createPlotViewportTransform(
-          plan.xRelativeRange,
-          plan.yRange,
-          width,
-          height,
-          layout.plotArea,
-        )
-      : createDigitalChannelViewTransform(plan, width, height),
-  }
+  return extendChartFrame(
+    {
+      width,
+      height,
+      layout,
+      commands,
+      transform: layout
+        ? createPlotViewportTransform(
+            plan.xRelativeRange,
+            plan.yRange,
+            width,
+            height,
+            layout.plotArea,
+            layout,
+          )
+        : createDigitalChannelViewTransform(plan, width, height),
+    },
+    plan,
+    options.plugins,
+  )
 }
 
 export function renderDigitalChannelPlan(
@@ -249,10 +249,7 @@ export function renderDigitalChannelPlan(
   options: DigitalChannelFrameOptions = {},
 ): void {
   const frame = buildDigitalChannelCommandFrame(plan, context.width, context.height, options)
-  context.setTransform(frame.transform)
-  context.beginFrame()
-  drawCommandList(context, frame.commands)
-  context.endFrame()
+  renderChartFrame(context, frame, plan, options.plugins)
 }
 
 function buildDigitalSegments(

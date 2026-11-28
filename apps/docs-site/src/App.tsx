@@ -73,10 +73,10 @@ const EXAMPLES: readonly ExampleDefinition[] = [
   },
   {
     id: 'multi-axis',
-    title: 'Multi-Axis Panels',
-    maturity: 'preview path',
-    useWhen: 'signals with different units need synchronized x-ranges and separate y-ranges',
-    doNotUseWhen: 'a single-canvas dual-axis overlay is a hard requirement',
+    title: 'Multi-Axis Trend',
+    maturity: 'composition path',
+    useWhen: 'signals with different units share a time axis and need independent Y axes',
+    doNotUseWhen: 'signals need independent time windows',
     component: PitantMultiAxisBlock,
   },
   {

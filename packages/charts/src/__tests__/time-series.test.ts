@@ -12,9 +12,35 @@ import {
   commandFrameToSvg,
   createTimeSeriesViewTransform,
   RenderCommandList,
+  TimeSeriesSampleKind,
 } from '../index.js'
 
 describe('time-series chart planning', () => {
+  it('draws rotated bars along the value axis with the configured CSS thickness', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([2, 8]),
+        columns: { pressure: new Float64Array([20, 60]) },
+        series: [
+          {
+            key: 'pressure',
+            field: 'pressure',
+            label: 'Pressure',
+            mark: 'bar',
+            barStyle: () => ({ width: 10 }),
+          },
+        ],
+      },
+      { xRange: [0, 10], yRange: [0, 100] },
+    )
+    const frame = buildTimeSeriesCommandFrame(plan, 200, 100, {
+      layout: { width: 200, height: 100, padding: 0, orientation: 'rotated' },
+      guides: false,
+    })
+    const bars = frame.commands.sorted().find((command) => command.kind === 'marks')
+    expect(bars?.kind === 'marks' && [...bars.bounds]).toEqual([0, 15, 40, 10, 0, 75, 120, 10])
+  })
+
   it('builds line segments with rebased x coordinates for epoch timestamps', () => {
     const timestamps = new Float64Array([1_700_000_000_000, 1_700_000_000_010, 1_700_000_000_020])
     const plan = buildTimeSeriesRenderPlan({
@@ -451,6 +477,630 @@ describe('time-series chart planning', () => {
 
     expect(frame.commands.sorted().some((command) => command.kind === 'text')).toBe(true)
     expect(svg).toContain('Hold start')
+  })
+
+  it('mixes splines, filled lines, bars and screen-sized points in one frame', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 5, 10]),
+        columns: {
+          trend: new Float64Array([-4, 3, 4]),
+          valves: new Float64Array([50, 100, 200]),
+          samples: new Float64Array([NaN, 150, NaN]),
+        },
+        series: [
+          { key: 'trend', field: 'trend', label: 'Trend', mark: 'area', interpolation: 'spline' },
+          {
+            key: 'valves',
+            field: 'valves',
+            label: 'Valves',
+            mark: 'bar',
+            yAxisKey: 'right',
+            baseline: 100,
+          },
+          {
+            key: 'samples',
+            field: 'samples',
+            label: 'Samples',
+            mark: 'point',
+            yAxisKey: 'right',
+            points: { size: 9 },
+          },
+        ],
+      },
+      {
+        yAxes: [
+          { key: 'left', range: [-5, 5], visible: false },
+          { key: 'right', range: [0, 250], visible: false },
+        ],
+      },
+    )
+
+    const frame = buildTimeSeriesCommandFrame(plan, 400, 300, { guides: false })
+    const commands = frame.commands.sorted()
+    const line = commands.find((command) => command.kind === 'line')
+    if (line?.kind !== 'line') throw new Error('Expected a spline line')
+    expect(line.buffer.length).toBeGreaterThan(6)
+    for (let i = 0; i < line.buffer.length; i += 2) {
+      const x = line.buffer[i] as number
+      const y = line.buffer[i + 1] as number
+      expect(y).toBeGreaterThanOrEqual(x < 5 ? -4 : 3)
+      expect(y).toBeLessThanOrEqual(x < 5 ? 3 : 4)
+    }
+
+    const area = commands.find((command) => command.kind === 'fill')
+    if (area?.kind !== 'fill') throw new Error('Expected one filled area')
+    expect(area.upper.length).toBeGreaterThan(line.buffer.length)
+    expect(Array.from(area.lower).filter((_, index) => index % 2 === 1)).toEqual(
+      Array.from({ length: area.lower.length / 2 }, () => 0),
+    )
+
+    const bars = commands.find(
+      (command) => command.kind === 'marks' && command.options.shape !== 'ellipse',
+    )
+    if (bars?.kind !== 'marks') throw new Error('Expected batched bars')
+    expect(bars.bounds.length).toBe(8)
+    const markers = commands.find(
+      (command) => command.kind === 'marks' && command.options.shape === 'ellipse',
+    )
+    if (markers?.kind !== 'marks') throw new Error('Expected one isolated point')
+    expect(markers.bounds.subarray(2)).toEqual(new Float32Array([9, 9]))
+    const svg = commandFrameToSvg(frame)
+    expect(svg).toContain(' H ')
+    expect(svg).toContain(' A 4.5 4.5 ')
+  })
+
+  it('styles real point samples using exact input coordinates and preserves the line style', () => {
+    const epoch = Date.UTC(2026, 10, 28, 12)
+    const timestamps = new Float64Array([epoch, epoch + 0.125, epoch + 0.5])
+    const values = new Float64Array([10.1, 20.2, 15.3])
+    const seen: { index: number; timestamp: number; value: number }[] = []
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps,
+        columns: { a: values },
+        series: [
+          {
+            key: 'a',
+            field: 'a',
+            label: 'A',
+            interpolation: 'step-after',
+            dash: [8, 4],
+            points: {
+              style: ({ index, timestamp, value }) => {
+                seen.push({ index, timestamp, value })
+                if (index === 1) return { visible: false }
+                return { size: 11, shape: 'square', color: [0, 1, 0, 1] }
+              },
+            },
+          },
+        ],
+      },
+      { xRange: [epoch + 0.1, epoch + 0.5] },
+    )
+    const frame = buildTimeSeriesCommandFrame(plan, 300, 160)
+    const commands = frame.commands.sorted()
+    expect(seen).toEqual([
+      { index: 1, timestamp: epoch + 0.125, value: 20.2 },
+      { index: 2, timestamp: epoch + 0.5, value: 15.3 },
+    ])
+    const line = commands.find((command) => command.kind === 'line')
+    const points = commands.find((command) => command.kind === 'marks')
+    if (line?.kind !== 'line' || points?.kind !== 'marks')
+      throw new Error('Expected styled geometry')
+    expect(line.buffer.length).toBe(6)
+    expect(line.options.dash).toEqual([8, 4])
+    expect(points.options).toEqual({ color: [0, 1, 0, 1], shape: 'rect' })
+    expect(points.bounds.subarray(2)).toEqual(new Float32Array([11, 11]))
+  })
+
+  it('groups bar style overrides by matching paint and reports stacked value and base', () => {
+    const seen: number[][] = []
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 1, 2]),
+        columns: { a: new Float64Array([2, 3, 4]), b: new Float64Array([5, 6, 7]) },
+        series: [
+          { key: 'a', field: 'a', label: 'A', mark: 'bar' },
+          {
+            key: 'b',
+            field: 'b',
+            label: 'B',
+            mark: 'bar',
+            barStyle: ({ index, value, plottedValue, baseline }) => {
+              seen.push([index, value, plottedValue, baseline ?? -1])
+              if (index === 2) return { visible: false }
+              return { color: [1, 0, 0, 1], ...(index === 0 ? { width: 7 } : { widthRatio: 0.2 }) }
+            },
+          },
+        ],
+      },
+      {
+        xRange: [0, 2],
+        stack: { groups: [{ series: ['a', 'b'] }] },
+      },
+    )
+    const frame = buildTimeSeriesCommandFrame(plan, 300, 160)
+    const marks = frame.commands.sorted().filter((command) => command.kind === 'marks')
+    expect(seen).toEqual([
+      [0, 5, 7, 2],
+      [1, 6, 9, 3],
+      [2, 7, 11, 4],
+    ])
+    expect(marks).toHaveLength(2)
+    expect(marks[1]?.options.color).toEqual([1, 0, 0, 1])
+    expect(marks[1]?.bounds.length).toBe(8)
+    expect(marks[1]?.bounds[2]).toBe(7)
+    expect(marks[1]?.bounds[6]).toBeCloseTo(30)
+    expect(commandFrameToSvg(frame)).toContain('fill="rgb(255 0 0)"')
+  })
+
+  it('only marks real samples on stepped lines', () => {
+    const plan = buildTimeSeriesRenderPlan({
+      timestamps: new Float64Array([0, 5, 10]),
+      columns: { valve: new Float64Array([0, 1, 0]) },
+      series: [
+        { key: 'valve', field: 'valve', label: 'Valve', interpolation: 'step-after', points: {} },
+      ],
+    })
+    const commands = buildTimeSeriesCommandFrame(plan, 300, 150).commands.sorted()
+    const line = commands.find((command) => command.kind === 'line')
+    const points = commands.find((command) => command.kind === 'marks')
+    if (line?.kind !== 'line' || points?.kind !== 'marks')
+      throw new Error('Expected markers and line')
+    expect(line.buffer.length).toBe(10)
+    expect(points.bounds.length).toBe(12)
+  })
+
+  it('keeps explicit gaps distinct from alignment holes and still honors elapsed gap thresholds', () => {
+    const timestamps = new Float64Array([0, 1, 2, 3, 4, 100, 101])
+    const values = new Float64Array([1, NaN, 2, NaN, 3, 4, 5])
+    const { Observed, ExplicitGap, AlignmentHole } = TimeSeriesSampleKind
+    const kinds = new Uint8Array([
+      Observed,
+      AlignmentHole,
+      Observed,
+      ExplicitGap,
+      Observed,
+      Observed,
+      Observed,
+    ])
+    const data = {
+      timestamps,
+      columns: { first: values, second: values },
+      sampleKinds: { first: kinds, second: kinds },
+      series: [
+        { key: 'first', label: 'First', field: 'first', gapThreshold: 10 },
+        { key: 'second', label: 'Second', field: 'second', spanGaps: true, gapThreshold: 10 },
+      ],
+    }
+
+    const [first, second] = buildTimeSeriesRenderPlan(data).series
+    expect(first?.segments.map(({ buffer }) => Array.from(buffer))).toEqual([
+      [0, 1, 2, 2],
+      [100, 4, 101, 5],
+    ])
+    expect(second?.segments.map(({ buffer }) => Array.from(buffer))).toEqual([
+      [0, 1, 2, 2, 4, 3],
+      [100, 4, 101, 5],
+    ])
+  })
+
+  it('uses independent sample coordinates and binds custom geometry to the named axis', () => {
+    const epoch = Date.UTC(2026, 10, 28)
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array(0),
+        seriesTimestamps: {
+          left: new Float64Array([epoch + 1, epoch + 3]),
+          right: new Float64Array([epoch + 2, epoch + 5]),
+        },
+        columns: { left: new Float64Array([1, 2]), right: new Float64Array([120, 140]) },
+        series: [
+          { key: 'left', field: 'left', label: 'Left' },
+          {
+            key: 'right',
+            field: 'right',
+            label: 'Right',
+            yAxisKey: 'right',
+            path: ({ series, commands, yRange, xRange, transform }) => {
+              expect(yRange).toEqual([110, 150])
+              expect(xRange).toEqual([epoch + 1, epoch + 5])
+              expect(transform).toBeDefined()
+              commands.addLine(series.segments[0]?.buffer ?? new Float32Array(0), {
+                color: [1, 0, 0, 1],
+                width: 3,
+              })
+            },
+          },
+        ],
+      },
+      {
+        yAxes: [
+          { key: 'left', range: [0, 3] },
+          { key: 'right', range: [110, 150] },
+        ],
+      },
+    )
+    expect(plan.xRange).toEqual([epoch + 1, epoch + 5])
+    expect(plan.series[0]?.segments[0]?.buffer).toEqual(new Float32Array([0, 1, 2, 2]))
+    expect(plan.series[1]?.segments[0]?.buffer).toEqual(new Float32Array([1, 120, 4, 140]))
+    const frame = buildTimeSeriesCommandFrame(plan, 320, 180, { guides: false })
+    const path = frame.commands
+      .sorted()
+      .find((command) => command.kind === 'line' && command.options.width === 3)
+    if (path?.kind !== 'line') throw new Error('Expected a custom line')
+    expect(path.transform).toBeDefined()
+    expect(path.transform?.mapY(120)).toBe(120)
+  })
+
+  it('draws independently scaled lines in the same plot and SVG frame', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 10]),
+        columns: {
+          temperature: new Float64Array([0, 100]),
+          pressure: new Float64Array([2000, 1000]),
+        },
+        series: [
+          { key: 'temperature', label: 'Temperature', field: 'temperature', color: [1, 0, 0, 1] },
+          {
+            key: 'pressure',
+            yAxisKey: 'pressure',
+            label: 'Pressure',
+            field: 'pressure',
+            color: [0, 0, 1, 1],
+          },
+        ],
+      },
+      {
+        yAxes: [
+          { key: 'temperature', label: 'Temperature (°C)', paddingRatio: 0 },
+          { key: 'pressure', side: 'right', label: 'Pressure (mbar)', paddingRatio: 0 },
+        ],
+      },
+    )
+    expect(plan.yRange).toEqual([0, 100])
+    expect(plan.yAxes).toMatchObject([
+      { key: 'temperature', range: [0, 100] },
+      { key: 'pressure', range: [1000, 2000] },
+    ])
+
+    const [temperature, pressure] = plan.series
+    const temperatureBuffer = temperature?.segments[0]?.buffer
+    const pressureBuffer = pressure?.segments[0]?.buffer
+    expect(temperatureBuffer).toEqual(new Float32Array([0, 0, 10, 100]))
+    expect(pressureBuffer).toEqual(new Float32Array([0, 2000, 10, 1000]))
+
+    const frame = buildTimeSeriesCommandFrame(plan, 320, 180)
+    const { layout } = frame
+    if (!layout) throw new Error('Named axes should reserve plot gutters')
+    expect(layout.yAxes?.map((axis) => [axis.key, axis.side])).toEqual([
+      ['temperature', 'left'],
+      ['pressure', 'right'],
+    ])
+
+    const commands = frame.commands.sorted()
+    const temperatureCommand = commands.find(
+      (command) => command.kind === 'line' && command.buffer === temperatureBuffer,
+    )
+    const pressureCommand = commands.find(
+      (command) => command.kind === 'line' && command.buffer === pressureBuffer,
+    )
+    if (temperatureCommand?.kind !== 'line' || pressureCommand?.kind !== 'line') {
+      throw new Error('Expected one render command per series')
+    }
+    expect(temperatureCommand.transform).toBeUndefined()
+    const { x: left, y: top, width, height } = layout.plotArea
+    const right = left + width
+    const bottom = top + height
+    expect(frame.transform.dataToPixel(0, 0).y).toBeCloseTo(bottom)
+    expect(frame.transform.dataToPixel(10, 100).y).toBeCloseTo(top)
+    expect(pressureCommand.transform?.dataToPixel(0, 2000).y).toBeCloseTo(top)
+    expect(pressureCommand.transform?.dataToPixel(10, 1000).y).toBeCloseTo(bottom)
+
+    const svg = commandFrameToSvg(frame)
+    expect(svg).toContain(
+      `d="M ${left} ${bottom} L ${right} ${top}" fill="none" stroke="rgb(255 0 0)"`,
+    )
+    expect(svg).toContain(
+      `d="M ${left} ${top} L ${right} ${bottom}" fill="none" stroke="rgb(0 0 255)"`,
+    )
+    expect(svg).toContain('Temperature (°C)')
+    expect(svg).toContain('Pressure (mbar)')
+  })
+
+  it('keeps bands, Y annotations and SPC on their named scale', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 10]),
+        columns: {
+          temperature: new Float64Array([10, 20]),
+          pressure: new Float64Array([1200, 1400]),
+          lower: new Float64Array([950, 1000]),
+          upper: new Float64Array([1450, 1500]),
+        },
+        series: [
+          { key: 'temperature', label: 'Temperature', field: 'temperature' },
+          { key: 'pressure', yAxisKey: 'pressure', label: 'Pressure', field: 'pressure' },
+        ],
+        bands: [
+          { kind: 'value-band', key: 'low-warning', yAxisKey: 'pressure', yStart: 850, yEnd: 950 },
+          {
+            kind: 'envelope',
+            key: 'forecast',
+            yAxisKey: 'pressure',
+            lowerField: 'lower',
+            upperField: 'upper',
+          },
+        ],
+        annotations: [
+          { kind: 'x-line', key: 'batch-start', x: 0 },
+          { kind: 'y-line', key: 'target', yAxisKey: 'pressure', y: 1600, includeInYRange: true },
+        ],
+        spcTracks: [
+          {
+            key: 'pressure-limits',
+            yAxisKey: 'pressure',
+            centerLine: 1500,
+            upperControlLimit: 2350,
+          },
+        ],
+      },
+      {
+        yRange: [0, 100],
+        yAxes: [{ key: 'temperature' }, { key: 'pressure', side: 'right', paddingRatio: 0 }],
+      },
+    )
+
+    expect(plan.yRange).toEqual([0, 100])
+    expect(plan.yAxes?.[1]?.range).toEqual([850, 2350])
+    expect(plan.bands.map((band) => band.yAxisKey)).toEqual(['pressure', 'pressure'])
+    expect(plan.annotations.map((annotation) => annotation.yAxisKey)).toEqual([
+      undefined,
+      'pressure',
+    ])
+    expect(plan.annotations[0]?.lineSegments[0]?.buffer).toEqual(new Float32Array([0, 0, 0, 100]))
+    expect(plan.annotations[1]?.lineSegments[0]?.buffer).toEqual(
+      new Float32Array([0, 1600, 10, 1600]),
+    )
+    expect(plan.spcTracks[0]?.yAxisKey).toBe('pressure')
+
+    const frame = buildTimeSeriesCommandFrame(plan, 320, 180)
+    const commands = frame.commands.sorted()
+    const series = plan.series[1]?.segments[0]?.buffer
+    const secondary = commands.find(
+      (command) => command.kind === 'line' && command.buffer === series,
+    )
+    if (secondary?.kind !== 'line' || !secondary.transform) {
+      throw new Error('Expected a pressure scale transform')
+    }
+    const buffers = [
+      plan.bands[0]?.segments[0]?.upper,
+      plan.bands[1]?.segments[0]?.upper,
+      plan.annotations[1]?.lineSegments[0]?.buffer,
+      plan.spcTracks[0]?.centerLineSegments[0]?.buffer,
+    ]
+    for (const buffer of buffers) {
+      const command = commands.find((item) => {
+        if (item.kind === 'fill') return item.upper === buffer
+        return item.kind === 'line' && item.buffer === buffer
+      })
+      expect(command).toMatchObject({ transform: secondary.transform })
+    }
+  })
+
+  it('resolves automatic asinh thresholds independently from visible plotted samples', () => {
+    const data = {
+      timestamps: new Float64Array([0, 1, 2, 3, 4]),
+      columns: {
+        a: new Float64Array([0.0001, 0, -0.25, 4, 10]),
+        b: new Float64Array([0.0002, -1.5, 0.05, 12, Number.NaN]),
+        hidden: new Float64Array([0.00001, 0.00001, 0.00001, 0.00001, 0.00001]),
+        zero: new Float64Array(5),
+      },
+      series: [
+        { key: 'a', field: 'a', label: 'A' },
+        { key: 'b', field: 'b', label: 'B', yAxisKey: 'b' },
+        { key: 'hidden', field: 'hidden', label: 'Hidden', visible: false },
+        { key: 'zero', field: 'zero', label: 'Zero', yAxisKey: 'zero' },
+      ],
+    }
+    const plan = buildTimeSeriesRenderPlan(data, {
+      xRange: [1, 4],
+      yAxes: [
+        { key: 'a', scale: { type: 'asinh', threshold: 'auto', reverse: true } },
+        { key: 'b', range: [1, 13], scale: { type: 'asinh', threshold: 'auto' } },
+        { key: 'zero', scale: { type: 'asinh', threshold: 'auto' } },
+        { key: 'explicit', scale: { type: 'asinh', threshold: 5 } },
+      ],
+    })
+    expect(plan.yAxes?.map(({ scale }) => scale)).toEqual([
+      { type: 'asinh', threshold: 0.25, reverse: true },
+      { type: 'asinh', threshold: 12 },
+      { type: 'asinh', threshold: 1 },
+      { type: 'asinh', threshold: 5 },
+    ])
+    expect(plan.yScale).toBeUndefined()
+    const frame = buildTimeSeriesCommandFrame(plan, 800, 200)
+    const [bottom, top] = plan.yRange
+    const source = frame.layout?.yAxes?.[0]?.projection
+    expect(source?.toRatio(1)).toBeCloseTo(
+      (Math.asinh(top / 0.25) - Math.asinh(1 / 0.25)) /
+        (Math.asinh(top / 0.25) - Math.asinh(bottom / 0.25)),
+    )
+  })
+
+  it('uses the resolved automatic scale on the implicit Y axis', () => {
+    const data = {
+      timestamps: new Float64Array([0, 1, 2, 3]),
+      columns: { a: new Float64Array([0, -0.125, 0.25, 100]) },
+      series: [{ key: 'a', field: 'a', label: 'A' }],
+    }
+    const plan = buildTimeSeriesRenderPlan(data, {
+      yRange: [-0.125, 100],
+      yScale: { type: 'asinh', threshold: 'auto' },
+    })
+    expect(plan.yScale).toEqual({ type: 'asinh', threshold: 0.125 })
+    const frame = buildTimeSeriesCommandFrame(plan, 400, 200)
+    expect(frame.transform.hasProjection).toBe(true)
+    expect(frame.transform.mapY(0)).toBeCloseTo(
+      -Math.asinh(-1) / (Math.asinh(800) - Math.asinh(-1)),
+    )
+    const explicit = buildTimeSeriesRenderPlan(data, {
+      yScale: { type: 'asinh', threshold: 4 },
+    })
+    expect(explicit.yScale).toBeUndefined()
+  })
+
+  it('infers a positive log domain and uses its floor for an implicit zero baseline', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 1, 2, 3, 4]),
+        columns: {
+          a: new Float64Array([1, 10, 0, 25, 100]),
+          b: new Float64Array([0, 50, 120, -2, 100]),
+        },
+        series: [
+          { key: 'a', label: 'Area', field: 'a', mark: 'area' },
+          { key: 'b', label: 'Bars', field: 'b', mark: 'bar' },
+        ],
+      },
+      {
+        yAxes: [{ key: 'y', scale: { type: 'log' }, paddingRatio: 0 }],
+      },
+    )
+    expect(plan.yRange).toEqual([1, 120])
+    expect(plan.series[0]?.segments.map(({ pointCount }) => pointCount)).toEqual([2, 2])
+    const frame = buildTimeSeriesCommandFrame(plan, 300, 200, { guides: false })
+    const commands = frame.commands.sorted()
+    const fill = commands.find((command) => command.kind === 'fill')
+    const bars = commands.find((command) => command.kind === 'marks')
+    if (fill?.kind !== 'fill' || bars?.kind !== 'marks') throw new Error('Expected data geometry')
+    expect(fill.lower[1]).toBe(1)
+    expect(Array.from(bars.bounds).every(Number.isFinite)).toBe(true)
+    expect(bars.bounds.length).toBe(12)
+    expect(frame.transform.hasProjection).toBe(true)
+  })
+
+  it('stacks signed bar groups and normalizes each sign without changing source values', () => {
+    const a = new Float64Array([2, -1, NaN])
+    const b = new Float64Array([6, -3, 9])
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 1, 2]),
+        columns: { a, b },
+        series: [
+          { key: 'a', label: 'A', field: 'a', mark: 'bar' },
+          { key: 'b', label: 'B', field: 'b', mark: 'bar' },
+        ],
+      },
+      {
+        yPaddingRatio: 0,
+        stack: { groups: [{ series: ['a', 'b'] }], percent: true },
+      },
+    )
+    expect(plan.yRange).toEqual([-1, 1])
+    expect(a).toEqual(new Float64Array([2, -1, NaN]))
+    const [first, second] = plan.series
+    expect(first?.segments[0]?.buffer).toEqual(new Float32Array([0, 0.25, 1, -0.25]))
+    expect(second?.segments[0]?.buffer).toEqual(new Float32Array([0, 1, 1, -1, 2, 1]))
+    expect(second?.segments[0]?.lower).toEqual(new Float32Array([0, 0.25, 1, -0.25, 2, 0]))
+    const frame = buildTimeSeriesCommandFrame(plan, 300, 160)
+    const markCommands = frame.commands.sorted().filter((command) => command.kind === 'marks')
+    expect(markCommands.map(({ bounds }) => bounds.length)).toEqual([8, 12])
+    expect(markCommands[0]?.bounds[3]).toBeCloseTo(20)
+    expect(markCommands[1]?.bounds[3]).toBeCloseTo(60)
+  })
+
+  it('fills a cumulative area between the current and previous series', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 1]),
+        columns: { a: new Float64Array([2, 3]), b: new Float64Array([5, 6]) },
+        series: [
+          { key: 'a', label: 'A', field: 'a', mark: 'area' },
+          { key: 'b', label: 'B', field: 'b', mark: 'area' },
+        ],
+      },
+      {
+        yPaddingRatio: 0,
+        stack: { groups: [{ series: ['a', 'b'], mode: 'cumulative' }] },
+      },
+    )
+    const areas = buildTimeSeriesCommandFrame(plan, 300, 160)
+      .commands.sorted()
+      .filter((command) => command.kind === 'fill')
+    expect(plan.yRange).toEqual([0, 9])
+    expect(areas[1]?.upper).toEqual(new Float32Array([0, 7, 1, 9]))
+    expect(areas[1]?.lower).toEqual(new Float32Array([0, 2, 1, 3]))
+  })
+
+  it('couples a dependent unit scale to the source axis and its own samples', () => {
+    const toFahrenheit = (value: number) => value * 1.8 + 32
+    const toCelsius = (value: number) => (value - 32) / 1.8
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 1]),
+        columns: { c: new Float64Array([10, 25]), f: new Float64Array([32, 86]) },
+        series: [
+          { key: 'first', label: 'First probe', field: 'c' },
+          { key: 'second', label: 'Second probe', field: 'f', yAxisKey: 'f' },
+        ],
+      },
+      {
+        yAxes: [
+          { key: 'c', label: 'Celsius', paddingRatio: 0 },
+          {
+            key: 'f',
+            label: 'Fahrenheit',
+            from: { key: 'c', fromSource: toFahrenheit, toSource: toCelsius },
+          },
+          {
+            key: 'invalid',
+            from: { key: 'missing', fromSource: toFahrenheit, toSource: toCelsius },
+          },
+        ],
+      },
+    )
+    expect(plan.yRange).toEqual([0, 30])
+    expect(plan.yAxes?.map(({ range }) => range)).toEqual([
+      [0, 30],
+      [32, 86],
+    ])
+    expect(plan.warnings).toHaveLength(1)
+    const frame = buildTimeSeriesCommandFrame(plan, 380, 240, { guides: false })
+    const command = frame.commands.sorted()[1]
+    if (command?.kind !== 'line' || !command.transform)
+      throw new Error('Expected a dependent-scale line')
+    expect(command.transform.dataToPixel(0, 50).y).toBeCloseTo(frame.transform.dataToPixel(0, 10).y)
+    expect(frame.layout?.yAxes?.[1]?.ticks[0]?.position).toBe(frame.layout?.yTicks[0]?.position)
+  })
+
+  it('reports explicitly unknown axes and preserves legacy primary bounds', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 10]),
+        columns: { temp: new Float64Array([10, 20]) },
+        series: [
+          { key: 'temperature', yAxisKey: 'y', label: 'Temperature', field: 'temp' },
+          { key: 'typo', yAxisKey: 'temperature', label: 'Typo', field: 'temp' },
+        ],
+        annotations: [
+          { kind: 'y-line', key: 'limit', yAxisKey: 'missing', y: 2500, includeInYRange: true },
+        ],
+      },
+      { yRange: [0, 30] },
+    )
+
+    expect(plan.yAxes).toBeUndefined()
+    expect(plan.yRange).toEqual([0, 30])
+    expect(plan.series.map(({ key }) => key)).toEqual(['temperature'])
+    expect(plan.annotations).toEqual([])
+    expect(plan.warnings).toEqual([
+      'Series "typo" skipped because Y axis "temperature" is missing.',
+      'Annotation "limit" skipped because Y axis "missing" is missing.',
+    ])
   })
 
   it('creates a transform that maps rebased data to pixels', () => {

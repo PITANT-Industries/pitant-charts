@@ -75,7 +75,7 @@ export class GPUPipelineManager {
         },
         {
           binding: 1,
-          visibility: GPUShaderStage.VERTEX,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
           buffer: { type: 'read-only-storage' },
         },
       ],
@@ -267,6 +267,7 @@ export class GPUPipelineManager {
     width: number,
     cap: number,
     join: number,
+    dashPeriod = 0,
   ): GPUBuffer {
     const buffer = this._device.createBuffer({
       label: 'line-uniforms',
@@ -274,7 +275,7 @@ export class GPUPipelineManager {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     })
 
-    // Pack: color(4f) + transform(16f) + width + cap + join + pad
+    // Pack: color(4f) + transform(16f) + width + cap + join + dash period.
     const data = new Float32Array(LINE_UNIFORM_SIZE / 4)
     data[0] = color[0]
     data[1] = color[1]
@@ -284,7 +285,7 @@ export class GPUPipelineManager {
     data[20] = width
     data[21] = cap
     data[22] = join
-    data[23] = 0 // padding
+    data[23] = dashPeriod
 
     this._device.queue.writeBuffer(buffer, 0, data)
     return buffer

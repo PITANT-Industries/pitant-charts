@@ -3,6 +3,7 @@
 import {
   buildDistributionCommandFrame,
   buildDistributionRenderPlan,
+  type ChartFramePlugin,
   type ChartLayout,
   type DistributionMarker as CoreDistributionMarker,
   type DistributionSeries as CoreDistributionSeries,
@@ -66,6 +67,8 @@ export interface DistributionMarkerConfig {
 }
 
 export interface DistributionConfig {
+  orientation?: 'rotated'
+  plugins?: readonly ChartFramePlugin<DistributionRenderPlan>[]
   series: DistributionSeriesConfig[]
   markers?: DistributionMarkerConfig[]
   xAxis?: AxisConfig & {
@@ -120,6 +123,7 @@ export interface DistributionProps
   onResize?: (width: number, height: number, dpr: number) => void
   chartKey?: string
   children?: ReactNode | ((chart: UseDistributionReturn) => ReactNode)
+  pixelRatio?: number
 }
 
 const EMPTY_DISTRIBUTION_STATS: DistributionStats = {
@@ -136,6 +140,7 @@ export function useDistribution(options: UseDistributionOptions): UseDistributio
   const [stats, setStats] = useState<DistributionStats>(EMPTY_DISTRIBUTION_STATS)
   const { context, ready, error } = useRenderer({
     containerRef,
+    plugins: config.plugins,
     renderer: config.renderer ?? 'auto',
   })
   const { visibilityMap, toggleSeries } = useSeriesVisibility(config.series)
@@ -229,7 +234,10 @@ export function useDistribution(options: UseDistributionOptions): UseDistributio
     }
 
     const started = performance.now()
-    renderDistributionPlan(context, renderPlan, { layout })
+    renderDistributionPlan(context, renderPlan, {
+      layout,
+      ...(config.plugins ? { plugins: config.plugins } : {}),
+    })
     const renderTime = performance.now() - started
 
     setStats({
@@ -241,7 +249,7 @@ export function useDistribution(options: UseDistributionOptions): UseDistributio
       markerCount: renderPlan.markers.length,
       commandCount: renderPlan.commandCount,
     })
-  }, [containerRef, context, layout, renderPlan, resizeKey])
+  }, [config.plugins, containerRef, context, layout, renderPlan, resizeKey])
 
   const exportImage = useCallback(
     (format: 'png' | 'svg', exportOptions?: ExportOptions) =>
@@ -254,11 +262,15 @@ export function useDistribution(options: UseDistributionOptions): UseDistributio
             dimensions.width,
             dimensions.height,
           )
-          renderDistributionPlan(exportContext, renderPlan, { layout: exportLayout })
+          renderDistributionPlan(exportContext, renderPlan, {
+            layout: exportLayout,
+            ...(config.plugins ? { plugins: config.plugins } : {}),
+          })
         },
         renderSvg: (dimensions) =>
           commandFrameToSvg(
             buildDistributionCommandFrame(renderPlan, dimensions.width, dimensions.height, {
+              ...(config.plugins ? { plugins: config.plugins } : {}),
               layout: createDistributionLayout(
                 config,
                 renderPlan,
@@ -313,6 +325,7 @@ function createDistributionLayout(
   return createChartLayout({
     width,
     height,
+    ...(config.orientation ? { orientation: config.orientation } : {}),
     padding: 8,
     xRange: renderPlan.xRelativeRange,
     yRange: renderPlan.yRange,
@@ -324,17 +337,21 @@ function createDistributionLayout(
     },
     xAxis: {
       visible: true,
-      size: 34,
+      size: config.orientation === 'rotated' ? 'auto' : 34,
       tickCount: 6,
-      ...(config.xAxis?.label !== undefined ? { label: config.xAxis.label } : {}),
-      ...(config.xAxis?.formatValue !== undefined ? { formatValue: config.xAxis.formatValue } : {}),
+      ...config.xAxis,
+      ...(config.xAxis?.scale ||
+      config.xAxis?.calendar ||
+      config.xAxis?.tickValues ||
+      config.xAxis?.rangePolicy
+        ? { valueOffset: renderPlan.xOrigin }
+        : {}),
     },
     yAxis: {
       visible: true,
       size: 58,
       tickCount: 5,
-      ...(config.yAxis?.label !== undefined ? { label: config.yAxis.label } : {}),
-      ...(config.yAxis?.formatValue !== undefined ? { formatValue: config.yAxis.formatValue } : {}),
+      ...config.yAxis,
     },
     grid: {
       visible: true,
@@ -361,6 +378,7 @@ export function Distribution(props: DistributionProps): JSX.Element {
     config,
     data,
     onResize,
+    pixelRatio,
     renderer,
     style,
   } = props
@@ -389,6 +407,7 @@ export function Distribution(props: DistributionProps): JSX.Element {
 
   return (
     <ChartContainer
+      {...(pixelRatio !== undefined ? { pixelRatio } : {})}
       ref={containerRef}
       ariaLabel={ariaLabel}
       onResize={handleResize}

@@ -1,14 +1,12 @@
 import { RenderCommandList, ZLayer } from '../renderer/render-command-list.js'
 import type { RectOptions, RenderContext } from '../renderer/types.js'
 import type { ViewTransform } from '../renderer/view-transform.js'
+import { type ChartFrameOptions, extendChartFrame, renderChartFrame } from './chart-frame.js'
 import {
   addChartGuidesToCommandList,
-  type ChartGuideOptions,
   type ChartLayout,
-  type ChartLayoutOptions,
   createPlotViewportTransform,
   createViewportTransform,
-  drawCommandList,
   expandRange,
   getDefaultColor,
   isFiniteNumber,
@@ -108,10 +106,7 @@ export interface ScatterPlotRenderPlan {
   warnings: readonly string[]
 }
 
-export interface ScatterPlotFrameOptions {
-  layout?: ChartLayout | ChartLayoutOptions
-  guides?: ChartGuideOptions | false
-}
+export type ScatterPlotFrameOptions = ChartFrameOptions<ScatterPlotRenderPlan>
 
 export interface ScatterPlotCommandFrame {
   width: number
@@ -278,7 +273,14 @@ export function buildScatterPlotCommandFrame(
 ): ScatterPlotCommandFrame {
   const layout = resolveChartLayout(options.layout, width, height, plan.xRelativeRange, plan.yRange)
   const transform = layout
-    ? createPlotViewportTransform(plan.xRelativeRange, plan.yRange, width, height, layout.plotArea)
+    ? createPlotViewportTransform(
+        plan.xRelativeRange,
+        plan.yRange,
+        width,
+        height,
+        layout.plotArea,
+        layout,
+      )
     : createScatterPlotViewTransform(plan, width, height)
   const commands = new RenderCommandList()
   if (layout && options.guides !== false) {
@@ -286,13 +288,17 @@ export function buildScatterPlotCommandFrame(
   }
   addScatterPlotToCommandList(commands, plan)
 
-  return {
-    width,
-    height,
-    layout,
-    commands,
-    transform,
-  }
+  return extendChartFrame(
+    {
+      width,
+      height,
+      layout,
+      commands,
+      transform,
+    },
+    plan,
+    options.plugins,
+  )
 }
 
 export function renderScatterPlotPlan(
@@ -301,10 +307,7 @@ export function renderScatterPlotPlan(
   options: ScatterPlotFrameOptions = {},
 ): void {
   const frame = buildScatterPlotCommandFrame(plan, context.width, context.height, options)
-  context.setTransform(frame.transform)
-  context.beginFrame()
-  drawCommandList(context, frame.commands)
-  context.endFrame()
+  renderChartFrame(context, frame, plan, options.plugins)
 }
 
 function resolveScatterMode(input: {

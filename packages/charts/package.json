@@ -1,6 +1,6 @@
 {
   "name": "@pitant/charts",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "WebGPU-first TypeScript chart core for high-density industrial time-series",
   "type": "module",
   "license": "MPL-2.0",

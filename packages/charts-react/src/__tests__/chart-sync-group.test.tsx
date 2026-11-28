@@ -1,6 +1,7 @@
+import { createChartLayout } from '@pitant/charts'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
-import { ChartSyncGroup, useChartSync } from '../chart-sync-group.js'
+import { ChartSyncGroup, resolveSyncedCursor, useChartSync } from '../chart-sync-group.js'
 
 afterEach(cleanup)
 
@@ -46,7 +47,91 @@ function ChartSpy({ chartKey }: { chartKey: string }) {
   )
 }
 
+function YRangeSpy({ chartKey }: { chartKey: string }) {
+  const { canReceive, syncState, updateYRange } = useChartSync(chartKey)
+  return (
+    <>
+      <span data-testid={chartKey}>
+        {canReceive('yRange') ? JSON.stringify(syncState.yRange) : 'rejected'}
+      </span>
+      <button data-testid={`${chartKey} set`} type="button" onClick={() => updateYRange([8, 12])}>
+        Set Y range
+      </button>
+    </>
+  )
+}
+
 describe('ChartSyncGroup', () => {
+  it('filters group publication and receiving charts independently', () => {
+    render(
+      <ChartSyncGroup
+        sync={['yRange']}
+        filters={{
+          publish: (event) => event.source !== 'unauthorized',
+          receive: (_, chartKey) => chartKey !== 'different-unit',
+        }}
+      >
+        <YRangeSpy chartKey="source" />
+        <YRangeSpy chartKey="same-unit" />
+        <YRangeSpy chartKey="different-unit" />
+        <YRangeSpy chartKey="unauthorized" />
+      </ChartSyncGroup>,
+    )
+    fireEvent.click(screen.getByTestId('unauthorized set'))
+    expect(screen.getByTestId('same-unit').textContent).toBe('rejected')
+    fireEvent.click(screen.getByTestId('source set'))
+    expect(screen.getByTestId('same-unit').textContent).toBe('[8,12]')
+    expect(screen.getByTestId('source').textContent).toBe('rejected')
+    expect(screen.getByTestId('different-unit').textContent).toBe('rejected')
+  })
+
+  it('maps relative cursor coordinates onto the receiving chart domains', () => {
+    const layout = createChartLayout({ width: 200, height: 100, padding: 0 })
+    const state = {
+      cursorTimestamp: 500,
+      cursorPosition: { xRatio: 0.25, yRatio: 0.75, y: 15 },
+      xRange: null,
+      source: 'leader',
+    }
+    const viewport = { layout, xRange: [0, 100] as const, yRange: [0, 20] as const, xOrigin: 700 }
+    expect(resolveSyncedCursor(state, { x: 'relative', y: 'relative' }, viewport)).toEqual({
+      timestamp: 725,
+      x: 50,
+      y: 75,
+    })
+    expect(resolveSyncedCursor(state, { x: 'value', y: 'value' }, viewport)).toEqual({
+      timestamp: null,
+      x: null,
+      y: 25,
+    })
+  })
+
+  it('maps the same synchronized ratios to a rotated receiving plot', () => {
+    const layout = createChartLayout({
+      width: 200,
+      height: 100,
+      padding: 0,
+      orientation: 'rotated',
+    })
+    const state = {
+      cursorTimestamp: 725,
+      cursorPosition: { xRatio: 0.25, yRatio: 0.75, y: 15 },
+      xRange: null,
+      source: 'leader',
+    }
+    const viewport = { layout, xRange: [0, 100] as const, yRange: [0, 20] as const, xOrigin: 700 }
+    expect(resolveSyncedCursor(state, { x: 'relative', y: 'relative' }, viewport)).toEqual({
+      timestamp: 725,
+      x: 50,
+      y: 25,
+    })
+    expect(resolveSyncedCursor(state, { x: 'value', y: 'value' }, viewport)).toEqual({
+      timestamp: 725,
+      x: 150,
+      y: 25,
+    })
+  })
+
   // ── Basic rendering ──────────────────────────────────────
 
   it('renders children', () => {

@@ -18,7 +18,7 @@ npm pack ./packages/charts ./packages/charts-react
 In your React app, install both archives from the same build.
 
 ```sh
-bun add /path/to/pitant-charts/pitant-charts-1.0.0.tgz /path/to/pitant-charts/pitant-charts-react-1.0.0.tgz
+bun add /path/to/pitant-charts/pitant-charts-1.1.0.tgz /path/to/pitant-charts/pitant-charts-react-1.1.0.tgz
 ```
 
 Import PITANT chart tokens once in the application shell:
@@ -110,7 +110,7 @@ public packages.
 | `pitant-synchronized-dashboard` | One workflow needs shared x-range and cursor state across chart panels. | Panels cross tenant, site, evidence, or authorization boundaries. |
 | `pitant-datazoom` | Users need overview-plus-detail navigation over a large time window. | The chart is compact or already constrained to a narrow live window. |
 | `pitant-streaming-trend` | A live historian tail appends new typed-array chunks at the right edge. | A backfill rewrites earlier timestamps or changes the schema. |
-| `pitant-multi-axis` | Signals with different units need synchronized x-ranges and separate y-ranges. | A single-canvas dual-axis overlay is a hard requirement. |
+| `pitant-multi-axis` | Signals with different units share one time axis and use independent Y axes. | The signals need separate time windows. |
 | `pitant-export` | A user needs PNG screenshots for reports, tickets, or support bundles. | The workflow requires evidence-grade SVG or signed export packs. |
 | `pitant-dashboard-overview` | One tenant/site/workflow needs a dense trend and state overview. | The view mixes scopes that require separate authorization or evidence context. |
 

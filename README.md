@@ -45,7 +45,7 @@ cd packages/charts-ui
 bun pm pack
 ```
 
-From your React app, run `bun add /path/to/pitant-charts-0.7.0.tgz` with the path to the archive printed by `bun pm pack`.
+From your React app, run `bun add /path/to/pitant-charts-0.8.0.tgz` with the path to the archive printed by `bun pm pack`.
 
 ```tsx
 import { LineChart } from 'pitant-charts'

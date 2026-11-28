@@ -58,8 +58,23 @@ jobs:
           npm publish ./packages/charts --dry-run --access public
           npm publish ./packages/charts-react --dry-run --access public
 
-      - name: Publish with npm provenance
+      - name: Check npm publishing configuration
+        id: npm-auth
         if: github.event_name == 'release' || inputs.dry_run == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -n "$NODE_AUTH_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "::error::NPM_TOKEN is required for a manual npm publication."
+            exit 1
+          else
+            echo "::notice::NPM_TOKEN is absent. The GitHub Release distributes package archives."
+          fi
+
+      - name: Publish with npm provenance
+        if: steps.npm-auth.outputs.enabled == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |

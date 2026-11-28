@@ -38,6 +38,7 @@ class CdpClient {
     this.wsUrl = wsUrl
     this.nextId = 1
     this.pending = new Map()
+    this.gpuMessages = []
   }
 
   connect() {
@@ -47,6 +48,10 @@ class CdpClient {
       this.ws.addEventListener('error', (event) => rejectConnect(event.error ?? event))
       this.ws.addEventListener('message', (event) => this.handleMessage(event.data))
     })
+  }
+
+  disconnect() {
+    this.ws?.close()
   }
 
   send(method, params = {}) {
@@ -60,6 +65,17 @@ class CdpClient {
 
   handleMessage(data) {
     const message = JSON.parse(data)
+    if (message.method === 'Log.entryAdded') {
+      const entry = message.params.entry
+      if (
+        /webgpu|dawn|vulkan|gpu device|GPUDevice|GPUAdapter|Invalid TextureView|Queue.Submit/i.test(
+          entry.text,
+        )
+      ) {
+        this.gpuMessages.push(entry.text)
+        if (this.gpuMessages.length > 20) this.gpuMessages.shift()
+      }
+    }
     if (!message.id) return
 
     const pending = this.pending.get(message.id)
@@ -82,6 +98,8 @@ const requestedProfiles =
   args.profiles ??
   (visualMode ? DEFAULT_VISUAL_PROFILES : fpsMode ? DEFAULT_FPS_PROFILES : DEFAULT_VERIFY_PROFILES)
 const requestedRenderers = args.renderers ?? DEFAULT_RENDERERS
+const softwareWebgpu =
+  process.env.PITANT_SOFTWARE_WEBGPU === '1' && requestedRenderers.includes('webgpu')
 const visualBaseline =
   args.visual === true && args.updateVisualBaseline !== true ? await loadVisualBaseline() : null
 
@@ -95,6 +113,7 @@ const harnessPort = await getFreePort()
 const debugPort = await getFreePort()
 const profileDir = await mkdtemp(resolve(tmpdir(), 'pitant-charts-browser-'))
 const children = []
+let tab
 
 try {
   const harness = spawn(
@@ -103,7 +122,7 @@ try {
     {
       cwd: HARNESS_DIR,
       env: { ...process.env, BROWSER: 'none' },
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['ignore', 'ignore', 'pipe'],
     },
   )
   children.push(harness)
@@ -120,22 +139,33 @@ try {
       '--disable-background-networking',
       '--disable-dev-shm-usage',
       '--enable-unsafe-webgpu',
+      ...(softwareWebgpu
+        ? [
+            '--enable-unsafe-swiftshader',
+            '--enable-features=Vulkan',
+            '--use-angle=swiftshader',
+            '--use-vulkan=swiftshader',
+            '--use-webgpu-adapter=swiftshader',
+            '--disable-vulkan-surface',
+          ]
+        : []),
       `--remote-debugging-address=127.0.0.1`,
       `--remote-debugging-port=${debugPort}`,
       `--user-data-dir=${profileDir}`,
       `--window-size=${VIEWPORT.width},${VIEWPORT.height}`,
       'about:blank',
     ],
-    { stdio: ['ignore', 'pipe', 'pipe'] },
+    { stdio: ['ignore', 'ignore', 'pipe'] },
   )
   children.push(chrome)
   captureOutput(chrome, 'chrome')
 
   await waitForHttp(`http://127.0.0.1:${debugPort}/json/version`, 20_000)
-  const tab = await connectToFirstPage(debugPort)
+  tab = await connectToFirstPage(debugPort)
 
   await tab.send('Page.enable')
   await tab.send('Runtime.enable')
+  await tab.send('Log.enable')
   await tab.send('Emulation.setDeviceMetricsOverride', {
     width: VIEWPORT.width,
     height: VIEWPORT.height,
@@ -144,7 +174,39 @@ try {
   })
 
   const baseUrl = `http://127.0.0.1:${harnessPort}/`
-  const webgpuAvailable = await evaluate(tab, 'Boolean(navigator.gpu)')
+  let webgpuAvailable = false
+  let webgpuUnavailableReason = 'A WebGPU adapter is unavailable on the harness origin'
+  if (requestedRenderers.includes('webgpu')) {
+    // WebGPU is gated on a secure context. about:blank does not inherit localhost's origin.
+    await tab.send('Page.navigate', { url: baseUrl })
+    await waitForExpression(
+      tab,
+      `location.href === ${JSON.stringify(baseUrl)} && document.readyState === "complete"`,
+      20_000,
+    )
+    const adapterInfo = await evaluate(
+      tab,
+      `(async () => {
+        const adapter = await navigator.gpu?.requestAdapter()
+        if (!adapter) return null
+        const { vendor, architecture, description, isFallbackAdapter } = adapter.info ?? {}
+        return { vendor, architecture, description, isFallbackAdapter }
+      })()`,
+    )
+    webgpuAvailable = adapterInfo !== null
+    if (softwareWebgpu && !webgpuAvailable) {
+      throw new Error('The requested SwiftShader WebGPU adapter is unavailable.')
+    }
+    if (softwareWebgpu) {
+      console.log('WebGPU test adapter:', adapterInfo)
+      const control = await probeSoftwareWebgpuCanvas(tab)
+      console.log('Software WebGPU canvas control:', control)
+      if (!control.canvas) {
+        webgpuAvailable = false
+        webgpuUnavailableReason = 'SwiftShader could not present an independent WebGPU canvas'
+      }
+    }
+  }
   const results = []
 
   for (const profile of requestedProfiles) {
@@ -154,7 +216,7 @@ try {
           renderer,
           profile,
           skipped: true,
-          reason: 'navigator.gpu is unavailable in this browser environment',
+          reason: webgpuUnavailableReason,
         })
         continue
       }
@@ -163,6 +225,7 @@ try {
         await verifyRenderer(tab, baseUrl, renderer, profile, {
           baseline: visualBaseline,
           fps: fpsMode,
+          softwareWebgpu,
           visual: visualMode,
         }),
       )
@@ -181,10 +244,75 @@ try {
   })
 
   const failed = results.some((result) => result.failed)
+  if (failed && tab.gpuMessages.length) {
+    console.error(`Browser GPU diagnostics:\n${[...new Set(tab.gpuMessages)].join('\n')}`)
+  }
   process.exitCode = failed ? 1 : 0
 } finally {
+  tab?.disconnect()
   await stopChildren(children.reverse())
   await removeWithRetry(profileDir)
+}
+
+async function probeSoftwareWebgpuCanvas(tab) {
+  try {
+    const gpu = await evaluate(
+      tab,
+      `(async () => {
+      const adapter = await navigator.gpu.requestAdapter()
+      const device = await adapter.requestDevice()
+      const canvas = document.createElement('canvas')
+      canvas.width = canvas.height = 16
+      canvas.style.cssText = 'position:fixed;top:0;left:0;width:16px;height:16px;z-index:2147483647'
+      document.body.append(canvas)
+      window.__PITANT_WEBGPU_CONTROL__ = { canvas, device }
+      const buffer = device.createBuffer({
+        size: 256, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+      })
+      try {
+        const context = canvas.getContext('webgpu')
+        context.configure({
+          device, format: navigator.gpu.getPreferredCanvasFormat(),
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
+        })
+        const texture = context.getCurrentTexture()
+        const encoder = device.createCommandEncoder()
+        const pass = encoder.beginRenderPass({ colorAttachments: [{
+          view: texture.createView(), loadOp: 'clear', storeOp: 'store',
+          clearValue: { r: 1, g: 0, b: 1, a: 1 }
+        }] })
+        pass.end()
+        encoder.copyTextureToBuffer({ texture }, { buffer, bytesPerRow: 256 }, [1, 1, 1])
+        device.queue.submit([encoder.finish()])
+        const gpu = await Promise.race([
+          buffer.mapAsync(GPUMapMode.READ).then(() => Array.from(new Uint8Array(buffer.getMappedRange(0, 4)))),
+          new Promise(resolve => setTimeout(() => resolve(null), 4_000))
+        ])
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+        return gpu
+      } finally {
+        buffer.destroy()
+      }
+    })()`,
+    )
+    const image = await captureViewport(tab)
+    const offset = (image.width * 4 + 4) * 4
+    const sample = [...image.data.subarray(offset, offset + 4)]
+    const isMagenta = (rgba) => rgba?.[0] > 240 && rgba[1] < 15 && rgba[2] > 240 && rgba[3] > 240
+    return { gpu, sample, canvas: isMagenta(gpu) && isMagenta(sample) }
+  } finally {
+    await evaluate(
+      tab,
+      `(() => {
+        const control = window.__PITANT_WEBGPU_CONTROL__
+        if (control) {
+          control.canvas.remove()
+          control.device.destroy()
+          delete window.__PITANT_WEBGPU_CONTROL__
+        }
+      })()`,
+    )
+  }
 }
 
 async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
@@ -198,7 +326,7 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
       window.__PITANT_RENDER_HARNESS_STATE__?.profile === ${JSON.stringify(profile)}`,
     20_000,
   )
-  await sleep(900)
+  await sleep(renderer === 'webgpu' ? 1800 : 900)
 
   const { state, rects } = await waitForExpression(
     tab,
@@ -222,6 +350,19 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
     20_000,
   )
   const stateErrors = validateProfileState(state, profile)
+  if (renderer === 'webgpu' && options.softwareWebgpu && !options.visual && !options.fps) {
+    await evaluate(
+      tab,
+      `(async () => {
+        for (const surface of document.querySelectorAll('.chart-surface')) {
+          // Verify the WebGPU frame without counting its independent Canvas2D text overlay.
+          const overlay = surface.querySelector('canvas')?.nextElementSibling
+          if (overlay instanceof HTMLCanvasElement) overlay.style.visibility = 'hidden'
+        }
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      })()`,
+    )
+  }
   const viewportImage = await captureViewport(tab)
   const charts = []
   let scrolled = false
@@ -268,6 +409,7 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
   const fpsBenchmark = options.fps ? await runFpsBenchmark(tab, renderer, profile) : null
   const failed =
     stateErrors.length > 0 ||
+    pixelChecks.length !== expectedSurfaces ||
     pixelChecks.some((count) => count < MIN_SIGNIFICANT_PIXELS) ||
     visualComparison?.failed === true ||
     fpsBenchmark?.failed === true
@@ -1004,6 +1146,7 @@ async function stopChildren(childrenToStop) {
         }),
     ),
   )
+  for (const child of childrenToStop) child.stderr?.destroy()
 }
 
 function killChildTree(child, signal) {

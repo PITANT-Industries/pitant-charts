@@ -3,6 +3,7 @@
 import {
   buildScatterPlotCommandFrame,
   buildScatterPlotRenderPlan,
+  type ChartFramePlugin,
   type ChartLayout,
   type ScatterPlotSeries as CoreScatterPlotSeries,
   commandFrameToSvg,
@@ -51,6 +52,8 @@ export interface ScatterPlotSeriesConfig extends SeriesConfig {
 }
 
 export interface ScatterPlotConfig {
+  orientation?: 'rotated'
+  plugins?: readonly ChartFramePlugin<ScatterPlotRenderPlan>[]
   series: ScatterPlotSeriesConfig[]
   xAxis?: AxisConfig & {
     range?: readonly [number, number]
@@ -115,6 +118,7 @@ export interface ScatterPlotProps
   onResize?: (width: number, height: number, dpr: number) => void
   chartKey?: string
   children?: ReactNode | ((chart: UseScatterPlotReturn) => ReactNode)
+  pixelRatio?: number
 }
 
 const EMPTY_SCATTER_STATS: ScatterPlotStats = {
@@ -133,6 +137,7 @@ export function useScatterPlot(options: UseScatterPlotOptions): UseScatterPlotRe
   const [stats, setStats] = useState<ScatterPlotStats>(EMPTY_SCATTER_STATS)
   const { context, ready, error } = useRenderer({
     containerRef,
+    plugins: config.plugins,
     renderer: config.renderer ?? 'auto',
   })
   const { visibilityMap, toggleSeries } = useSeriesVisibility(config.series)
@@ -224,7 +229,10 @@ export function useScatterPlot(options: UseScatterPlotOptions): UseScatterPlotRe
     }
 
     const started = performance.now()
-    renderScatterPlotPlan(context, renderPlan, { layout })
+    renderScatterPlotPlan(context, renderPlan, {
+      layout,
+      ...(config.plugins ? { plugins: config.plugins } : {}),
+    })
     const renderTime = performance.now() - started
 
     setStats({
@@ -239,7 +247,7 @@ export function useScatterPlot(options: UseScatterPlotOptions): UseScatterPlotRe
       densityCellCount: renderPlan.densityCellCount,
       commandCount: renderPlan.commandCount,
     })
-  }, [containerRef, context, layout, renderPlan, resizeKey])
+  }, [config.plugins, containerRef, context, layout, renderPlan, resizeKey])
 
   const exportImage = useCallback(
     (format: 'png' | 'svg', exportOptions?: ExportOptions) =>
@@ -252,11 +260,15 @@ export function useScatterPlot(options: UseScatterPlotOptions): UseScatterPlotRe
             dimensions.width,
             dimensions.height,
           )
-          renderScatterPlotPlan(exportContext, renderPlan, { layout: exportLayout })
+          renderScatterPlotPlan(exportContext, renderPlan, {
+            layout: exportLayout,
+            ...(config.plugins ? { plugins: config.plugins } : {}),
+          })
         },
         renderSvg: (dimensions) =>
           commandFrameToSvg(
             buildScatterPlotCommandFrame(renderPlan, dimensions.width, dimensions.height, {
+              ...(config.plugins ? { plugins: config.plugins } : {}),
               layout: createScatterPlotLayout(
                 config,
                 renderPlan,
@@ -296,6 +308,7 @@ function createScatterPlotLayout(
   return createChartLayout({
     width,
     height,
+    ...(config.orientation ? { orientation: config.orientation } : {}),
     padding: 8,
     xRange: renderPlan.xRelativeRange,
     yRange: renderPlan.yRange,
@@ -307,17 +320,21 @@ function createScatterPlotLayout(
     },
     xAxis: {
       visible: true,
-      size: 34,
+      size: config.orientation === 'rotated' ? 'auto' : 34,
       tickCount: 6,
-      ...(config.xAxis?.label !== undefined ? { label: config.xAxis.label } : {}),
-      ...(config.xAxis?.formatValue !== undefined ? { formatValue: config.xAxis.formatValue } : {}),
+      ...config.xAxis,
+      ...(config.xAxis?.scale ||
+      config.xAxis?.calendar ||
+      config.xAxis?.tickValues ||
+      config.xAxis?.rangePolicy
+        ? { valueOffset: renderPlan.xOrigin }
+        : {}),
     },
     yAxis: {
       visible: true,
       size: 58,
       tickCount: 5,
-      ...(config.yAxis?.label !== undefined ? { label: config.yAxis.label } : {}),
-      ...(config.yAxis?.formatValue !== undefined ? { formatValue: config.yAxis.formatValue } : {}),
+      ...config.yAxis,
     },
     grid: {
       visible: true,
@@ -344,6 +361,7 @@ export function ScatterPlot(props: ScatterPlotProps): JSX.Element {
     config,
     data,
     onResize,
+    pixelRatio,
     renderer,
     style,
   } = props
@@ -372,6 +390,7 @@ export function ScatterPlot(props: ScatterPlotProps): JSX.Element {
 
   return (
     <ChartContainer
+      {...(pixelRatio !== undefined ? { pixelRatio } : {})}
       ref={containerRef}
       ariaLabel={ariaLabel}
       onResize={handleResize}

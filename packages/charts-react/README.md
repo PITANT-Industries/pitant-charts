@@ -11,7 +11,7 @@ render harnesses that own the canvas lifecycle.
 ## Install
 
 ```sh
-bun add /path/to/pitant-charts/pitant-charts-1.0.0.tgz /path/to/pitant-charts/pitant-charts-react-1.0.0.tgz
+bun add /path/to/pitant-charts/pitant-charts-1.1.0.tgz /path/to/pitant-charts/pitant-charts-react-1.1.0.tgz
 ```
 
 Build and pack both archives from the same repository checkout. [Source installation](../../docs/getting-started.md#install-from-source)
@@ -124,6 +124,140 @@ export function PressureTrend() {
 }
 ```
 
+### Independent Y axes
+
+Pass named axes in `config.yAxes` and bind each signal with `yAxisKey`. The
+first axis is primary. Series without a key use that axis, and the existing
+`yAxis` configuration supplies primary defaults. Each named axis can
+auto-range independently or use an explicit range.
+
+```tsx
+import { TimeSeries, type TimeSeriesConfig } from '@pitant/charts-react'
+
+const config: TimeSeriesConfig = {
+  series: [
+    { key: 'temperature', label: 'Temperature', field: 'temp', yAxisKey: 'temperature' },
+    { key: 'pressure', label: 'Pressure', field: 'pressure', yAxisKey: 'pressure' },
+  ],
+  yAxes: [
+    { key: 'temperature', label: '°C', formatValue: (value) => value.toFixed(1) },
+    { key: 'pressure', side: 'right', label: 'bar', range: [0, 10] },
+  ],
+}
+
+// Both fields use the same millisecond timestamp column.
+const data = {
+  timestamps: new Float64Array([0, 1_000, 2_000]),
+  columns: {
+    temp: new Float64Array([36.4, 36.8, 37.1]),
+    pressure: new Float64Array([2.1, 3.5, 2.9]),
+  },
+}
+
+export function TemperatureAndPressure() {
+  return <TimeSeries ariaLabel="Temperature and pressure trend" config={config} data={data} />
+}
+```
+
+Use the matching `yAxisKey` for derived series, value and envelope bands,
+Y annotations, rulers, and SPC tracks. The axis formatter also applies to
+tooltip values. PNG and SVG use the same axes as the live chart.
+
+### Scales, marks, and asynchronous channels
+
+- Set `xAxis.calendar` to `{ timeZone: 'Europe/Berlin' }` to place day and hour
+  ticks in that zone using epoch-millisecond timestamps. Use `xAxis.scale` or
+  the relevant Y axis's `scale` for linear, logarithmic, asinh, ordinal, or
+  custom mappings. `tickCount`, `tickValues`, and `formatValue` refine each
+  axis. A named Y axis can derive another unit's positions through `from`.
+- Set `mark` on a series to `'line'`, `'area'`, `'bar'`, or `'point'`. Line
+  interpolation also accepts `'spline'`. Per-series `baseline`, `fillRgba`,
+  `dash`, `points`, and `spanGaps` customize supported marks. `points.style`
+  and `barStyle` configure individual samples, including visibility. `path`
+  replaces the default geometry with renderer-neutral draw commands.
+- Use `config.stack.groups` with series keys when a group shares its time
+  positions and Y axis. Set `percent: true` to show signed proportions.
+- Supply per-field sorted `seriesTimestamps` for asynchronous channels.
+  With no field-specific timestamps, a channel uses the shared `timestamps`
+  column. `alignTimeSeriesColumns` from `@pitant/charts` can also build one
+  sorted union with a `sampleKinds` mask, which preserves the distinction
+  between alignment holes and explicit gaps.
+
+### Inspection and rendering controls
+
+`TimeSeries` accepts an `interaction` prop. Select `mode: 'x'`, `'y'`, or
+`'xy'` under `interaction.selection`. Set `zoom: false` for an inspection
+rectangle and read the result through `onSelectionChange`. Programmatic
+`selectedRanges` use absolute X and primary Y data values. In the
+`TimeSeries` render prop or with `useTimeSeries`, call
+`chart.setSelection({ xRange: [start, end], yRange: [low, high] })` to show an
+inspection rectangle without zooming. Omit an axis to span that direction.
+Call `chart.setSelection(null)` to clear it. When `interaction.selectedRanges`
+controls the rectangle, the caller updates it through `onSelectionChange`.
+
+Set `hoverLock` for click-to-pin, `snapToSample` for nearest-sample snapping, or
+`focusClosestSeries` to dim other traces near the cursor. Y zoom acts on the
+primary value axis. Use `setVisibleYRange(null)` to restore its original range.
+
+Set `config.orientation: 'rotated'` to show time from top to bottom and
+values increasing left to right. Selection modes and crosshair options
+still refer to the data axes. Drag along the vertical time axis to zoom,
+use Up and Down to pan, and use Shift with the wheel to pan. The overview
+slider follows the time axis when enabled.
+
+A `TimeSeries` series or `DigitalChannel` channel can set `hoverIndex` to `'previous'`, `'next'`, `'exact'`, or a
+callback. The callback receives that field's raw timestamps, values, quality
+flags, sample kinds, and nearest index. Return a zero-based index, `undefined`
+to keep the nearest sample, or `null` to leave the reading empty. The tooltip header
+keeps the cursor timestamp and alternate readings expose their actual
+`sampleTimestamp` for custom tooltip rendering.
+
+`ChartSyncGroup` defaults to timestamps and X ranges. Supply
+`cursor={{ x: 'relative', y: 'relative' }}` to synchronize fractional cursor
+positions across different charts. Use `cursor.y: 'value'` or `sync={['yRange']}`
+for charts that use matching primary Y units. Enable `'series'` for visibility
+toggles or `'focus'` for the focused series. `mapSeriesKey` maps equivalent
+channels that have different keys. `filters.publish` and `filters.receive` can
+restrict each event. `DigitalChannel` shares X interaction and time and series
+visibility synchronization while its lanes retain their state scale.
+
+In `TimeSeries` and `DigitalChannel`, `tooltip` controls filtering, sorting,
+the visible row limit, list, inline or table layout, and the custom renderer.
+Standalone `ChartLegend` accepts the same display options for ordering entries
+and a `renderValue` callback for live values or series summaries.
+
+Set `pixelRatio` on a chart for a fixed interactive backing-store ratio.
+Export options can request their own ratio. Add `config.plugins` to extend the
+chart's command frame or run code around native drawing. Use `extendFrame` for
+geometry that must appear in Canvas2D, WebGPU, and SVG.
+A plugin can also implement `mount(context)` and return a cleanup function
+for live renderer resources. React calls cleanup when the plugin is removed
+or the renderer is disposed. Keep plugin objects stable to retain their
+mounts across React renders. Frame export uses drawing hooks independently of
+the live mount.
+
+## Numeric heatmap
+
+Use `Heatmap` for a Z value over an X/Y cell. Provide explicit grid edges
+for nonuniform cells or a list of sparse rectangular cells. For a dense grid
+the default value order is one row of X cells for each Y interval.
+
+```tsx
+import { Heatmap } from '@pitant/charts-react'
+
+<Heatmap
+  data={{
+    xEdges: new Float64Array([0, 1, 4]),
+    yEdges: new Float64Array([0, 2, 5]),
+    values: new Float32Array([1, 2, NaN, 4]),
+  }}
+  config={{ xAxis: { label: 'Distance' }, yAxis: { label: 'Pressure' } }}
+/>
+```
+
+For sparse input, use `data={{ cells: [{ xRange: [0, 1], yRange: [2, 5], value: 4 }] }}`.
+The chart works with Canvas2D, WebGPU and PNG and SVG export.
+
 ## PNG And SVG Export
 
 Concrete `TimeSeries` and `DigitalChannel` chart returns expose `exportImage`.
@@ -171,7 +305,7 @@ They install into `@components/pitant/*` and depend on the public packages.
 | `pitant-synchronized-dashboard` | One workflow needs shared x-range and cursor state. | Panels cross tenant, site, evidence, or authorization boundaries. |
 | `pitant-datazoom` | Users need overview-plus-detail navigation. | The chart is compact or live-window only. |
 | `pitant-streaming-trend` | Live historian tails append typed-array chunks. | Backfills rewrite earlier timestamps or schema. |
-| `pitant-multi-axis` | Different units need separated y-ranges. | A single-canvas dual-axis overlay is required. |
+| `pitant-multi-axis` | Signals with different units share one time axis and use independent Y axes. | The signals need separate time windows. |
 | `pitant-export` | The workflow needs PNG export wiring. | Evidence-grade signed export is required. |
 | `pitant-dashboard-overview` | One tenant/site/workflow needs dense trend and state overview. | The view mixes scopes that must stay separate. |
 

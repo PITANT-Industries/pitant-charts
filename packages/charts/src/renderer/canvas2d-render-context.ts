@@ -1,7 +1,10 @@
+import { normalizeLineDash } from './line-dash.js'
 import type {
   FillOptions,
   LineOptions,
+  MarkBatchOptions,
   RectOptions,
+  RenderClipRect,
   RenderContext,
   RendererCapabilities,
   TextOptions,
@@ -20,6 +23,8 @@ export class Canvas2DRenderContext implements RenderContext {
   private _height: number
   private _dpr: number
   private _transform: ViewTransform | null = null
+  private _frameActive = false
+  private _clipActive = false
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -55,23 +60,17 @@ export class Canvas2DRenderContext implements RenderContext {
     this._ctx.setTransform(1, 0, 0, 1, 0, 0)
     this._ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
     this._ctx.save()
-    this._ctx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0)
-
-    // Apply data→pixel transform if set
-    if (this._transform) {
-      const sx = this._transform.scaleX
-      const sy = this._transform.scaleY
-      const tx = this._transform.translateX
-      const ty = this._transform.translateY
-      const hw = this._width / 2
-      const hh = this._height / 2
-      // Combine into a single matrix: translate(hw,hh) · scale(sx,sy) · translate(tx,ty)
-      this._ctx.transform(sx, 0, 0, sy, sx * tx + hw, sy * ty + hh)
-    }
+    this._frameActive = true
+    this._applyTransform()
   }
 
   endFrame(): void {
+    if (this._clipActive) {
+      this._ctx.restore()
+      this._clipActive = false
+    }
     this._ctx.restore()
+    this._frameActive = false
   }
 
   drawLines(buffer: Float32Array, options: LineOptions): void {
@@ -94,6 +93,8 @@ export class Canvas2DRenderContext implements RenderContext {
     // Apply only the backing-store scale when stroking so width stays in CSS pixels.
     ctx.save()
     ctx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0)
+    const dash = normalizeLineDash(options.dash)
+    if (dash) ctx.setLineDash([...dash])
     ctx.stroke()
     ctx.restore()
   }
@@ -138,6 +139,27 @@ export class Canvas2DRenderContext implements RenderContext {
     }
   }
 
+  drawMarks(bounds: Float32Array, options: MarkBatchOptions): void {
+    const [r, g, b, a] = options.color
+    const path = new Path2D()
+    for (let i = 0; i + 3 < bounds.length; i += 4) {
+      const x = bounds[i] as number
+      const y = bounds[i + 1] as number
+      const w = bounds[i + 2] as number
+      const h = bounds[i + 3] as number
+      if (!(w > 0 && h > 0)) continue
+      if (options.shape === 'ellipse') {
+        path.moveTo(x + w, y + h / 2)
+        path.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2)
+        path.closePath()
+      } else {
+        path.rect(x, y, w, h)
+      }
+    }
+    this._ctx.fillStyle = `rgba(${r * 255},${g * 255},${b * 255},${a})`
+    this._ctx.fill(path)
+  }
+
   drawText(text: string, x: number, y: number, options: TextOptions): void {
     const ctx = this._ctx
     const [r, g, b, a] = options.color
@@ -147,12 +169,34 @@ export class Canvas2DRenderContext implements RenderContext {
     ctx.font = `${options.fontSize ?? 12}px ${options.font ?? 'sans-serif'}`
     ctx.textAlign = options.align ?? 'left'
     ctx.textBaseline = options.baseline ?? 'top'
-    ctx.fillText(text, x, y)
+    if (options.rotation) {
+      ctx.translate(x, y)
+      ctx.rotate((options.rotation * Math.PI) / 180)
+      ctx.fillText(text, 0, 0)
+    } else {
+      ctx.fillText(text, x, y)
+    }
     ctx.restore()
   }
 
   setTransform(transform: ViewTransform): void {
     this._transform = transform
+    if (this._frameActive) this._applyTransform()
+  }
+
+  setClipRect(rect: RenderClipRect | null): void {
+    if (!this._frameActive) return
+    const ctx = this._ctx
+    if (this._clipActive) ctx.restore()
+    this._clipActive = rect !== null
+    if (rect) {
+      ctx.save()
+      ctx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0)
+      ctx.beginPath()
+      ctx.rect(rect.x, rect.y, rect.width, rect.height)
+      ctx.clip()
+    }
+    this._applyTransform()
   }
 
   getCapabilities(): RendererCapabilities {
@@ -166,6 +210,31 @@ export class Canvas2DRenderContext implements RenderContext {
 
   dispose(): void {
     // Canvas2D doesn't need explicit GPU cleanup
+  }
+
+  private _applyTransform(): void {
+    this._ctx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0)
+    if (!this._transform) return
+    const { scaleX, scaleY, translateX, translateY } = this._transform
+    if (this._transform.rotated) {
+      this._ctx.transform(
+        0,
+        scaleX,
+        -scaleY,
+        0,
+        this._width / 2 - scaleY * translateY,
+        this._height / 2 + scaleX * translateX,
+      )
+      return
+    }
+    this._ctx.transform(
+      scaleX,
+      0,
+      0,
+      scaleY,
+      scaleX * translateX + this._width / 2,
+      scaleY * translateY + this._height / 2,
+    )
   }
 
   private _resizeBackingStore(width: number, height: number, dpr: number): void {

@@ -111,8 +111,8 @@
     {
       "name": "pitant-multi-axis",
       "type": "registry:block",
-      "title": "PITANT Multi-Axis Panels",
-      "description": "Synchronized TimeSeries panels for comparing signals with different units without forcing a false shared y-axis.",
+      "title": "PITANT Multi-Axis Trend",
+      "description": "One TimeSeries plot comparing signals with different units on independent Y axes.",
       "dependencies": ["@pitant/charts", "@pitant/charts-react"],
       "files": [
         {
@@ -122,7 +122,7 @@
         }
       ],
       "categories": ["charts", "comparison", "multi-axis"],
-      "docs": "Use this block when units need separated y-axis ranges. Do not use it when a single-canvas dual-axis overlay is required; that remains a future explicit chart mode.",
+      "docs": "Use this block to overlay signals on a shared time axis while preserving each unit’s value range. Give each independent unit its own named Y axis.",
       "meta": {
         "profile": "plant",
         "renderer": "auto",

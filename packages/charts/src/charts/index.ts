@@ -1,14 +1,19 @@
+export type { AxisProjection, CalendarAxisOptions, ChartScale } from './axis-scale.js'
 export type {
   AxisLayoutOptions,
+  AxisRangePolicy,
   AxisTick,
   ChartGuideOptions,
   ChartLayout,
   ChartLayoutOptions,
   ChartRect,
+  DependentYAxis,
   EdgeInsets,
   GridLayoutOptions,
+  LaidOutYAxis,
   LegendLayoutOptions,
   LegendPosition,
+  NamedYAxisLayoutOptions,
   NumericRange,
   RgbaColor,
 } from './common.js'
@@ -95,6 +100,23 @@ export type {
   DistributionChartOptions,
 } from './distribution-chart.js'
 export { DistributionChart } from './distribution-chart.js'
+export type {
+  HeatmapCell,
+  HeatmapChartCreateOptions,
+  HeatmapChartOptions,
+  HeatmapDataSet,
+  HeatmapFrameOptions,
+  HeatmapGridData,
+  HeatmapRenderOptions,
+  HeatmapRenderPlan,
+  HeatmapSparseData,
+} from './heatmap.js'
+export {
+  buildHeatmapCommandFrame,
+  buildHeatmapRenderPlan,
+  HeatmapChart,
+  renderHeatmapPlan,
+} from './heatmap.js'
 export type {
   KpiPlannedItem,
   KpiSparkline,
@@ -229,6 +251,8 @@ export type {
   TimeSeriesAnomalyTrackStyle,
   TimeSeriesBand,
   TimeSeriesBandSegment,
+  TimeSeriesBarStyle,
+  TimeSeriesBarStyleCallback,
   TimeSeriesCommandFrame,
   TimeSeriesDataSet,
   TimeSeriesEnvelopeBand,
@@ -239,12 +263,19 @@ export type {
   TimeSeriesFrameOptions,
   TimeSeriesInterpolation,
   TimeSeriesLineSegment,
+  TimeSeriesMark,
+  TimeSeriesMarkSample,
+  TimeSeriesPathBuilder,
+  TimeSeriesPathContext,
   TimeSeriesPlannedAnnotation,
   TimeSeriesPlannedAnomalyTrack,
   TimeSeriesPlannedBand,
   TimeSeriesPlannedEventMarker,
   TimeSeriesPlannedSeries,
   TimeSeriesPlannedSpcTrack,
+  TimeSeriesPlannedYAxis,
+  TimeSeriesPointOptions,
+  TimeSeriesPointStyle,
   TimeSeriesRenderOptions,
   TimeSeriesRenderPlan,
   TimeSeriesRulerAnnotation,
@@ -256,9 +287,12 @@ export type {
   TimeSeriesSpcRuleSeverity,
   TimeSeriesSpcTrack,
   TimeSeriesSpcTrackStyle,
+  TimeSeriesStackGroup,
+  TimeSeriesStackOptions,
   TimeSeriesValueBand,
   TimeSeriesXLineAnnotation,
   TimeSeriesXRangeAnnotation,
+  TimeSeriesYAxisOptions,
   TimeSeriesYLineAnnotation,
   TimeSeriesYRangeAnnotation,
 } from './time-series.js'
@@ -274,6 +308,12 @@ export {
   createTimeSeriesViewTransform,
   renderTimeSeriesPlan,
 } from './time-series.js'
+export type {
+  AlignedTimeSeriesColumns,
+  IndependentTimeSeriesColumn,
+  TimeSeriesGapPolicy,
+} from './time-series-alignment.js'
+export { alignTimeSeriesColumns, TimeSeriesSampleKind } from './time-series-alignment.js'
 export type { TimeSeriesChartCreateOptions, TimeSeriesChartOptions } from './time-series-chart.js'
 export { TimeSeriesChart } from './time-series-chart.js'
 export type {

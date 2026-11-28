@@ -1,14 +1,22 @@
 'use client'
 
 import {
+  buildHeatmapCommandFrame,
+  buildHeatmapRenderPlan,
   buildSpectrogramCommandFrame,
   buildSpectrogramRenderPlan,
+  type ChartFramePlugin,
   type ChartLayout,
   commandFrameToSvg,
   createChartLayout,
+  type HeatmapDataSet,
+  type HeatmapRenderPlan,
+  type RenderContext,
   type RgbaColor,
+  renderHeatmapPlan,
   renderSpectrogramPlan,
   type SpectrogramColorStop,
+  type SpectrogramCommandFrame,
   type SpectrogramRenderOptions,
   type SpectrogramRenderPlan,
   type SpectrogramValueLayout,
@@ -48,7 +56,11 @@ export interface SpectrogramColorStopConfig {
   rgba: RgbaColor
 }
 
-export interface SpectrogramConfig {
+type MatrixPlan = SpectrogramRenderPlan | HeatmapRenderPlan
+
+interface MatrixConfig<TPlan> {
+  plugins?: readonly ChartFramePlugin<TPlan>[]
+  orientation?: 'rotated'
   colorStops?: readonly SpectrogramColorStopConfig[]
   missingRgba?: RgbaColor
   includeMissing?: boolean
@@ -66,61 +78,125 @@ export interface SpectrogramConfig {
   renderer?: 'webgpu' | 'canvas2d' | 'auto'
 }
 
-export interface SpectrogramStats extends ChartStats {
+export interface SpectrogramConfig extends MatrixConfig<SpectrogramRenderPlan> {}
+export type HeatmapConfig = MatrixConfig<HeatmapRenderPlan>
+
+export interface HeatmapStats extends ChartStats {
   sourceTileCount: number
   renderedTileCount: number
+}
+
+export interface SpectrogramStats extends HeatmapStats {
   timeBinCount: number
   frequencyBinCount: number
 }
 
-export interface UseSpectrogramOptions {
-  config: SpectrogramConfig
-  data: SpectrogramMatrixData
+interface UseMatrixOptions<TData, TPlan> {
+  config: MatrixConfig<TPlan>
+  data: TData
   containerRef: RefObject<ChartContainerRef | null>
   chartKey?: string
   resizeKey?: unknown
 }
 
-export interface UseSpectrogramReturn {
-  setData: (data: SpectrogramMatrixData) => void
+export interface UseSpectrogramOptions
+  extends UseMatrixOptions<SpectrogramMatrixData, SpectrogramRenderPlan> {}
+export type UseHeatmapOptions = UseMatrixOptions<HeatmapDataSet, HeatmapRenderPlan>
+
+interface UseMatrixReturn<TData, TPlan> {
+  setData: (data: TData) => void
   exportImage: (format: 'png' | 'svg', options?: ExportOptions) => Promise<Blob>
-  stats: SpectrogramStats
+  stats: HeatmapStats
   ready: boolean
   error: Error | null
-  config: SpectrogramConfig
-  renderPlan: SpectrogramRenderPlan
+  config: MatrixConfig<TPlan>
+  renderPlan: TPlan
   dataRange: readonly [number, number]
   renderedTileCount: number
   layout: ChartLayout
 }
 
-export interface SpectrogramProps
+export interface UseSpectrogramReturn
+  extends UseMatrixReturn<SpectrogramMatrixData, SpectrogramRenderPlan> {
+  stats: SpectrogramStats
+}
+
+export type UseHeatmapReturn = UseMatrixReturn<HeatmapDataSet, HeatmapRenderPlan>
+
+interface MatrixProps<TData, TPlan, TChart = UseMatrixReturn<TData, TPlan>>
   extends Pick<
     ChartContainerProps,
     'className' | 'style' | 'aspectRatio' | 'ariaLabel' | 'ariaDescribedBy'
   > {
-  config: SpectrogramConfig
-  data: SpectrogramMatrixData
-  renderer?: SpectrogramConfig['renderer']
+  config: MatrixConfig<TPlan>
+  data: TData
+  renderer?: MatrixConfig<TPlan>['renderer']
   onResize?: (width: number, height: number, dpr: number) => void
   chartKey?: string
-  children?: ReactNode | ((chart: UseSpectrogramReturn) => ReactNode)
+  children?: ReactNode | ((chart: TChart) => ReactNode)
+  pixelRatio?: number
 }
 
-const EMPTY_SPECTROGRAM_STATS: SpectrogramStats = {
-  ...EMPTY_STATS,
-  sourceTileCount: 0,
-  renderedTileCount: 0,
-  timeBinCount: 0,
-  frequencyBinCount: 0,
+export interface SpectrogramProps
+  extends MatrixProps<SpectrogramMatrixData, SpectrogramRenderPlan, UseSpectrogramReturn> {}
+export type HeatmapProps = MatrixProps<HeatmapDataSet, HeatmapRenderPlan>
+
+interface MatrixFrameOptions<TPlan> {
+  layout: ChartLayout
+  plugins?: readonly ChartFramePlugin<TPlan>[]
+}
+
+interface MatrixPipeline<TData, TPlan> {
+  title: string
+  buildPlan: (data: TData, options: SpectrogramRenderOptions) => TPlan
+  buildFrame: (
+    plan: TPlan,
+    width: number,
+    height: number,
+    options: MatrixFrameOptions<TPlan>,
+  ) => SpectrogramCommandFrame
+  render: (context: RenderContext, plan: TPlan, options: MatrixFrameOptions<TPlan>) => void
+}
+
+const SPECTROGRAM_PIPELINE: MatrixPipeline<SpectrogramMatrixData, SpectrogramRenderPlan> = {
+  title: 'Spectrogram chart',
+  buildPlan: buildSpectrogramRenderPlan,
+  buildFrame: buildSpectrogramCommandFrame,
+  render: renderSpectrogramPlan,
+}
+
+const HEATMAP_PIPELINE: MatrixPipeline<HeatmapDataSet, HeatmapRenderPlan> = {
+  title: 'Heatmap chart',
+  buildPlan: buildHeatmapRenderPlan,
+  buildFrame: buildHeatmapCommandFrame,
+  render: renderHeatmapPlan,
+}
+
+function withBinCounts(
+  chart: UseMatrixReturn<SpectrogramMatrixData, SpectrogramRenderPlan>,
+): UseSpectrogramReturn {
+  const { timeBinCount, frequencyBinCount } = chart.renderPlan
+  return { ...chart, stats: { ...chart.stats, timeBinCount, frequencyBinCount } }
 }
 
 export function useSpectrogram(options: UseSpectrogramOptions): UseSpectrogramReturn {
+  return withBinCounts(useMatrixChart(options, SPECTROGRAM_PIPELINE))
+}
+
+export function useHeatmap(options: UseHeatmapOptions): UseHeatmapReturn {
+  return useMatrixChart(options, HEATMAP_PIPELINE)
+}
+
+function useMatrixChart<TData, TPlan extends MatrixPlan>(
+  options: UseMatrixOptions<TData, TPlan>,
+  pipeline: MatrixPipeline<TData, TPlan>,
+): UseMatrixReturn<TData, TPlan> {
   const { config, containerRef, resizeKey } = options
-  const [data, setData] = useState<SpectrogramMatrixData>(options.data)
-  const [stats, setStats] = useState<SpectrogramStats>(EMPTY_SPECTROGRAM_STATS)
+  const [data, setData] = useState<TData>(options.data)
+  const [stats, setStats] = useState<ChartStats>(EMPTY_STATS)
   const { context, ready, error } = useRenderer({
     containerRef,
+    plugins: config.plugins,
     renderer: config.renderer ?? 'auto',
   })
 
@@ -138,19 +214,7 @@ export function useSpectrogram(options: UseSpectrogramOptions): UseSpectrogramRe
     if (config.missingRgba !== undefined) renderOptions.missingColor = config.missingRgba
     if (config.includeMissing !== undefined) renderOptions.includeMissing = config.includeMissing
     if (colorStops !== undefined) renderOptions.defaultColorStops = colorStops
-    return buildSpectrogramRenderPlan(
-      {
-        timeBins: data.timeBins,
-        frequencyBins: data.frequencyBins,
-        values: data.values,
-        ...(data.valueLayout !== undefined ? { valueLayout: data.valueLayout } : {}),
-        ...(data.timeBinWidth !== undefined ? { timeBinWidth: data.timeBinWidth } : {}),
-        ...(data.frequencyBinWidth !== undefined
-          ? { frequencyBinWidth: data.frequencyBinWidth }
-          : {}),
-      },
-      renderOptions,
-    )
+    return pipeline.buildPlan(data, renderOptions)
   }, [
     colorStops,
     config.includeMissing,
@@ -158,35 +222,15 @@ export function useSpectrogram(options: UseSpectrogramOptions): UseSpectrogramRe
     config.xAxis?.range,
     config.yAxis?.range,
     config.zAxis?.range,
-    data.frequencyBinWidth,
-    data.frequencyBins,
-    data.timeBinWidth,
-    data.timeBins,
-    data.valueLayout,
-    data.values,
+    data,
+    pipeline,
   ])
 
   const layout = useMemo(() => {
     void resizeKey
     const dimensions = containerRef.current?.dimensions
-    return createSpectrogramLayout(
-      config,
-      renderPlan,
-      dimensions?.width ?? 1,
-      dimensions?.height ?? 1,
-    )
+    return createMatrixLayout(config, renderPlan, dimensions?.width ?? 1, dimensions?.height ?? 1)
   }, [config, containerRef, renderPlan, resizeKey])
-
-  useEffect(() => {
-    setStats((previous) => ({
-      ...previous,
-      pointCount: renderPlan.renderedTileCount,
-      sourceTileCount: renderPlan.sourceTileCount,
-      renderedTileCount: renderPlan.renderedTileCount,
-      timeBinCount: renderPlan.timeBinCount,
-      frequencyBinCount: renderPlan.frequencyBinCount,
-    }))
-  }, [renderPlan])
 
   useEffect(() => {
     if (!context) return
@@ -199,52 +243,55 @@ export function useSpectrogram(options: UseSpectrogramOptions): UseSpectrogramRe
     }
 
     const started = performance.now()
-    renderSpectrogramPlan(context, renderPlan, { layout })
+    pipeline.render(context, renderPlan, {
+      layout,
+      ...(config.plugins ? { plugins: config.plugins } : {}),
+    })
     const renderTime = performance.now() - started
 
     setStats({
       fps: renderTime > 0 ? 1000 / renderTime : 0,
       renderTime,
       pointCount: renderPlan.renderedTileCount,
-      sourceTileCount: renderPlan.sourceTileCount,
-      renderedTileCount: renderPlan.renderedTileCount,
-      timeBinCount: renderPlan.timeBinCount,
-      frequencyBinCount: renderPlan.frequencyBinCount,
     })
-  }, [containerRef, context, layout, renderPlan, resizeKey])
+  }, [config.plugins, containerRef, context, layout, pipeline, renderPlan, resizeKey])
 
   const exportImage = useCallback(
     (format: 'png' | 'svg', exportOptions?: ExportOptions) =>
       exportCanvasImage(containerRef, format, exportOptions, {
         renderCanvas: (exportContext, dimensions) => {
-          const exportLayout = createSpectrogramLayout(
+          const exportLayout = createMatrixLayout(
             config,
             renderPlan,
             dimensions.width,
             dimensions.height,
           )
-          renderSpectrogramPlan(exportContext, renderPlan, { layout: exportLayout })
+          pipeline.render(exportContext, renderPlan, {
+            layout: exportLayout,
+            ...(config.plugins ? { plugins: config.plugins } : {}),
+          })
         },
         renderSvg: (dimensions) =>
           commandFrameToSvg(
-            buildSpectrogramCommandFrame(renderPlan, dimensions.width, dimensions.height, {
-              layout: createSpectrogramLayout(
-                config,
-                renderPlan,
-                dimensions.width,
-                dimensions.height,
-              ),
+            pipeline.buildFrame(renderPlan, dimensions.width, dimensions.height, {
+              ...(config.plugins ? { plugins: config.plugins } : {}),
+              layout: createMatrixLayout(config, renderPlan, dimensions.width, dimensions.height),
             }),
-            buildSvgOptions(dimensions, 'Spectrogram chart'),
+            buildSvgOptions(dimensions, pipeline.title),
           ),
       }),
-    [config, containerRef, renderPlan],
+    [config, containerRef, pipeline, renderPlan],
   )
 
   return {
     setData,
     exportImage,
-    stats,
+    stats: {
+      ...stats,
+      pointCount: renderPlan.renderedTileCount,
+      sourceTileCount: renderPlan.sourceTileCount,
+      renderedTileCount: renderPlan.renderedTileCount,
+    },
     ready,
     error,
     config,
@@ -262,31 +309,38 @@ function toCoreColorStop(stop: SpectrogramColorStopConfig): SpectrogramColorStop
   }
 }
 
-function createSpectrogramLayout(
-  config: SpectrogramConfig,
-  renderPlan: SpectrogramRenderPlan,
+function createMatrixLayout<TPlan extends MatrixPlan>(
+  config: MatrixConfig<TPlan>,
+  renderPlan: TPlan,
   width: number,
   height: number,
 ): ChartLayout {
   return createChartLayout({
     width,
     height,
+    ...(config.orientation ? { orientation: config.orientation } : {}),
     padding: 8,
     xRange: renderPlan.xRelativeRange,
-    yRange: renderPlan.yRange,
+    yRange: renderPlan.kind === 'heatmap' ? renderPlan.yRelativeRange : renderPlan.yRange,
     xAxis: {
       visible: true,
       size: 34,
       tickCount: 6,
-      ...(config.xAxis?.label !== undefined ? { label: config.xAxis.label } : {}),
-      ...(config.xAxis?.formatValue !== undefined ? { formatValue: config.xAxis.formatValue } : {}),
+      ...config.xAxis,
+      ...(renderPlan.kind === 'heatmap' ||
+      config.xAxis?.scale ||
+      config.xAxis?.calendar ||
+      config.xAxis?.tickValues ||
+      config.xAxis?.rangePolicy
+        ? { valueOffset: renderPlan.xOrigin }
+        : {}),
     },
     yAxis: {
       visible: true,
       size: 58,
       tickCount: 5,
-      ...(config.yAxis?.label !== undefined ? { label: config.yAxis.label } : {}),
-      ...(config.yAxis?.formatValue !== undefined ? { formatValue: config.yAxis.formatValue } : {}),
+      ...config.yAxis,
+      ...(renderPlan.kind === 'heatmap' ? { valueOffset: renderPlan.yOrigin } : {}),
     },
     grid: {
       visible: true,
@@ -302,10 +356,25 @@ function buildSvgOptions(dimensions: ResolvedExportOptions, title: string) {
     : { title, background: dimensions.background }
 }
 
-export function Spectrogram(props: SpectrogramProps): JSX.Element {
+export function Spectrogram({ children, ...props }: SpectrogramProps): JSX.Element {
+  return (
+    <MatrixChart {...props} pipeline={SPECTROGRAM_PIPELINE}>
+      {typeof children === 'function' ? (chart) => children(withBinCounts(chart)) : children}
+    </MatrixChart>
+  )
+}
+
+export function Heatmap(props: HeatmapProps): JSX.Element {
+  return <MatrixChart {...props} pipeline={HEATMAP_PIPELINE} />
+}
+
+function MatrixChart<TData, TPlan extends MatrixPlan>({
+  pipeline,
+  ...props
+}: MatrixProps<TData, TPlan> & { pipeline: MatrixPipeline<TData, TPlan> }): JSX.Element {
   const {
     ariaDescribedBy,
-    ariaLabel = 'Spectrogram chart',
+    ariaLabel = pipeline.title,
     aspectRatio,
     children,
     chartKey,
@@ -313,6 +382,7 @@ export function Spectrogram(props: SpectrogramProps): JSX.Element {
     config,
     data,
     onResize,
+    pixelRatio,
     renderer,
     style,
   } = props
@@ -323,13 +393,16 @@ export function Spectrogram(props: SpectrogramProps): JSX.Element {
     () => (renderer === undefined ? config : { ...config, renderer }),
     [config, renderer],
   )
-  const chart = useSpectrogram({
-    chartKey: chartKey ?? generatedChartKey,
-    config: effectiveConfig,
-    data,
-    containerRef,
-    resizeKey,
-  })
+  const chart = useMatrixChart(
+    {
+      chartKey: chartKey ?? generatedChartKey,
+      config: effectiveConfig,
+      data,
+      containerRef,
+      resizeKey,
+    },
+    pipeline,
+  )
 
   const handleResize = useCallback(
     (width: number, height: number, dpr: number) => {
@@ -341,6 +414,7 @@ export function Spectrogram(props: SpectrogramProps): JSX.Element {
 
   return (
     <ChartContainer
+      {...(pixelRatio !== undefined ? { pixelRatio } : {})}
       ref={containerRef}
       ariaLabel={ariaLabel}
       onResize={handleResize}

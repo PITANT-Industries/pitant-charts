@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 - 2026-11-28
+
+- Preserved exact timestamp positions in raw and downsampled viewport queries.
+- Added abortable renderer creation to prevent outdated WebGPU requests from
+  configuring a reused canvas.
+- Added independent Y axes, calendar and nonlinear scales, and rotated
+  Cartesian layouts.
+- Added mixed and styled marks, stacking, dashed lines, independent sample
+  timestamps, gap policies and numeric heatmaps.
+- Added chart plugin lifecycle hooks, batched updates and cached redraw.
 
 - Added TimeSeries value-band and envelope-band render-plan support with
   command-frame/SVG output and a high-density benchmark gate.

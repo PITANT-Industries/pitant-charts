@@ -1,14 +1,12 @@
 import { RenderCommandList, ZLayer } from '../renderer/render-command-list.js'
 import type { RectOptions, RenderContext, TextOptions } from '../renderer/types.js'
 import type { ViewTransform } from '../renderer/view-transform.js'
+import { type ChartFrameOptions, extendChartFrame, renderChartFrame } from './chart-frame.js'
 import {
   addChartGuidesToCommandList,
-  type ChartGuideOptions,
   type ChartLayout,
-  type ChartLayoutOptions,
   createPlotViewportTransform,
   createViewportTransform,
-  drawCommandList,
   isFiniteNumber,
   type NumericRange,
   normalizeRange,
@@ -96,9 +94,8 @@ export interface CorrelationMatrixRenderPlan {
   warnings: readonly string[]
 }
 
-export interface CorrelationMatrixFrameOptions {
-  layout?: ChartLayout | ChartLayoutOptions
-  guides?: ChartGuideOptions | false
+export interface CorrelationMatrixFrameOptions
+  extends ChartFrameOptions<CorrelationMatrixRenderPlan> {
   labels?: boolean
   maxLabelCount?: number
 }
@@ -290,7 +287,14 @@ export function buildCorrelationMatrixCommandFrame(
 ): CorrelationMatrixCommandFrame {
   const layout = resolveChartLayout(options.layout, width, height, plan.xRelativeRange, plan.yRange)
   const transform = layout
-    ? createPlotViewportTransform(plan.xRelativeRange, plan.yRange, width, height, layout.plotArea)
+    ? createPlotViewportTransform(
+        plan.xRelativeRange,
+        plan.yRange,
+        width,
+        height,
+        layout.plotArea,
+        layout,
+      )
     : createCorrelationMatrixViewTransform(plan, width, height)
   const commands = new RenderCommandList()
   addCorrelationMatrixToCommandList(commands, plan)
@@ -307,13 +311,17 @@ export function buildCorrelationMatrixCommandFrame(
     )
   }
 
-  return {
-    width,
-    height,
-    layout,
-    commands,
-    transform,
-  }
+  return extendChartFrame(
+    {
+      width,
+      height,
+      layout,
+      commands,
+      transform,
+    },
+    plan,
+    options.plugins,
+  )
 }
 
 export function renderCorrelationMatrixPlan(
@@ -322,10 +330,7 @@ export function renderCorrelationMatrixPlan(
   options: CorrelationMatrixFrameOptions = {},
 ): void {
   const frame = buildCorrelationMatrixCommandFrame(plan, context.width, context.height, options)
-  context.setTransform(frame.transform)
-  context.beginFrame()
-  drawCommandList(context, frame.commands)
-  context.endFrame()
+  renderChartFrame(context, frame, plan, options.plugins)
 }
 
 function visibleVariableIndexes(

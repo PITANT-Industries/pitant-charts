@@ -188,6 +188,185 @@ describe('useTimeSeries', () => {
     expect(result.current.layout.legendArea).not.toBeNull()
   })
 
+  it('uses independent Y axes for channel values, overlays and SVG export', async () => {
+    const data: TimeSeriesColumnData = {
+      timestamps: DATA.timestamps,
+      columns: {
+        ...DATA.columns,
+        pressure: new Float64Array([1500, 1000, 500]),
+        other: new Float64Array([101, 102, 103]),
+      },
+    }
+    const config: TimeSeriesConfig = {
+      series: [
+        { key: 'temp', label: 'Temperature', field: 'temp' },
+        { key: 'pressure', label: 'Pressure', field: 'pressure', yAxisKey: 'pressure' },
+        { key: 'other', label: 'Other', field: 'other', yAxisKey: 'other' },
+        { key: 'unconfigured', label: 'Invalid axis', field: 'other', yAxisKey: 'unknown' },
+      ],
+      derivedSeries: [
+        {
+          key: 'pressure_ma',
+          label: 'Pressure mean',
+          sourceField: 'pressure',
+          kind: 'moving-average',
+          windowSize: 2,
+          minimumSamples: 1,
+          yAxisKey: 'pressure',
+        },
+      ],
+      yAxis: { label: '°C', range: [0, 20], formatValue: (value) => `${value} °C` },
+      yAxes: [
+        { key: 'temperature' },
+        {
+          key: 'pressure',
+          side: 'right',
+          label: 'Pressure',
+          range: [0, 2000],
+          tickCount: 3,
+          formatValue: (value) => `${value} kPa`,
+        },
+        { key: 'other', side: 'right', range: [0, 200] },
+      ],
+      bands: [{ kind: 'value-band', key: 'limit', yAxisKey: 'pressure', yStart: 1200, yEnd: 1500 }],
+      annotations: [{ kind: 'y-line', key: 'setpoint', yAxisKey: 'pressure', y: 1100 }],
+      spcTracks: [{ key: 'control', yAxisKey: 'pressure', centerLine: 950 }],
+    }
+    const { result } = renderHook(() =>
+      useTimeSeries({ config, data, containerRef: fakeContainerRef(900) }),
+    )
+
+    expect(result.current.renderPlan.yRange).toEqual([0, 20])
+    expect(result.current.renderPlan.yAxes?.map((axis) => [axis.key, axis.range])).toEqual([
+      ['temperature', [0, 20]],
+      ['pressure', [0, 2000]],
+      ['other', [0, 200]],
+    ])
+    expect(
+      result.current.layout.yAxes?.map(({ key, label, side }) => ({ key, label, side })),
+    ).toEqual([
+      { key: 'temperature', label: '°C', side: 'left' },
+      { key: 'pressure', label: 'Pressure', side: 'right' },
+      { key: 'other', label: null, side: 'right' },
+    ])
+    expect(result.current.layout.yAxes?.[1]?.ticks.map((tick) => tick.label)).toEqual([
+      '0 kPa',
+      '1000 kPa',
+      '2000 kPa',
+    ])
+    expect(
+      result.current.renderPlan.series.find(({ key }) => key === 'pressure_ma')?.yAxisKey,
+    ).toBe('pressure')
+    expect(result.current.renderPlan.bands[0]?.yAxisKey).toBe('pressure')
+    expect(result.current.renderPlan.annotations[0]?.yAxisKey).toBe('pressure')
+    expect(result.current.renderPlan.spcTracks[0]?.yAxisKey).toBe('pressure')
+    expect(result.current.renderPlan.series.some(({ key }) => key === 'unconfigured')).toBe(false)
+    expect(result.current.legendItems.some(({ key }) => key === 'unconfigured')).toBe(false)
+
+    act(() => result.current.handleHoverChange(pointerAt(1010)))
+    expect(
+      result.current.tooltipPayload?.series.map(({ key, formatted }) => [key, formatted]),
+    ).toEqual([
+      ['temp', '12 °C'],
+      ['pressure', '1000 kPa'],
+      ['other', '102'],
+      ['pressure_ma', '1250 kPa'],
+    ])
+
+    const blob = await result.current.exportImage('svg', { width: 900, height: 400 })
+    const svg = await blob.text()
+    expect(svg).toContain('>Pressure</text>')
+    expect(svg).toContain('>2000 kPa</text>')
+    expect(svg).toContain('>20 °C</text>')
+
+    act(() => result.current.toggleSeries('pressure'))
+    act(() => result.current.handleHoverChange(pointerAt(1010)))
+    expect(result.current.renderPlan.series.some(({ key }) => key === 'pressure')).toBe(false)
+    expect(result.current.tooltipPayload?.series.some(({ key }) => key === 'pressure')).toBe(false)
+  })
+
+  it('applies and resets a primary Y viewport without changing the secondary scale', () => {
+    const config: TimeSeriesConfig = {
+      ...CONFIG,
+      yAxes: [
+        { key: 'temp', range: [0, 20] },
+        { key: 'pressure', range: [0, 4] },
+      ],
+      series: CONFIG.series.map((item) => ({ ...item, yAxisKey: item.key })),
+    }
+    const { result } = renderHook(() =>
+      useTimeSeries({ config, data: DATA, containerRef: fakeContainerRef(700) }),
+    )
+    act(() => result.current.setVisibleYRange([9, 13]))
+    expect(result.current.visibleYRange).toEqual([9, 13])
+    expect(result.current.renderPlan.yRange).toEqual([9, 13])
+    expect(result.current.renderPlan.yAxes?.[1]?.range).toEqual([0, 4])
+    act(() => result.current.setVisibleYRange(null))
+    expect(result.current.renderPlan.yRange).toEqual([0, 20])
+  })
+
+  it('inspects asynchronously sampled fields on their own sorted timestamps', () => {
+    const data: TimeSeriesColumnData = {
+      timestamps: new Float64Array([1000, 1010, 1020]),
+      columns: {
+        temp: new Float64Array([10, NaN, 15]),
+        pressure: new Float64Array([400, 900]),
+      },
+      sampleKinds: { temp: new Uint8Array([0, 1, 0]) },
+      seriesTimestamps: { pressure: new Float64Array([1011, 1040]) },
+    }
+    const config: TimeSeriesConfig = {
+      ...CONFIG,
+      series: CONFIG.series.map((item) => ({ ...item, mark: 'point' })),
+    }
+    const { result } = renderHook(() =>
+      useTimeSeries({ config, data, containerRef: fakeContainerRef(700) }),
+    )
+    expect(result.current.fullRange).toEqual([1000, 1040])
+    expect(result.current.renderPlan.series.find(({ key }) => key === 'pressure')?.mark).toBe(
+      'point',
+    )
+    act(() => result.current.handleHoverChange(pointerAt(1010)))
+    expect(result.current.tooltipPayload?.series).toEqual([
+      expect.objectContaining({ key: 'temp', value: null, gap: true }),
+      expect.objectContaining({ key: 'pressure', value: 400 }),
+    ])
+  })
+
+  it.each([false, true])('snaps and focuses using the series scale with rotation %s', (rotated) => {
+    const config: TimeSeriesConfig = {
+      ...(rotated ? { orientation: 'rotated' } : {}),
+      series: [
+        { key: 'temp', label: 'Temperature', field: 'temp' },
+        { key: 'pressure', label: 'Pressure', field: 'pressure', yAxisKey: 'pressure' },
+      ],
+      yAxes: [
+        { key: 'temp', range: [0, 20] },
+        { key: 'pressure', range: [0, 3] },
+      ],
+    }
+    const interaction = { snapToSample: true, focusClosestSeries: 2 }
+    const { result } = renderHook(() =>
+      useTimeSeries({ config, data: DATA, containerRef: fakeContainerRef(700), interaction }),
+    )
+    const { layout } = result.current
+    const snapped = result.current.snapHover(pointerAt(1014))
+    expect(snapped.dataX).toBe(1010)
+    if (rotated) {
+      expect(snapped.plotRatioY).toBe(0.5)
+      expect(snapped.chartY).toBe(layout.plotArea.y + layout.plotArea.height / 2)
+    } else {
+      expect(snapped.plotRatioX).toBe(0.5)
+    }
+    const valueCoordinate = rotated
+      ? { plotX: (2 / 3) * layout.plotArea.width }
+      : { plotY: (1 - 2 / 3) * layout.plotArea.height }
+    act(() => result.current.handleHoverChange({ ...snapped, ...valueCoordinate }))
+    expect(result.current.focusedSeriesKey).toBe('pressure')
+    act(() => result.current.handleHoverChange(null))
+    expect(result.current.focusedSeriesKey).toBe(null)
+  })
+
   it('passes value and envelope bands into the core render plan', () => {
     const data: TimeSeriesColumnData = {
       timestamps: new Float64Array([1000, 1010, 1020]),
@@ -618,6 +797,32 @@ describe('useTimeSeries', () => {
     })
   })
 
+  it('keeps real epoch timestamps distinct after the viewport query settles', async () => {
+    const epoch = Date.UTC(2026, 10, 28, 12)
+    const offsets = [0, 1, 10, 100, 1000, 2000, 5000, 10000, 30000, 60000, 120000, 180000]
+    const data: TimeSeriesColumnData = {
+      timestamps: Float64Array.from(offsets, (offset) => epoch + offset),
+      columns: { temp: Float64Array.from(offsets, (_, index) => index + 1) },
+    }
+    const config: TimeSeriesConfig = {
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+    }
+    const query = vi.spyOn(DataSource.prototype, 'query')
+    const { result } = renderHook(() =>
+      useTimeSeries({ config, data, containerRef: fakeContainerRef(1200) }),
+    )
+
+    await waitFor(() => expect(query).toHaveBeenCalled())
+    await act(async () => {
+      await query.mock.results[0]?.value
+    })
+    expect(result.current.stats.dataLoading).toBe(false)
+    expect(result.current.stats.lodLevel).toBe(0)
+    expect(result.current.renderPlan.xRange).toEqual([epoch, epoch + 180000])
+    const buffer = result.current.renderPlan.series[0]?.segments[0]?.buffer
+    expect(Array.from(buffer ?? []).filter((_, index) => index % 2 === 0)).toEqual(offsets)
+  })
+
   it('appends into the existing DataSource and updates live-edge range', async () => {
     const appendSpy = vi.spyOn(DataSource.prototype, 'append')
     const largeData = makeLargeData(9000)
@@ -701,6 +906,137 @@ describe('useTimeSeries', () => {
     await waitFor(() => {
       expect(screen.getByTestId('right-cursor').textContent).toBe('1010')
       expect(screen.getByTestId('right-synced-cursor').textContent).toBe('true')
+    })
+  })
+
+  it('synchronizes visibility and focus through mapped series keys', () => {
+    const leftConfig: TimeSeriesConfig = {
+      series: [
+        { key: 'temperature', label: 'Temperature', field: 'temp' },
+        { key: 'pressure', label: 'Pressure', field: 'pressure' },
+      ],
+      yAxis: { range: [0, 20] },
+    }
+    const rightConfig: TimeSeriesConfig = {
+      series: [
+        { key: 'temperature-alias', label: 'Temperature alias', field: 'temp' },
+        { key: 'pressure-alias', label: 'Pressure alias', field: 'pressure' },
+      ],
+      yAxis: { range: [0, 20] },
+    }
+    const interaction = { focusClosestSeries: 3 }
+    function SyncedSeriesHarness() {
+      const left = useTimeSeries({
+        chartKey: 'left',
+        config: leftConfig,
+        data: DATA,
+        containerRef: fakeContainerRef(700),
+        interaction,
+      })
+      const right = useTimeSeries({
+        chartKey: 'right',
+        config: rightConfig,
+        data: DATA,
+        containerRef: fakeContainerRef(700),
+      })
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              left.toggleSeries('pressure', false)
+              left.handleHoverChange({
+                ...pointerAt(1010),
+                plotY: (1 - 12 / 20) * left.layout.plotArea.height,
+              })
+            }}
+          >
+            Synchronize plot
+          </button>
+          <span data-testid="right-focused">{right.focusedSeriesKey}</span>
+          <span data-testid="right-pressure">
+            {String(right.legendItems.find(({ key }) => key === 'pressure-alias')?.visible)}
+          </span>
+        </>
+      )
+    }
+    render(
+      <ChartSyncGroup
+        sync={['series', 'focus']}
+        mapSeriesKey={(key, _source, target) =>
+          target === 'right' ? `${key}-alias` : key.replace(/-alias$/, '')
+        }
+      >
+        <SyncedSeriesHarness />
+      </ChartSyncGroup>,
+    )
+    fireEvent.click(screen.getByText('Synchronize plot'))
+    expect(screen.getByTestId('right-focused').textContent).toBe('temperature-alias')
+    expect(screen.getByTestId('right-pressure').textContent).toBe('false')
+  })
+
+  it('shows and clears a programmatic inspection rectangle without changing the chart ranges', () => {
+    const onSelectionChange = vi.fn()
+    render(
+      <TimeSeries config={CONFIG} data={DATA} interaction={{ onSelectionChange }}>
+        {(chart) => (
+          <>
+            <button
+              type="button"
+              onClick={() => chart.setSelection({ xRange: [1018, 1005], yRange: [6, 9] })}
+            >
+              Inspect range
+            </button>
+            <button type="button" onClick={() => chart.setSelection(null)}>
+              Clear range
+            </button>
+            <span data-testid="selection-view-range">{JSON.stringify(chart.dataRange)}</span>
+            <span data-testid="selection-y-range">{JSON.stringify(chart.visibleYRange)}</span>
+          </>
+        )}
+      </TimeSeries>,
+    )
+
+    expect(screen.queryByTestId('chart-region-zoom-selection')).toBeNull()
+    fireEvent.click(screen.getByText('Inspect range'))
+    expect(screen.getByTestId('chart-region-zoom-selection')).toBeTruthy()
+    expect(onSelectionChange).toHaveBeenLastCalledWith({ xRange: [1005, 1018], yRange: [6, 9] })
+    expect(screen.getByTestId('selection-view-range').textContent).toBe('[1000,1020]')
+    expect(screen.getByTestId('selection-y-range').textContent).toBe('null')
+    fireEvent.click(screen.getByText('Clear range'))
+    expect(screen.queryByTestId('chart-region-zoom-selection')).toBeNull()
+    expect(onSelectionChange).toHaveBeenLastCalledWith(null)
+  })
+
+  it('reports selections through the callback when the rectangle is controlled', () => {
+    const onSelectionChange = vi.fn()
+    const interaction = { selectedRanges: null, onSelectionChange }
+    const { result } = renderHook(() =>
+      useTimeSeries({
+        config: CONFIG,
+        data: DATA,
+        containerRef: fakeContainerRef(700),
+        interaction,
+      }),
+    )
+    act(() => result.current.setSelection({ xRange: [1000, 1015] }))
+    expect(onSelectionChange).toHaveBeenLastCalledWith({ xRange: [1000, 1015] })
+    expect(result.current.selectedRanges).toBe(null)
+  })
+
+  it('passes raw per-series hover policies through the native TimeSeries component', () => {
+    const config: TimeSeriesConfig = {
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp', hoverIndex: 'previous' }],
+    }
+    const { result } = renderHook(() =>
+      useTimeSeries({ config, data: DATA, containerRef: fakeContainerRef(700) }),
+    )
+    act(() => result.current.handleHoverChange(pointerAt(1009)))
+    expect(result.current.tooltipPayload?.timestamp).toBe(1010)
+    expect(result.current.tooltipPayload?.series[0]).toMatchObject({
+      key: 'temp',
+      value: 10,
+      sampleTimestamp: 1000,
     })
   })
 

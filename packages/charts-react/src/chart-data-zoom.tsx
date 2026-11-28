@@ -49,21 +49,16 @@ const trackStyle: CSSProperties = {
   background: 'var(--chart-datazoom-background, rgba(248, 250, 252, 0.9))',
 }
 
+const WINDOW_BORDER = '2px solid var(--chart-datazoom-window-border, rgba(37, 99, 235, 0.95))'
+
 const windowStyle: CSSProperties = {
   position: 'absolute',
-  top: 0,
-  bottom: 0,
-  borderLeft: '2px solid var(--chart-datazoom-window-border, rgba(37, 99, 235, 0.95))',
-  borderRight: '2px solid var(--chart-datazoom-window-border, rgba(37, 99, 235, 0.95))',
   background: 'var(--chart-datazoom-window, rgba(37, 99, 235, 0.16))',
   cursor: 'grab',
 }
 
 const handleStyle: CSSProperties = {
   position: 'absolute',
-  top: 0,
-  bottom: 0,
-  width: 8,
   background: 'var(--chart-datazoom-handle, rgba(37, 99, 235, 0.82))',
 }
 
@@ -79,6 +74,9 @@ export function ChartDataZoom({
   visibleRange,
 }: ChartDataZoomProps): React.JSX.Element | null {
   const area = useMemo(() => getDataZoomArea(layout), [layout])
+  const rotated = layout.orientation === 'rotated'
+  const length = rotated ? area.height : area.width
+  const thickness = rotated ? area.width : area.height
   const [drag, setDrag] = useState<DataZoomDragState | null>(null)
   const fullSpan = fullRange[1] - fullRange[0]
 
@@ -88,19 +86,20 @@ export function ChartDataZoom({
   )
 
   const path = useMemo(
-    () => buildMinimapPath(timestamps, values, area.width, area.height, maxSampleCount),
-    [area.height, area.width, maxSampleCount, timestamps, values],
+    () => buildMinimapPath(timestamps, values, length, thickness, maxSampleCount),
+    [length, thickness, maxSampleCount, timestamps, values],
   )
 
   const windowPosition = useMemo(() => {
-    if (fullSpan <= Number.EPSILON) return { left: 0, width: area.width }
+    if (fullSpan <= Number.EPSILON) return { start: 0, span: length }
 
     const startRatio = clamp((currentRange[0] - fullRange[0]) / fullSpan, 0, 1)
     const endRatio = clamp((currentRange[1] - fullRange[0]) / fullSpan, 0, 1)
-    const left = startRatio * area.width
-    const width = Math.max(4, (endRatio - startRatio) * area.width)
-    return { left, width }
-  }, [area.width, currentRange, fullRange, fullSpan])
+    return {
+      start: startRatio * length,
+      span: Math.max(4, (endRatio - startRatio) * length),
+    }
+  }, [length, currentRange, fullRange, fullSpan])
 
   const publishRange = useCallback(
     (range: readonly [number, number]) => {
@@ -116,8 +115,8 @@ export function ChartDataZoom({
     (event: ReactPointerEvent<HTMLElement>) => {
       if (!enabled || event.button !== 0 || fullSpan <= Number.EPSILON) return
 
-      const ratio = ratioFromPointer(event)
-      const mode = resolveDragMode(ratio, currentRange, fullRange, area.width)
+      const ratio = ratioFromPointer(event, rotated)
+      const mode = resolveDragMode(ratio, currentRange, fullRange, length)
       const startRange =
         mode === 'pan' && !ratioInRange(ratio, currentRange, fullRange)
           ? centerRangeAtRatio(currentRange, fullRange, ratio)
@@ -135,7 +134,7 @@ export function ChartDataZoom({
         startRange,
       })
     },
-    [area.width, currentRange, enabled, fullRange, fullSpan, onRangeChange],
+    [currentRange, enabled, fullRange, fullSpan, length, onRangeChange, rotated],
   )
 
   const handlePointerMove = useCallback(
@@ -145,7 +144,7 @@ export function ChartDataZoom({
       }
 
       event.preventDefault()
-      const ratio = ratioFromPointer(event)
+      const ratio = ratioFromPointer(event, rotated)
       const value = fullRange[0] + ratio * fullSpan
       const minSpan = Math.max(Number.EPSILON, fullSpan * MIN_WINDOW_RATIO)
 
@@ -161,7 +160,7 @@ export function ChartDataZoom({
       const delta = (ratio - drag.startRatio) * fullSpan
       publishRange([drag.startRange[0] + delta, drag.startRange[1] + delta])
     },
-    [drag, enabled, fullRange, fullSpan, publishRange],
+    [drag, enabled, fullRange, fullSpan, publishRange, rotated],
   )
 
   const clearDrag = useCallback((event: ReactPointerEvent<HTMLElement>) => {
@@ -169,11 +168,33 @@ export function ChartDataZoom({
     setDrag(null)
   }, [])
 
-  if (!enabled || fullSpan <= Number.EPSILON || area.width < 24 || area.height < 12) return null
+  if (!enabled || fullSpan <= Number.EPSILON || length < 24 || thickness < 12) return null
+
+  const windowAxisStyle: CSSProperties = rotated
+    ? {
+        top: windowPosition.start,
+        height: windowPosition.span,
+        left: 0,
+        right: 0,
+        borderTop: WINDOW_BORDER,
+        borderBottom: WINDOW_BORDER,
+      }
+    : {
+        left: windowPosition.start,
+        width: windowPosition.span,
+        top: 0,
+        bottom: 0,
+        borderLeft: WINDOW_BORDER,
+        borderRight: WINDOW_BORDER,
+      }
+  const handleAxisStyle: CSSProperties = rotated
+    ? { left: 0, right: 0, height: 8, cursor: 'ns-resize' }
+    : { top: 0, bottom: 0, width: 8, cursor: 'ew-resize' }
 
   return (
     <div
       aria-label="Chart DataZoom range"
+      aria-orientation={rotated ? 'vertical' : undefined}
       aria-valuemax={fullRange[1]}
       aria-valuemin={fullRange[0]}
       aria-valuenow={(currentRange[0] + currentRange[1]) / 2}
@@ -204,48 +225,54 @@ export function ChartDataZoom({
           width="100%"
         >
           <title>DataZoom overview</title>
-          {path ? (
-            <path
-              d={path}
-              fill="none"
-              stroke={color}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeOpacity={0.72}
-              strokeWidth={1.25}
-            />
-          ) : (
-            <line
-              stroke={color}
-              strokeOpacity={0.5}
-              strokeWidth={1}
-              x1={0}
-              x2={area.width}
-              y1={area.height / 2}
-              y2={area.height / 2}
-            />
-          )}
+          <g transform={rotated ? `matrix(0 1 -1 0 ${area.width} 0)` : undefined}>
+            {path ? (
+              <path
+                d={path}
+                fill="none"
+                stroke={color}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeOpacity={0.72}
+                strokeWidth={1.25}
+              />
+            ) : (
+              <line
+                stroke={color}
+                strokeOpacity={0.5}
+                strokeWidth={1}
+                x1={0}
+                x2={length}
+                y1={thickness / 2}
+                y2={thickness / 2}
+              />
+            )}
+          </g>
         </svg>
         <div
           className="pitant-chart-datazoom-window"
           data-testid="chart-data-zoom-window"
-          style={{
-            ...windowStyle,
-            left: windowPosition.left,
-            width: windowPosition.width,
-          }}
+          style={{ ...windowStyle, ...windowAxisStyle }}
         >
           <span
             aria-hidden
             className="pitant-chart-datazoom-handle-start"
             data-testid="chart-data-zoom-handle-start"
-            style={{ ...handleStyle, left: -4, cursor: 'ew-resize' }}
+            style={{
+              ...handleStyle,
+              ...handleAxisStyle,
+              ...(rotated ? { top: -4 } : { left: -4 }),
+            }}
           />
           <span
             aria-hidden
             className="pitant-chart-datazoom-handle-end"
             data-testid="chart-data-zoom-handle-end"
-            style={{ ...handleStyle, right: -4, cursor: 'ew-resize' }}
+            style={{
+              ...handleStyle,
+              ...handleAxisStyle,
+              ...(rotated ? { bottom: -4 } : { right: -4 }),
+            }}
           />
         </div>
       </div>
@@ -260,6 +287,13 @@ function getDataZoomArea(layout: ChartLayout): {
   height: number
 } {
   const axis = layout.xAxisArea
+  if (layout.orientation === 'rotated') {
+    const width = axis ? Math.max(12, Math.min(22, axis.width - 8)) : 16
+    const x = axis
+      ? axis.x + (axis.x < layout.plotArea.x ? 4 : Math.max(4, axis.width - width - 4))
+      : layout.plotArea.x + 4
+    return { x, y: layout.plotArea.y, width, height: layout.plotArea.height }
+  }
   const height = axis ? Math.max(12, Math.min(22, axis.height - 8)) : 16
   const y = axis
     ? axis.y + Math.max(4, axis.height - height - 4)
@@ -320,9 +354,11 @@ function buildMinimapPath(
   return path
 }
 
-function ratioFromPointer(event: ReactPointerEvent<HTMLElement>): number {
+function ratioFromPointer(event: ReactPointerEvent<HTMLElement>, rotated: boolean): number {
   const rect = event.currentTarget.getBoundingClientRect()
-  return clamp((event.clientX - rect.left) / Math.max(Number.EPSILON, rect.width), 0, 1)
+  const offset = rotated ? event.clientY - rect.top : event.clientX - rect.left
+  const length = rotated ? rect.height : rect.width
+  return clamp(offset / Math.max(Number.EPSILON, length), 0, 1)
 }
 
 function resolveDragMode(

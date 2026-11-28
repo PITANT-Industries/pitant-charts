@@ -22,20 +22,33 @@ export type { ChartContainerProps, ChartContainerRef } from './chart-container.j
 export { ChartContainer } from './chart-container.js'
 export type { ChartDataZoomProps } from './chart-data-zoom.js'
 export { ChartDataZoom } from './chart-data-zoom.js'
-export type { ChartRegionZoomLayerProps } from './chart-interactions.js'
+export type { ChartDisplayItemsOptions } from './chart-display-items.js'
+export type {
+  ChartCrosshairOptions,
+  ChartRangeSelection,
+  ChartRegionZoomLayerProps,
+  ChartSelectionOptions,
+} from './chart-interactions.js'
 export { ChartRegionZoomLayer } from './chart-interactions.js'
 // Legend
 export type { ChartLegendItem, ChartLegendProps } from './chart-legend.js'
 export { ChartLegend } from './chart-legend.js'
 // Sync
 export type {
+  ChartSyncCursorMode,
+  ChartSyncCursorOptions,
+  ChartSyncCursorPosition,
+  ChartSyncEvent,
+  ChartSyncFilters,
   ChartSyncGroupProps,
+  ChartSyncSeriesVisibilityEvent,
   SyncMode,
   SyncState,
 } from './chart-sync-group.js'
 export { ChartSyncGroup, useChartSync } from './chart-sync-group.js'
 // Tooltip
 export type {
+  ChartTooltipLayout,
   ChartTooltipPayload,
   ChartTooltipProps,
   ChartTooltipProvenance,
@@ -47,6 +60,8 @@ export type {
   ColumnarTooltipProvenanceField,
   ColumnarTooltipProvenanceMap,
   ColumnarTooltipProvenanceValue,
+  SeriesHoverIndex,
+  SeriesHoverIndexContext,
 } from './chart-tooltip-data.js'
 // Correlation matrix
 export type {
@@ -65,6 +80,7 @@ export type {
   DigitalChannelColumnData,
   DigitalChannelConfig,
   DigitalChannelConfigSeries,
+  DigitalChannelInteractionOptions,
   DigitalChannelProps,
   DigitalChannelStats,
   UseDigitalChannelOptions,
@@ -106,17 +122,22 @@ export type {
   UseScatterPlotReturn,
 } from './scatter-plot.js'
 export { ScatterPlot, useScatterPlot } from './scatter-plot.js'
-// Spectrogram
+// Spectrogram and Heatmap
 export type {
+  HeatmapConfig,
+  HeatmapProps,
+  HeatmapStats,
   SpectrogramColorStopConfig,
   SpectrogramConfig,
   SpectrogramMatrixData,
   SpectrogramProps,
   SpectrogramStats,
+  UseHeatmapOptions,
+  UseHeatmapReturn,
   UseSpectrogramOptions,
   UseSpectrogramReturn,
 } from './spectrogram.js'
-export { Spectrogram, useSpectrogram } from './spectrogram.js'
+export { Heatmap, Spectrogram, useHeatmap, useSpectrogram } from './spectrogram.js'
 // Spectrum
 export type {
   SpectrumColumnData,
@@ -140,6 +161,7 @@ export type {
   TimeSeriesDerivedSeriesConfig,
   TimeSeriesEnvelopeBandConfig,
   TimeSeriesEventMarkerConfig,
+  TimeSeriesInteractionOptions,
   TimeSeriesProps,
   TimeSeriesRulerAnnotationConfig,
   TimeSeriesSeriesConfig,
@@ -149,6 +171,7 @@ export type {
   TimeSeriesValueBandConfig,
   TimeSeriesXLineAnnotationConfig,
   TimeSeriesXRangeAnnotationConfig,
+  TimeSeriesYAxisConfig,
   TimeSeriesYLineAnnotationConfig,
   TimeSeriesYRangeAnnotationConfig,
   UseTimeSeriesOptions,

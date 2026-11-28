@@ -368,4 +368,130 @@ describe('imperative chart classes', () => {
     chart.dispose()
     expect(() => chart.render()).toThrow('ScatterPlotChart has been disposed')
   })
+
+  it('coalesces batched renders for all native chart types', () => {
+    const makeCharts = [
+      (context: RenderContext) => new TimeSeriesChart(context, { data: TIME_SERIES_DATA }),
+      (context: RenderContext) => new DigitalChannelChart(context, { data: DIGITAL_DATA }),
+      (context: RenderContext) => new SpectrumChart(context, { data: SPECTRUM_DATA }),
+      (context: RenderContext) => new SpectrogramChart(context, { data: SPECTROGRAM_DATA }),
+      (context: RenderContext) => new DistributionChart(context, { data: DISTRIBUTION_DATA }),
+      (context: RenderContext) => new CorrelationMatrixChart(context, { data: CORRELATION_DATA }),
+      (context: RenderContext) => new KpiStripChart(context, { data: KPI_STRIP_DATA }),
+      (context: RenderContext) => new ScatterPlotChart(context, { data: SCATTER_DATA }),
+    ]
+    for (const makeChart of makeCharts) {
+      const context = new FakeRenderContext()
+      const chart = makeChart(context)
+      const initial = chart.renderPlan
+
+      chart.batch(() => {
+        chart.resize(640, 360)
+        chart.batch(() => {
+          chart.resize(800, 450, 2)
+          chart.redraw()
+        })
+        chart.render()
+        expect(context.beginCount).toBe(1)
+        expect(chart.renderPlan).toBe(initial)
+      })
+
+      expect(context.beginCount).toBe(2)
+      expect(context.endCount).toBe(2)
+      expect(context.width).toBe(800)
+      expect(context.height).toBe(450)
+      expect(context.dpr).toBe(2)
+      expect(chart.renderPlan).not.toBe(initial)
+    }
+  })
+
+  it('reuses planned geometry on redraw and rebuilds after input and size changes', () => {
+    const context = new FakeRenderContext()
+    const values = new Float64Array([10, 11, 12])
+    let built = 0
+    let drew = 0
+    const chart = new TimeSeriesChart(context, {
+      data: { ...TIME_SERIES_DATA, columns: { temp: values } },
+      frame: {
+        plugins: [
+          {
+            extendFrame() {
+              built++
+            },
+            afterDraw() {
+              drew++
+            },
+          },
+        ],
+      },
+    })
+    const initial = chart.renderPlan
+    values[2] = 100
+    expect(chart.redraw()).toBe(initial)
+    expect(built).toBe(1)
+    expect(drew).toBe(2)
+
+    context.resize(900, 600, 2)
+    expect(chart.redraw()).toBe(initial)
+    expect(built).toBe(2)
+    expect(drew).toBe(3)
+
+    chart.clearCache()
+    expect(chart.redraw().yRange[1]).toBeGreaterThan(100)
+    expect(built).toBe(3)
+    chart.redraw()
+    chart.render()
+    expect(built).toBe(4)
+    expect(drew).toBe(6)
+  })
+
+  it('rolls back setter changes in a batch when the callback fails', () => {
+    const context = new FakeRenderContext()
+    const chart = new TimeSeriesChart(context, { data: TIME_SERIES_DATA })
+    const initialPlan = chart.renderPlan
+    expect(() =>
+      chart.batch((batch) => {
+        batch.resize(600, 300)
+        batch.setRenderOptions({ yRange: [0, 10] })
+        batch.batch((nested) => nested.setData({ ...TIME_SERIES_DATA, series: [] }))
+        throw new Error('update failed')
+      }),
+    ).toThrow('update failed')
+    expect(context.width).toBe(320)
+    expect(context.beginCount).toBe(1)
+    expect(chart.renderOptions).toEqual({})
+    expect(chart.data).toBe(TIME_SERIES_DATA)
+    expect(chart.redraw()).toBe(initialPlan)
+  })
+
+  it('mutates time-series and bands by key without editing caller objects', () => {
+    const context = new FakeRenderContext()
+    const chart = new TimeSeriesChart(context, { data: TIME_SERIES_DATA })
+    chart.batch((batch) => {
+      batch.addSeries({ key: 'reference', field: 'temp', label: 'Reference' })
+      batch.updateSeries('reference', { label: 'Comparison' })
+      batch.addBand({ key: 'target', kind: 'value-band', yStart: 11, yEnd: 13 })
+      batch.updateBand({ key: 'target', kind: 'value-band', yStart: 10, yEnd: 14 })
+    })
+    expect(context.beginCount).toBe(2)
+    expect(chart.renderPlan.series.map((series) => series.label)).toEqual([
+      'Temperature',
+      'Comparison',
+    ])
+    expect(chart.renderPlan.bands.map((band) => band.key)).toEqual(['target'])
+    expect(TIME_SERIES_DATA.series).toHaveLength(1)
+    expect(TIME_SERIES_DATA.bands).toBeUndefined()
+
+    chart.batch((batch) => {
+      batch.removeSeries('temp')
+      batch.removeBand('target')
+    })
+    expect(context.beginCount).toBe(3)
+    expect(chart.renderPlan.series.map((series) => series.key)).toEqual(['reference'])
+    expect(chart.renderPlan.bands).toEqual([])
+    expect(() => chart.removeBand('target')).toThrow('No band')
+    expect(() => chart.addSeries({ key: 'reference', field: 'temp', label: 'Reference' })).toThrow(
+      'already exists',
+    )
+  })
 })

@@ -14,10 +14,10 @@ cd packages/charts-ui
 bun run check
 bun run palette:check
 bun pm pack
-bun scripts/check-package.ts pitant-charts-0.7.0.tgz
+bun scripts/check-package.ts pitant-charts-0.8.0.tgz
 ```
 
-From your React app, run `bun add /path/to/pitant-charts-0.7.0.tgz`.
+From your React app, run `bun add /path/to/pitant-charts-0.8.0.tgz`.
 
 [Repository setup and release checks](../../docs/release-checklist.md#dashboard-and-catalog)
 
@@ -54,6 +54,18 @@ export function OrdersChart() {
 | `SunburstChart` | A named root with nested `children`. Leaf values are positive numbers. Branch totals are derived from their children. Optional legend. Use arrow keys to inspect a segment, Enter to drill down and Escape to go back. |
 
 All charts take an accessible `label`, an optional `className`, and an optional `height` in pixels or as a CSS length. The default is `16rem`.
+
+## Configure Cartesian charts
+
+Supply `yAxes` and match a series' `yAxisKey` to its axis. Each axis can define
+its own range, formatter, side and scale. Series can choose line, bar, area or
+point marks and select linear, stepped or monotone interpolation. Use `stack`
+on bar or area series to group them, and set `stackOffset` for diverging or
+normalized stacks. `orientation="vertical"` places the value axis horizontally.
+
+Supply `xAxis.value` for a continuous numeric domain. For dated samples, use
+epoch milliseconds with a time scale and an IANA `timeZone` for labels. The
+`ticks` option lets the caller provide specific dates or numeric positions.
 
 ## Theme
 

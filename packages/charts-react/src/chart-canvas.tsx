@@ -1,11 +1,12 @@
 'use client'
 
-import type { RenderContext, RenderContextOptions, RendererType } from '@pitant/charts'
+import type { RenderContext, RendererType } from '@pitant/charts'
 import { type JSX, useCallback, useEffect, useRef } from 'react'
 
 export interface ChartCanvasProps {
   width: number
   height: number
+  pixelRatio?: number
   renderer?: RendererType | 'auto'
   className?: string
   onContextReady?: (ctx: RenderContext) => void
@@ -17,9 +18,19 @@ export interface ChartCanvasProps {
  * Full implementation in Phase 2.
  */
 export function ChartCanvas(props: ChartCanvasProps): JSX.Element {
-  const { width, height, renderer = 'auto', className, onContextReady, onContextError } = props
+  const {
+    width,
+    height,
+    pixelRatio,
+    renderer = 'auto',
+    className,
+    onContextReady,
+    onContextError,
+  } = props
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const ctxRef = useRef<RenderContext | null>(null)
+  const dimensionsRef = useRef({ width, height, pixelRatio })
+  dimensionsRef.current = { width, height, pixelRatio }
 
   // Stable callback refs to avoid recreating the context when callbacks change
   const onReadyRef = useRef(onContextReady)
@@ -28,19 +39,20 @@ export function ChartCanvas(props: ChartCanvasProps): JSX.Element {
   onErrorRef.current = onContextError
 
   const initContext = useCallback(
-    async (canvas: HTMLCanvasElement, signal: { disposed: boolean }) => {
+    async (canvas: HTMLCanvasElement, signal: AbortSignal) => {
       try {
         const { createRenderContext } = await import('@pitant/charts')
-        const options: RenderContextOptions = { renderer }
-        const ctx = await createRenderContext(canvas, options)
-        if (signal.disposed) {
+        const ctx = await createRenderContext(canvas, { renderer, signal })
+        if (signal.aborted) {
           ctx.dispose()
           return
         }
+        const dimensions = dimensionsRef.current
+        ctx.resize(dimensions.width, dimensions.height, dimensions.pixelRatio)
         ctxRef.current = ctx
         onReadyRef.current?.(ctx)
       } catch (error) {
-        if (!signal.disposed) {
+        if (!signal.aborted) {
           onErrorRef.current?.(error instanceof Error ? error : new Error(String(error)))
         }
       }
@@ -52,19 +64,19 @@ export function ChartCanvas(props: ChartCanvasProps): JSX.Element {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const signal = { disposed: false }
-    void initContext(canvas, signal)
+    const controller = new AbortController()
+    void initContext(canvas, controller.signal)
 
     return () => {
-      signal.disposed = true
+      controller.abort()
       ctxRef.current?.dispose()
       ctxRef.current = null
     }
   }, [initContext])
 
   useEffect(() => {
-    ctxRef.current?.resize(width, height)
-  }, [width, height])
+    ctxRef.current?.resize(width, height, pixelRatio)
+  }, [width, height, pixelRatio])
 
   return <canvas ref={canvasRef} className={className} style={{ width, height }} />
 }

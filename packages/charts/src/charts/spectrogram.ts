@@ -1,14 +1,12 @@
 import { RenderCommandList, ZLayer } from '../renderer/render-command-list.js'
 import type { RectOptions, RenderContext } from '../renderer/types.js'
 import type { ViewTransform } from '../renderer/view-transform.js'
+import { type ChartFrameOptions, extendChartFrame, renderChartFrame } from './chart-frame.js'
 import {
   addChartGuidesToCommandList,
-  type ChartGuideOptions,
   type ChartLayout,
-  type ChartLayoutOptions,
   createPlotViewportTransform,
   createViewportTransform,
-  drawCommandList,
   expandRange,
   isFiniteNumber,
   type NumericRange,
@@ -53,15 +51,13 @@ export interface SpectrogramPlannedTile {
   style: RectOptions
 }
 
-export interface SpectrogramRenderPlan {
-  kind: 'spectrogram'
+export interface TileRenderPlan {
   xRange: NumericRange
   xOrigin: number
   xRelativeRange: NumericRange
   yRange: NumericRange
+  yRelativeRange?: NumericRange
   zRange: NumericRange
-  timeBinCount: number
-  frequencyBinCount: number
   sourceTileCount: number
   includedTileCount: number
   renderedTileCount: number
@@ -69,10 +65,13 @@ export interface SpectrogramRenderPlan {
   warnings: readonly string[]
 }
 
-export interface SpectrogramFrameOptions {
-  layout?: ChartLayout | ChartLayoutOptions
-  guides?: ChartGuideOptions | false
+export interface SpectrogramRenderPlan extends TileRenderPlan {
+  kind: 'spectrogram'
+  timeBinCount: number
+  frequencyBinCount: number
 }
+
+export type SpectrogramFrameOptions = ChartFrameOptions<SpectrogramRenderPlan>
 
 export interface SpectrogramCommandFrame {
   width: number
@@ -88,7 +87,7 @@ const DEFAULT_COLOR_STOPS: readonly SpectrogramColorStop[] = [
   { value: 0.7, color: [0.93, 0.74, 0.22, 1] },
   { value: 1, color: [0.86, 0.15, 0.15, 1] },
 ]
-const DEFAULT_MISSING_COLOR: RgbaColor = [0.15, 0.15, 0.15, 0.12]
+export const DEFAULT_MISSING_COLOR: RgbaColor = [0.15, 0.15, 0.15, 0.12]
 
 export function buildSpectrogramRenderPlan(
   data: SpectrogramDataSet,
@@ -197,7 +196,7 @@ export function buildSpectrogramRenderPlan(
 
 export function addSpectrogramToCommandList(
   commands: RenderCommandList,
-  plan: SpectrogramRenderPlan,
+  plan: Pick<TileRenderPlan, 'tiles'>,
   z: ZLayer = ZLayer.Fill,
 ): void {
   for (const tile of plan.tiles) {
@@ -206,36 +205,53 @@ export function addSpectrogramToCommandList(
 }
 
 export function createSpectrogramViewTransform(
-  plan: SpectrogramRenderPlan,
+  plan: TileRenderPlan,
   width: number,
   height: number,
 ): ViewTransform {
-  return createViewportTransform(plan.xRelativeRange, plan.yRange, width, height)
+  return createViewportTransform(
+    plan.xRelativeRange,
+    plan.yRelativeRange ?? plan.yRange,
+    width,
+    height,
+  )
 }
 
-export function buildSpectrogramCommandFrame(
-  plan: SpectrogramRenderPlan,
+export function buildSpectrogramCommandFrame<TPlan extends TileRenderPlan>(
+  plan: TPlan,
   width: number,
   height: number,
-  options: SpectrogramFrameOptions = {},
+  options: ChartFrameOptions<TPlan> = {},
 ): SpectrogramCommandFrame {
-  const layout = resolveChartLayout(options.layout, width, height, plan.xRelativeRange, plan.yRange)
+  const yRange = plan.yRelativeRange ?? plan.yRange
+  const layout = resolveChartLayout(options.layout, width, height, plan.xRelativeRange, yRange)
   const transform = layout
-    ? createPlotViewportTransform(plan.xRelativeRange, plan.yRange, width, height, layout.plotArea)
+    ? createPlotViewportTransform(
+        plan.xRelativeRange,
+        yRange,
+        width,
+        height,
+        layout.plotArea,
+        layout,
+      )
     : createSpectrogramViewTransform(plan, width, height)
   const commands = new RenderCommandList()
   addSpectrogramToCommandList(commands, plan)
   if (layout && options.guides !== false) {
-    addChartGuidesToCommandList(commands, layout, plan.xRelativeRange, plan.yRange, options.guides)
+    addChartGuidesToCommandList(commands, layout, plan.xRelativeRange, yRange, options.guides)
   }
 
-  return {
-    width,
-    height,
-    layout,
-    commands,
-    transform,
-  }
+  return extendChartFrame(
+    {
+      width,
+      height,
+      layout,
+      commands,
+      transform,
+    },
+    plan,
+    options.plugins,
+  )
 }
 
 export function renderSpectrogramPlan(
@@ -244,10 +260,7 @@ export function renderSpectrogramPlan(
   options: SpectrogramFrameOptions = {},
 ): void {
   const frame = buildSpectrogramCommandFrame(plan, context.width, context.height, options)
-  context.setTransform(frame.transform)
-  context.beginFrame()
-  drawCommandList(context, frame.commands)
-  context.endFrame()
+  renderChartFrame(context, frame, plan, options.plugins)
 }
 
 function buildBinExtents(
@@ -362,14 +375,14 @@ function spectrogramValueIndex(
     : frequencyIndex * dimensions.timeBinCount + timeIndex
 }
 
-function normalizeColorStops(
+export function normalizeColorStops(
   stops: readonly SpectrogramColorStop[],
 ): readonly SpectrogramColorStop[] {
   if (stops.length === 0) return DEFAULT_COLOR_STOPS
   return [...stops].filter((stop) => isFiniteNumber(stop.value)).sort((a, b) => a.value - b.value)
 }
 
-function colorForValue(
+export function colorForValue(
   value: number,
   zRange: NumericRange,
   stops: readonly SpectrogramColorStop[],

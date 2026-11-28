@@ -1,8 +1,11 @@
 import { GPUPipelineManager } from './gpu-pipeline.js'
+import { normalizeLineDash, packDashedLine } from './line-dash.js'
 import type {
   FillOptions,
   LineOptions,
+  MarkBatchOptions,
   RectOptions,
+  RenderClipRect,
   RenderContext,
   RendererCapabilities,
   TextOptions,
@@ -18,6 +21,11 @@ interface TextDraw {
   y: number
   options: TextOptions
 }
+
+const MARK_ELLIPSE_OFFSETS = Array.from({ length: 9 }, (_, index) => {
+  const angle = (Math.PI * index) / 8
+  return [(1 - Math.cos(angle)) / 2, Math.sin(angle)] as const
+})
 
 /**
  * WebGPU render context with instanced line rendering,
@@ -84,25 +92,36 @@ export class WebGPURenderContext implements RenderContext {
     this._setupTextOverlay()
   }
 
-  static async create(canvas: HTMLCanvasElement): Promise<WebGPURenderContext> {
+  static async create(
+    canvas: HTMLCanvasElement,
+    signal?: AbortSignal,
+  ): Promise<WebGPURenderContext> {
+    signal?.throwIfAborted()
     const adapter = await navigator.gpu.requestAdapter()
+    signal?.throwIfAborted()
     if (!adapter) {
       throw new Error('@pitant/charts: No GPU adapter found')
     }
     const device = await adapter.requestDevice()
+    try {
+      // A later renderer may already own this canvas while GPU creation is pending.
+      signal?.throwIfAborted()
+      const context = canvas.getContext('webgpu')
+      if (!context) {
+        throw new Error('@pitant/charts: Failed to get WebGPU canvas context')
+      }
 
-    const context = canvas.getContext('webgpu')
-    if (!context) {
-      throw new Error('@pitant/charts: Failed to get WebGPU canvas context')
+      const format = navigator.gpu.getPreferredCanvasFormat()
+      context.configure({ device, format, alphaMode: 'premultiplied' })
+
+      const dpr = devicePixelRatio()
+      resizeCanvasBackingStore(canvas, canvas.clientWidth, canvas.clientHeight, dpr)
+
+      return new WebGPURenderContext(canvas, device, context, format)
+    } catch (error) {
+      device.destroy()
+      throw error
     }
-
-    const format = navigator.gpu.getPreferredCanvasFormat()
-    context.configure({ device, format, alphaMode: 'premultiplied' })
-
-    const dpr = devicePixelRatio()
-    resizeCanvasBackingStore(canvas, canvas.clientWidth, canvas.clientHeight, dpr)
-
-    return new WebGPURenderContext(canvas, device, context, format)
   }
 
   get width(): number {
@@ -202,6 +221,10 @@ export class WebGPURenderContext implements RenderContext {
     const numPoints = buffer.length / 2
     if (numPoints < 2) return
 
+    const pattern = normalizeLineDash(options.dash)
+    const dashed = pattern
+      ? packDashedLine(buffer, pattern, this._axisPixelScale(0), this._axisPixelScale(4), this._dpr)
+      : undefined
     const { pipeline, frameBindGroupLayout, lineBindGroupLayout } =
       this._pipelineManager.getLinePipeline()
 
@@ -214,7 +237,7 @@ export class WebGPURenderContext implements RenderContext {
     )
 
     // Point storage buffer
-    const pointBuffer = this._pipelineManager.createPointBuffer(buffer)
+    const pointBuffer = this._pipelineManager.createPointBuffer(dashed?.buffer ?? buffer)
     this._frameBuffers.push(pointBuffer)
 
     // Line uniforms
@@ -226,6 +249,7 @@ export class WebGPURenderContext implements RenderContext {
       options.width * this._dpr,
       capVal,
       joinVal,
+      dashed?.period ?? 0,
     )
     this._frameBuffers.push(uniformBuffer)
 
@@ -311,13 +335,82 @@ export class WebGPURenderContext implements RenderContext {
     }
   }
 
+  drawMarks(bounds: Float32Array, options: MarkBatchOptions): void {
+    if (this._lost || !this._pass || bounds.length < 4) return
+    const ellipse = options.shape === 'ellipse'
+    const pairs = ellipse ? MARK_ELLIPSE_OFFSETS.length : 2
+    const maxPairs = Math.floor(bounds.length / 4) * (pairs + 2) - 2
+    const upper = new Float32Array(maxPairs * 2)
+    const lower = new Float32Array(maxPairs * 2)
+    let offset = 0
+    const appendPair = (x: number, yUpper: number, yLower: number) => {
+      upper[offset] = x
+      lower[offset] = x
+      upper[offset + 1] = yUpper
+      lower[offset + 1] = yLower
+      offset += 2
+    }
+
+    for (let i = 0; i + 3 < bounds.length; i += 4) {
+      const x = bounds[i] as number
+      const y = bounds[i + 1] as number
+      const w = bounds[i + 2] as number
+      const h = bounds[i + 3] as number
+      if (!(w > 0 && h > 0)) continue
+      const startY = ellipse ? y + h / 2 : y
+      if (offset > 0) {
+        // Duplicate the boundary vertices to disconnect adjacent triangle strips.
+        const previousX = lower[offset - 2] as number
+        const previousY = lower[offset - 1] as number
+        appendPair(previousX, previousY, previousY)
+        appendPair(x, startY, startY)
+      }
+      if (ellipse) {
+        for (const [xRatio, yRatio] of MARK_ELLIPSE_OFFSETS) {
+          const pointX = x + xRatio * w
+          const halfHeight = (yRatio * h) / 2
+          appendPair(pointX, startY - halfHeight, startY + halfHeight)
+        }
+      } else {
+        appendPair(x, y, y + h)
+        appendPair(x + w, y, y + h)
+      }
+    }
+    this.drawFill(upper.subarray(0, offset), lower.subarray(0, offset), { color: options.color })
+  }
+
   drawText(text: string, x: number, y: number, options: TextOptions): void {
     // Text is deferred to Canvas2D overlay — GPU text is complex and not needed for charts
     this._pendingTexts.push({ text, x, y, options })
   }
 
   setTransform(transform: ViewTransform): void {
-    this._transformMatrix = transform.toMatrix4()
+    const matrix = transform.toMatrix4()
+    // CSS pixel Y increases downward, while WebGPU clip-space Y increases upward.
+    matrix[1] = -(matrix[1] as number)
+    matrix[5] = -(matrix[5] as number)
+    matrix[13] = -(matrix[13] as number)
+    this._transformMatrix = matrix
+  }
+
+  private _axisPixelScale(index: 0 | 4): number {
+    const x = this._transformMatrix[index] as number
+    const y = this._transformMatrix[index + 1] as number
+    return (this._dpr / 2) * Math.hypot(this._width * x, this._height * y)
+  }
+
+  setClipRect(rect: RenderClipRect | null): void {
+    if (!this._pass) return
+    const { width, height } = this.canvas
+    if (!rect) {
+      this._pass.setScissorRect(0, 0, width, height)
+      return
+    }
+    const left = Math.max(0, Math.min(width, Math.floor(rect.x * this._dpr)))
+    const top = Math.max(0, Math.min(height, Math.floor(rect.y * this._dpr)))
+    const right = Math.max(left, Math.min(width, Math.ceil((rect.x + rect.width) * this._dpr)))
+    const bottom = Math.max(top, Math.min(height, Math.ceil((rect.y + rect.height) * this._dpr)))
+    this._pass.setScissorRect(left, top, right - left, bottom - top)
   }
 
   getCapabilities(): RendererCapabilities {
@@ -398,7 +491,15 @@ export class WebGPURenderContext implements RenderContext {
       ctx.font = `${options.fontSize ?? 12}px ${options.font ?? 'sans-serif'}`
       ctx.textAlign = options.align ?? 'left'
       ctx.textBaseline = options.baseline ?? 'top'
-      ctx.fillText(text, x, y)
+      if (options.rotation) {
+        ctx.save()
+        ctx.translate(x, y)
+        ctx.rotate((options.rotation * Math.PI) / 180)
+        ctx.fillText(text, 0, 0)
+        ctx.restore()
+      } else {
+        ctx.fillText(text, x, y)
+      }
     }
 
     ctx.restore()

@@ -21,7 +21,7 @@ struct LineUniforms {
   width: f32,
   cap: f32,           // 0 = butt, 1 = round
   join: f32,           // 0 = miter, 1 = round
-  _pad: f32,
+  dashPeriod: f32,     // 0 = solid
 }
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -34,6 +34,7 @@ struct VertexOut {
   @location(1) lineWidth: f32,   // half-width for AA
   @location(2) @interpolate(flat) segLen: f32,  // segment length for cap AA
   @location(3) along: f32,       // position along segment (0..segLen)
+  @location(4) @interpolate(flat) dashStart: f32,
 }
 
 @vertex
@@ -42,9 +43,10 @@ fn vs_main(
   @builtin(instance_index) instanceIndex: u32,
 ) -> VertexOut {
   // Each instance is a line segment: points[i] → points[i+1]
-  let numPoints = arrayLength(&points);
-  let i = instanceIndex;
-  let j = min(i + 1u, numPoints - 1u);
+  let dashed = line.dashPeriod > 0.0;
+  let pointStride = select(1u, 2u, dashed);
+  let i = instanceIndex * pointStride;
+  let j = i + pointStride;
 
   let a = points[i];
   let b = points[j];
@@ -106,11 +108,34 @@ fn vs_main(
   out.lineWidth = halfWidth;
   out.segLen = segLen;
   out.along = isEnd * segLen;
+  out.dashStart = 0.0;
+  if dashed { out.dashStart = points[i + 1u].x; }
   return out;
 }
 
 @fragment
 fn fs_main(in: VertexOut) -> @location(0) vec4f {
+  if line.dashPeriod > 0.0 {
+    let patternPairs = u32(points[1].y);
+    let patternOffset = arrayLength(&points) - patternPairs;
+    var phase = (in.dashStart + in.along) % line.dashPeriod;
+    var inStroke = false;
+    for (var index = 0u; index < patternPairs; index++) {
+      let pair = points[patternOffset + index];
+      if phase < pair.x {
+        inStroke = true;
+        break;
+      }
+      phase -= pair.x;
+      if phase < pair.y {
+        break;
+      }
+      phase -= pair.y;
+    }
+    if !inStroke {
+      discard;
+    }
+  }
   let halfW = line.width * 0.5;
   let d = abs(in.dist) - halfW;
 

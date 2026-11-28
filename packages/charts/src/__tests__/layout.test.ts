@@ -87,4 +87,44 @@ describe('chart layout planning', () => {
     expect(textCommands.every((command) => Number.isFinite(command.x))).toBe(true)
     expect(textCommands.every((command) => Number.isFinite(command.y))).toBe(true)
   })
+
+  it('reserves both named Y axis gutters and labels their independent ranges', () => {
+    const layout = createChartLayout({
+      width: 400,
+      height: 240,
+      padding: 10,
+      xRange: [0, 10],
+      xAxis: { visible: true, size: 30 },
+      yAxes: [
+        { key: 'temperature', label: 'Temperature', range: [0, 100], size: 50 },
+        {
+          key: 'pressure',
+          label: 'Pressure',
+          range: [1000, 2000],
+          size: 62,
+          formatValue: (value) => `${value} Pa`,
+          tickCount: 3,
+        },
+      ],
+    })
+    expect(layout.plotArea).toEqual({ x: 60, y: 10, width: 268, height: 190 })
+    expect(layout.yAxisArea).toEqual(layout.yAxes?.[0]?.area)
+    expect(layout.yTicks.map(({ value }) => value)).toEqual([0, 25, 50, 75, 100])
+    expect(layout.yAxes?.[1]?.ticks.map(({ label }) => label)).toEqual([
+      '1000 Pa',
+      '1500 Pa',
+      '2000 Pa',
+    ])
+    const commands = new RenderCommandList()
+    addChartGuidesToCommandList(commands, layout, [0, 10], [0, 100])
+    expect(commands.sorted()).toContainEqual(
+      expect.objectContaining({
+        kind: 'text',
+        text: '1500 Pa',
+        x: 334,
+        y: 105,
+        options: expect.objectContaining({ align: 'left' }),
+      }),
+    )
+  })
 })
