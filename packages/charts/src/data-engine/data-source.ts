@@ -171,12 +171,13 @@ export class DataSource {
       }
     }
 
-    const firstResult = await this._engine.queryColumns(
-      firstColumn,
-      startNs,
-      endNs,
-      query.targetPixels,
-    )
+    const [firstResult, stats, ...otherValues] = await Promise.all([
+      this._engine.queryColumns(firstColumn, startNs, endNs, query.targetPixels),
+      this._engine.getStats(firstColumn),
+      ...targetColumns
+        .slice(1)
+        .map((column) => this._engine.queryValues(column, startNs, endNs, query.targetPixels)),
+    ])
 
     // Divide the exact engine timestamps before converting to numbers.
     const pointCount = firstResult.pointCount
@@ -185,36 +186,29 @@ export class DataSource {
       timestamps[i] = Number((firstResult.timestamps[i] as bigint) / nsMultiplier)
     }
 
-    const columns: Record<string, Float64Array> = {
-      [firstColumn]: firstResult.values,
-    }
+    const columns: Record<string, Float64Array> = {}
     const quality: Record<string, Uint8Array> = {}
-    const firstQuality = cached?.quality?.[firstColumn]
-    if (cached && firstQuality) {
-      quality[firstColumn] = qualityForTimestamps(timestamps, cached.timestamps, firstQuality)
-    }
+    const sourceQuality = cached?.quality
+    const qualityIndices =
+      cached && sourceQuality && targetColumns.some((column) => sourceQuality[column] !== undefined)
+        ? indicesForTimestamps(timestamps, cached.timestamps)
+        : undefined
 
-    // Query remaining columns (they share the same timestamps/LOD level)
-    for (let c = 1; c < targetColumns.length; c++) {
-      const colName = targetColumns[c] as string
-      const result = await this._engine.queryColumns(colName, startNs, endNs, query.targetPixels)
-      columns[colName] = result.values
+    for (let index = 0; index < targetColumns.length; index++) {
+      const column = targetColumns[index] as string
+      columns[column] = index === 0 ? firstResult.values : (otherValues[index - 1] as Float64Array)
 
-      const columnQuality = cached?.quality?.[colName]
-      if (cached && columnQuality) {
-        quality[colName] = qualityForTimestamps(timestamps, cached.timestamps, columnQuality)
+      const flags = sourceQuality?.[column]
+      if (qualityIndices && flags) {
+        quality[column] = Uint8Array.from(qualityIndices, (sourceIndex) => flags[sourceIndex] ?? 0)
       }
     }
-
-    // Compute raw point count from series stats
-    const stats = await this._engine.getStats(firstColumn)
-    const rawPointCount = stats.count
 
     const result: ViewportResult = {
       timestamps,
       columns,
       lodLevel: firstResult.level,
-      rawPointCount,
+      rawPointCount: stats.count,
       returnedPointCount: pointCount,
       gaps: firstResult.gaps,
     }
@@ -381,21 +375,29 @@ function withOptionalQuality(
   return { ...data, quality }
 }
 
-function qualityForTimestamps(
+function indicesForTimestamps(
   resultTimestamps: Float64Array,
   sourceTimestamps: Float64Array,
-  sourceQuality: Uint8Array,
-): Uint8Array {
-  const quality = new Uint8Array(resultTimestamps.length)
-  if (sourceTimestamps.length === 0 || sourceQuality.length === 0) return quality
+): Uint32Array {
+  const indices = new Uint32Array(resultTimestamps.length)
+  if (resultTimestamps.length === 0 || sourceTimestamps.length === 0) return indices
 
-  let cursor = 0
-  for (let i = 0; i < resultTimestamps.length; i++) {
-    const timestamp = resultTimestamps[i] as number
-    cursor = nearestTimestampIndex(sourceTimestamps, timestamp, cursor)
-    quality[i] = sourceQuality[cursor] ?? 0
+  // Start near the viewport instead of walking the full source history.
+  const first = resultTimestamps[0] as number
+  let low = 0
+  let high = sourceTimestamps.length
+  while (low < high) {
+    const middle = (low + high) >>> 1
+    if ((sourceTimestamps[middle] as number) <= first) low = middle + 1
+    else high = middle
   }
-  return quality
+
+  let cursor = Math.max(0, low - 1)
+  for (let index = 0; index < resultTimestamps.length; index++) {
+    cursor = nearestTimestampIndex(sourceTimestamps, resultTimestamps[index] as number, cursor)
+    indices[index] = cursor
+  }
+  return indices
 }
 
 function nearestTimestampIndex(timestamps: Float64Array, target: number, cursor: number): number {

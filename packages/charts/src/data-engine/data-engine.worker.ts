@@ -60,6 +60,7 @@ function handleCommand(command: WorkerCommand & { _requestId?: string }): {
     }
 
     case 'query':
+    case 'queryValues':
     case 'queryColumns': {
       const pyramid = series.get(command.seriesId)
       if (!pyramid) {
@@ -71,6 +72,23 @@ function handleCommand(command: WorkerCommand & { _requestId?: string }): {
             _requestId: requestId,
           },
           transfer: [],
+        }
+      }
+
+      if (command.type === 'queryValues') {
+        const values = pyramid.queryValues(
+          command.startTime,
+          command.endTime,
+          command.viewportWidth,
+        )
+        return {
+          response: {
+            type: 'queryValuesResult',
+            seriesId: command.seriesId,
+            values,
+            _requestId: requestId,
+          },
+          transfer: [values.buffer],
         }
       }
 

@@ -268,6 +268,25 @@ describe('LodPyramid', () => {
   // ── Query (LOD Levels) ─────────────────────────────────
 
   describe('query — LOD levels', () => {
+    it('keeps exact nanosecond boundaries after appending into a partial bucket', () => {
+      const pyramid = new LodPyramid()
+      const base = 1_795_867_200_000_000_000n
+      const count = 1_023
+      const timestamps = BigInt64Array.from({ length: count }, (_, index) => base + BigInt(index))
+      const values = Float64Array.from({ length: count }, (_, index) => index)
+      pyramid.ingest(timestamps, values)
+      pyramid.append(new BigInt64Array([base + 1_023n]), new Float64Array([5_000]))
+
+      const result = pyramid.queryColumns(base + 4n, base + 1_023n, 256)
+
+      expect(result.level).toBe(2)
+      expect(result.timestamps[0]).toBe(base + 4n)
+      expect(result.timestamps[1]).toBe(base + 7n)
+      expect(result.timestamps.at(-2)).toBe(base + 1_020n)
+      expect(result.timestamps.at(-1)).toBe(base + 1_023n)
+      expect(result.values.at(-1)).toBe(5_000)
+    })
+
     it('uses LOD level for large dataset with narrow viewport', () => {
       const p = new LodPyramid()
       const n = 50_000
@@ -476,9 +495,8 @@ describe('LodPyramid', () => {
       expect(levelCount).toBeGreaterThan(0)
 
       // We can't directly measure pyramid memory, but the construction
-      // follows geometric series: n/2 + n/4 + ... < n total quads
-      // Each quad = 4 * 8 = 32 bytes, so total ≤ n * 32 bytes
-      // This is 2× raw data (n * 16), confirming the spec requirement.
+      // follows a geometric series with one 16-byte extrema pair per bucket.
+      // Combined with the raw samples, this stays within twice the raw size.
       // If we could peek, we'd verify. For now, verify build completes.
       expect(p.pointCount).toBe(n)
     })

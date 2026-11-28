@@ -195,6 +195,32 @@ export class DataEngine {
     return { timestamps, values, level, pointCount, gaps }
   }
 
+  /** Query values alone when the viewport's timestamps are already available. */
+  async queryValues(
+    seriesId: string,
+    startTime: bigint,
+    endTime: bigint,
+    viewportWidth: number,
+  ): Promise<Float64Array> {
+    if (this._localSeries.has(seriesId)) {
+      const pyramid = this._localPyramids.get(seriesId)
+      if (!pyramid) throw new Error(`Series "${seriesId}" not found.`)
+      return pyramid.queryValues(startTime, endTime, viewportWidth)
+    }
+
+    const response = await this._send({
+      type: 'queryValues',
+      seriesId,
+      startTime,
+      endTime,
+      viewportWidth,
+    })
+    if (response.type !== 'queryValuesResult') {
+      throw new Error(`Unexpected response type: ${response.type}`)
+    }
+    return response.values
+  }
+
   /**
    * Get current statistics for a series.
    */

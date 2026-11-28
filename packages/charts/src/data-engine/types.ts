@@ -62,14 +62,7 @@ export type WorkerCommand =
       values: Float64Array
     }
   | {
-      type: 'query'
-      seriesId: string
-      startTime: bigint
-      endTime: bigint
-      viewportWidth: number
-    }
-  | {
-      type: 'queryColumns'
+      type: 'query' | 'queryColumns' | 'queryValues'
       seriesId: string
       startTime: bigint
       endTime: bigint
@@ -93,5 +86,6 @@ export type WorkerResponse =
       gaps: QueryResult['gaps']
     }
   | ({ type: 'queryColumnsResult'; seriesId: string } & ColumnarQueryResult)
+  | { type: 'queryValuesResult'; seriesId: string; values: Float64Array }
   | { type: 'stats'; seriesId: string; stats: SeriesStats }
   | { type: 'error'; seriesId: string; message: string }

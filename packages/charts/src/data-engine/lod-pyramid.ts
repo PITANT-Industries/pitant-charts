@@ -1,4 +1,4 @@
-import type { ColumnarQueryResult, IngestOptions, QueryResult, SeriesStats } from './types.js'
+import type { ColumnarQueryResult, IngestOptions, SeriesStats } from './types.js'
 
 /** A level stores two extrema per bucket. Bucket bounds index the raw timestamps. */
 interface LodLevel {
@@ -162,7 +162,11 @@ export class LodPyramid {
   }
 
   /** Query interleaved Float32 pairs for legacy renderers. */
-  query(startTime: bigint, endTime: bigint, viewportWidth: number): QueryResult {
+  query(
+    startTime: bigint,
+    endTime: bigint,
+    viewportWidth: number,
+  ): { data: Float32Array; level: number; pointCount: number; gaps: Gap[] } {
     const range = this._queryRange(startTime, endTime, viewportWidth)
     const { level, start, end, bucketSize } = range
     const pointCount = (end - start) * (level === 0 ? 1 : 2)
@@ -190,19 +194,20 @@ export class LodPyramid {
 
   /** Query independent timestamps and values without any precision loss. */
   queryColumns(startTime: bigint, endTime: bigint, viewportWidth: number): ColumnarQueryResult {
-    const { level, start, end, bucketSize } = this._queryRange(startTime, endTime, viewportWidth)
+    const range = this._queryRange(startTime, endTime, viewportWidth)
+    const { level, start, end, bucketSize } = range
     const gaps = this._gapsInRange(start, end, level)
+    const values = this._queryValues(range)
     if (level === 0) {
       return {
         timestamps: this._timestamps.slice(start, end),
-        values: this._values.slice(start, end),
+        values,
         pointCount: end - start,
         level,
         gaps,
       }
     }
 
-    const buckets = this._levels[level - 1] as LodLevel
     const pointCount = (end - start) * 2
     const timestamps = new BigInt64Array(pointCount)
     for (let i = start; i < end; i++) {
@@ -214,11 +219,21 @@ export class LodPyramid {
     }
     return {
       timestamps,
-      values: buckets.data.slice(start * 2, end * 2),
+      values,
       pointCount,
       level,
       gaps,
     }
+  }
+
+  /** Query values alone for a series on a shared timestamp grid. */
+  queryValues(startTime: bigint, endTime: bigint, viewportWidth: number): Float64Array {
+    return this._queryValues(this._queryRange(startTime, endTime, viewportWidth))
+  }
+
+  private _queryValues({ level, start, end }: LodRange): Float64Array {
+    if (level === 0) return this._values.slice(start, end)
+    return (this._levels[level - 1] as LodLevel).data.slice(start * 2, end * 2)
   }
 
   /**
@@ -310,12 +325,14 @@ export class LodPyramid {
       const stride = index === 0 ? 1 : 2
       const bucketCount = Math.ceil(previous.count / 2)
       const startBucket = Math.floor(oldCount / 2 ** (index + 1))
-      if (bucketCount > level.count) {
-        const next = new Float64Array(bucketCount * 2)
+      if (bucketCount * 2 > level.data.length) {
+        // Reserve capacity so successive live batches do not copy all buckets.
+        const capacity = Math.max(bucketCount, Math.ceil(level.count * 1.5))
+        const next = new Float64Array(capacity * 2)
         next.set(level.data.subarray(0, startBucket * 2))
         level.data = next
-        level.count = bucketCount
       }
+      level.count = bucketCount
       for (let bucket = startBucket; bucket < bucketCount; bucket++) {
         writeBucket(level.data, bucket, previous.data, previous.count, stride)
       }
