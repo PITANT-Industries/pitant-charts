@@ -43,7 +43,9 @@ export class DataSource {
   private _destroyed = false
 
   constructor(options?: DataSourceOptions) {
-    this._engine = new DataEngine()
+    // Each column shares the timestamp input buffer. Copy worker inputs
+    // rather than detaching this buffer or the caller's value arrays.
+    this._engine = new DataEngine({ transferInputBuffers: false })
     this._options = options ?? {}
   }
 
@@ -112,7 +114,8 @@ export class DataSource {
     this._assertNotDestroyed()
 
     const columnar = toColumnar(input, schema)
-    const timeUnit = this._options.timeUnit ?? columnar.timeUnit ?? 'ms'
+    const timeUnit =
+      this._options.timeUnit ?? columnar.timeUnit ?? this._columnarCache?.timeUnit ?? 'ms'
 
     if (this._options.strict) {
       const issues = validateColumnar(columnar)
@@ -144,13 +147,12 @@ export class DataSource {
   /**
    * Query for viewport-resolution data across all or selected columns.
    *
-   * The DataEngine returns interleaved [x, y] pairs from the LOD pyramid.
-   * This method converts back to columnar ViewportResult format.
    */
   async query(query: ViewportQuery): Promise<ViewportResult> {
     this._assertNotDestroyed()
 
-    const timeUnit = this._options.timeUnit ?? 'ms'
+    const cached = this._columnarCache
+    const timeUnit = this._options.timeUnit ?? cached?.timeUnit ?? 'ms'
     const nsMultiplier = timeUnit === 'ns' ? 1n : timeUnit === 'us' ? 1_000n : 1_000_000n
     const startNs = BigInt(Math.round(query.start)) * nsMultiplier
     const endNs = BigInt(Math.round(query.end)) * nsMultiplier
@@ -169,25 +171,24 @@ export class DataSource {
       }
     }
 
-    const firstResult = await this._engine.query(firstColumn, startNs, endNs, query.targetPixels)
+    const firstResult = await this._engine.queryColumns(
+      firstColumn,
+      startNs,
+      endNs,
+      query.targetPixels,
+    )
 
-    // Extract timestamps from the interleaved [x, y] pairs
+    // Divide the exact engine timestamps before converting to numbers.
     const pointCount = firstResult.pointCount
     const timestamps = new Float64Array(pointCount)
-    const firstValues = new Float64Array(pointCount)
-    const nsDivisor = Number(nsMultiplier)
-
     for (let i = 0; i < pointCount; i++) {
-      // DataEngine timestamps are in nanoseconds — convert back
-      timestamps[i] = (firstResult.data[i * 2] as number) / nsDivisor
-      firstValues[i] = firstResult.data[i * 2 + 1] as number
+      timestamps[i] = Number((firstResult.timestamps[i] as bigint) / nsMultiplier)
     }
 
     const columns: Record<string, Float64Array> = {
-      [firstColumn]: firstValues,
+      [firstColumn]: firstResult.values,
     }
     const quality: Record<string, Uint8Array> = {}
-    const cached = this._columnarCache
     const firstQuality = cached?.quality?.[firstColumn]
     if (cached && firstQuality) {
       quality[firstColumn] = qualityForTimestamps(timestamps, cached.timestamps, firstQuality)
@@ -196,12 +197,8 @@ export class DataSource {
     // Query remaining columns (they share the same timestamps/LOD level)
     for (let c = 1; c < targetColumns.length; c++) {
       const colName = targetColumns[c] as string
-      const result = await this._engine.query(colName, startNs, endNs, query.targetPixels)
-      const values = new Float64Array(result.pointCount)
-      for (let i = 0; i < result.pointCount; i++) {
-        values[i] = result.data[i * 2 + 1] as number
-      }
-      columns[colName] = values
+      const result = await this._engine.queryColumns(colName, startNs, endNs, query.targetPixels)
+      columns[colName] = result.values
 
       const columnQuality = cached?.quality?.[colName]
       if (cached && columnQuality) {
@@ -237,7 +234,7 @@ export class DataSource {
     const cols = [...this._columns]
     if (cols.length === 0) return null
 
-    const timeUnit = this._options.timeUnit ?? 'ms'
+    const timeUnit = this._options.timeUnit ?? this._columnarCache?.timeUnit ?? 'ms'
     const nsDivisor = timeUnit === 'ns' ? 1n : timeUnit === 'us' ? 1_000n : 1_000_000n
 
     // Use the first column's stats (all columns share timestamps)

@@ -1,17 +1,16 @@
-import type { IngestOptions, SeriesStats } from './types.js'
+import type { ColumnarQueryResult, IngestOptions, QueryResult, SeriesStats } from './types.js'
 
-/**
- * A single LOD level storing min-max bucket data.
- * Level 0 = raw data. Level k = 2^k aggregation.
- *
- * For level 0: quads are [timestamp, value, timestamp, value] (min==max).
- * For level k>0: quads are [tMin, vMin, tMax, vMax] per bucket.
- */
+/** A level stores two extrema per bucket. Bucket bounds index the raw timestamps. */
 interface LodLevel {
-  /** Interleaved [tMin, vMin, tMax, vMax] quads. Length = count * 4. */
   data: Float64Array
-  /** Number of logical points (quads) in this level. */
   count: number
+}
+
+interface LodRange {
+  level: number
+  start: number
+  end: number
+  bucketSize: number
 }
 
 /**
@@ -162,75 +161,64 @@ export class LodPyramid {
     return this._count
   }
 
-  /**
-   * Query the pyramid for a viewport range.
-   * Returns interleaved [x, y] Float32Array suitable for GPU upload.
-   */
-  query(
-    startTime: bigint,
-    endTime: bigint,
-    viewportWidth: number,
-  ): { data: Float32Array; level: number; pointCount: number; gaps: Gap[] } {
-    const n = this._count
-    if (n === 0) {
-      return { data: new Float32Array(0), level: 0, pointCount: 0, gaps: [] }
-    }
-
-    // Select appropriate LOD level
-    const level = this._selectLevel(startTime, endTime, viewportWidth)
+  /** Query interleaved Float32 pairs for legacy renderers. */
+  query(startTime: bigint, endTime: bigint, viewportWidth: number): QueryResult {
+    const range = this._queryRange(startTime, endTime, viewportWidth)
+    const { level, start, end, bucketSize } = range
+    const pointCount = (end - start) * (level === 0 ? 1 : 2)
+    const data = new Float32Array(pointCount * 2)
 
     if (level === 0) {
-      // Raw data — binary search for range
-      const startIdx = lowerBound(this._timestamps, startTime, n)
-      const endIdx = upperBound(this._timestamps, endTime, n)
-      const rangeN = endIdx - startIdx
-      if (rangeN <= 0) {
-        return { data: new Float32Array(0), level: 0, pointCount: 0, gaps: [] }
+      for (let i = start; i < end; i++) {
+        const offset = (i - start) * 2
+        data[offset] = Number(this._timestamps[i])
+        data[offset + 1] = this._values[i] as number
       }
-
-      // Downcast to Float32 for GPU
-      const result = new Float32Array(rangeN * 2)
-      for (let i = 0; i < rangeN; i++) {
-        result[i * 2] = Number(this._timestamps[startIdx + i])
-        result[i * 2 + 1] = this._values[startIdx + i] as number
+    } else {
+      const buckets = this._levels[level - 1] as LodLevel
+      for (let i = start; i < end; i++) {
+        const offset = (i - start) * 4
+        data[offset] = Number(this._timestamps[i * bucketSize])
+        data[offset + 1] = buckets.data[i * 2] as number
+        data[offset + 2] = Number(this._timestamps[Math.min((i + 1) * bucketSize, this._count) - 1])
+        data[offset + 3] = buckets.data[i * 2 + 1] as number
       }
-
-      // Filter gaps to range
-      const rangeGaps = this._gapsInRange(startIdx, endIdx, 0)
-      return { data: result, level: 0, pointCount: rangeN, gaps: rangeGaps }
     }
 
-    // LOD level — extract from pyramid
-    const lodLevel = this._levels[level - 1] as LodLevel
-    const lodData = lodLevel.data
-    const lodCount = lodLevel.count
+    return { data, level, pointCount, gaps: this._gapsInRange(start, end, level) }
+  }
 
-    // Binary search in LOD level for time range
-    // Each quad is [tMin, vMin, tMax, vMax] — search on tMin (offset 0)
-    const lodStart = lowerBoundLod(lodData, lodCount, startTime)
-    const lodEnd = upperBoundLod(lodData, lodCount, endTime)
-    const rangeCount = lodEnd - lodStart
-    if (rangeCount <= 0) {
-      return { data: new Float32Array(0), level, pointCount: 0, gaps: [] }
+  /** Query independent timestamps and values without any precision loss. */
+  queryColumns(startTime: bigint, endTime: bigint, viewportWidth: number): ColumnarQueryResult {
+    const { level, start, end, bucketSize } = this._queryRange(startTime, endTime, viewportWidth)
+    const gaps = this._gapsInRange(start, end, level)
+    if (level === 0) {
+      return {
+        timestamps: this._timestamps.slice(start, end),
+        values: this._values.slice(start, end),
+        pointCount: end - start,
+        level,
+        gaps,
+      }
     }
 
-    // Each LOD quad produces 2 points: (tMin, vMin) and (tMax, vMax)
-    const result = new Float32Array(rangeCount * 4)
-    for (let i = 0; i < rangeCount; i++) {
-      const base = (lodStart + i) * 4
-      const tMin = lodData[base] as number
-      const vMin = lodData[base + 1] as number
-      const tMax = lodData[base + 2] as number
-      const vMax = lodData[base + 3] as number
-      // Order by time: always show min-time point first
-      result[i * 4] = tMin
-      result[i * 4 + 1] = vMin
-      result[i * 4 + 2] = tMax
-      result[i * 4 + 3] = vMax
+    const buckets = this._levels[level - 1] as LodLevel
+    const pointCount = (end - start) * 2
+    const timestamps = new BigInt64Array(pointCount)
+    for (let i = start; i < end; i++) {
+      const offset = (i - start) * 2
+      timestamps[offset] = this._timestamps[i * bucketSize] as bigint
+      timestamps[offset + 1] = this._timestamps[
+        Math.min((i + 1) * bucketSize, this._count) - 1
+      ] as bigint
     }
-
-    const rangeGaps = this._gapsInRange(lodStart, lodEnd, level)
-    return { data: result, level, pointCount: rangeCount * 2, gaps: rangeGaps }
+    return {
+      timestamps,
+      values: buckets.data.slice(start * 2, end * 2),
+      pointCount,
+      level,
+      gaps,
+    }
   }
 
   /**
@@ -267,207 +255,76 @@ export class LodPyramid {
     this._values = nextValues
   }
 
-  /**
-   * Build the full pyramid from raw data.
-   * Level 0 is implicit (raw timestamps + values).
-   * Pyramid levels store [tMin, vMin, tMax, vMax] quads.
-   */
   private _buildPyramid(): void {
     this._levels = []
-    const n = this._count
+    if (this._count < LodPyramid.MIN_LEVEL_SIZE) return
 
-    if (n < LodPyramid.MIN_LEVEL_SIZE) return
-
-    // Build first LOD level from raw data
-    let prevCount = n
-    const firstLevel = buildLevelFromRaw(this._timestamps, this._values, prevCount)
-    this._levels.push(firstLevel)
-    prevCount = firstLevel.count
-
-    // Build subsequent levels from previous LOD level
-    while (prevCount >= LodPyramid.MIN_LEVEL_SIZE) {
-      const prev = this._levels[this._levels.length - 1] as LodLevel
-      const nextLevel = buildLevelFromLod(prev.data, prev.count)
-      this._levels.push(nextLevel)
-      prevCount = nextLevel.count
+    let previous = buildLevel(this._values, this._count, 1)
+    this._levels.push(previous)
+    while (previous.count >= LodPyramid.MIN_LEVEL_SIZE) {
+      previous = buildLevel(previous.data, previous.count, 2)
+      this._levels.push(previous)
     }
   }
 
-  /**
-   * Select the appropriate LOD level for a viewport query.
-   * Returns 0 for raw data, 1+ for pyramid levels.
-   */
-  private _selectLevel(startTime: bigint, endTime: bigint, viewportWidth: number): number {
-    if (viewportWidth <= 0) return 0
-
-    const n = this._count
-    if (n === 0) return 0
-
-    // Estimate raw points in range
-    const startIdx = lowerBound(this._timestamps, startTime, n)
-    const endIdx = upperBound(this._timestamps, endTime, n)
-    const rawPointsInRange = endIdx - startIdx
-
-    // If raw data fits in viewport, use raw
+  private _queryRange(startTime: bigint, endTime: bigint, viewportWidth: number): LodRange {
+    const count = this._count
+    const startIndex = lowerBound(this._timestamps, startTime, count)
+    const endIndex = Math.max(startIndex, upperBound(this._timestamps, endTime, count))
     const maxPoints = viewportWidth * 2
-    if (rawPointsInRange <= maxPoints) return 0
-
-    // Walk pyramid levels to find suitable one
-    for (let level = 0; level < this._levels.length; level++) {
-      const lodLevel = this._levels[level] as LodLevel
-      const lodStart = lowerBoundLod(lodLevel.data, lodLevel.count, startTime)
-      const lodEnd = upperBoundLod(lodLevel.data, lodLevel.count, endTime)
-      const pointsAtLevel = (lodEnd - lodStart) * 2 // each quad = 2 visual points
-      if (pointsAtLevel <= maxPoints) return level + 1
+    if (viewportWidth <= 0 || endIndex - startIndex <= maxPoints || this._levels.length === 0) {
+      return { level: 0, start: startIndex, end: endIndex, bucketSize: 1 }
     }
 
-    // Use deepest level if nothing fits
-    return this._levels.length
+    // Use exact raw bounds to find complete buckets, including the partial tail
+    // bucket when the viewport reaches the last sample.
+    let range: LodRange = { level: 0, start: startIndex, end: endIndex, bucketSize: 1 }
+    for (let index = 0; index < this._levels.length; index++) {
+      const level = index + 1
+      const bucketSize = 2 ** level
+      const start = Math.ceil(startIndex / bucketSize)
+      const end =
+        endIndex === count
+          ? (this._levels[index] as LodLevel).count
+          : Math.floor(endIndex / bucketSize)
+      range = { level, start, end: Math.max(start, end), bucketSize }
+      if ((range.end - start) * 2 <= maxPoints) break
+    }
+    return range
   }
 
-  /**
-   * Incrementally propagate appended data through pyramid levels.
-   */
-  private _propagateAppend(oldN: number, appendN: number): void {
-    const n = this._count
-
-    // Rebuild first LOD level from raw — only the tail
+  /** Update the buckets touched by the appended samples and extend the pyramid if needed. */
+  private _propagateAppend(oldCount: number, appendedCount: number): void {
     if (this._levels.length === 0) {
-      if (n >= LodPyramid.MIN_LEVEL_SIZE) {
-        this._buildPyramid()
-      }
+      if (this._count >= LodPyramid.MIN_LEVEL_SIZE) this._buildPyramid()
       return
     }
-
-    // Strategy: rebuild affected buckets at each level
-    // For simplicity and correctness, rebuild from scratch when more than
-    // 10% of data was appended. Otherwise, incremental update.
-    if (appendN > n * 0.1) {
+    if (appendedCount > this._count * 0.1) {
       this._buildPyramid()
       return
     }
 
-    // Incrementally extend each level
-    this._extendLevel0(oldN)
-
-    for (let i = 1; i < this._levels.length; i++) {
-      this._extendUpperLevel(i)
-    }
-
-    // Check if we need a new level
-    const lastLevel = this._levels[this._levels.length - 1] as LodLevel
-    if (lastLevel.count >= LodPyramid.MIN_LEVEL_SIZE) {
-      const newLevel = buildLevelFromLod(lastLevel.data, lastLevel.count)
-      this._levels.push(newLevel)
-    }
-  }
-
-  /**
-   * Extend level 0 (first pyramid level) with new raw data points.
-   */
-  private _extendLevel0(oldRawN: number): void {
-    const level0 = this._levels[0]
-    if (!level0) return
-
-    const n = this._count
-    // Old bucket count based on old raw count
-    const oldBuckets = Math.ceil(oldRawN / 2)
-    const newBuckets = Math.ceil(n / 2)
-    const addedBuckets = newBuckets - oldBuckets
-
-    if (addedBuckets <= 0) {
-      // The last bucket may have changed (became complete)
-      if (oldRawN % 2 === 1 && n > oldRawN) {
-        // Recompute last bucket
-        const bucketIdx = oldBuckets - 1
-        const i = bucketIdx * 2
-        const base = bucketIdx * 4
-        const t0 = Number(this._timestamps[i])
-        const v0 = this._values[i] as number
-        const t1 = Number(this._timestamps[i + 1])
-        const v1 = this._values[i + 1] as number
-        level0.data[base] = Math.min(t0, t1)
-        level0.data[base + 1] = Math.min(v0, v1)
-        level0.data[base + 2] = Math.max(t0, t1)
-        level0.data[base + 3] = Math.max(v0, v1)
+    let previous: LodLevel = { data: this._values, count: this._count }
+    for (let index = 0; index < this._levels.length; index++) {
+      const level = this._levels[index] as LodLevel
+      const stride = index === 0 ? 1 : 2
+      const bucketCount = Math.ceil(previous.count / 2)
+      const startBucket = Math.floor(oldCount / 2 ** (index + 1))
+      if (bucketCount > level.count) {
+        const next = new Float64Array(bucketCount * 2)
+        next.set(level.data.subarray(0, startBucket * 2))
+        level.data = next
+        level.count = bucketCount
       }
-      return
-    }
-
-    // Grow level data
-    const newData = new Float64Array(newBuckets * 4)
-    newData.set(level0.data.subarray(0, oldBuckets * 4))
-
-    // Recompute last old bucket if it was incomplete
-    if (oldRawN % 2 === 1 && oldBuckets > 0) {
-      const bucketIdx = oldBuckets - 1
-      const i = bucketIdx * 2
-      const base = bucketIdx * 4
-      const t0 = Number(this._timestamps[i])
-      const v0 = this._values[i] as number
-      const t1 = i + 1 < n ? Number(this._timestamps[i + 1]) : t0
-      const v1 = i + 1 < n ? (this._values[i + 1] as number) : v0
-      newData[base] = Math.min(t0, t1)
-      newData[base + 1] = Math.min(v0, v1)
-      newData[base + 2] = Math.max(t0, t1)
-      newData[base + 3] = Math.max(v0, v1)
-    }
-
-    // Compute new buckets
-    for (let b = Math.max(oldBuckets, 0); b < newBuckets; b++) {
-      const i = b * 2
-      const base = b * 4
-      const t0 = Number(this._timestamps[i])
-      const v0 = this._values[i] as number
-      if (i + 1 < n) {
-        const t1 = Number(this._timestamps[i + 1])
-        const v1 = this._values[i + 1] as number
-        newData[base] = Math.min(t0, t1)
-        newData[base + 1] = Math.min(v0, v1)
-        newData[base + 2] = Math.max(t0, t1)
-        newData[base + 3] = Math.max(v0, v1)
-      } else {
-        // Incomplete bucket (single point)
-        newData[base] = t0
-        newData[base + 1] = v0
-        newData[base + 2] = t0
-        newData[base + 3] = v0
+      for (let bucket = startBucket; bucket < bucketCount; bucket++) {
+        writeBucket(level.data, bucket, previous.data, previous.count, stride)
       }
+      previous = level
     }
 
-    level0.data = newData
-    level0.count = newBuckets
-  }
-
-  /**
-   * Extend upper LOD level based on the level below it.
-   */
-  private _extendUpperLevel(levelIdx: number): void {
-    const level = this._levels[levelIdx]
-    const prevLevel = this._levels[levelIdx - 1]
-    if (!level || !prevLevel) return
-
-    const newCount = Math.ceil(prevLevel.count / 2)
-    if (newCount <= level.count) return
-
-    const newData = new Float64Array(newCount * 4)
-    newData.set(level.data.subarray(0, level.count * 4))
-
-    // Recompute last old bucket if it was incomplete
-    if (level.count > 0 && prevLevel.count > level.count * 2 - 1) {
-      const b = level.count - 1
-      const pi = b * 2
-      recomputeBucket(newData, b, prevLevel.data, pi, prevLevel.count)
+    if (previous.count >= LodPyramid.MIN_LEVEL_SIZE) {
+      this._levels.push(buildLevel(previous.data, previous.count, 2))
     }
-
-    // Compute new buckets
-    for (let b = level.count; b < newCount; b++) {
-      const pi = b * 2
-      recomputeBucket(newData, b, prevLevel.data, pi, prevLevel.count)
-    }
-
-    level.data = newData
-    level.count = newCount
   }
 
   /**
@@ -529,7 +386,7 @@ export class LodPyramid {
    * Map raw-data gap indices to the equivalent range in a LOD level.
    */
   private _gapsInRange(startIdx: number, endIdx: number, level: number): Gap[] {
-    if (this._gaps.length === 0) return []
+    if (this._gaps.length === 0 || startIdx >= endIdx) return []
 
     const result: Gap[] = []
     const divisor = level === 0 ? 1 : 2 ** level
@@ -619,93 +476,30 @@ function detectGaps(
   return gaps
 }
 
-/**
- * Build the first LOD level from raw timestamps + values.
- * Each pair of consecutive points → one [tMin, vMin, tMax, vMax] quad.
- */
-function buildLevelFromRaw(
-  timestamps: BigInt64Array,
-  values: Float64Array,
-  count: number,
-): LodLevel {
-  const buckets = Math.ceil(count / 2)
-  const data = new Float64Array(buckets * 4)
-
-  for (let b = 0; b < buckets; b++) {
-    const i = b * 2
-    const base = b * 4
-    const t0 = Number(timestamps[i])
-    const v0 = values[i] as number
-
-    if (i + 1 < count) {
-      const t1 = Number(timestamps[i + 1])
-      const v1 = values[i + 1] as number
-      data[base] = Math.min(t0, t1)
-      data[base + 1] = Math.min(v0, v1)
-      data[base + 2] = Math.max(t0, t1)
-      data[base + 3] = Math.max(v0, v1)
-    } else {
-      data[base] = t0
-      data[base + 1] = v0
-      data[base + 2] = t0
-      data[base + 3] = v0
-    }
+function buildLevel(source: Float64Array, sourceCount: number, stride: 1 | 2): LodLevel {
+  const count = Math.ceil(sourceCount / 2)
+  const data = new Float64Array(count * 2)
+  for (let bucket = 0; bucket < count; bucket++) {
+    writeBucket(data, bucket, source, sourceCount, stride)
   }
-
-  return { data, count: buckets }
+  return { data, count }
 }
 
-/**
- * Build a LOD level from the previous LOD level.
- * Each pair of quads → one merged quad.
- */
-function buildLevelFromLod(prevData: Float64Array, prevCount: number): LodLevel {
-  const buckets = Math.ceil(prevCount / 2)
-  const data = new Float64Array(buckets * 4)
-
-  for (let b = 0; b < buckets; b++) {
-    const pi = b * 2
-    recomputeBucket(data, b, prevData, pi, prevCount)
-  }
-
-  return { data, count: buckets }
-}
-
-/**
- * Recompute a single bucket from two consecutive quads in the previous level.
- */
-function recomputeBucket(
-  dst: Float64Array,
-  dstIdx: number,
-  src: Float64Array,
-  srcPairIdx: number,
-  srcCount: number,
+/** Combine adjacent raw values or extrema pairs into one bucket. */
+function writeBucket(
+  data: Float64Array,
+  bucket: number,
+  source: Float64Array,
+  sourceCount: number,
+  stride: 1 | 2,
 ): void {
-  const base = dstIdx * 4
-  const s0 = srcPairIdx * 4
-
-  const tMin0 = src[s0] as number
-  const vMin0 = src[s0 + 1] as number
-  const tMax0 = src[s0 + 2] as number
-  const vMax0 = src[s0 + 3] as number
-
-  if (srcPairIdx + 1 < srcCount) {
-    const s1 = (srcPairIdx + 1) * 4
-    const tMin1 = src[s1] as number
-    const vMin1 = src[s1 + 1] as number
-    const tMax1 = src[s1 + 2] as number
-    const vMax1 = src[s1 + 3] as number
-
-    dst[base] = Math.min(tMin0, tMin1)
-    dst[base + 1] = Math.min(vMin0, vMin1)
-    dst[base + 2] = Math.max(tMax0, tMax1)
-    dst[base + 3] = Math.max(vMax0, vMax1)
-  } else {
-    dst[base] = tMin0
-    dst[base + 1] = vMin0
-    dst[base + 2] = tMax0
-    dst[base + 3] = vMax0
-  }
+  const first = bucket * 2
+  const second = Math.min(first + 1, sourceCount - 1)
+  data[bucket * 2] = Math.min(source[first * stride] as number, source[second * stride] as number)
+  data[bucket * 2 + 1] = Math.max(
+    source[first * stride + stride - 1] as number,
+    source[second * stride + stride - 1] as number,
+  )
 }
 
 /**
@@ -736,44 +530,6 @@ function upperBound(arr: BigInt64Array, target: bigint, count = arr.length): num
   while (lo < hi) {
     const mid = (lo + hi) >>> 1
     if ((arr[mid] as bigint) <= target) {
-      lo = mid + 1
-    } else {
-      hi = mid
-    }
-  }
-  return lo
-}
-
-/**
- * Lower bound on LOD level data.
- * Searches tMin (offset 0 of each quad).
- */
-function lowerBoundLod(data: Float64Array, count: number, target: bigint): number {
-  const targetNum = Number(target)
-  let lo = 0
-  let hi = count
-  while (lo < hi) {
-    const mid = (lo + hi) >>> 1
-    if ((data[mid * 4] as number) < targetNum) {
-      lo = mid + 1
-    } else {
-      hi = mid
-    }
-  }
-  return lo
-}
-
-/**
- * Upper bound on LOD level data.
- * Searches tMax (offset 2 of each quad).
- */
-function upperBoundLod(data: Float64Array, count: number, target: bigint): number {
-  const targetNum = Number(target)
-  let lo = 0
-  let hi = count
-  while (lo < hi) {
-    const mid = (lo + hi) >>> 1
-    if ((data[mid * 4 + 2] as number) <= targetNum) {
       lo = mid + 1
     } else {
       hi = mid

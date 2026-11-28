@@ -26,7 +26,7 @@ function handleCommand(command: WorkerCommand & { _requestId?: string }): {
       pyramid = new LodPyramid()
       series.set(command.seriesId, pyramid)
 
-      const stats = pyramid.ingest(command.timestamps, command.values)
+      const stats = pyramid.ingest(command.timestamps, command.values, command.options)
       return {
         response: { type: 'ingested', seriesId: command.seriesId, stats, _requestId: requestId },
         transfer: [],
@@ -59,7 +59,8 @@ function handleCommand(command: WorkerCommand & { _requestId?: string }): {
       }
     }
 
-    case 'query': {
+    case 'query':
+    case 'queryColumns': {
       const pyramid = series.get(command.seriesId)
       if (!pyramid) {
         return {
@@ -70,6 +71,23 @@ function handleCommand(command: WorkerCommand & { _requestId?: string }): {
             _requestId: requestId,
           },
           transfer: [],
+        }
+      }
+
+      if (command.type === 'queryColumns') {
+        const result = pyramid.queryColumns(
+          command.startTime,
+          command.endTime,
+          command.viewportWidth,
+        )
+        return {
+          response: {
+            type: 'queryColumnsResult',
+            seriesId: command.seriesId,
+            ...result,
+            _requestId: requestId,
+          },
+          transfer: [result.timestamps.buffer, result.values.buffer],
         }
       }
 

@@ -1,5 +1,6 @@
 import { LodPyramid } from './lod-pyramid.js'
 import type {
+  ColumnarQueryResult,
   IngestOptions,
   QueryResult,
   SeriesStats,
@@ -25,6 +26,12 @@ export class DataEngine {
 
   /** Track which series are handled locally vs worker. */
   private _localSeries = new Set<string>()
+
+  private readonly _transferInputBuffers: boolean
+
+  constructor(options?: { transferInputBuffers?: boolean }) {
+    this._transferInputBuffers = options?.transferInputBuffers ?? true
+  }
 
   /**
    * Threshold below which data is processed on the main thread.
@@ -92,10 +99,10 @@ export class DataEngine {
     this._localSeries.delete(seriesId)
     this._localPyramids.delete(seriesId)
 
-    const response = await this._send({ type: 'ingest', seriesId, timestamps, values }, [
-      timestamps.buffer,
-      values.buffer,
-    ])
+    const response = await this._send(
+      { type: 'ingest', seriesId, timestamps, values, ...(options && { options }) },
+      this._transferInputBuffers ? [timestamps.buffer, values.buffer] : [],
+    )
     if (response.type !== 'ingested') {
       throw new Error(`Unexpected response type: ${response.type}`)
     }
@@ -112,10 +119,10 @@ export class DataEngine {
       return pyramid.append(timestamps, values)
     }
 
-    const response = await this._send({ type: 'append', seriesId, timestamps, values }, [
-      timestamps.buffer,
-      values.buffer,
-    ])
+    const response = await this._send(
+      { type: 'append', seriesId, timestamps, values },
+      this._transferInputBuffers ? [timestamps.buffer, values.buffer] : [],
+    )
     if (response.type !== 'appended') {
       throw new Error(`Unexpected response type: ${response.type}`)
     }
@@ -159,6 +166,33 @@ export class DataEngine {
       pointCount: response.pointCount,
       gaps: response.gaps,
     }
+  }
+
+  /** Query exact nanosecond timestamps and their values as separate columns. */
+  async queryColumns(
+    seriesId: string,
+    startTime: bigint,
+    endTime: bigint,
+    viewportWidth: number,
+  ): Promise<ColumnarQueryResult> {
+    if (this._localSeries.has(seriesId)) {
+      const pyramid = this._localPyramids.get(seriesId)
+      if (!pyramid) throw new Error(`Series "${seriesId}" not found.`)
+      return pyramid.queryColumns(startTime, endTime, viewportWidth)
+    }
+
+    const response = await this._send({
+      type: 'queryColumns',
+      seriesId,
+      startTime,
+      endTime,
+      viewportWidth,
+    })
+    if (response.type !== 'queryColumnsResult') {
+      throw new Error(`Unexpected response type: ${response.type}`)
+    }
+    const { timestamps, values, level, pointCount, gaps } = response
+    return { timestamps, values, level, pointCount, gaps }
   }
 
   /**

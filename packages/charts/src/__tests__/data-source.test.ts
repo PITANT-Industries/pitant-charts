@@ -105,6 +105,53 @@ describe('DataSource', () => {
   // ── query ─────────────────────────────────────────────────
 
   describe('query', () => {
+    it('preserves distinct epoch-millisecond timestamps and their aligned readings', async () => {
+      const source = new DataSource()
+      const start = Date.UTC(2026, 10, 28, 12)
+      const offsets = [0, 1, 10, 100, 1_000, 2_000, 5_000, 10_000, 30_000, 60_000, 120_000, 180_000]
+      const timestamps = Float64Array.from(offsets, (offset) => start + offset)
+      const temperature = Float64Array.from(offsets, (_, index) => 20 + index / 10)
+      const pressure = Float64Array.from(offsets, (_, index) => 1_000 + index)
+      const quality = Uint8Array.from(offsets, (_, index) => index)
+      await source.load({
+        timestamps,
+        columns: { temperature, pressure },
+        quality: { temperature: quality },
+      })
+
+      const result = await source.query({ start, end: start + 180_000, targetPixels: 1_200 })
+
+      expect(result.lodLevel).toBe(0)
+      expect(result.timestamps).toEqual(timestamps)
+      expect(result.columns).toEqual({ temperature, pressure })
+      expect(result.quality?.['temperature']).toEqual(quality)
+      source.destroy()
+    })
+
+    it('retains exact, aligned epoch-millisecond bucket boundaries when downsampling', async () => {
+      const source = new DataSource()
+      const start = Date.UTC(2026, 10, 28, 12)
+      const timestamps = Float64Array.from({ length: 1_024 }, (_, index) => start + index)
+      const temperature = Float64Array.from(timestamps, (_, index) => index + 20)
+      const pressure = Float64Array.from(timestamps, (_, index) => index + 1_000)
+      await source.load({ timestamps, columns: { temperature, pressure } })
+
+      const result = await source.query({ start, end: start + 1_023, targetPixels: 256 })
+
+      expect(result.lodLevel).toBeGreaterThan(0)
+      expect(result.returnedPointCount).toBeLessThan(timestamps.length)
+      expect(result.timestamps[0]).toBe(start)
+      expect(result.timestamps.at(-1)).toBe(start + 1_023)
+      expect(new Set(result.timestamps).size).toBe(result.returnedPointCount)
+      expect(result.columns['temperature']).toEqual(
+        Float64Array.from(result.timestamps, (t) => t - start + 20),
+      )
+      expect(result.columns['pressure']).toEqual(
+        Float64Array.from(result.timestamps, (t) => t - start + 1_000),
+      )
+      source.destroy()
+    })
+
     it('returns viewport-resolution data', async () => {
       const ds = new DataSource()
       const rows = makeRows(500)

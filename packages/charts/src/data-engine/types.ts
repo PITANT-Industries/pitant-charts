@@ -37,6 +37,12 @@ export interface QueryResult {
   gaps: ReadonlyArray<{ startIndex: number; endIndex: number }>
 }
 
+/** Viewport values and exact nanosecond timestamps in separate buffers. */
+export interface ColumnarQueryResult extends Omit<QueryResult, 'data'> {
+  timestamps: BigInt64Array
+  values: Float64Array
+}
+
 /**
  * Commands sent from main thread to data engine worker.
  */
@@ -47,6 +53,7 @@ export type WorkerCommand =
       timestamps: BigInt64Array
       values: Float64Array
       quality?: Uint8Array
+      options?: IngestOptions
     }
   | {
       type: 'append'
@@ -56,6 +63,13 @@ export type WorkerCommand =
     }
   | {
       type: 'query'
+      seriesId: string
+      startTime: bigint
+      endTime: bigint
+      viewportWidth: number
+    }
+  | {
+      type: 'queryColumns'
       seriesId: string
       startTime: bigint
       endTime: bigint
@@ -76,7 +90,8 @@ export type WorkerResponse =
       data: Float32Array
       level: number
       pointCount: number
-      gaps: Array<{ startIndex: number; endIndex: number }>
+      gaps: QueryResult['gaps']
     }
+  | ({ type: 'queryColumnsResult'; seriesId: string } & ColumnarQueryResult)
   | { type: 'stats'; seriesId: string; stats: SeriesStats }
   | { type: 'error'; seriesId: string; message: string }

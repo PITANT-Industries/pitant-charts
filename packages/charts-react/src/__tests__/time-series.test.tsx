@@ -618,6 +618,32 @@ describe('useTimeSeries', () => {
     })
   })
 
+  it('keeps real epoch timestamps distinct after the viewport query settles', async () => {
+    const epoch = Date.UTC(2026, 10, 28, 12)
+    const offsets = [0, 1, 10, 100, 1000, 2000, 5000, 10000, 30000, 60000, 120000, 180000]
+    const data: TimeSeriesColumnData = {
+      timestamps: Float64Array.from(offsets, (offset) => epoch + offset),
+      columns: { temp: Float64Array.from(offsets, (_, index) => index + 1) },
+    }
+    const config: TimeSeriesConfig = {
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp' }],
+    }
+    const query = vi.spyOn(DataSource.prototype, 'query')
+    const { result } = renderHook(() =>
+      useTimeSeries({ config, data, containerRef: fakeContainerRef(1200) }),
+    )
+
+    await waitFor(() => expect(query).toHaveBeenCalled())
+    await act(async () => {
+      await query.mock.results[0]?.value
+    })
+    expect(result.current.stats.dataLoading).toBe(false)
+    expect(result.current.stats.lodLevel).toBe(0)
+    expect(result.current.renderPlan.xRange).toEqual([epoch, epoch + 180000])
+    const buffer = result.current.renderPlan.series[0]?.segments[0]?.buffer
+    expect(Array.from(buffer ?? []).filter((_, index) => index % 2 === 0)).toEqual(offsets)
+  })
+
   it('appends into the existing DataSource and updates live-edge range', async () => {
     const appendSpy = vi.spyOn(DataSource.prototype, 'append')
     const largeData = makeLargeData(9000)
