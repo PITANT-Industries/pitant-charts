@@ -64,6 +64,14 @@ export interface RenderContextOptions {
   renderer?: RendererType | 'auto'
 }
 
+/** A renderer clip rectangle in CSS pixels. */
+export interface RenderClipRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 /**
  * Unified render context interface.
  * Chart types code exclusively against this interface.
@@ -85,6 +93,7 @@ export interface RenderContext {
   drawText(text: string, x: number, y: number, options: TextOptions): void
 
   setTransform(transform: import('./view-transform.js').ViewTransform): void
+  setClipRect?(rect: RenderClipRect | null): void
 
   getCapabilities(): RendererCapabilities
 

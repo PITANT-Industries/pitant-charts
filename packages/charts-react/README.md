@@ -124,6 +124,45 @@ export function PressureTrend() {
 }
 ```
 
+### Independent Y axes
+
+Pass named axes in `config.yAxes` and bind each signal with `yAxisKey`. The
+first axis is primary. Series without a key use that axis, and the existing
+`yAxis` configuration supplies primary defaults. Each named axis can
+auto-range independently or use an explicit range.
+
+```tsx
+import { TimeSeries, type TimeSeriesConfig } from '@pitant/charts-react'
+
+const config: TimeSeriesConfig = {
+  series: [
+    { key: 'temperature', label: 'Temperature', field: 'temp', yAxisKey: 'temperature' },
+    { key: 'pressure', label: 'Pressure', field: 'pressure', yAxisKey: 'pressure' },
+  ],
+  yAxes: [
+    { key: 'temperature', label: '°C', formatValue: (value) => value.toFixed(1) },
+    { key: 'pressure', side: 'right', label: 'bar', range: [0, 10] },
+  ],
+}
+
+// Both fields use the same millisecond timestamp column.
+const data = {
+  timestamps: new Float64Array([0, 1_000, 2_000]),
+  columns: {
+    temp: new Float64Array([36.4, 36.8, 37.1]),
+    pressure: new Float64Array([2.1, 3.5, 2.9]),
+  },
+}
+
+export function TemperatureAndPressure() {
+  return <TimeSeries ariaLabel="Temperature and pressure trend" config={config} data={data} />
+}
+```
+
+Use the matching `yAxisKey` for derived series, value and envelope bands,
+Y annotations, rulers, and SPC tracks. The axis formatter also applies to
+tooltip values. PNG and SVG use the same axes as the live chart.
+
 ## PNG And SVG Export
 
 Concrete `TimeSeries` and `DigitalChannel` chart returns expose `exportImage`.
@@ -171,7 +210,7 @@ They install into `@components/pitant/*` and depend on the public packages.
 | `pitant-synchronized-dashboard` | One workflow needs shared x-range and cursor state. | Panels cross tenant, site, evidence, or authorization boundaries. |
 | `pitant-datazoom` | Users need overview-plus-detail navigation. | The chart is compact or live-window only. |
 | `pitant-streaming-trend` | Live historian tails append typed-array chunks. | Backfills rewrite earlier timestamps or schema. |
-| `pitant-multi-axis` | Different units need separated y-ranges. | A single-canvas dual-axis overlay is required. |
+| `pitant-multi-axis` | Signals with different units share one time axis and use independent Y axes. | The signals need separate time windows. |
 | `pitant-export` | The workflow needs PNG export wiring. | Evidence-grade signed export is required. |
 | `pitant-dashboard-overview` | One tenant/site/workflow needs dense trend and state overview. | The view mixes scopes that must stay separate. |
 

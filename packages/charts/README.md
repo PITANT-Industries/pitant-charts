@@ -120,6 +120,34 @@ const svg = commandFrameToSvg(frame, {
 })
 ```
 
+## Independent Y axes
+
+Supply ordered named scales in the render options and bind channels with `yAxisKey`.
+The first scale is primary. Channels and overlays without a key use that scale.
+
+```ts
+const trend = new TimeSeriesChart(context, {
+  data: {
+    timestamps,
+    columns: { temperature, pressure },
+    series: [
+      { key: 'temperature', label: 'Temperature', field: 'temperature', yAxisKey: 'temperature' },
+      { key: 'pressure', label: 'Pressure', field: 'pressure', yAxisKey: 'pressure' },
+    ],
+  },
+  render: {
+    yAxes: [
+      { key: 'temperature', label: '°C' },
+      { key: 'pressure', label: 'bar', side: 'right', range: [0, 16] },
+    ],
+  },
+})
+```
+
+Each scale can define its own bounds, padding, tick count, formatter, and gutter.
+A band, Y annotation, ruler, or SPC track can use the corresponding `yAxisKey`.
+The command frame uses the same axis transformations for Canvas2D, WebGPU, and SVG.
+
 ## Data Rules
 
 - Use `Float64Array` timestamps and one typed array per series.

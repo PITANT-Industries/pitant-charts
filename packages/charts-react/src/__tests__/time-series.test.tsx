@@ -188,6 +188,103 @@ describe('useTimeSeries', () => {
     expect(result.current.layout.legendArea).not.toBeNull()
   })
 
+  it('uses independent Y axes for channel values, overlays and SVG export', async () => {
+    const data: TimeSeriesColumnData = {
+      timestamps: DATA.timestamps,
+      columns: {
+        ...DATA.columns,
+        pressure: new Float64Array([1500, 1000, 500]),
+        other: new Float64Array([101, 102, 103]),
+      },
+    }
+    const config: TimeSeriesConfig = {
+      series: [
+        { key: 'temp', label: 'Temperature', field: 'temp' },
+        { key: 'pressure', label: 'Pressure', field: 'pressure', yAxisKey: 'pressure' },
+        { key: 'other', label: 'Other', field: 'other', yAxisKey: 'other' },
+        { key: 'unconfigured', label: 'Invalid axis', field: 'other', yAxisKey: 'unknown' },
+      ],
+      derivedSeries: [
+        {
+          key: 'pressure_ma',
+          label: 'Pressure mean',
+          sourceField: 'pressure',
+          kind: 'moving-average',
+          windowSize: 2,
+          minimumSamples: 1,
+          yAxisKey: 'pressure',
+        },
+      ],
+      yAxis: { label: '°C', range: [0, 20], formatValue: (value) => `${value} °C` },
+      yAxes: [
+        { key: 'temperature' },
+        {
+          key: 'pressure',
+          side: 'right',
+          label: 'Pressure',
+          range: [0, 2000],
+          tickCount: 3,
+          formatValue: (value) => `${value} kPa`,
+        },
+        { key: 'other', side: 'right', range: [0, 200] },
+      ],
+      bands: [{ kind: 'value-band', key: 'limit', yAxisKey: 'pressure', yStart: 1200, yEnd: 1500 }],
+      annotations: [{ kind: 'y-line', key: 'setpoint', yAxisKey: 'pressure', y: 1100 }],
+      spcTracks: [{ key: 'control', yAxisKey: 'pressure', centerLine: 950 }],
+    }
+    const { result } = renderHook(() =>
+      useTimeSeries({ config, data, containerRef: fakeContainerRef(900) }),
+    )
+
+    expect(result.current.renderPlan.yRange).toEqual([0, 20])
+    expect(result.current.renderPlan.yAxes?.map((axis) => [axis.key, axis.range])).toEqual([
+      ['temperature', [0, 20]],
+      ['pressure', [0, 2000]],
+      ['other', [0, 200]],
+    ])
+    expect(
+      result.current.layout.yAxes?.map(({ key, label, side }) => ({ key, label, side })),
+    ).toEqual([
+      { key: 'temperature', label: '°C', side: 'left' },
+      { key: 'pressure', label: 'Pressure', side: 'right' },
+      { key: 'other', label: null, side: 'right' },
+    ])
+    expect(result.current.layout.yAxes?.[1]?.ticks.map((tick) => tick.label)).toEqual([
+      '0 kPa',
+      '1000 kPa',
+      '2000 kPa',
+    ])
+    expect(
+      result.current.renderPlan.series.find(({ key }) => key === 'pressure_ma')?.yAxisKey,
+    ).toBe('pressure')
+    expect(result.current.renderPlan.bands[0]?.yAxisKey).toBe('pressure')
+    expect(result.current.renderPlan.annotations[0]?.yAxisKey).toBe('pressure')
+    expect(result.current.renderPlan.spcTracks[0]?.yAxisKey).toBe('pressure')
+    expect(result.current.renderPlan.series.some(({ key }) => key === 'unconfigured')).toBe(false)
+    expect(result.current.legendItems.some(({ key }) => key === 'unconfigured')).toBe(false)
+
+    act(() => result.current.handleHoverChange(pointerAt(1010)))
+    expect(
+      result.current.tooltipPayload?.series.map(({ key, formatted }) => [key, formatted]),
+    ).toEqual([
+      ['temp', '12 °C'],
+      ['pressure', '1000 kPa'],
+      ['other', '102'],
+      ['pressure_ma', '1250 kPa'],
+    ])
+
+    const blob = await result.current.exportImage('svg', { width: 900, height: 400 })
+    const svg = await blob.text()
+    expect(svg).toContain('>Pressure</text>')
+    expect(svg).toContain('>2000 kPa</text>')
+    expect(svg).toContain('>20 °C</text>')
+
+    act(() => result.current.toggleSeries('pressure'))
+    act(() => result.current.handleHoverChange(pointerAt(1010)))
+    expect(result.current.renderPlan.series.some(({ key }) => key === 'pressure')).toBe(false)
+    expect(result.current.tooltipPayload?.series.some(({ key }) => key === 'pressure')).toBe(false)
+  })
+
   it('passes value and envelope bands into the core render plan', () => {
     const data: TimeSeriesColumnData = {
       timestamps: new Float64Array([1000, 1010, 1020]),

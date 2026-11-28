@@ -7,8 +7,10 @@ export type {
   ChartRect,
   EdgeInsets,
   GridLayoutOptions,
+  LaidOutYAxis,
   LegendLayoutOptions,
   LegendPosition,
+  NamedYAxisLayoutOptions,
   NumericRange,
   RgbaColor,
 } from './common.js'
@@ -245,6 +247,7 @@ export type {
   TimeSeriesPlannedEventMarker,
   TimeSeriesPlannedSeries,
   TimeSeriesPlannedSpcTrack,
+  TimeSeriesPlannedYAxis,
   TimeSeriesRenderOptions,
   TimeSeriesRenderPlan,
   TimeSeriesRulerAnnotation,
@@ -259,6 +262,7 @@ export type {
   TimeSeriesValueBand,
   TimeSeriesXLineAnnotation,
   TimeSeriesXRangeAnnotation,
+  TimeSeriesYAxisOptions,
   TimeSeriesYLineAnnotation,
   TimeSeriesYRangeAnnotation,
 } from './time-series.js'

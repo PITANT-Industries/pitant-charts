@@ -27,6 +27,7 @@ export interface ColumnarTooltipSeriesConfig {
   rgba?: RgbaColor
   visible?: boolean
   stateLabels?: Record<number, string>
+  formatValue?: (value: number) => string
 }
 
 export interface ColumnarTooltipData {
@@ -91,7 +92,7 @@ export function buildColumnarTooltipPayload({
           item.rgba ?? (DEFAULT_CHART_COLORS[index % DEFAULT_CHART_COLORS.length] as RgbaColor),
         ),
       value,
-      formatted: formatTooltipValue(value, formatY, item.stateLabels),
+      formatted: formatTooltipValue(value, item.formatValue ?? formatY, item.stateLabels),
     }
     if (quality !== null) {
       row.quality = quality

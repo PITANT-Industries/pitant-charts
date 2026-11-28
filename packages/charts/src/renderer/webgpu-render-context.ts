@@ -3,6 +3,7 @@ import type {
   FillOptions,
   LineOptions,
   RectOptions,
+  RenderClipRect,
   RenderContext,
   RendererCapabilities,
   TextOptions,
@@ -318,6 +319,20 @@ export class WebGPURenderContext implements RenderContext {
 
   setTransform(transform: ViewTransform): void {
     this._transformMatrix = transform.toMatrix4()
+  }
+
+  setClipRect(rect: RenderClipRect | null): void {
+    if (!this._pass) return
+    const { width, height } = this.canvas
+    if (!rect) {
+      this._pass.setScissorRect(0, 0, width, height)
+      return
+    }
+    const left = Math.max(0, Math.min(width, Math.floor(rect.x * this._dpr)))
+    const top = Math.max(0, Math.min(height, Math.floor(rect.y * this._dpr)))
+    const right = Math.max(left, Math.min(width, Math.ceil((rect.x + rect.width) * this._dpr)))
+    const bottom = Math.max(top, Math.min(height, Math.ceil((rect.y + rect.height) * this._dpr)))
+    this._pass.setScissorRect(left, top, right - left, bottom - top)
   }
 
   getCapabilities(): RendererCapabilities {

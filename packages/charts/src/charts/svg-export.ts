@@ -68,11 +68,23 @@ export function commandFrameToSvg(
 function commandToSvgElement(command: DrawCommand, transform: ViewTransform): string | null {
   switch (command.kind) {
     case 'line':
-      return lineToSvg(command.buffer, command.options, transform)
+      return lineToSvg(command.buffer, command.options, command.transform ?? transform)
     case 'fill':
-      return fillToSvg(command.upper, command.lower, command.options, transform)
+      return fillToSvg(
+        command.upper,
+        command.lower,
+        command.options,
+        command.transform ?? transform,
+      )
     case 'rect':
-      return rectToSvg(command.x, command.y, command.w, command.h, command.options, transform)
+      return rectToSvg(
+        command.x,
+        command.y,
+        command.w,
+        command.h,
+        command.options,
+        command.transform ?? transform,
+      )
     case 'text':
       return textToSvg(command.text, command.x, command.y, command.options)
   }

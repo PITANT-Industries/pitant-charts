@@ -28,6 +28,12 @@ export interface AxisLayoutOptions {
   formatValue?: (value: number) => string
 }
 
+export interface NamedYAxisLayoutOptions extends AxisLayoutOptions {
+  key: string
+  side?: 'left' | 'right'
+  range?: NumericRange
+}
+
 export interface LegendLayoutOptions {
   visible?: boolean
   position?: LegendPosition
@@ -49,6 +55,8 @@ export interface ChartLayoutOptions {
   yRange?: NumericRange
   xAxis?: AxisLayoutOptions
   yAxis?: AxisLayoutOptions
+  /** Additional layout contract for named axes. The first axis is primary. */
+  yAxes?: readonly NamedYAxisLayoutOptions[]
   legend?: LegendLayoutOptions
   grid?: GridLayoutOptions
   minPlotWidth?: number
@@ -60,6 +68,14 @@ export interface AxisTick {
   ratio: number
   position: number
   label: string
+}
+
+export interface LaidOutYAxis {
+  key: string
+  side: 'left' | 'right'
+  area: ChartRect | null
+  ticks: readonly AxisTick[]
+  label: string | null
 }
 
 export interface ChartLayout {
@@ -74,6 +90,7 @@ export interface ChartLayout {
   yAxisLabel: string | null
   xTicks: readonly AxisTick[]
   yTicks: readonly AxisTick[]
+  yAxes?: readonly LaidOutYAxis[]
 }
 
 export interface ChartGuideOptions {
@@ -219,11 +236,37 @@ export function createChartLayout(options: ChartLayoutOptions): ChartLayout {
     }
   }
 
-  const yAxisVisible = options.yAxis?.visible === true
-  const yAxisSize = Math.max(1, options.yAxis?.size ?? 56)
+  const namedYAxes = options.yAxes?.length ? options.yAxes : undefined
+  const namedAxisAreas: (ChartRect | null)[] = []
   let yAxisArea: ChartRect | null = null
-  if (yAxisVisible) {
-    const size = clampReservation(yAxisSize, plotArea.width, minPlotWidth, 0)
+  if (namedYAxes) {
+    for (let index = namedYAxes.length - 1; index >= 0; index--) {
+      const axis = namedYAxes[index]
+      if (!axis || axis.visible === false) {
+        namedAxisAreas[index] = null
+        continue
+      }
+      const size = clampReservation(Math.max(1, axis.size ?? 56), plotArea.width, minPlotWidth, 0)
+      if (size <= 0) {
+        namedAxisAreas[index] = null
+        continue
+      }
+      const fromRight = (axis.side ?? (index === 0 ? 'left' : 'right')) === 'right'
+      const x = fromRight ? plotArea.x + plotArea.width - size : plotArea.x
+      namedAxisAreas[index] = { x, y: plotArea.y, width: size, height: plotArea.height }
+      if (fromRight) {
+        plotArea.width = Math.max(1, plotArea.width - size)
+      } else {
+        plotArea = trimLeft(plotArea, size)
+      }
+    }
+  } else if (options.yAxis?.visible === true) {
+    const size = clampReservation(
+      Math.max(1, options.yAxis.size ?? 56),
+      plotArea.width,
+      minPlotWidth,
+      0,
+    )
     yAxisArea = { x: plotArea.x, y: plotArea.y, width: size, height: plotArea.height }
     plotArea = trimLeft(plotArea, size)
   }
@@ -244,6 +287,23 @@ export function createChartLayout(options: ChartLayoutOptions): ChartLayout {
 
   const xTickCount = options.grid?.xTickCount ?? options.xAxis?.tickCount ?? 6
   const yTickCount = options.grid?.yTickCount ?? options.yAxis?.tickCount ?? 5
+  const yAxes = namedYAxes?.map((axis, index): LaidOutYAxis => {
+    const area = namedAxisAreas[index]
+    return {
+      key: axis.key,
+      side: axis.side ?? (index === 0 ? 'left' : 'right'),
+      area: area ? { ...area, height: plotArea.height } : null,
+      label: axis.label ?? null,
+      ticks: buildAxisTicks(
+        axis.range ?? options.yRange ?? [0, 1],
+        axis.tickCount ?? (index === 0 ? yTickCount : 5),
+        plotArea.y + plotArea.height,
+        -plotArea.height,
+        axis.formatValue,
+      ),
+    }
+  })
+  const primaryYAxis = yAxes?.[0]
 
   return {
     bounds,
@@ -251,10 +311,10 @@ export function createChartLayout(options: ChartLayoutOptions): ChartLayout {
     plotArea,
     overlayArea: legendArea ?? plotArea,
     xAxisArea,
-    yAxisArea,
+    yAxisArea: primaryYAxis ? primaryYAxis.area : yAxisArea,
     legendArea,
     xAxisLabel: options.xAxis?.label ?? null,
-    yAxisLabel: options.yAxis?.label ?? null,
+    yAxisLabel: primaryYAxis ? primaryYAxis.label : (options.yAxis?.label ?? null),
     xTicks: buildAxisTicks(
       options.xRange ?? [0, 1],
       xTickCount,
@@ -262,13 +322,16 @@ export function createChartLayout(options: ChartLayoutOptions): ChartLayout {
       plotArea.width,
       options.xAxis?.formatValue,
     ),
-    yTicks: buildAxisTicks(
-      options.yRange ?? [0, 1],
-      yTickCount,
-      plotArea.y + plotArea.height,
-      -plotArea.height,
-      options.yAxis?.formatValue,
-    ),
+    yTicks:
+      primaryYAxis?.ticks ??
+      buildAxisTicks(
+        options.yRange ?? [0, 1],
+        yTickCount,
+        plotArea.y + plotArea.height,
+        -plotArea.height,
+        options.yAxis?.formatValue,
+      ),
+    ...(yAxes ? { yAxes } : {}),
   }
 }
 
@@ -365,11 +428,16 @@ export function addChartGuidesToCommandList(
       axisStyle,
       ZLayer.Overlay,
     )
-    commands.addLine(
-      new Float32Array([xRange[0], yRange[0], xRange[0], yRange[1]]),
-      axisStyle,
-      ZLayer.Overlay,
-    )
+    if (layout.yAxes) {
+      if (layout.yAxes.some(({ area, side }) => area && side === 'left')) {
+        addYAxisSpine(commands, xRange[0], yRange, axisStyle)
+      }
+      if (layout.yAxes.some(({ area, side }) => area && side === 'right')) {
+        addYAxisSpine(commands, xRange[1], yRange, axisStyle)
+      }
+    } else {
+      addYAxisSpine(commands, xRange[0], yRange, axisStyle)
+    }
   }
 
   if (textVisible) {
@@ -377,8 +445,38 @@ export function addChartGuidesToCommandList(
   }
 }
 
-export function drawCommandList(context: RenderContext, commands: RenderCommandList): void {
+function addYAxisSpine(
+  commands: RenderCommandList,
+  x: number,
+  yRange: NumericRange,
+  style: { color: RgbaColor; width: number },
+): void {
+  commands.addLine(new Float32Array([x, yRange[0], x, yRange[1]]), style, ZLayer.Overlay)
+}
+
+export function drawCommandList(
+  context: RenderContext,
+  commands: RenderCommandList,
+  defaultTransform?: ViewTransform,
+  plotClip?: ChartRect,
+): void {
+  let currentTransform = defaultTransform
+  let clipped = false
   for (const command of commands.sorted()) {
+    if (plotClip && context.setClipRect) {
+      const clipCommand = command.kind !== 'text'
+      if (clipCommand !== clipped) {
+        context.setClipRect(clipCommand ? plotClip : null)
+        clipped = clipCommand
+      }
+    }
+    if (command.kind !== 'text') {
+      const transform = command.transform ?? defaultTransform
+      if (transform && transform !== currentTransform) {
+        context.setTransform(transform)
+        currentTransform = transform
+      }
+    }
     switch (command.kind) {
       case 'line':
         context.drawLines(command.buffer, command.options)
@@ -394,6 +492,9 @@ export function drawCommandList(context: RenderContext, commands: RenderCommandL
         break
     }
   }
+  if (clipped) context.setClipRect?.(null)
+  if (defaultTransform && currentTransform !== defaultTransform)
+    context.setTransform(defaultTransform)
 }
 
 function resolveInsets(value: number | Partial<EdgeInsets>): EdgeInsets {
@@ -523,30 +624,35 @@ function addAxisTextToCommandList(
     }
   }
 
-  if (layout.yAxisArea) {
-    const tickX = layout.yAxisArea.x + layout.yAxisArea.width - 6
-    for (const tick of layout.yTicks) {
+  const yAxes = layout.yAxes ?? [
+    { side: 'left', area: layout.yAxisArea, ticks: layout.yTicks, label: layout.yAxisLabel },
+  ]
+  for (const { area, side, ticks, label } of yAxes) {
+    if (!area) continue
+    const fromRight = side === 'right'
+    const tickX = fromRight ? area.x + 6 : area.x + area.width - 6
+    for (const tick of ticks) {
       commands.addText(
         tick.label,
         tickX,
         tick.position,
         {
           ...style,
-          align: 'right',
+          align: fromRight ? 'left' : 'right',
           baseline: 'middle',
         },
         ZLayer.Text,
       )
     }
 
-    if (layout.yAxisLabel) {
+    if (label) {
       commands.addText(
-        layout.yAxisLabel,
-        layout.yAxisArea.x + 6,
-        layout.yAxisArea.y + 4,
+        label,
+        fromRight ? area.x + area.width - 6 : area.x + 6,
+        area.y + 4,
         {
           ...style,
-          align: 'left',
+          align: fromRight ? 'right' : 'left',
           baseline: 'top',
         },
         ZLayer.Text,

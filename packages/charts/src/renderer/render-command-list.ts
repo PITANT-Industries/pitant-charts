@@ -1,4 +1,5 @@
 import type { FillOptions, LineOptions, RectOptions, TextOptions } from './types.js'
+import type { ViewTransform } from './view-transform.js'
 
 /**
  * Z-order layers for draw commands.
@@ -16,6 +17,7 @@ interface LineCommand {
   z: ZLayer
   buffer: Float32Array
   options: LineOptions
+  transform?: ViewTransform
 }
 
 interface FillCommand {
@@ -24,6 +26,7 @@ interface FillCommand {
   upper: Float32Array
   lower: Float32Array
   options: FillOptions
+  transform?: ViewTransform
 }
 
 interface RectCommand {
@@ -34,6 +37,7 @@ interface RectCommand {
   w: number
   h: number
   options: RectOptions
+  transform?: ViewTransform
 }
 
 interface TextCommand {
@@ -58,8 +62,13 @@ export class RenderCommandList {
     return this._commands.length
   }
 
-  addLine(buffer: Float32Array, options: LineOptions, z: ZLayer = ZLayer.Line): void {
-    this._commands.push({ kind: 'line', z, buffer, options })
+  addLine(
+    buffer: Float32Array,
+    options: LineOptions,
+    z: ZLayer = ZLayer.Line,
+    transform?: ViewTransform,
+  ): void {
+    this._commands.push({ kind: 'line', z, buffer, options, ...(transform ? { transform } : {}) })
   }
 
   addFill(
@@ -67,8 +76,16 @@ export class RenderCommandList {
     lower: Float32Array,
     options: FillOptions,
     z: ZLayer = ZLayer.Fill,
+    transform?: ViewTransform,
   ): void {
-    this._commands.push({ kind: 'fill', z, upper, lower, options })
+    this._commands.push({
+      kind: 'fill',
+      z,
+      upper,
+      lower,
+      options,
+      ...(transform ? { transform } : {}),
+    })
   }
 
   addRect(
@@ -78,8 +95,18 @@ export class RenderCommandList {
     h: number,
     options: RectOptions,
     z: ZLayer = ZLayer.Overlay,
+    transform?: ViewTransform,
   ): void {
-    this._commands.push({ kind: 'rect', z, x, y, w, h, options })
+    this._commands.push({
+      kind: 'rect',
+      z,
+      x,
+      y,
+      w,
+      h,
+      options,
+      ...(transform ? { transform } : {}),
+    })
   }
 
   addText(text: string, x: number, y: number, options: TextOptions, z: ZLayer = ZLayer.Text): void {

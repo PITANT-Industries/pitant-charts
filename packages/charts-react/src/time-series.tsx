@@ -30,6 +30,7 @@ import {
   type TimeSeriesRenderPlan,
   type TimeSeriesSpcChartKind,
   type TimeSeriesSpcRuleSeverity,
+  type TimeSeriesYAxisOptions,
 } from '@pitant/charts'
 import {
   type JSX,
@@ -82,6 +83,8 @@ export interface TimeSeriesColumnData {
 }
 
 export interface TimeSeriesSeriesConfig extends SeriesConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   field: string
   rgba?: RgbaColor
   lineWidth?: number
@@ -101,6 +104,8 @@ export interface TimeSeriesDerivedSeriesConfig extends Omit<TimeSeriesSeriesConf
 }
 
 export interface TimeSeriesValueBandConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   kind: 'value-band'
   key: string
   label?: string
@@ -115,6 +120,8 @@ export interface TimeSeriesValueBandConfig {
 }
 
 export interface TimeSeriesEnvelopeBandConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   kind: 'envelope'
   key: string
   label?: string
@@ -146,6 +153,8 @@ export interface TimeSeriesXLineAnnotationConfig extends TimeSeriesBaseAnnotatio
 }
 
 export interface TimeSeriesYLineAnnotationConfig extends TimeSeriesBaseAnnotationConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   kind: 'y-line'
   y: number
   rgba?: RgbaColor
@@ -162,6 +171,8 @@ export interface TimeSeriesXRangeAnnotationConfig extends TimeSeriesBaseAnnotati
 }
 
 export interface TimeSeriesYRangeAnnotationConfig extends TimeSeriesBaseAnnotationConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   kind: 'y-range'
   yStart: number
   yEnd: number
@@ -171,6 +182,8 @@ export interface TimeSeriesYRangeAnnotationConfig extends TimeSeriesBaseAnnotati
 }
 
 export interface TimeSeriesRulerAnnotationConfig extends TimeSeriesBaseAnnotationConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   kind: 'ruler'
   xStart: number
   xEnd: number
@@ -230,6 +243,8 @@ export interface TimeSeriesSpcRuleMarkerConfig {
 }
 
 export interface TimeSeriesSpcTrackConfig {
+  /** Named Y axis. Omit to use the primary axis. */
+  yAxisKey?: string
   key: string
   label?: string
   chartKind?: TimeSeriesSpcChartKind
@@ -252,6 +267,8 @@ export interface TimeSeriesSpcTrackConfig {
   includeInYRange?: boolean
 }
 
+export type TimeSeriesYAxisConfig = TimeSeriesYAxisOptions
+
 export interface TimeSeriesConfig {
   series: TimeSeriesSeriesConfig[]
   derivedSeries?: TimeSeriesDerivedSeriesConfig[]
@@ -267,6 +284,8 @@ export interface TimeSeriesConfig {
     range?: readonly [number, number]
     paddingRatio?: number
   }
+  /** Named Y axes in display order. The first is the primary axis. */
+  yAxes?: readonly TimeSeriesYAxisConfig[]
   renderer?: 'webgpu' | 'canvas2d' | 'auto'
   interpolation?: TimeSeriesInterpolation
 }
@@ -366,16 +385,6 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     [derivedColumns, options.data],
   )
   const { visibilityMap, toggleSeries } = useSeriesVisibility(effectiveSeries)
-  const legendItems = useLegendItems(effectiveSeries, visibilityMap)
-  const tooltipSeries = useMemo(
-    () =>
-      effectiveSeries.map((series) => ({
-        ...series,
-        visible: visibilityMap[series.key] ?? series.visible !== false,
-      })),
-    [effectiveSeries, visibilityMap],
-  )
-
   const planSeries: CoreTimeSeriesSeries[] = useMemo(
     () =>
       effectiveSeries.map((series, index) => {
@@ -387,6 +396,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
             series.rgba ?? (DEFAULT_CHART_COLORS[index % DEFAULT_CHART_COLORS.length] as RgbaColor),
           visible: visibilityMap[series.key] ?? series.visible !== false,
         }
+        if (series.yAxisKey !== undefined) planned.yAxisKey = series.yAxisKey
         if (series.lineWidth !== undefined) planned.lineWidth = series.lineWidth
         if (series.interpolation !== undefined) planned.interpolation = series.interpolation
         if (series.gapThreshold !== undefined) planned.gapThreshold = series.gapThreshold
@@ -453,6 +463,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     const renderOptions: TimeSeriesRenderOptions = {}
     if (activeXRange) renderOptions.xRange = activeXRange
     if (activeYRange) renderOptions.yRange = activeYRange
+    if (config.yAxes !== undefined) renderOptions.yAxes = config.yAxes
     if (config.xAxis?.gapThreshold !== undefined) {
       renderOptions.gapThreshold = config.xAxis.gapThreshold
     }
@@ -480,6 +491,7 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     config.interpolation,
     config.xAxis?.gapThreshold,
     config.yAxis?.paddingRatio,
+    config.yAxes,
     planAnnotations,
     planAnomalyTracks,
     planBands,
@@ -488,6 +500,29 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     planSeries,
     viewport.data,
   ])
+
+  const tooltipSeries = useMemo(() => {
+    const axes = new Map(renderPlan.yAxes?.map((axis) => [axis.key, axis]))
+    const primaryKey = renderPlan.yAxes?.[0]?.key ?? 'y'
+    return effectiveSeries.map((series) => {
+      const axisKey = series.yAxisKey ?? primaryKey
+      const axis = axes.get(axisKey)
+      const isPrimary = axisKey === primaryKey
+      const axisConfigured = isPrimary || axis !== undefined
+      const formatValue = axis?.formatValue ?? (isPrimary ? config.yAxis?.formatValue : undefined)
+      return {
+        ...series,
+        axisConfigured,
+        visible: axisConfigured && (visibilityMap[series.key] ?? series.visible !== false),
+        ...(formatValue !== undefined ? { formatValue } : {}),
+      }
+    })
+  }, [config.yAxis?.formatValue, effectiveSeries, renderPlan.yAxes, visibilityMap])
+  const allLegendItems = useLegendItems(effectiveSeries, visibilityMap)
+  const legendItems = useMemo(
+    () => allLegendItems.filter((_, index) => tooltipSeries[index]?.axisConfigured),
+    [allLegendItems, tooltipSeries],
+  )
 
   const layout = useMemo(() => {
     void resizeKey
@@ -604,14 +639,13 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
         series: tooltipSeries,
         timestamp: coordinates.dataX,
         formatX: config.xAxis?.formatValue,
-        formatY: config.yAxis?.formatValue,
       })
       setTooltipPayload(payload)
       setTooltipPosition(payload ? { x: coordinates.chartX, y: coordinates.chartY } : null)
       setSyncedCursorX(null)
       sync.updateCursor(payload?.timestamp ?? null)
     },
-    [config.xAxis?.formatValue, config.yAxis?.formatValue, sync, tooltipSeries, viewport.rawData],
+    [config.xAxis?.formatValue, sync, tooltipSeries, viewport.rawData],
   )
 
   useEffect(() => {
@@ -629,7 +663,6 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
       series: tooltipSeries,
       timestamp,
       formatX: config.xAxis?.formatValue,
-      formatY: config.yAxis?.formatValue,
     })
     const yMid = (renderPlan.yRange[0] + renderPlan.yRange[1]) / 2
     const point = mapDataPointToChartPoint({
@@ -648,7 +681,6 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
   }, [
     chartKey,
     config.xAxis?.formatValue,
-    config.yAxis?.formatValue,
     layout,
     renderPlan.xOrigin,
     renderPlan.xRange,
@@ -743,6 +775,7 @@ function toDerivedTimeSeriesSeriesConfig(
   if (series.color !== undefined) derived.color = series.color
   if (series.visible !== undefined) derived.visible = series.visible
   if (series.rgba !== undefined) derived.rgba = series.rgba
+  if (series.yAxisKey !== undefined) derived.yAxisKey = series.yAxisKey
   if (series.lineWidth !== undefined) derived.lineWidth = series.lineWidth
   if (series.interpolation !== undefined) derived.interpolation = series.interpolation
   if (series.gapThreshold !== undefined) derived.gapThreshold = series.gapThreshold
@@ -757,6 +790,7 @@ function toCoreTimeSeriesBand(band: TimeSeriesBandConfig): CoreTimeSeriesBand {
       yStart: band.yStart,
       yEnd: band.yEnd,
     }
+    if (band.yAxisKey !== undefined) coreBand.yAxisKey = band.yAxisKey
     if (band.label !== undefined) coreBand.label = band.label
     if (band.xRange !== undefined) coreBand.xRange = band.xRange
     if (band.fillRgba !== undefined) coreBand.fillColor = band.fillRgba
@@ -773,6 +807,7 @@ function toCoreTimeSeriesBand(band: TimeSeriesBandConfig): CoreTimeSeriesBand {
     lowerField: band.lowerField,
     upperField: band.upperField,
   }
+  if (band.yAxisKey !== undefined) coreBand.yAxisKey = band.yAxisKey
   if (band.label !== undefined) coreBand.label = band.label
   if (band.fillRgba !== undefined) coreBand.fillColor = band.fillRgba
   if (band.lineRgba !== undefined) coreBand.lineColor = band.lineRgba
@@ -804,6 +839,7 @@ function toCoreTimeSeriesAnnotation(
       key: annotation.key,
       y: annotation.y,
     }
+    if (annotation.yAxisKey !== undefined) coreAnnotation.yAxisKey = annotation.yAxisKey
     assignCommonAnnotationConfig(coreAnnotation, annotation)
     if (annotation.rgba !== undefined) coreAnnotation.color = annotation.rgba
     if (annotation.lineWidth !== undefined) coreAnnotation.lineWidth = annotation.lineWidth
@@ -831,6 +867,7 @@ function toCoreTimeSeriesAnnotation(
       yStart: annotation.yStart,
       yEnd: annotation.yEnd,
     }
+    if (annotation.yAxisKey !== undefined) coreAnnotation.yAxisKey = annotation.yAxisKey
     assignCommonAnnotationConfig(coreAnnotation, annotation)
     if (annotation.fillRgba !== undefined) coreAnnotation.fillColor = annotation.fillRgba
     if (annotation.lineRgba !== undefined) coreAnnotation.lineColor = annotation.lineRgba
@@ -846,6 +883,7 @@ function toCoreTimeSeriesAnnotation(
     yStart: annotation.yStart,
     yEnd: annotation.yEnd,
   }
+  if (annotation.yAxisKey !== undefined) coreAnnotation.yAxisKey = annotation.yAxisKey
   assignCommonAnnotationConfig(coreAnnotation, annotation)
   if (annotation.rgba !== undefined) coreAnnotation.color = annotation.rgba
   if (annotation.lineWidth !== undefined) coreAnnotation.lineWidth = annotation.lineWidth
@@ -927,6 +965,7 @@ function toCoreTimeSeriesSpcTrack(track: TimeSeriesSpcTrackConfig): CoreTimeSeri
     centerLine: track.centerLine,
   }
   if (track.label !== undefined) coreTrack.label = track.label
+  if (track.yAxisKey !== undefined) coreTrack.yAxisKey = track.yAxisKey
   if (track.chartKind !== undefined) coreTrack.chartKind = track.chartKind
   if (track.upperControlLimit !== undefined) coreTrack.upperControlLimit = track.upperControlLimit
   if (track.lowerControlLimit !== undefined) coreTrack.lowerControlLimit = track.lowerControlLimit
@@ -957,6 +996,13 @@ function createTimeSeriesLayout(
   height: number,
 ): ChartLayout {
   const formatX = config.xAxis?.formatValue
+  const yAxes = renderPlan.yAxes?.map((axis, index) => ({
+    visible: true,
+    size: 58,
+    tickCount: 5,
+    ...(index === 0 ? config.yAxis : undefined),
+    ...axis,
+  }))
   return createChartLayout({
     width,
     height,
@@ -985,11 +1031,8 @@ function createTimeSeriesLayout(
       ...(config.yAxis?.label !== undefined ? { label: config.yAxis.label } : {}),
       ...(config.yAxis?.formatValue !== undefined ? { formatValue: config.yAxis.formatValue } : {}),
     },
-    grid: {
-      visible: true,
-      xTickCount: 6,
-      yTickCount: 5,
-    },
+    ...(yAxes !== undefined ? { yAxes } : {}),
+    grid: { visible: true },
   })
 }
 

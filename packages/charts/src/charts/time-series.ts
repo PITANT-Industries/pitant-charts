@@ -2,6 +2,7 @@ import { RenderCommandList, ZLayer } from '../renderer/render-command-list.js'
 import type { FillOptions, LineOptions, RenderContext, TextOptions } from '../renderer/types.js'
 import type { ViewTransform } from '../renderer/view-transform.js'
 import {
+  type AxisLayoutOptions,
   addChartGuidesToCommandList,
   type ChartGuideOptions,
   type ChartLayout,
@@ -23,8 +24,21 @@ import {
 
 export type TimeSeriesInterpolation = 'linear' | 'step-after' | 'step-before'
 
+/** An independent vertical scale. The first configured axis is the primary scale. */
+export interface TimeSeriesYAxisOptions extends AxisLayoutOptions {
+  key: string
+  side?: 'left' | 'right'
+  range?: NumericRange
+  paddingRatio?: number
+}
+
+export interface TimeSeriesPlannedYAxis extends TimeSeriesYAxisOptions {
+  range: NumericRange
+}
+
 export interface TimeSeriesSeries {
   key: string
+  yAxisKey?: string
   label: string
   field: string
   color?: RgbaColor
@@ -37,6 +51,7 @@ export interface TimeSeriesSeries {
 export interface TimeSeriesValueBand {
   kind: 'value-band'
   key: string
+  yAxisKey?: string
   label?: string
   yStart: number
   yEnd: number
@@ -51,6 +66,7 @@ export interface TimeSeriesValueBand {
 export interface TimeSeriesEnvelopeBand {
   kind: 'envelope'
   key: string
+  yAxisKey?: string
   label?: string
   lowerField: string
   upperField: string
@@ -81,6 +97,7 @@ export interface TimeSeriesXLineAnnotation extends TimeSeriesBaseAnnotation {
 
 export interface TimeSeriesYLineAnnotation extends TimeSeriesBaseAnnotation {
   kind: 'y-line'
+  yAxisKey?: string
   y: number
   color?: RgbaColor
   lineWidth?: number
@@ -97,6 +114,7 @@ export interface TimeSeriesXRangeAnnotation extends TimeSeriesBaseAnnotation {
 
 export interface TimeSeriesYRangeAnnotation extends TimeSeriesBaseAnnotation {
   kind: 'y-range'
+  yAxisKey?: string
   yStart: number
   yEnd: number
   fillColor?: RgbaColor
@@ -106,6 +124,7 @@ export interface TimeSeriesYRangeAnnotation extends TimeSeriesBaseAnnotation {
 
 export interface TimeSeriesRulerAnnotation extends TimeSeriesBaseAnnotation {
   kind: 'ruler'
+  yAxisKey?: string
   xStart: number
   xEnd: number
   yStart: number
@@ -199,6 +218,7 @@ export interface TimeSeriesSpcRuleMarker {
 
 export interface TimeSeriesSpcTrack {
   key: string
+  yAxisKey?: string
   label?: string
   chartKind?: TimeSeriesSpcChartKind
   centerLine: number
@@ -234,6 +254,7 @@ export interface TimeSeriesDataSet {
 export interface TimeSeriesRenderOptions {
   xRange?: NumericRange
   yRange?: NumericRange
+  yAxes?: readonly TimeSeriesYAxisOptions[]
   gapThreshold?: number
   interpolation?: TimeSeriesInterpolation
   defaultColor?: RgbaColor
@@ -280,6 +301,7 @@ export interface TimeSeriesLineSegment {
 
 export interface TimeSeriesPlannedSeries {
   key: string
+  yAxisKey?: string
   label: string
   field: string
   style: LineOptions
@@ -305,6 +327,7 @@ export interface TimeSeriesBandStyle {
 export interface TimeSeriesPlannedBand {
   kind: TimeSeriesBand['kind']
   key: string
+  yAxisKey?: string
   label: string
   style: TimeSeriesBandStyle
   segments: readonly TimeSeriesBandSegment[]
@@ -324,6 +347,7 @@ export interface TimeSeriesAnnotationStyle {
 export interface TimeSeriesPlannedAnnotation {
   kind: TimeSeriesAnnotation['kind']
   key: string
+  yAxisKey?: string
   label: string
   style: TimeSeriesAnnotationStyle
   lineSegments: readonly TimeSeriesLineSegment[]
@@ -411,6 +435,7 @@ export interface TimeSeriesSpcTrackStyle {
 
 export interface TimeSeriesPlannedSpcTrack {
   key: string
+  yAxisKey?: string
   label: string
   chartKind: TimeSeriesSpcChartKind
   centerLine: number
@@ -438,6 +463,7 @@ export interface TimeSeriesRenderPlan {
   xOrigin: number
   xRelativeRange: NumericRange
   yRange: NumericRange
+  yAxes?: readonly TimeSeriesPlannedYAxis[]
   series: readonly TimeSeriesPlannedSeries[]
   bands: readonly TimeSeriesPlannedBand[]
   annotations: readonly TimeSeriesPlannedAnnotation[]
@@ -521,6 +547,60 @@ interface SpcTrackBuildResult {
   maxY: number
 }
 
+interface TimeSeriesAxisState {
+  options: TimeSeriesYAxisOptions
+  min: number
+  max: number
+  range: NumericRange
+}
+
+function createAxisState(options: TimeSeriesYAxisOptions): TimeSeriesAxisState {
+  return {
+    options,
+    min: Number.POSITIVE_INFINITY,
+    max: Number.NEGATIVE_INFINITY,
+    range: [0, 1],
+  }
+}
+
+function collectYAxes(
+  definitions: readonly TimeSeriesYAxisOptions[],
+  warnings: string[],
+): Map<string, TimeSeriesAxisState> {
+  const axes = new Map<string, TimeSeriesAxisState>()
+  for (const axis of definitions) {
+    if (axis.key.trim().length === 0) {
+      warnings.push('A Y axis with an empty key was ignored.')
+    } else if (axes.has(axis.key)) {
+      warnings.push(`Duplicate Y axis "${axis.key}" was ignored.`)
+    } else {
+      axes.set(axis.key, createAxisState(axis))
+    }
+  }
+  return axes
+}
+
+function resolveAxisRange(
+  axis: TimeSeriesAxisState,
+  legacyRange: NumericRange | undefined,
+  legacyPadding: number | undefined,
+): NumericRange {
+  const fixedRange = axis.options.range ?? legacyRange
+  if (fixedRange) return normalizeRange(fixedRange)
+  if (axis.min === Number.POSITIVE_INFINITY) return axis.range
+  return expandRange([axis.min, axis.max], axis.options.paddingRatio ?? legacyPadding ?? 0.05)
+}
+
+function includeAxisExtent(axis: TimeSeriesAxisState, min: number, max: number): void {
+  axis.min = Math.min(axis.min, min)
+  axis.max = Math.max(axis.max, max)
+}
+
+function annotationYAxisKey(annotation: TimeSeriesAnnotation): string | undefined {
+  if (annotation.kind === 'x-line' || annotation.kind === 'x-range') return undefined
+  return annotation.yAxisKey
+}
+
 export function buildTimeSeriesRenderPlan(
   data: TimeSeriesDataSet,
   options: TimeSeriesRenderOptions = {},
@@ -528,7 +608,6 @@ export function buildTimeSeriesRenderPlan(
   const xRange = options.xRange ? normalizeRange(options.xRange) : finiteRange(data.timestamps)
   const xOrigin = xRange[0]
   const xRelativeRange = relativeRange(xRange, xOrigin)
-  const yPaddingRatio = options.yPaddingRatio ?? 0.05
   const plannedSeries: TimeSeriesPlannedSeries[] = []
   const plannedBands: TimeSeriesPlannedBand[] = []
   const plannedAnnotations: TimeSeriesPlannedAnnotation[] = []
@@ -536,8 +615,12 @@ export function buildTimeSeriesRenderPlan(
   const plannedAnomalyTracks: TimeSeriesPlannedAnomalyTrack[] = []
   const plannedSpcTracks: TimeSeriesPlannedSpcTrack[] = []
   const warnings: string[] = []
-  let minY = Number.POSITIVE_INFINITY
-  let maxY = Number.NEGATIVE_INFINITY
+  const axisStates = options.yAxes?.length ? collectYAxes(options.yAxes, warnings) : undefined
+  const primaryAxis = axisStates?.values().next().value ?? createAxisState({ key: 'y' })
+  const getYAxis = (axisKey: string | undefined): TimeSeriesAxisState | undefined =>
+    axisKey === undefined || axisKey === primaryAxis.options.key
+      ? primaryAxis
+      : axisStates?.get(axisKey)
   let sourcePointCount = 0
   let includedSampleCount = 0
   let renderedPointCount = 0
@@ -546,6 +629,13 @@ export function buildTimeSeriesRenderPlan(
   for (let seriesIndex = 0; seriesIndex < data.series.length; seriesIndex++) {
     const series = data.series[seriesIndex] as TimeSeriesSeries
     if (series.visible === false && options.includeHidden !== true) continue
+    const axis = getYAxis(series.yAxisKey)
+    if (!axis) {
+      warnings.push(
+        `Series "${series.key}" skipped because Y axis "${series.yAxisKey}" is missing.`,
+      )
+      continue
+    }
 
     const values = data.columns[series.field]
     if (!values) {
@@ -575,12 +665,12 @@ export function buildTimeSeriesRenderPlan(
     segmentCount += build.segments.length
 
     if (build.includedSampleCount > 0) {
-      minY = Math.min(minY, build.minY)
-      maxY = Math.max(maxY, build.maxY)
+      includeAxisExtent(axis, build.minY, build.maxY)
     }
 
     plannedSeries.push({
       key: series.key,
+      ...(series.yAxisKey !== undefined ? { yAxisKey: series.yAxisKey } : {}),
       label: series.label,
       field: series.field,
       style: {
@@ -600,6 +690,11 @@ export function buildTimeSeriesRenderPlan(
   for (let bandIndex = 0; bandIndex < bands.length; bandIndex++) {
     const band = bands[bandIndex] as TimeSeriesBand
     if (band.visible === false && options.includeHiddenBands !== true) continue
+    const axis = getYAxis(band.yAxisKey)
+    if (!axis) {
+      warnings.push(`Band "${band.key}" skipped because Y axis "${band.yAxisKey}" is missing.`)
+      continue
+    }
 
     const build =
       band.kind === 'value-band'
@@ -622,13 +717,13 @@ export function buildTimeSeriesRenderPlan(
 
     const includeInYRange = band.includeInYRange !== false
     if (includeInYRange) {
-      minY = Math.min(minY, build.minY)
-      maxY = Math.max(maxY, build.maxY)
+      includeAxisExtent(axis, build.minY, build.maxY)
     }
 
     const plannedBand: TimeSeriesPlannedBand = {
       kind: band.kind,
       key: band.key,
+      ...(band.yAxisKey !== undefined ? { yAxisKey: band.yAxisKey } : {}),
       label: band.label ?? band.key,
       style: resolveBandStyle(band, bandIndex, options),
       segments: build.segments,
@@ -645,11 +740,9 @@ export function buildTimeSeriesRenderPlan(
   for (const annotation of annotations) {
     if (annotation.visible === false && options.includeHiddenAnnotations !== true) continue
     if (annotation.includeInYRange === true) {
+      const axis = getYAxis(annotationYAxisKey(annotation))
       const extent = annotationYExtent(annotation)
-      if (extent) {
-        minY = Math.min(minY, extent[0])
-        maxY = Math.max(maxY, extent[1])
-      }
+      if (axis && extent) includeAxisExtent(axis, extent[0], extent[1])
     }
   }
 
@@ -657,26 +750,37 @@ export function buildTimeSeriesRenderPlan(
   for (const track of spcTracks) {
     if (track.visible === false && options.includeHiddenSpcTracks !== true) continue
     if (track.includeInYRange === false) continue
+    const axis = getYAxis(track.yAxisKey)
     const extent = spcTrackYExtent(track)
-    if (extent) {
-      minY = Math.min(minY, extent[0])
-      maxY = Math.max(maxY, extent[1])
-    }
+    if (axis && extent) includeAxisExtent(axis, extent[0], extent[1])
   }
 
-  const inferredYRange: NumericRange =
-    minY === Number.POSITIVE_INFINITY ? [0, 1] : expandRange([minY, maxY], yPaddingRatio)
-  const yRange = options.yRange ? normalizeRange(options.yRange) : inferredYRange
+  primaryAxis.range = resolveAxisRange(primaryAxis, options.yRange, options.yPaddingRatio)
+  const yAxes = axisStates?.size
+    ? Array.from(axisStates.values(), (axis): TimeSeriesPlannedYAxis => {
+        if (axis !== primaryAxis) axis.range = resolveAxisRange(axis, undefined, undefined)
+        return { ...axis.options, range: axis.range }
+      })
+    : undefined
+  const yRange = primaryAxis.range
 
   for (let annotationIndex = 0; annotationIndex < annotations.length; annotationIndex++) {
     const annotation = annotations[annotationIndex] as TimeSeriesAnnotation
     if (annotation.visible === false && options.includeHiddenAnnotations !== true) continue
+    const axisKey = annotationYAxisKey(annotation)
+    const axis = getYAxis(axisKey)
+    if (!axis) {
+      warnings.push(
+        `Annotation "${annotation.key}" skipped because Y axis "${axisKey}" is missing.`,
+      )
+      continue
+    }
 
     const build = buildAnnotationSegments(annotation, {
       xRange,
       xOrigin,
       xRelativeRange,
-      yRange,
+      yRange: axis.range,
     })
 
     if (build.includedSampleCount === 0) {
@@ -687,6 +791,7 @@ export function buildTimeSeriesRenderPlan(
     plannedAnnotations.push({
       kind: annotation.kind,
       key: annotation.key,
+      ...(axisKey !== undefined ? { yAxisKey: axisKey } : {}),
       label: annotation.label ?? annotation.key,
       style: resolveAnnotationStyle(annotation, annotationIndex, options),
       lineSegments: build.lineSegments,
@@ -736,11 +841,18 @@ export function buildTimeSeriesRenderPlan(
   for (let trackIndex = 0; trackIndex < spcTracks.length; trackIndex++) {
     const track = spcTracks[trackIndex] as TimeSeriesSpcTrack
     if (track.visible === false && options.includeHiddenSpcTracks !== true) continue
+    const axis = getYAxis(track.yAxisKey)
+    if (!axis) {
+      warnings.push(
+        `SPC track "${track.key}" skipped because Y axis "${track.yAxisKey}" is missing.`,
+      )
+      continue
+    }
 
     const build = buildSpcTrackSegments(track, trackIndex, {
       xRange,
       xOrigin,
-      yRange,
+      yRange: axis.range,
       markerTickRatio: options.spcMarkerTickRatio ?? 0.08,
       options,
     })
@@ -752,6 +864,7 @@ export function buildTimeSeriesRenderPlan(
 
     plannedSpcTracks.push({
       key: track.key,
+      ...(track.yAxisKey !== undefined ? { yAxisKey: track.yAxisKey } : {}),
       label: track.label ?? track.key,
       chartKind: track.chartKind ?? 'individual',
       centerLine: track.centerLine,
@@ -847,6 +960,7 @@ export function buildTimeSeriesRenderPlan(
     xOrigin,
     xRelativeRange,
     yRange,
+    ...(yAxes ? { yAxes } : {}),
     series: plannedSeries,
     bands: plannedBands,
     annotations: plannedAnnotations,
@@ -861,18 +975,29 @@ export function buildTimeSeriesRenderPlan(
   }
 }
 
+type YAxisTransforms = ReadonlyMap<string, ViewTransform>
+
+function getAxisTransform(
+  transforms: YAxisTransforms | undefined,
+  axisKey: string | undefined,
+): ViewTransform | undefined {
+  return axisKey === undefined ? undefined : transforms?.get(axisKey)
+}
+
 export function addTimeSeriesBandsToCommandList(
   commands: RenderCommandList,
   plan: TimeSeriesRenderPlan,
   fillZ: ZLayer = ZLayer.Fill,
   boundaryZ: ZLayer = ZLayer.Overlay,
+  axisTransforms?: YAxisTransforms,
 ): void {
   for (const band of plan.bands) {
+    const transform = getAxisTransform(axisTransforms, band.yAxisKey)
     for (const segment of band.segments) {
-      commands.addFill(segment.upper, segment.lower, band.style.fill, fillZ)
+      commands.addFill(segment.upper, segment.lower, band.style.fill, fillZ, transform)
       if (band.style.boundary) {
-        commands.addLine(segment.upper, band.style.boundary, boundaryZ)
-        commands.addLine(segment.lower, band.style.boundary, boundaryZ)
+        commands.addLine(segment.upper, band.style.boundary, boundaryZ, transform)
+        commands.addLine(segment.lower, band.style.boundary, boundaryZ, transform)
       }
     }
   }
@@ -883,16 +1008,18 @@ export function addTimeSeriesAnnotationsToCommandList(
   plan: TimeSeriesRenderPlan,
   fillZ: ZLayer = ZLayer.Fill,
   lineZ: ZLayer = ZLayer.Overlay,
+  axisTransforms?: YAxisTransforms,
 ): void {
   for (const annotation of plan.annotations) {
+    const transform = getAxisTransform(axisTransforms, annotation.yAxisKey)
     if (annotation.style.fill) {
       for (const segment of annotation.fillSegments) {
-        commands.addFill(segment.upper, segment.lower, annotation.style.fill, fillZ)
+        commands.addFill(segment.upper, segment.lower, annotation.style.fill, fillZ, transform)
       }
     }
     if (annotation.style.line) {
       for (const segment of annotation.lineSegments) {
-        commands.addLine(segment.buffer, annotation.style.line, lineZ)
+        commands.addLine(segment.buffer, annotation.style.line, lineZ, transform)
       }
     }
   }
@@ -915,34 +1042,36 @@ export function addTimeSeriesSpcTracksToCommandList(
   plan: TimeSeriesRenderPlan,
   fillZ: ZLayer = ZLayer.Fill,
   lineZ: ZLayer = ZLayer.Overlay,
+  axisTransforms?: YAxisTransforms,
 ): void {
   for (const track of plan.spcTracks) {
+    const transform = getAxisTransform(axisTransforms, track.yAxisKey)
     if (track.style.zoneFill) {
       for (const segment of track.zoneSegments) {
-        commands.addFill(segment.upper, segment.lower, track.style.zoneFill, fillZ)
+        commands.addFill(segment.upper, segment.lower, track.style.zoneFill, fillZ, transform)
       }
     }
     if (track.style.warningFill) {
       for (const segment of track.warningZoneSegments) {
-        commands.addFill(segment.upper, segment.lower, track.style.warningFill, fillZ)
+        commands.addFill(segment.upper, segment.lower, track.style.warningFill, fillZ, transform)
       }
     }
     for (const segment of track.centerLineSegments) {
-      commands.addLine(segment.buffer, track.style.centerLine, lineZ)
+      commands.addLine(segment.buffer, track.style.centerLine, lineZ, transform)
     }
     if (track.style.controlLine) {
       for (const segment of track.controlLimitSegments) {
-        commands.addLine(segment.buffer, track.style.controlLine, lineZ)
+        commands.addLine(segment.buffer, track.style.controlLine, lineZ, transform)
       }
     }
     if (track.style.warningLine) {
       for (const segment of track.warningLimitSegments) {
-        commands.addLine(segment.buffer, track.style.warningLine, lineZ)
+        commands.addLine(segment.buffer, track.style.warningLine, lineZ, transform)
       }
     }
     for (const marker of track.markers) {
       for (const segment of marker.lineSegments) {
-        commands.addLine(segment.buffer, marker.style.line, lineZ)
+        commands.addLine(segment.buffer, marker.style.line, lineZ, transform)
       }
     }
   }
@@ -975,10 +1104,12 @@ export function addTimeSeriesToCommandList(
   commands: RenderCommandList,
   plan: TimeSeriesRenderPlan,
   z: ZLayer = ZLayer.Line,
+  axisTransforms?: YAxisTransforms,
 ): void {
   for (const series of plan.series) {
+    const transform = getAxisTransform(axisTransforms, series.yAxisKey)
     for (const segment of series.segments) {
-      commands.addLine(segment.buffer, series.style, z)
+      commands.addLine(segment.buffer, series.style, z, transform)
     }
   }
 }
@@ -997,38 +1128,50 @@ export function buildTimeSeriesCommandFrame(
   height: number,
   options: TimeSeriesFrameOptions = {},
 ): TimeSeriesCommandFrame {
-  const layout = resolveChartLayout(options.layout, width, height, plan.xRelativeRange, plan.yRange)
+  let layoutOptions = options.layout
+  if (plan.yAxes?.length && !(layoutOptions && 'plotArea' in layoutOptions)) {
+    const base = layoutOptions ?? { width, height, xAxis: { visible: true } }
+    const axisLayout = new Map(base.yAxes?.map((axis) => [axis.key, axis]))
+    layoutOptions = {
+      ...base,
+      yRange: plan.yRange,
+      yAxes: plan.yAxes.map((axis, index) => ({
+        visible: true,
+        ...(index === 0 ? base.yAxis : {}),
+        ...axis,
+        ...axisLayout.get(axis.key),
+        key: axis.key,
+        range: axis.range,
+      })),
+    }
+  }
+  const layout = resolveChartLayout(layoutOptions, width, height, plan.xRelativeRange, plan.yRange)
+  const plotArea = layout?.plotArea ?? { x: 0, y: 0, width, height }
   const transform = layout
-    ? createPlotViewportTransform(plan.xRelativeRange, plan.yRange, width, height, layout.plotArea)
+    ? createPlotViewportTransform(plan.xRelativeRange, plan.yRange, width, height, plotArea)
     : createTimeSeriesViewTransform(plan, width, height)
+  const secondaryAxes = plan.yAxes?.slice(1)
+  const axisTransforms = secondaryAxes?.length
+    ? new Map(
+        secondaryAxes.map((axis) => [
+          axis.key,
+          createPlotViewportTransform(plan.xRelativeRange, axis.range, width, height, plotArea),
+        ]),
+      )
+    : undefined
   const commands = new RenderCommandList()
   if (layout && options.guides !== false) {
     addChartGuidesToCommandList(commands, layout, plan.xRelativeRange, plan.yRange, options.guides)
   }
-  addTimeSeriesBandsToCommandList(commands, plan)
-  addTimeSeriesAnnotationsToCommandList(commands, plan)
-  addTimeSeriesSpcTracksToCommandList(commands, plan)
+  addTimeSeriesBandsToCommandList(commands, plan, undefined, undefined, axisTransforms)
+  addTimeSeriesAnnotationsToCommandList(commands, plan, undefined, undefined, axisTransforms)
+  addTimeSeriesSpcTracksToCommandList(commands, plan, undefined, undefined, axisTransforms)
   addTimeSeriesAnomalyTracksToCommandList(commands, plan)
-  addTimeSeriesToCommandList(commands, plan)
+  addTimeSeriesToCommandList(commands, plan, undefined, axisTransforms)
   addTimeSeriesEventMarkersToCommandList(commands, plan)
-  addTimeSeriesAnnotationLabelsToCommandList(
-    commands,
-    plan,
-    transform,
-    layout?.plotArea ?? { x: 0, y: 0, width, height },
-  )
-  addTimeSeriesEventMarkerLabelsToCommandList(
-    commands,
-    plan,
-    transform,
-    layout?.plotArea ?? { x: 0, y: 0, width, height },
-  )
-  addTimeSeriesSpcMarkerLabelsToCommandList(
-    commands,
-    plan,
-    transform,
-    layout?.plotArea ?? { x: 0, y: 0, width, height },
-  )
+  addTimeSeriesAnnotationLabelsToCommandList(commands, plan, transform, plotArea, axisTransforms)
+  addTimeSeriesEventMarkerLabelsToCommandList(commands, plan, transform, plotArea)
+  addTimeSeriesSpcMarkerLabelsToCommandList(commands, plan, transform, plotArea, axisTransforms)
 
   return {
     width,
@@ -1709,12 +1852,14 @@ function addTimeSeriesAnnotationLabelsToCommandList(
   plan: TimeSeriesRenderPlan,
   transform: ViewTransform,
   plotArea: ChartRect,
+  axisTransforms?: YAxisTransforms,
 ): void {
   for (const annotation of plan.annotations) {
     if (!annotation.labelVisible || !annotation.label || !annotation.style.text) continue
     const anchor = annotationLabelAnchor(annotation, plan)
     if (!anchor) continue
-    const point = transform.dataToPixel(anchor.x, anchor.y)
+    const activeTransform = getAxisTransform(axisTransforms, annotation.yAxisKey) ?? transform
+    const point = activeTransform.dataToPixel(anchor.x, anchor.y)
     const x = clampNumber(point.x + anchor.dx, plotArea.x + 4, plotArea.x + plotArea.width - 4)
     const y = clampNumber(point.y + anchor.dy, plotArea.y + 4, plotArea.y + plotArea.height - 4)
     commands.addText(
@@ -1772,8 +1917,10 @@ function addTimeSeriesSpcMarkerLabelsToCommandList(
   plan: TimeSeriesRenderPlan,
   transform: ViewTransform,
   plotArea: ChartRect,
+  axisTransforms?: YAxisTransforms,
 ): void {
   for (const track of plan.spcTracks) {
+    const activeTransform = getAxisTransform(axisTransforms, track.yAxisKey) ?? transform
     for (const marker of track.markers) {
       if (!marker.labelVisible || !marker.label || !marker.style.text) continue
       const segment = marker.lineSegments[0]
@@ -1781,7 +1928,7 @@ function addTimeSeriesSpcMarkerLabelsToCommandList(
       const y = segment?.buffer[3]
       if (x === undefined || y === undefined) continue
 
-      const point = transform.dataToPixel(x, y)
+      const point = activeTransform.dataToPixel(x, y)
       const xPixel = clampNumber(point.x + 4, plotArea.x + 4, plotArea.x + plotArea.width - 4)
       const yPixel = clampNumber(point.y + 4, plotArea.y + 4, plotArea.y + plotArea.height - 4)
       commands.addText(
@@ -2051,7 +2198,12 @@ export function renderTimeSeriesPlan(
   const frame = buildTimeSeriesCommandFrame(plan, context.width, context.height, options)
   context.setTransform(frame.transform)
   context.beginFrame()
-  drawCommandList(context, frame.commands)
+  drawCommandList(
+    context,
+    frame.commands,
+    frame.transform,
+    plan.yAxes?.length && frame.layout ? frame.layout.plotArea : undefined,
+  )
   context.endFrame()
 }
 

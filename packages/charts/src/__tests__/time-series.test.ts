@@ -453,6 +453,188 @@ describe('time-series chart planning', () => {
     expect(svg).toContain('Hold start')
   })
 
+  it('draws independently scaled lines in the same plot and SVG frame', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 10]),
+        columns: {
+          temperature: new Float64Array([0, 100]),
+          pressure: new Float64Array([2000, 1000]),
+        },
+        series: [
+          { key: 'temperature', label: 'Temperature', field: 'temperature', color: [1, 0, 0, 1] },
+          {
+            key: 'pressure',
+            yAxisKey: 'pressure',
+            label: 'Pressure',
+            field: 'pressure',
+            color: [0, 0, 1, 1],
+          },
+        ],
+      },
+      {
+        yAxes: [
+          { key: 'temperature', label: 'Temperature (°C)', paddingRatio: 0 },
+          { key: 'pressure', side: 'right', label: 'Pressure (mbar)', paddingRatio: 0 },
+        ],
+      },
+    )
+    expect(plan.yRange).toEqual([0, 100])
+    expect(plan.yAxes).toMatchObject([
+      { key: 'temperature', range: [0, 100] },
+      { key: 'pressure', range: [1000, 2000] },
+    ])
+
+    const [temperature, pressure] = plan.series
+    const temperatureBuffer = temperature?.segments[0]?.buffer
+    const pressureBuffer = pressure?.segments[0]?.buffer
+    expect(temperatureBuffer).toEqual(new Float32Array([0, 0, 10, 100]))
+    expect(pressureBuffer).toEqual(new Float32Array([0, 2000, 10, 1000]))
+
+    const frame = buildTimeSeriesCommandFrame(plan, 320, 180)
+    const { layout } = frame
+    if (!layout) throw new Error('Named axes should reserve plot gutters')
+    expect(layout.yAxes?.map((axis) => [axis.key, axis.side])).toEqual([
+      ['temperature', 'left'],
+      ['pressure', 'right'],
+    ])
+
+    const commands = frame.commands.sorted()
+    const temperatureCommand = commands.find(
+      (command) => command.kind === 'line' && command.buffer === temperatureBuffer,
+    )
+    const pressureCommand = commands.find(
+      (command) => command.kind === 'line' && command.buffer === pressureBuffer,
+    )
+    if (temperatureCommand?.kind !== 'line' || pressureCommand?.kind !== 'line') {
+      throw new Error('Expected one render command per series')
+    }
+    expect(temperatureCommand.transform).toBeUndefined()
+    const { x: left, y: top, width, height } = layout.plotArea
+    const right = left + width
+    const bottom = top + height
+    expect(frame.transform.dataToPixel(0, 0).y).toBeCloseTo(bottom)
+    expect(frame.transform.dataToPixel(10, 100).y).toBeCloseTo(top)
+    expect(pressureCommand.transform?.dataToPixel(0, 2000).y).toBeCloseTo(top)
+    expect(pressureCommand.transform?.dataToPixel(10, 1000).y).toBeCloseTo(bottom)
+
+    const svg = commandFrameToSvg(frame)
+    expect(svg).toContain(
+      `d="M ${left} ${bottom} L ${right} ${top}" fill="none" stroke="rgb(255 0 0)"`,
+    )
+    expect(svg).toContain(
+      `d="M ${left} ${top} L ${right} ${bottom}" fill="none" stroke="rgb(0 0 255)"`,
+    )
+    expect(svg).toContain('Temperature (°C)')
+    expect(svg).toContain('Pressure (mbar)')
+  })
+
+  it('keeps bands, Y annotations and SPC on their named scale', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 10]),
+        columns: {
+          temperature: new Float64Array([10, 20]),
+          pressure: new Float64Array([1200, 1400]),
+          lower: new Float64Array([950, 1000]),
+          upper: new Float64Array([1450, 1500]),
+        },
+        series: [
+          { key: 'temperature', label: 'Temperature', field: 'temperature' },
+          { key: 'pressure', yAxisKey: 'pressure', label: 'Pressure', field: 'pressure' },
+        ],
+        bands: [
+          { kind: 'value-band', key: 'low-warning', yAxisKey: 'pressure', yStart: 850, yEnd: 950 },
+          {
+            kind: 'envelope',
+            key: 'forecast',
+            yAxisKey: 'pressure',
+            lowerField: 'lower',
+            upperField: 'upper',
+          },
+        ],
+        annotations: [
+          { kind: 'x-line', key: 'batch-start', x: 0 },
+          { kind: 'y-line', key: 'target', yAxisKey: 'pressure', y: 1600, includeInYRange: true },
+        ],
+        spcTracks: [
+          {
+            key: 'pressure-limits',
+            yAxisKey: 'pressure',
+            centerLine: 1500,
+            upperControlLimit: 2350,
+          },
+        ],
+      },
+      {
+        yRange: [0, 100],
+        yAxes: [{ key: 'temperature' }, { key: 'pressure', side: 'right', paddingRatio: 0 }],
+      },
+    )
+
+    expect(plan.yRange).toEqual([0, 100])
+    expect(plan.yAxes?.[1]?.range).toEqual([850, 2350])
+    expect(plan.bands.map((band) => band.yAxisKey)).toEqual(['pressure', 'pressure'])
+    expect(plan.annotations.map((annotation) => annotation.yAxisKey)).toEqual([
+      undefined,
+      'pressure',
+    ])
+    expect(plan.annotations[0]?.lineSegments[0]?.buffer).toEqual(new Float32Array([0, 0, 0, 100]))
+    expect(plan.annotations[1]?.lineSegments[0]?.buffer).toEqual(
+      new Float32Array([0, 1600, 10, 1600]),
+    )
+    expect(plan.spcTracks[0]?.yAxisKey).toBe('pressure')
+
+    const frame = buildTimeSeriesCommandFrame(plan, 320, 180)
+    const commands = frame.commands.sorted()
+    const series = plan.series[1]?.segments[0]?.buffer
+    const secondary = commands.find(
+      (command) => command.kind === 'line' && command.buffer === series,
+    )
+    if (secondary?.kind !== 'line' || !secondary.transform) {
+      throw new Error('Expected a pressure scale transform')
+    }
+    const buffers = [
+      plan.bands[0]?.segments[0]?.upper,
+      plan.bands[1]?.segments[0]?.upper,
+      plan.annotations[1]?.lineSegments[0]?.buffer,
+      plan.spcTracks[0]?.centerLineSegments[0]?.buffer,
+    ]
+    for (const buffer of buffers) {
+      const command = commands.find((item) => {
+        if (item.kind === 'fill') return item.upper === buffer
+        return item.kind === 'line' && item.buffer === buffer
+      })
+      expect(command).toMatchObject({ transform: secondary.transform })
+    }
+  })
+
+  it('reports explicitly unknown axes and preserves legacy primary bounds', () => {
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 10]),
+        columns: { temp: new Float64Array([10, 20]) },
+        series: [
+          { key: 'temperature', yAxisKey: 'y', label: 'Temperature', field: 'temp' },
+          { key: 'typo', yAxisKey: 'temperature', label: 'Typo', field: 'temp' },
+        ],
+        annotations: [
+          { kind: 'y-line', key: 'limit', yAxisKey: 'missing', y: 2500, includeInYRange: true },
+        ],
+      },
+      { yRange: [0, 30] },
+    )
+
+    expect(plan.yAxes).toBeUndefined()
+    expect(plan.yRange).toEqual([0, 30])
+    expect(plan.series.map(({ key }) => key)).toEqual(['temperature'])
+    expect(plan.annotations).toEqual([])
+    expect(plan.warnings).toEqual([
+      'Series "typo" skipped because Y axis "temperature" is missing.',
+      'Annotation "limit" skipped because Y axis "missing" is missing.',
+    ])
+  })
+
   it('creates a transform that maps rebased data to pixels', () => {
     const plan = buildTimeSeriesRenderPlan(
       {

@@ -149,6 +149,7 @@ export type {
   TimeSeriesValueBandConfig,
   TimeSeriesXLineAnnotationConfig,
   TimeSeriesXRangeAnnotationConfig,
+  TimeSeriesYAxisConfig,
   TimeSeriesYLineAnnotationConfig,
   TimeSeriesYRangeAnnotationConfig,
   UseTimeSeriesOptions,
