@@ -1,10 +1,13 @@
+export type { AxisProjection, CalendarAxisOptions, ChartScale } from './axis-scale.js'
 export type {
   AxisLayoutOptions,
+  AxisRangePolicy,
   AxisTick,
   ChartGuideOptions,
   ChartLayout,
   ChartLayoutOptions,
   ChartRect,
+  DependentYAxis,
   EdgeInsets,
   GridLayoutOptions,
   LaidOutYAxis,
@@ -241,6 +244,9 @@ export type {
   TimeSeriesFrameOptions,
   TimeSeriesInterpolation,
   TimeSeriesLineSegment,
+  TimeSeriesMark,
+  TimeSeriesPathBuilder,
+  TimeSeriesPathContext,
   TimeSeriesPlannedAnnotation,
   TimeSeriesPlannedAnomalyTrack,
   TimeSeriesPlannedBand,
@@ -248,6 +254,7 @@ export type {
   TimeSeriesPlannedSeries,
   TimeSeriesPlannedSpcTrack,
   TimeSeriesPlannedYAxis,
+  TimeSeriesPointOptions,
   TimeSeriesRenderOptions,
   TimeSeriesRenderPlan,
   TimeSeriesRulerAnnotation,
@@ -259,6 +266,8 @@ export type {
   TimeSeriesSpcRuleSeverity,
   TimeSeriesSpcTrack,
   TimeSeriesSpcTrackStyle,
+  TimeSeriesStackGroup,
+  TimeSeriesStackOptions,
   TimeSeriesValueBand,
   TimeSeriesXLineAnnotation,
   TimeSeriesXRangeAnnotation,
@@ -278,6 +287,12 @@ export {
   createTimeSeriesViewTransform,
   renderTimeSeriesPlan,
 } from './time-series.js'
+export type {
+  AlignedTimeSeriesColumns,
+  IndependentTimeSeriesColumn,
+  TimeSeriesGapPolicy,
+} from './time-series-alignment.js'
+export { alignTimeSeriesColumns, TimeSeriesSampleKind } from './time-series-alignment.js'
 export type { TimeSeriesChartCreateOptions, TimeSeriesChartOptions } from './time-series-chart.js'
 export { TimeSeriesChart } from './time-series-chart.js'
 export type {

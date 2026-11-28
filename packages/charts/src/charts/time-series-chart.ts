@@ -1,12 +1,14 @@
-import { createRenderContext } from '../renderer/create-render-context.js'
 import type { RenderContext, RendererType } from '../renderer/types.js'
+import { createImperativeChart, ImperativeChart } from './imperative-chart.js'
 import type {
+  TimeSeriesBand,
   TimeSeriesDataSet,
   TimeSeriesFrameOptions,
   TimeSeriesRenderOptions,
   TimeSeriesRenderPlan,
+  TimeSeriesSeries,
 } from './time-series.js'
-import { buildTimeSeriesRenderPlan, renderTimeSeriesPlan } from './time-series.js'
+import { buildTimeSeriesCommandFrame, buildTimeSeriesRenderPlan } from './time-series.js'
 
 export interface TimeSeriesChartOptions {
   data: TimeSeriesDataSet
@@ -20,109 +22,88 @@ export interface TimeSeriesChartCreateOptions extends Omit<TimeSeriesChartOption
   renderer?: RendererType | 'auto'
 }
 
-export class TimeSeriesChart {
-  readonly context: RenderContext
-
-  private _data: TimeSeriesDataSet
-  private _renderOptions: TimeSeriesRenderOptions
-  private _frameOptions: TimeSeriesFrameOptions
-  private _renderPlan: TimeSeriesRenderPlan
-  private _ownsContext: boolean
-  private _disposed = false
-
+export class TimeSeriesChart extends ImperativeChart<
+  TimeSeriesDataSet,
+  TimeSeriesRenderOptions,
+  TimeSeriesFrameOptions,
+  TimeSeriesRenderPlan
+> {
   constructor(context: RenderContext, options: TimeSeriesChartOptions) {
-    this.context = context
-    this._data = options.data
-    this._renderOptions = options.render ?? {}
-    this._frameOptions = options.frame ?? {}
-    this._ownsContext = options.ownsContext === true
-    this._renderPlan = buildTimeSeriesRenderPlan(this._data, this._renderOptions)
-
-    if (options.autoRender !== false) {
-      this.render()
-    }
+    super(
+      context,
+      { ...options, render: options.render ?? {}, frame: options.frame ?? {} },
+      {
+        name: 'TimeSeriesChart',
+        buildPlan: buildTimeSeriesRenderPlan,
+        buildFrame: buildTimeSeriesCommandFrame,
+        clipPlot: (plan) => Boolean(plan.yAxes?.length),
+      },
+    )
   }
 
-  static async create(
+  static create(
     canvas: HTMLCanvasElement,
     options: TimeSeriesChartCreateOptions,
   ): Promise<TimeSeriesChart> {
-    const renderContextOptions: { renderer?: RendererType | 'auto' } = {}
-    if (options.renderer !== undefined) {
-      renderContextOptions.renderer = options.renderer
-    }
-    const context = await createRenderContext(canvas, renderContextOptions)
-    const chartOptions: TimeSeriesChartOptions = {
-      data: options.data,
-      ownsContext: true,
-    }
-    if (options.render !== undefined) chartOptions.render = options.render
-    if (options.frame !== undefined) chartOptions.frame = options.frame
-    if (options.autoRender !== undefined) chartOptions.autoRender = options.autoRender
-    return new TimeSeriesChart(context, chartOptions)
+    return createImperativeChart(TimeSeriesChart, canvas, options)
   }
 
-  get data(): TimeSeriesDataSet {
-    return this._data
+  addSeries(series: TimeSeriesSeries): TimeSeriesRenderPlan {
+    assertAvailableKey(this.data.series, series.key, 'series')
+    return this.setData({ ...this.data, series: [...this.data.series, series] })
   }
 
-  get renderOptions(): TimeSeriesRenderOptions {
-    return this._renderOptions
+  updateSeries(key: string, changes: Partial<Omit<TimeSeriesSeries, 'key'>>): TimeSeriesRenderPlan {
+    const series = this.data.series.slice()
+    const index = findKeyIndex(series, key, 'series')
+    const previous = series[index] as TimeSeriesSeries
+    series[index] = { ...previous, ...changes, key }
+    return this.setData({ ...this.data, series })
   }
 
-  get frameOptions(): TimeSeriesFrameOptions {
-    return this._frameOptions
+  removeSeries(key: string): TimeSeriesRenderPlan {
+    const index = findKeyIndex(this.data.series, key, 'series')
+    return this.setData({ ...this.data, series: this.data.series.filter((_, i) => i !== index) })
   }
 
-  get renderPlan(): TimeSeriesRenderPlan {
-    return this._renderPlan
+  addBand(band: TimeSeriesBand): TimeSeriesRenderPlan {
+    const bands = this.data.bands ?? []
+    assertAvailableKey(bands, band.key, 'band')
+    return this.setData({ ...this.data, bands: [...bands, band] })
   }
 
-  setData(data: TimeSeriesDataSet, renderOptions?: TimeSeriesRenderOptions): TimeSeriesRenderPlan {
-    this._assertActive()
-    this._data = data
-    if (renderOptions) {
-      this._renderOptions = renderOptions
-    }
-    return this.render()
+  /** Replace the band with the same key, including changing its shape if needed. */
+  updateBand(band: TimeSeriesBand): TimeSeriesRenderPlan {
+    const bands = this.data.bands?.slice() ?? []
+    bands[findKeyIndex(bands, band.key, 'band')] = band
+    return this.setData({ ...this.data, bands })
   }
 
-  setRenderOptions(renderOptions: TimeSeriesRenderOptions): TimeSeriesRenderPlan {
-    this._assertActive()
-    this._renderOptions = renderOptions
-    return this.render()
+  removeBand(key: string): TimeSeriesRenderPlan {
+    const bands = this.data.bands ?? []
+    const index = findKeyIndex(bands, key, 'band')
+    return this.setData({ ...this.data, bands: bands.filter((_, i) => i !== index) })
   }
+}
 
-  setFrameOptions(frameOptions: TimeSeriesFrameOptions): TimeSeriesRenderPlan {
-    this._assertActive()
-    this._frameOptions = frameOptions
-    return this.render()
+function assertAvailableKey(
+  items: readonly { key: string }[],
+  key: string,
+  kind: 'series' | 'band',
+): void {
+  if (items.some((item) => item.key === key)) {
+    throw new RangeError(`@pitant/charts: A ${kind} with key "${key}" already exists.`)
   }
+}
 
-  resize(width: number, height: number, dpr?: number): TimeSeriesRenderPlan {
-    this._assertActive()
-    this.context.resize(width, height, dpr)
-    return this.render()
+function findKeyIndex(
+  items: readonly { key: string }[],
+  key: string,
+  kind: 'series' | 'band',
+): number {
+  const index = items.findIndex((item) => item.key === key)
+  if (index === -1) {
+    throw new RangeError(`@pitant/charts: No ${kind} with key "${key}" exists.`)
   }
-
-  render(): TimeSeriesRenderPlan {
-    this._assertActive()
-    this._renderPlan = buildTimeSeriesRenderPlan(this._data, this._renderOptions)
-    renderTimeSeriesPlan(this.context, this._renderPlan, this._frameOptions)
-    return this._renderPlan
-  }
-
-  dispose(): void {
-    if (this._disposed) return
-    if (this._ownsContext) {
-      this.context.dispose()
-    }
-    this._disposed = true
-  }
-
-  private _assertActive(): void {
-    if (this._disposed) {
-      throw new Error('@pitant/charts: TimeSeriesChart has been disposed.')
-    }
-  }
+  return index
 }

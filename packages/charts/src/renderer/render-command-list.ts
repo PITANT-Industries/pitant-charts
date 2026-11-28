@@ -1,4 +1,10 @@
-import type { FillOptions, LineOptions, RectOptions, TextOptions } from './types.js'
+import type {
+  FillOptions,
+  LineOptions,
+  MarkBatchOptions,
+  RectOptions,
+  TextOptions,
+} from './types.js'
 import type { ViewTransform } from './view-transform.js'
 
 /**
@@ -40,6 +46,14 @@ interface RectCommand {
   transform?: ViewTransform
 }
 
+interface MarksCommand {
+  kind: 'marks'
+  z: ZLayer
+  bounds: Float32Array
+  options: MarkBatchOptions
+  transform?: ViewTransform
+}
+
 interface TextCommand {
   kind: 'text'
   z: ZLayer
@@ -49,7 +63,7 @@ interface TextCommand {
   options: TextOptions
 }
 
-export type DrawCommand = LineCommand | FillCommand | RectCommand | TextCommand
+export type DrawCommand = LineCommand | FillCommand | RectCommand | MarksCommand | TextCommand
 
 /**
  * Collects draw commands from chart types and sorts by z-order.
@@ -107,6 +121,16 @@ export class RenderCommandList {
       options,
       ...(transform ? { transform } : {}),
     })
+  }
+
+  addMarks(
+    bounds: Float32Array,
+    options: MarkBatchOptions,
+    z: ZLayer = ZLayer.Overlay,
+    transform?: ViewTransform,
+  ): void {
+    if (bounds.length < 4) return
+    this._commands.push({ kind: 'marks', z, bounds, options, ...(transform ? { transform } : {}) })
   }
 
   addText(text: string, x: number, y: number, options: TextOptions, z: ZLayer = ZLayer.Text): void {

@@ -36,6 +36,26 @@ function Wrapper({ children, style }: { children: ReactNode; style?: CSSProperti
 }
 
 describe('ChartTooltip', () => {
+  it('filters, sorts and limits the visible table rows', () => {
+    render(
+      <Wrapper>
+        <ChartTooltip
+          payload={payload}
+          position={position}
+          layout="table"
+          filter={(row) => row.value !== null}
+          sort={(left, right) => left.label.localeCompare(right.label)}
+          limit={[1, 2]}
+        />
+      </Wrapper>,
+    )
+    expect(screen.getByRole('table')).toBeTruthy()
+    expect(screen.getAllByRole('row')).toHaveLength(1)
+    expect(screen.getByRole('rowheader').textContent).toBe('Memory')
+    expect(screen.getByRole('cell').textContent).toBe('55.1%')
+    expect(payload.series.map(({ key }) => key)).toEqual(['cpu', 'mem', 'net'])
+  })
+
   // ── Visibility ──────────────────────────────────────────
 
   it('renders nothing when payload is null', () => {

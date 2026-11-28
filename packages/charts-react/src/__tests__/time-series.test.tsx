@@ -285,6 +285,79 @@ describe('useTimeSeries', () => {
     expect(result.current.tooltipPayload?.series.some(({ key }) => key === 'pressure')).toBe(false)
   })
 
+  it('applies and resets a primary Y viewport without changing the secondary scale', () => {
+    const config: TimeSeriesConfig = {
+      ...CONFIG,
+      yAxes: [
+        { key: 'temp', range: [0, 20] },
+        { key: 'pressure', range: [0, 4] },
+      ],
+      series: CONFIG.series.map((item) => ({ ...item, yAxisKey: item.key })),
+    }
+    const { result } = renderHook(() =>
+      useTimeSeries({ config, data: DATA, containerRef: fakeContainerRef(700) }),
+    )
+    act(() => result.current.setVisibleYRange([9, 13]))
+    expect(result.current.visibleYRange).toEqual([9, 13])
+    expect(result.current.renderPlan.yRange).toEqual([9, 13])
+    expect(result.current.renderPlan.yAxes?.[1]?.range).toEqual([0, 4])
+    act(() => result.current.setVisibleYRange(null))
+    expect(result.current.renderPlan.yRange).toEqual([0, 20])
+  })
+
+  it('inspects asynchronously sampled fields on their own sorted timestamps', () => {
+    const data: TimeSeriesColumnData = {
+      timestamps: new Float64Array([1000, 1010, 1020]),
+      columns: {
+        temp: new Float64Array([10, NaN, 15]),
+        pressure: new Float64Array([400, 900]),
+      },
+      sampleKinds: { temp: new Uint8Array([0, 1, 0]) },
+      seriesTimestamps: { pressure: new Float64Array([1011, 1040]) },
+    }
+    const config: TimeSeriesConfig = {
+      ...CONFIG,
+      series: CONFIG.series.map((item) => ({ ...item, mark: 'point' })),
+    }
+    const { result } = renderHook(() =>
+      useTimeSeries({ config, data, containerRef: fakeContainerRef(700) }),
+    )
+    expect(result.current.fullRange).toEqual([1000, 1040])
+    expect(result.current.renderPlan.series.find(({ key }) => key === 'pressure')?.mark).toBe(
+      'point',
+    )
+    act(() => result.current.handleHoverChange(pointerAt(1010)))
+    expect(result.current.tooltipPayload?.series).toEqual([
+      expect.objectContaining({ key: 'temp', value: null, gap: true }),
+      expect.objectContaining({ key: 'pressure', value: 400 }),
+    ])
+  })
+
+  it('snaps to the closest sample and focuses the closest series in its own axis scale', () => {
+    const config: TimeSeriesConfig = {
+      series: [
+        { key: 'temp', label: 'Temperature', field: 'temp' },
+        { key: 'pressure', label: 'Pressure', field: 'pressure', yAxisKey: 'pressure' },
+      ],
+      yAxes: [
+        { key: 'temp', range: [0, 20] },
+        { key: 'pressure', range: [0, 3] },
+      ],
+    }
+    const interaction = { snapToSample: true, focusClosestSeries: 2 }
+    const { result } = renderHook(() =>
+      useTimeSeries({ config, data: DATA, containerRef: fakeContainerRef(700), interaction }),
+    )
+    const { layout } = result.current
+    const snapped = result.current.snapHover(pointerAt(1014))
+    expect(snapped.dataX).toBe(1010)
+    const pressureY = (1 - 2 / 3) * layout.plotArea.height
+    act(() => result.current.handleHoverChange({ ...snapped, plotY: pressureY }))
+    expect(result.current.focusedSeriesKey).toBe('pressure')
+    act(() => result.current.handleHoverChange(null))
+    expect(result.current.focusedSeriesKey).toBe(null)
+  })
+
   it('passes value and envelope bands into the core render plan', () => {
     const data: TimeSeriesColumnData = {
       timestamps: new Float64Array([1000, 1010, 1020]),
@@ -825,6 +898,72 @@ describe('useTimeSeries', () => {
       expect(screen.getByTestId('right-cursor').textContent).toBe('1010')
       expect(screen.getByTestId('right-synced-cursor').textContent).toBe('true')
     })
+  })
+
+  it('synchronizes visibility and focus through mapped series keys', () => {
+    const leftConfig: TimeSeriesConfig = {
+      series: [
+        { key: 'temperature', label: 'Temperature', field: 'temp' },
+        { key: 'pressure', label: 'Pressure', field: 'pressure' },
+      ],
+      yAxis: { range: [0, 20] },
+    }
+    const rightConfig: TimeSeriesConfig = {
+      series: [
+        { key: 'temperature-alias', label: 'Temperature alias', field: 'temp' },
+        { key: 'pressure-alias', label: 'Pressure alias', field: 'pressure' },
+      ],
+      yAxis: { range: [0, 20] },
+    }
+    const interaction = { focusClosestSeries: 3 }
+    function SyncedSeriesHarness() {
+      const left = useTimeSeries({
+        chartKey: 'left',
+        config: leftConfig,
+        data: DATA,
+        containerRef: fakeContainerRef(700),
+        interaction,
+      })
+      const right = useTimeSeries({
+        chartKey: 'right',
+        config: rightConfig,
+        data: DATA,
+        containerRef: fakeContainerRef(700),
+      })
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              left.toggleSeries('pressure', false)
+              left.handleHoverChange({
+                ...pointerAt(1010),
+                plotY: (1 - 12 / 20) * left.layout.plotArea.height,
+              })
+            }}
+          >
+            Synchronize plot
+          </button>
+          <span data-testid="right-focused">{right.focusedSeriesKey}</span>
+          <span data-testid="right-pressure">
+            {String(right.legendItems.find(({ key }) => key === 'pressure-alias')?.visible)}
+          </span>
+        </>
+      )
+    }
+    render(
+      <ChartSyncGroup
+        sync={['series', 'focus']}
+        mapSeriesKey={(key, _source, target) =>
+          target === 'right' ? `${key}-alias` : key.replace(/-alias$/, '')
+        }
+      >
+        <SyncedSeriesHarness />
+      </ChartSyncGroup>,
+    )
+    fireEvent.click(screen.getByText('Synchronize plot'))
+    expect(screen.getByTestId('right-focused').textContent).toBe('temperature-alias')
+    expect(screen.getByTestId('right-pressure').textContent).toBe('false')
   })
 
   it('component renders a chart container and exposes chart state to children', () => {

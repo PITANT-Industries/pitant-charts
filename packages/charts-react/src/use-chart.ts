@@ -1,6 +1,6 @@
 'use client'
 
-import type { RenderContext, RendererType } from '@pitant/charts'
+import type { AxisLayoutOptions, RenderContext, RendererType } from '@pitant/charts'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChartContainerRef } from './chart-container.js'
 import type { ChartLegendItem } from './chart-legend.js'
@@ -20,12 +20,7 @@ export interface SeriesConfig {
   visible?: boolean
 }
 
-export interface AxisConfig {
-  /** Axis label */
-  label?: string
-  /** Value formatter for tick labels */
-  formatValue?: (value: number) => string
-}
+export interface AxisConfig extends Omit<AxisLayoutOptions, 'valueOffset'> {}
 
 export interface ChartConfig {
   /** Series definitions */

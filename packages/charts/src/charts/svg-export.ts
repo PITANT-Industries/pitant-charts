@@ -1,5 +1,11 @@
 import type { DrawCommand, RenderCommandList } from '../renderer/render-command-list.js'
-import type { FillOptions, LineOptions, RectOptions, TextOptions } from '../renderer/types.js'
+import type {
+  FillOptions,
+  LineOptions,
+  MarkBatchOptions,
+  RectOptions,
+  TextOptions,
+} from '../renderer/types.js'
 import type { ViewTransform } from '../renderer/view-transform.js'
 import type { ChartLayout, RgbaColor } from './common.js'
 
@@ -29,7 +35,7 @@ export function commandFrameToSvg(
   for (const command of frame.commands.sorted()) {
     const element = commandToSvgElement(command, frame.transform)
     if (!element) continue
-    if (command.kind === 'line' || command.kind === 'fill' || command.kind === 'rect') {
+    if (command.kind !== 'text') {
       dataElements.push(element)
     } else {
       screenElements.push(element)
@@ -85,6 +91,8 @@ function commandToSvgElement(command: DrawCommand, transform: ViewTransform): st
         command.options,
         command.transform ?? transform,
       )
+    case 'marks':
+      return marksToSvg(command.bounds, command.options, command.transform ?? transform)
     case 'text':
       return textToSvg(command.text, command.x, command.y, command.options)
   }
@@ -123,6 +131,7 @@ function rectToSvg(
 ): string | null {
   const topLeft = transform.dataToPixel(x, y)
   const bottomRight = transform.dataToPixel(x + width, y + height)
+  if (!finitePoint(topLeft) || !finitePoint(bottomRight)) return null
   const screenX = Math.min(topLeft.x, bottomRight.x)
   const screenY = Math.min(topLeft.y, bottomRight.y)
   const screenWidth = Math.abs(bottomRight.x - topLeft.x)
@@ -139,6 +148,38 @@ function rectToSvg(
   return `<rect ${attrs.join(' ')}/>`
 }
 
+function marksToSvg(
+  bounds: Float32Array,
+  options: MarkBatchOptions,
+  transform: ViewTransform,
+): string | null {
+  const parts: string[] = []
+  for (let i = 0; i + 3 < bounds.length; i += 4) {
+    const x = bounds[i] as number
+    const y = bounds[i + 1] as number
+    const w = bounds[i + 2] as number
+    const h = bounds[i + 3] as number
+    if (!(w > 0 && h > 0)) continue
+    const first = transform.dataToPixel(x, y)
+    const last = transform.dataToPixel(x + w, y + h)
+    const left = formatNumber(Math.min(first.x, last.x))
+    const right = formatNumber(Math.max(first.x, last.x))
+    if (options.shape === 'ellipse') {
+      const centerY = formatNumber((first.y + last.y) / 2)
+      const rx = formatNumber(Math.abs(first.x - last.x) / 2)
+      const ry = formatNumber(Math.abs(first.y - last.y) / 2)
+      parts.push(
+        `M ${left} ${centerY} A ${rx} ${ry} 0 1 0 ${right} ${centerY} A ${rx} ${ry} 0 1 0 ${left} ${centerY} Z`,
+      )
+    } else {
+      const top = formatNumber(Math.min(first.y, last.y))
+      const bottom = formatNumber(Math.max(first.y, last.y))
+      parts.push(`M ${left} ${top} H ${right} V ${bottom} H ${left} Z`)
+    }
+  }
+  return parts.length > 0 ? `<path d="${parts.join(' ')}" ${fillAttrs(options.color)}/>` : null
+}
+
 function textToSvg(text: string, x: number, y: number, options: TextOptions): string {
   const anchor = options.align === 'center' ? 'middle' : options.align === 'right' ? 'end' : 'start'
   const baseline =
@@ -149,42 +190,62 @@ function textToSvg(text: string, x: number, y: number, options: TextOptions): st
         : 'text-before-edge'
   const font = options.font ?? 'sans-serif'
   const fontSize = options.fontSize ?? 12
-  return `<text x="${formatNumber(x)}" y="${formatNumber(y)}" ${fillAttrs(options.color)} font-family="${escapeAttr(font)}" font-size="${formatNumber(fontSize)}" text-anchor="${anchor}" dominant-baseline="${baseline}">${escapeText(text)}</text>`
+  const rotation = options.rotation
+    ? ` transform="rotate(${formatNumber(options.rotation)} ${formatNumber(x)} ${formatNumber(y)})"`
+    : ''
+  return `<text x="${formatNumber(x)}" y="${formatNumber(y)}" ${fillAttrs(options.color)} font-family="${escapeAttr(font)}" font-size="${formatNumber(fontSize)}" text-anchor="${anchor}" dominant-baseline="${baseline}"${rotation}>${escapeText(text)}</text>`
+}
+
+function finitePoint(point: { x: number; y: number }): boolean {
+  return Number.isFinite(point.x) && Number.isFinite(point.y)
 }
 
 function linePath(buffer: Float32Array, transform: ViewTransform): string {
   const parts: string[] = []
-  for (let i = 0; i < buffer.length; i += 2) {
-    const x = buffer[i]
-    const y = buffer[i + 1]
-    if (x === undefined || y === undefined) continue
-    const point = transform.dataToPixel(x, y)
-    parts.push(
-      `${parts.length === 0 ? 'M' : 'L'} ${formatNumber(point.x)} ${formatNumber(point.y)}`,
-    )
+  let draw = false
+  for (let i = 0; i + 1 < buffer.length; i += 2) {
+    const point = transform.dataToPixel(buffer[i] as number, buffer[i + 1] as number)
+    if (!finitePoint(point)) {
+      draw = false
+      continue
+    }
+    parts.push(`${draw ? 'L' : 'M'} ${formatNumber(point.x)} ${formatNumber(point.y)}`)
+    draw = true
   }
   return parts.join(' ')
 }
 
 function fillPath(upper: Float32Array, lower: Float32Array, transform: ViewTransform): string {
   const parts: string[] = []
-  for (let i = 0; i < upper.length; i += 2) {
-    const x = upper[i]
-    const y = upper[i + 1]
-    if (x === undefined || y === undefined) continue
-    const point = transform.dataToPixel(x, y)
-    parts.push(
-      `${parts.length === 0 ? 'M' : 'L'} ${formatNumber(point.x)} ${formatNumber(point.y)}`,
-    )
+  let first = 0
+  const limit = upper.length
+  while (first + 1 < limit) {
+    let end = first
+    for (; end + 1 < limit; end += 2) {
+      const point = transform.dataToPixel(upper[end] as number, upper[end + 1] as number)
+      const other =
+        upper.length === lower.length
+          ? transform.dataToPixel(lower[end] as number, lower[end + 1] as number)
+          : point
+      if (!finitePoint(point) || !finitePoint(other)) break
+    }
+    if (upper.length !== lower.length && end !== upper.length) return ''
+    if (end - first >= 4) {
+      const top = linePath(upper.subarray(first, end), transform)
+      const bottom: string[] = []
+      const lowerStart = upper.length === lower.length ? first : 0
+      const lowerEnd = upper.length === lower.length ? end : lower.length
+      for (let i = lowerEnd - 2; i >= lowerStart; i -= 2) {
+        const point = transform.dataToPixel(lower[i] as number, lower[i + 1] as number)
+        if (!finitePoint(point)) return ''
+        bottom.push(`L ${formatNumber(point.x)} ${formatNumber(point.y)}`)
+      }
+      parts.push(top)
+      for (const segment of bottom) parts.push(segment)
+      parts.push('Z')
+    }
+    first = end + 2
   }
-  for (let i = lower.length - 2; i >= 0; i -= 2) {
-    const x = lower[i]
-    const y = lower[i + 1]
-    if (x === undefined || y === undefined) continue
-    const point = transform.dataToPixel(x, y)
-    parts.push(`L ${formatNumber(point.x)} ${formatNumber(point.y)}`)
-  }
-  if (parts.length > 0) parts.push('Z')
   return parts.join(' ')
 }
 

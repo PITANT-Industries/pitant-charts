@@ -6,6 +6,7 @@ import { type JSX, useCallback, useEffect, useRef } from 'react'
 export interface ChartCanvasProps {
   width: number
   height: number
+  pixelRatio?: number
   renderer?: RendererType | 'auto'
   className?: string
   onContextReady?: (ctx: RenderContext) => void
@@ -17,9 +18,19 @@ export interface ChartCanvasProps {
  * Full implementation in Phase 2.
  */
 export function ChartCanvas(props: ChartCanvasProps): JSX.Element {
-  const { width, height, renderer = 'auto', className, onContextReady, onContextError } = props
+  const {
+    width,
+    height,
+    pixelRatio,
+    renderer = 'auto',
+    className,
+    onContextReady,
+    onContextError,
+  } = props
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const ctxRef = useRef<RenderContext | null>(null)
+  const dimensionsRef = useRef({ width, height, pixelRatio })
+  dimensionsRef.current = { width, height, pixelRatio }
 
   // Stable callback refs to avoid recreating the context when callbacks change
   const onReadyRef = useRef(onContextReady)
@@ -37,6 +48,8 @@ export function ChartCanvas(props: ChartCanvasProps): JSX.Element {
           ctx.dispose()
           return
         }
+        const dimensions = dimensionsRef.current
+        ctx.resize(dimensions.width, dimensions.height, dimensions.pixelRatio)
         ctxRef.current = ctx
         onReadyRef.current?.(ctx)
       } catch (error) {
@@ -63,8 +76,8 @@ export function ChartCanvas(props: ChartCanvasProps): JSX.Element {
   }, [initContext])
 
   useEffect(() => {
-    ctxRef.current?.resize(width, height)
-  }, [width, height])
+    ctxRef.current?.resize(width, height, pixelRatio)
+  }, [width, height, pixelRatio])
 
   return <canvas ref={canvasRef} className={className} style={{ width, height }} />
 }

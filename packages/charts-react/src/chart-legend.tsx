@@ -1,6 +1,7 @@
 'use client'
 
-import type { CSSProperties } from 'react'
+import { type CSSProperties, type ReactNode, useMemo } from 'react'
+import { type ChartDisplayItemsOptions, selectChartDisplayItems } from './chart-display-items.js'
 
 // ── Public types ─────────────────────────────────────────────
 
@@ -15,11 +16,13 @@ export interface ChartLegendItem {
   visible: boolean
 }
 
-export interface ChartLegendProps {
+export interface ChartLegendProps extends ChartDisplayItemsOptions<ChartLegendItem> {
   /** Legend items — one per series. */
-  items: ChartLegendItem[]
+  items: readonly ChartLegendItem[]
   /** Called when user toggles a series. */
   onToggle?: (key: string, visible: boolean) => void
+  /** Optional live value or summary content next to a legend label. */
+  renderValue?: (item: ChartLegendItem) => ReactNode
   /** Layout direction. @default "horizontal" */
   orientation?: 'horizontal' | 'vertical'
   /** CSS class merged onto the outer wrapper. */
@@ -69,9 +72,22 @@ const swatchBase: CSSProperties = {
 export function ChartLegend({
   items,
   onToggle,
+  renderValue,
   orientation = 'horizontal',
   className,
+  filter,
+  sort,
+  limit,
 }: ChartLegendProps) {
+  const displayed = useMemo(
+    () =>
+      selectChartDisplayItems(items, {
+        ...(filter !== undefined ? { filter } : {}),
+        ...(sort !== undefined ? { sort } : {}),
+        ...(limit !== undefined ? { limit } : {}),
+      }),
+    [filter, items, limit, sort],
+  )
   const listStyle: CSSProperties = {
     ...listBase,
     flexDirection: orientation === 'vertical' ? 'column' : 'row',
@@ -79,7 +95,7 @@ export function ChartLegend({
 
   return (
     <ul className={className} style={listStyle} aria-label="Chart legend">
-      {items.map((item) => (
+      {displayed.map((item) => (
         <li key={item.key} style={liStyle}>
           <button
             type="button"
@@ -100,6 +116,7 @@ export function ChartLegend({
               aria-hidden
             />
             {item.label}
+            {renderValue?.(item)}
           </button>
         </li>
       ))}

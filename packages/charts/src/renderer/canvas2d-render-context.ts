@@ -1,6 +1,7 @@
 import type {
   FillOptions,
   LineOptions,
+  MarkBatchOptions,
   RectOptions,
   RenderClipRect,
   RenderContext,
@@ -135,6 +136,27 @@ export class Canvas2DRenderContext implements RenderContext {
     }
   }
 
+  drawMarks(bounds: Float32Array, options: MarkBatchOptions): void {
+    const [r, g, b, a] = options.color
+    const path = new Path2D()
+    for (let i = 0; i + 3 < bounds.length; i += 4) {
+      const x = bounds[i] as number
+      const y = bounds[i + 1] as number
+      const w = bounds[i + 2] as number
+      const h = bounds[i + 3] as number
+      if (!(w > 0 && h > 0)) continue
+      if (options.shape === 'ellipse') {
+        path.moveTo(x + w, y + h / 2)
+        path.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2)
+        path.closePath()
+      } else {
+        path.rect(x, y, w, h)
+      }
+    }
+    this._ctx.fillStyle = `rgba(${r * 255},${g * 255},${b * 255},${a})`
+    this._ctx.fill(path)
+  }
+
   drawText(text: string, x: number, y: number, options: TextOptions): void {
     const ctx = this._ctx
     const [r, g, b, a] = options.color
@@ -144,7 +166,13 @@ export class Canvas2DRenderContext implements RenderContext {
     ctx.font = `${options.fontSize ?? 12}px ${options.font ?? 'sans-serif'}`
     ctx.textAlign = options.align ?? 'left'
     ctx.textBaseline = options.baseline ?? 'top'
-    ctx.fillText(text, x, y)
+    if (options.rotation) {
+      ctx.translate(x, y)
+      ctx.rotate((options.rotation * Math.PI) / 180)
+      ctx.fillText(text, 0, 0)
+    } else {
+      ctx.fillText(text, x, y)
+    }
     ctx.restore()
   }
 

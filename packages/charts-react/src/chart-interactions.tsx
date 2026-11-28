@@ -4,6 +4,7 @@ import {
   type ChartLayout,
   type ChartPointerCoordinates,
   clampRangeToBounds,
+  mapDataPointToChartPoint,
   mapPointerToChartCoordinates,
   type NumericRange,
   panRangeByPixels,
@@ -25,6 +26,29 @@ import {
 } from 'react'
 import type { ChartContainerRef } from './chart-container.js'
 
+export interface ChartRangeSelection {
+  xRange?: NumericRange
+  yRange?: NumericRange
+}
+
+export interface ChartSelectionOptions {
+  /** The axes included in a pointer drag. Defaults to X. */
+  mode?: 'x' | 'y' | 'xy'
+  /** Minimum CSS pixels of movement on an included axis. */
+  minDragPx?: number
+  /** In XY mode, constrain drags with one dimension below this threshold. */
+  adaptivePx?: number
+  /** Set false to select without changing the viewport. */
+  zoom?: boolean
+  /** Adjust or reject a completed selection before it changes the viewport. */
+  constrain?: (selection: ChartRangeSelection) => ChartRangeSelection | null
+}
+
+export interface ChartCrosshairOptions {
+  x?: boolean
+  y?: boolean
+}
+
 export interface ChartRegionZoomLayerProps {
   containerRef: RefObject<ChartContainerRef | null>
   layout: ChartLayout
@@ -32,13 +56,21 @@ export interface ChartRegionZoomLayerProps {
   yRange: NumericRange
   xOrigin?: number
   fullRange: readonly [number, number]
-  onRangeChange: (range: readonly [number, number]) => void
+  onRangeChange: (range: NumericRange) => void
+  /** Null resets the Y viewport to its configured or automatic range. */
+  onYRangeChange?: (range: NumericRange | null) => void
+  selection?: ChartSelectionOptions
+  selectedRanges?: ChartRangeSelection | null
+  onSelectionChange?: (selection: ChartRangeSelection | null) => void
   onHoverChange?: (coordinates: ChartPointerCoordinates | null) => void
   enabled?: boolean
-  crosshair?: boolean
+  crosshair?: boolean | ChartCrosshairOptions
+  hoverLock?: boolean
+  snapHover?: (coordinates: ChartPointerCoordinates) => ChartPointerCoordinates
   keyboardNavigation?: boolean
   pan?: boolean
   syncedCursorX?: number | null
+  syncedCursorY?: number | null
   touchNavigation?: boolean
   wheelZoom?: boolean
 }
@@ -47,10 +79,9 @@ type DragMode = 'region-zoom' | 'pan'
 
 interface DragState {
   pointerId: number
-  startX: number
-  currentX: number
+  start: ChartPointerCoordinates
+  current: ChartPointerCoordinates
   mode: DragMode
-  startedInsidePlot: boolean
   startRange: readonly [number, number]
 }
 
@@ -86,10 +117,8 @@ const interactionStyle: CSSProperties = {
 
 const selectionStyle: CSSProperties = {
   position: 'absolute',
-  top: 0,
-  bottom: 0,
-  borderLeft: '1px solid var(--chart-selection-border, rgba(37, 99, 235, 0.75))',
-  borderRight: '1px solid var(--chart-selection-border, rgba(37, 99, 235, 0.75))',
+  border: '1px solid var(--chart-selection-border, rgba(37, 99, 235, 0.75))',
+  boxSizing: 'border-box',
   background: 'var(--chart-selection-background, rgba(37, 99, 235, 0.14))',
   pointerEvents: 'none',
 }
@@ -105,12 +134,19 @@ export function ChartRegionZoomLayer({
   crosshair = true,
   enabled = true,
   fullRange,
+  hoverLock = false,
   keyboardNavigation = true,
   layout,
   onHoverChange,
   onRangeChange,
+  onSelectionChange,
+  onYRangeChange,
   pan = true,
+  selectedRanges,
+  selection,
+  snapHover,
   syncedCursorX = null,
+  syncedCursorY = null,
   touchNavigation = true,
   wheelZoom = true,
   xOrigin = 0,
@@ -118,7 +154,13 @@ export function ChartRegionZoomLayer({
   yRange,
 }: ChartRegionZoomLayerProps): React.JSX.Element | null {
   const [drag, setDrag] = useState<DragState | null>(null)
+  const [storedSelection, setStoredSelection] = useState<ChartRangeSelection | null>(null)
   const [hover, setHover] = useState<ChartPointerCoordinates | null>(null)
+  const hoverLocked = useRef(false)
+  const selectionMode = selection?.mode ?? 'x'
+  const minDragPx = selection?.minDragPx ?? MIN_DRAG_PX
+  const adaptivePx = selection?.adaptivePx ?? 0
+  const zoomSelection = selection?.zoom !== false
   const touchPointsRef = useRef<Map<number, TouchPoint>>(new Map())
   const touchGestureRef = useRef<TouchGesture | null>(null)
 
@@ -141,44 +183,85 @@ export function ChartRegionZoomLayer({
     [containerRef, layout, xOrigin, xRange, yRange],
   )
 
-  const selection = useMemo(() => {
-    if (!drag?.startedInsidePlot || drag.mode !== 'region-zoom') return null
-
-    const left = Math.min(drag.startX, drag.currentX)
-    const width = Math.abs(drag.currentX - drag.startX)
+  const selectionRect = useMemo(() => {
+    const plot = layout.plotArea
+    if (drag?.mode === 'region-zoom') {
+      const { x, y } = selectedAxes(drag.start, drag.current, selectionMode, minDragPx, adaptivePx)
+      if (!x && !y) return null
+      return {
+        left: plot.x + (x ? Math.min(drag.start.plotX, drag.current.plotX) : 0),
+        top: plot.y + (y ? Math.min(drag.start.plotY, drag.current.plotY) : 0),
+        width: x ? Math.abs(drag.start.plotX - drag.current.plotX) : plot.width,
+        height: y ? Math.abs(drag.start.plotY - drag.current.plotY) : plot.height,
+      }
+    }
+    const ranges = selectedRanges === undefined ? storedSelection : selectedRanges
+    if (!ranges || (!ranges.xRange && !ranges.yRange)) return null
+    const first = mapDataPointToChartPoint({
+      x: ranges.xRange?.[0] ?? xOrigin + xRange[0],
+      y: ranges.yRange?.[0] ?? yRange[0],
+      xRange,
+      yRange,
+      layout,
+      xValueOffset: xOrigin,
+      clampToPlot: true,
+    })
+    const last = mapDataPointToChartPoint({
+      x: ranges.xRange?.[1] ?? xOrigin + xRange[1],
+      y: ranges.yRange?.[1] ?? yRange[1],
+      xRange,
+      yRange,
+      layout,
+      xValueOffset: xOrigin,
+      clampToPlot: true,
+    })
+    if (![first.x, first.y, last.x, last.y].every(Number.isFinite)) return null
     return {
-      left: layout.plotArea.x + left,
-      width,
+      left: Math.min(first.x, last.x),
+      top: Math.min(first.y, last.y),
+      width: Math.abs(first.x - last.x),
+      height: Math.abs(first.y - last.y),
     }
-  }, [drag, layout.plotArea.x])
+  }, [
+    adaptivePx,
+    drag,
+    layout,
+    minDragPx,
+    selectedRanges,
+    selectionMode,
+    storedSelection,
+    xOrigin,
+    xRange,
+    yRange,
+  ])
 
-  const crosshairPosition = useMemo(() => {
-    if (!crosshair) return null
-    if (hover?.insidePlot) {
-      return {
-        horizontal: true,
-        x: layout.plotArea.x + hover.plotX,
-        y: layout.plotArea.y + hover.plotY,
-      }
-    }
-    if (syncedCursorX !== null) {
-      return {
-        horizontal: false,
-        x: syncedCursorX,
-        y: layout.plotArea.y,
-      }
-    }
-    return null
-  }, [crosshair, hover, layout.plotArea.x, layout.plotArea.y, syncedCursorX])
+  const crosshairX = typeof crosshair === 'object' ? crosshair.x !== false : crosshair
+  const crosshairY = typeof crosshair === 'object' ? crosshair.y !== false : crosshair
+  const cursorX = crosshairX
+    ? hover?.insidePlot
+      ? layout.plotArea.x + hover.plotX
+      : syncedCursorX
+    : null
+  const cursorY = crosshairY
+    ? hover?.insidePlot
+      ? layout.plotArea.y + hover.plotY
+      : syncedCursorY
+    : null
 
   const updateHover = useCallback(
     (coordinates: ChartPointerCoordinates | null) => {
-      const next = coordinates?.insidePlot ? coordinates : null
+      if (hoverLock && hoverLocked.current) return
+      const next = coordinates?.insidePlot ? (snapHover?.(coordinates) ?? coordinates) : null
       setHover(next)
       onHoverChange?.(next)
     },
-    [onHoverChange],
+    [hoverLock, onHoverChange, snapHover],
   )
+
+  const clearSelection = useCallback(() => {
+    setStoredSelection(null)
+    onSelectionChange?.(null)
+  }, [onSelectionChange])
 
   const handlePointerDown = useCallback(
     (event: ReactPointerEvent<HTMLElement>) => {
@@ -216,10 +299,9 @@ export function ChartRegionZoomLayer({
       event.currentTarget.setPointerCapture?.(event.pointerId)
       setDrag({
         pointerId: event.pointerId,
-        startX: coordinates.plotX,
-        currentX: coordinates.plotX,
+        start: coordinates,
+        current: coordinates,
         mode,
-        startedInsidePlot: true,
         startRange: [xOrigin + xRange[0], xOrigin + xRange[1]],
       })
     },
@@ -275,7 +357,7 @@ export function ChartRegionZoomLayer({
         event.preventDefault()
         const nextRange = panRangeByPixels({
           range: drag.startRange,
-          deltaPixels: drag.startX - coordinates.plotX,
+          deltaPixels: drag.start.plotX - coordinates.plotX,
           plotWidth: layout.plotArea.width,
           bounds: fullRange,
         })
@@ -287,7 +369,7 @@ export function ChartRegionZoomLayer({
 
       setDrag((current) => {
         if (!current || event.pointerId !== current.pointerId) return current
-        return { ...current, currentX: coordinates.plotX }
+        return { ...current, current: coordinates }
       })
     },
     [
@@ -320,31 +402,60 @@ export function ChartRegionZoomLayer({
       const coordinates = getCoordinates(event)
       event.currentTarget.releasePointerCapture?.(event.pointerId)
       setDrag(null)
-      updateHover(coordinates)
-      if (!coordinates || !drag.startedInsidePlot) return
-      if (drag.mode === 'pan') return
+      if (!coordinates || drag.mode === 'pan') {
+        updateHover(coordinates)
+        return
+      }
 
-      const dragWidth = Math.abs(coordinates.plotX - drag.startX)
-      if (dragWidth < MIN_DRAG_PX) return
+      const { x, y } = selectedAxes(drag.start, coordinates, selectionMode, minDragPx, adaptivePx)
+      if (x || y) {
+        updateHover(coordinates)
+        const ranges: ChartRangeSelection = {}
+        const xRange = x ? orderedRange(drag.start.dataX, coordinates.dataX) : undefined
+        const yRange = y ? orderedRange(drag.start.dataY, coordinates.dataY) : undefined
+        if (xRange) ranges.xRange = xRange
+        if (yRange) ranges.yRange = yRange
+        const candidate = selection?.constrain ? selection.constrain(ranges) : ranges
+        if (!candidate) return
+        const selected: ChartRangeSelection = {}
+        if (candidate.xRange && validSelectionRange(candidate.xRange))
+          selected.xRange = candidate.xRange
+        if (candidate.yRange && validSelectionRange(candidate.yRange))
+          selected.yRange = candidate.yRange
+        if (!selected.xRange && !selected.yRange) return
 
-      const startRatio = drag.startX / Math.max(Number.EPSILON, layout.plotArea.width)
-      const startX = xOrigin + xRange[0] + (xRange[1] - xRange[0]) * startRatio
-      const endX = coordinates.dataX
-      const nextRange: readonly [number, number] = startX <= endX ? [startX, endX] : [endX, startX]
-
-      if (nextRange[1] - nextRange[0] > Number.EPSILON) {
-        onRangeChange(nextRange)
+        onSelectionChange?.(selected)
+        if (zoomSelection) {
+          if (selected.xRange) onRangeChange(selected.xRange)
+          if (selected.yRange) onYRangeChange?.(selected.yRange)
+        } else {
+          setStoredSelection(selected)
+        }
+      } else {
+        if (hoverLock && coordinates.insidePlot) {
+          const wasLocked = hoverLocked.current
+          hoverLocked.current = false
+          updateHover(coordinates)
+          hoverLocked.current = !wasLocked
+        } else {
+          updateHover(coordinates)
+        }
       }
     },
     [
+      adaptivePx,
       drag,
       enabled,
       getCoordinates,
-      layout.plotArea.width,
+      hoverLock,
+      minDragPx,
       onRangeChange,
+      onSelectionChange,
+      onYRangeChange,
+      selection,
+      selectionMode,
       updateHover,
-      xOrigin,
-      xRange,
+      zoomSelection,
     ],
   )
 
@@ -372,10 +483,17 @@ export function ChartRegionZoomLayer({
     updateHover(null)
   }, [updateHover])
 
+  const reset = useCallback(() => {
+    hoverLocked.current = false
+    updateHover(null)
+    clearSelection()
+    if (selectionMode !== 'y' && fullRange[0] < fullRange[1]) onRangeChange(fullRange)
+    if (selectionMode !== 'x') onYRangeChange?.(null)
+  }, [clearSelection, fullRange, onRangeChange, onYRangeChange, selectionMode, updateHover])
+
   const handleDoubleClick = useCallback(() => {
-    if (!enabled || fullRange[0] >= fullRange[1]) return
-    onRangeChange(fullRange)
-  }, [enabled, fullRange, onRangeChange])
+    if (enabled) reset()
+  }, [enabled, reset])
 
   const handleWheel = useCallback(
     (event: ReactWheelEvent<HTMLElement>) => {
@@ -494,8 +612,9 @@ export function ChartRegionZoomLayer({
           break
         case '0':
         case 'Escape':
-          nextRange = fullRange
-          break
+          event.preventDefault()
+          reset()
+          return
         default:
           return
       }
@@ -505,7 +624,7 @@ export function ChartRegionZoomLayer({
         onRangeChange(nextRange)
       }
     },
-    [enabled, fullRange, keyboardNavigation, onRangeChange, xOrigin, xRange],
+    [enabled, fullRange, keyboardNavigation, onRangeChange, reset, xOrigin, xRange],
   )
 
   if (!enabled) return null
@@ -528,47 +647,66 @@ export function ChartRegionZoomLayer({
       style={interactionStyle}
       tabIndex={keyboardNavigation ? 0 : -1}
     >
-      {crosshairPosition ? (
-        <>
-          <div
-            className="pitant-chart-crosshair-x"
-            data-testid="chart-crosshair-vertical"
-            style={{
-              ...crosshairLineStyle,
-              left: crosshairPosition.x,
-              top: layout.plotArea.y,
-              width: 'var(--chart-crosshair-width, 1px)',
-              height: layout.plotArea.height,
-            }}
-          />
-          {crosshairPosition.horizontal ? (
-            <div
-              className="pitant-chart-crosshair-y"
-              data-testid="chart-crosshair-horizontal"
-              style={{
-                ...crosshairLineStyle,
-                left: layout.plotArea.x,
-                top: crosshairPosition.y,
-                width: layout.plotArea.width,
-                height: 'var(--chart-crosshair-width, 1px)',
-              }}
-            />
-          ) : null}
-        </>
+      {cursorX !== null ? (
+        <div
+          className="pitant-chart-crosshair-x"
+          data-testid="chart-crosshair-vertical"
+          style={{
+            ...crosshairLineStyle,
+            left: cursorX,
+            top: layout.plotArea.y,
+            width: 'var(--chart-crosshair-width, 1px)',
+            height: layout.plotArea.height,
+          }}
+        />
       ) : null}
-      {selection ? (
+      {cursorY !== null ? (
+        <div
+          className="pitant-chart-crosshair-y"
+          data-testid="chart-crosshair-horizontal"
+          style={{
+            ...crosshairLineStyle,
+            left: layout.plotArea.x,
+            top: cursorY,
+            width: layout.plotArea.width,
+            height: 'var(--chart-crosshair-width, 1px)',
+          }}
+        />
+      ) : null}
+      {selectionRect ? (
         <div
           className="pitant-chart-selection"
           data-testid="chart-region-zoom-selection"
-          style={{
-            ...selectionStyle,
-            left: selection.left,
-            width: selection.width,
-          }}
+          style={{ ...selectionStyle, ...selectionRect }}
         />
       ) : null}
     </div>
   )
+}
+
+function selectedAxes(
+  start: ChartPointerCoordinates,
+  end: ChartPointerCoordinates,
+  mode: NonNullable<ChartSelectionOptions['mode']>,
+  minDragPx: number,
+  adaptivePx: number,
+): { x: boolean; y: boolean } {
+  const dx = Math.abs(end.plotX - start.plotX)
+  const dy = Math.abs(end.plotY - start.plotY)
+  const x = mode !== 'y' && dx > 0 && dx >= minDragPx
+  const y = mode !== 'x' && dy > 0 && dy >= minDragPx
+  if (!x || !y || adaptivePx <= 0) return { x, y }
+  if (dx >= adaptivePx && dy >= adaptivePx) return { x, y }
+  return { x: dx >= dy, y: dy > dx }
+}
+
+function orderedRange(first: number, last: number): NumericRange | undefined {
+  const range: NumericRange = first <= last ? [first, last] : [last, first]
+  return validSelectionRange(range) ? range : undefined
+}
+
+function validSelectionRange([low, high]: NumericRange): boolean {
+  return Number.isFinite(low) && Number.isFinite(high) && high - low > Number.EPSILON
 }
 
 function normalizeWheelDelta(event: ReactWheelEvent<HTMLElement>): number {

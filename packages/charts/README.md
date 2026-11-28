@@ -148,6 +148,49 @@ Each scale can define its own bounds, padding, tick count, formatter, and gutter
 A band, Y annotation, ruler, or SPC track can use the corresponding `yAxisKey`.
 The command frame uses the same axis transformations for Canvas2D, WebGPU, and SVG.
 
+## Batch updates and redraw
+
+All native chart objects support `batch()`, `redraw()`, and `clearCache()`.
+Use a synchronous batch to coalesce data, scale, frame and size changes into one
+plan and paint. Methods called inside a batch return the previous plan until
+the outer batch finishes. If the update callback throws, the queued chart
+changes are discarded.
+
+```ts
+chart.batch((trend) => {
+  trend.addSeries({ key: 'reference', label: 'Reference', field: 'pressure' })
+  trend.updateSeries('reference', { visible: true })
+  trend.addBand({ kind: 'value-band', key: 'safe', yStart: 1, yEnd: 2 })
+  trend.setRenderOptions({ yRange: [0, 3] })
+})
+
+chart.redraw()
+```
+
+`redraw()` reuses the last prepared geometry when the canvas size and pixel
+ratio match. It still runs native draw hooks. Call `render()` after modifying
+input arrays in place, or call `clearCache()` to release the saved frame and
+rebuild it on the next redraw. `TimeSeriesChart` also provides `removeSeries`,
+`updateBand` and `removeBand` for key-based changes.
+
+## Scale and frame customization
+
+Cartesian frame layouts accept linear, logarithmic, asinh, ordinal and custom
+invertible scales. Set `reverse: true` on a scale to reverse its direction. Use
+`xAxis.side: 'top'` or `yAxis.side: 'right'` to change axis placement. The tick
+configuration supports explicit values, CSS-pixel spacing, a formatter, and
+soft or hard bounds through `rangePolicy`.
+
+Set `xAxis.calendar: { timeZone: 'Europe/Berlin' }` for calendar ticks on dated
+millisecond data. For a layout using relative X values, set `xAxis.valueOffset`
+to the render plan's `xOrigin`. A named secondary axis can use `from` to keep
+a unit conversion aligned with an earlier source axis.
+
+All eight imperative chart classes accept `frame.plugins`. Implement
+`extendFrame(frame, plan)` to append render commands that appear in live charts
+and exports. `beforeDraw` and `afterDraw` run inside the native rendering frame
+for work that needs the rendering context.
+
 ## Data Rules
 
 - Use `Float64Array` timestamps and one typed array per series.

@@ -49,6 +49,10 @@ class CdpClient {
     })
   }
 
+  disconnect() {
+    this.ws?.close()
+  }
+
   send(method, params = {}) {
     const id = this.nextId++
     const payload = JSON.stringify({ id, method, params })
@@ -95,6 +99,7 @@ const harnessPort = await getFreePort()
 const debugPort = await getFreePort()
 const profileDir = await mkdtemp(resolve(tmpdir(), 'pitant-charts-browser-'))
 const children = []
+let tab
 
 try {
   const harness = spawn(
@@ -132,7 +137,7 @@ try {
   captureOutput(chrome, 'chrome')
 
   await waitForHttp(`http://127.0.0.1:${debugPort}/json/version`, 20_000)
-  const tab = await connectToFirstPage(debugPort)
+  tab = await connectToFirstPage(debugPort)
 
   await tab.send('Page.enable')
   await tab.send('Runtime.enable')
@@ -144,7 +149,20 @@ try {
   })
 
   const baseUrl = `http://127.0.0.1:${harnessPort}/`
-  const webgpuAvailable = await evaluate(tab, 'Boolean(navigator.gpu)')
+  let webgpuAvailable = false
+  if (requestedRenderers.includes('webgpu')) {
+    // WebGPU is gated on a secure context. about:blank does not inherit localhost's origin.
+    await tab.send('Page.navigate', { url: baseUrl })
+    await waitForExpression(
+      tab,
+      `location.href === ${JSON.stringify(baseUrl)} && document.readyState === "complete"`,
+      20_000,
+    )
+    webgpuAvailable = await evaluate(
+      tab,
+      '(async () => Boolean(await navigator.gpu?.requestAdapter()))()',
+    )
+  }
   const results = []
 
   for (const profile of requestedProfiles) {
@@ -154,7 +172,7 @@ try {
           renderer,
           profile,
           skipped: true,
-          reason: 'navigator.gpu is unavailable in this browser environment',
+          reason: 'A WebGPU adapter is unavailable on the harness origin',
         })
         continue
       }
@@ -183,6 +201,7 @@ try {
   const failed = results.some((result) => result.failed)
   process.exitCode = failed ? 1 : 0
 } finally {
+  tab?.disconnect()
   await stopChildren(children.reverse())
   await removeWithRetry(profileDir)
 }
@@ -198,7 +217,7 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
       window.__PITANT_RENDER_HARNESS_STATE__?.profile === ${JSON.stringify(profile)}`,
     20_000,
   )
-  await sleep(900)
+  await sleep(renderer === 'webgpu' ? 1800 : 900)
 
   const { state, rects } = await waitForExpression(
     tab,

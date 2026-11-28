@@ -3,6 +3,7 @@
 import {
   buildCorrelationMatrixCommandFrame,
   buildCorrelationMatrixRenderPlan,
+  type ChartFramePlugin,
   type ChartLayout,
   type CorrelationColorStop,
   type CorrelationMatrixDataSet,
@@ -57,6 +58,7 @@ export interface CorrelationMatrixLabelConfig {
 }
 
 export interface CorrelationMatrixConfig {
+  plugins?: readonly ChartFramePlugin<CorrelationMatrixRenderPlan>[]
   valueRange?: readonly [number, number]
   minSampleCount?: number
   includeDiagonal?: boolean
@@ -103,7 +105,7 @@ export interface UseCorrelationMatrixReturn {
 export interface CorrelationMatrixProps
   extends Pick<
     ChartContainerProps,
-    'className' | 'style' | 'aspectRatio' | 'ariaLabel' | 'ariaDescribedBy'
+    'className' | 'style' | 'aspectRatio' | 'ariaLabel' | 'ariaDescribedBy' | 'pixelRatio'
   > {
   config: CorrelationMatrixConfig
   data: CorrelationMatrixData
@@ -221,7 +223,7 @@ export function useCorrelationMatrix(
     renderCorrelationMatrixPlan(
       context,
       renderPlan,
-      correlationFrameOptions(layout, labelsVisible, maxLabelCount),
+      correlationFrameOptions(layout, labelsVisible, maxLabelCount, config.plugins),
     )
     const renderTime = performance.now() - started
 
@@ -236,7 +238,16 @@ export function useCorrelationMatrix(
       lowSampleCellCount: renderPlan.lowSampleCellCount,
       maskedCellCount: renderPlan.maskedCellCount,
     })
-  }, [containerRef, context, labelsVisible, layout, maxLabelCount, renderPlan, resizeKey])
+  }, [
+    config.plugins,
+    containerRef,
+    context,
+    labelsVisible,
+    layout,
+    maxLabelCount,
+    renderPlan,
+    resizeKey,
+  ])
 
   const exportImage = useCallback(
     (format: 'png' | 'svg', exportOptions?: ExportOptions) =>
@@ -249,7 +260,7 @@ export function useCorrelationMatrix(
             dimensions.height,
           )
           renderCorrelationMatrixPlan(exportContext, renderPlan, {
-            ...correlationFrameOptions(exportLayout, labelsVisible, maxLabelCount),
+            ...correlationFrameOptions(exportLayout, labelsVisible, maxLabelCount, config.plugins),
           })
         },
         renderSvg: (dimensions) =>
@@ -264,6 +275,7 @@ export function useCorrelationMatrix(
                 ),
                 labelsVisible,
                 maxLabelCount,
+                config.plugins,
               ),
             }),
             buildSvgOptions(dimensions, 'Correlation matrix'),
@@ -289,8 +301,10 @@ function correlationFrameOptions(
   layout: ChartLayout,
   labelsVisible: boolean,
   maxLabelCount: number | undefined,
+  plugins?: CorrelationMatrixConfig['plugins'],
 ): CorrelationMatrixFrameOptions {
   const options: CorrelationMatrixFrameOptions = {
+    ...(plugins ? { plugins } : {}),
     layout,
     guides: false,
     labels: labelsVisible,
@@ -315,15 +329,13 @@ function createCorrelationMatrixLayout(
       visible: true,
       size: 34,
       tickCount: Math.min(6, Math.max(2, renderPlan.visibleVariableCount)),
-      ...(config.xAxis?.label !== undefined ? { label: config.xAxis.label } : {}),
-      ...(config.xAxis?.formatValue !== undefined ? { formatValue: config.xAxis.formatValue } : {}),
+      ...config.xAxis,
     },
     yAxis: {
       visible: true,
       size: 72,
       tickCount: Math.min(6, Math.max(2, renderPlan.visibleVariableCount)),
-      ...(config.yAxis?.label !== undefined ? { label: config.yAxis.label } : {}),
-      ...(config.yAxis?.formatValue !== undefined ? { formatValue: config.yAxis.formatValue } : {}),
+      ...config.yAxis,
     },
     grid: {
       visible: false,
@@ -350,6 +362,7 @@ export function CorrelationMatrix(props: CorrelationMatrixProps): JSX.Element {
     config,
     data,
     onResize,
+    pixelRatio,
     renderer,
     style,
   } = props
@@ -378,6 +391,7 @@ export function CorrelationMatrix(props: CorrelationMatrixProps): JSX.Element {
 
   return (
     <ChartContainer
+      {...(pixelRatio !== undefined ? { pixelRatio } : {})}
       ref={containerRef}
       ariaLabel={ariaLabel}
       onResize={handleResize}

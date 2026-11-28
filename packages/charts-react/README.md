@@ -163,6 +163,54 @@ Use the matching `yAxisKey` for derived series, value and envelope bands,
 Y annotations, rulers, and SPC tracks. The axis formatter also applies to
 tooltip values. PNG and SVG use the same axes as the live chart.
 
+### Scales, marks, and asynchronous channels
+
+- Set `xAxis.calendar` to `{ timeZone: 'Europe/Berlin' }` to place day and hour
+  ticks in that zone using epoch-millisecond timestamps. Use `xAxis.scale` or
+  the relevant Y axis's `scale` for linear, logarithmic, asinh, ordinal, or
+  custom mappings. `tickCount`, `tickValues`, and `formatValue` refine each
+  axis. A named Y axis can derive another unit's positions through `from`.
+- Set `mark` on a series to `'line'`, `'area'`, `'bar'`, or `'point'`. Line
+  interpolation also accepts `'spline'`. Per-series `baseline`, `fillRgba`,
+  `points`, and `spanGaps` customize supported marks. `path` replaces the
+  default geometry with renderer-neutral draw commands.
+- Use `config.stack.groups` with series keys when a group shares its time
+  positions and Y axis. Set `percent: true` to show signed proportions.
+- Supply per-field sorted `seriesTimestamps` for asynchronous channels.
+  With no field-specific timestamps, a channel uses the shared `timestamps`
+  column. `alignTimeSeriesColumns` from `@pitant/charts` can also build one
+  sorted union with a `sampleKinds` mask, which preserves the distinction
+  between alignment holes and explicit gaps.
+
+### Inspection and rendering controls
+
+`TimeSeries` accepts an `interaction` prop. Select `mode: 'x'`, `'y'`, or
+`'xy'` under `interaction.selection`. Set `zoom: false` for an inspection
+rectangle and read the result through `onSelectionChange`. Programmatic
+`selectedRanges` use absolute X and primary Y data values. Set `hoverLock`
+for click-to-pin, `snapToSample` for nearest-sample snapping, or
+`focusClosestSeries` to dim other traces near the cursor. Y zoom acts on the
+primary value axis. Use `setVisibleYRange(null)` to restore its original range.
+
+`ChartSyncGroup` defaults to timestamps and X ranges. Supply
+`cursor={{ x: 'relative', y: 'relative' }}` to synchronize fractional cursor
+positions across different charts. Use `cursor.y: 'value'` or `sync={['yRange']}`
+for charts that use matching primary Y units. Enable `'series'` for visibility
+toggles or `'focus'` for the focused series. `mapSeriesKey` maps equivalent
+channels that have different keys. `filters.publish` and `filters.receive` can
+restrict each event. `DigitalChannel` shares X interaction and time and series
+visibility synchronization while its lanes retain their state scale.
+
+In `TimeSeries` and `DigitalChannel`, `tooltip` controls filtering, sorting,
+the visible row limit, list, inline or table layout, and the custom renderer.
+Standalone `ChartLegend` accepts the same display options for ordering entries
+and a `renderValue` callback for live values or series summaries.
+
+Set `pixelRatio` on a chart for a fixed interactive backing-store ratio.
+Export options can request their own ratio. Add `config.plugins` to extend the
+chart's command frame or run code around native drawing. Use `extendFrame` for
+geometry that must appear in Canvas2D, WebGPU, and SVG.
+
 ## PNG And SVG Export
 
 Concrete `TimeSeries` and `DigitalChannel` chart returns expose `exportImage`.

@@ -20,9 +20,16 @@ export {
   normalizeQualityClass,
   qualityCodeForHistorianRow,
 } from './adapters/index.js'
+export type { AxisProjection, CalendarAxisOptions, ChartScale } from './charts/axis-scale.js'
+export type {
+  ChartCommandFrame,
+  ChartFrameOptions,
+  ChartFramePlugin,
+} from './charts/chart-frame.js'
 export type {
   AddTimeSeriesDerivedColumnsOptions,
   AxisLayoutOptions,
+  AxisRangePolicy,
   AxisTick,
   ChartClientPoint,
   ChartDataPoint,
@@ -48,6 +55,7 @@ export type {
   CorrelationMatrixValueLayout,
   CorrelationPlannedCell,
   CorrelationVariable,
+  DependentYAxis,
   DigitalChannelChartCreateOptions,
   DigitalChannelChartOptions,
   DigitalChannelCommandFrame,
@@ -158,6 +166,9 @@ export type {
   TimeSeriesFrameOptions,
   TimeSeriesInterpolation,
   TimeSeriesLineSegment,
+  TimeSeriesMark,
+  TimeSeriesPathBuilder,
+  TimeSeriesPathContext,
   TimeSeriesPlannedAnnotation,
   TimeSeriesPlannedAnomalyTrack,
   TimeSeriesPlannedBand,
@@ -165,6 +176,7 @@ export type {
   TimeSeriesPlannedSeries,
   TimeSeriesPlannedSpcTrack,
   TimeSeriesPlannedYAxis,
+  TimeSeriesPointOptions,
   TimeSeriesRenderOptions,
   TimeSeriesRenderPlan,
   TimeSeriesRulerAnnotation,
@@ -176,6 +188,8 @@ export type {
   TimeSeriesSpcRuleSeverity,
   TimeSeriesSpcTrack,
   TimeSeriesSpcTrackStyle,
+  TimeSeriesStackGroup,
+  TimeSeriesStackOptions,
   TimeSeriesValueBand,
   TimeSeriesXLineAnnotation,
   TimeSeriesXRangeAnnotation,
@@ -263,6 +277,12 @@ export {
   zoomRangeAroundCenter,
 } from './charts/index.js'
 export type {
+  AlignedTimeSeriesColumns,
+  IndependentTimeSeriesColumn,
+  TimeSeriesGapPolicy,
+} from './charts/time-series-alignment.js'
+export { alignTimeSeriesColumns, TimeSeriesSampleKind } from './charts/time-series-alignment.js'
+export type {
   BinarySchema,
   ColumnarData,
   DataInput,
@@ -280,7 +300,6 @@ export type {
   QueryResult,
   SeriesStats,
 } from './data-engine/types.js'
-
 export { createRenderContext } from './renderer/create-render-context.js'
 export {
   type DrawCommand,
@@ -290,6 +309,7 @@ export {
 export type {
   FillOptions,
   LineOptions,
+  MarkBatchOptions,
   RectOptions,
   RenderClipRect,
   RenderContext,

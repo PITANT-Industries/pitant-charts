@@ -8,11 +8,13 @@ import {
   DataSource,
   type RenderContext,
   type RendererType,
+  TimeSeriesSampleKind,
 } from '@pitant/charts'
 import type { RefObject } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChartContainerRef } from './chart-container.js'
 import type { ChartLegendItem } from './chart-legend.js'
+import type { ChartSyncSeriesVisibilityEvent, useChartSync } from './chart-sync-group.js'
 import type { ChartTooltipProvenance } from './chart-tooltip.js'
 import type {
   ColumnarTooltipProvenanceColumn,
@@ -50,6 +52,8 @@ export interface UseRendererReturn {
 export interface ColumnarChartData {
   timestamps: Float64Array
   columns: Record<string, Float64Array>
+  sampleKinds?: Record<string, Uint8Array>
+  seriesTimestamps?: Record<string, Float64Array>
   quality?: Record<string, Uint8Array>
   provenance?: ColumnarTooltipProvenanceMap
   gaps?: ReadonlyArray<{ startIndex: number; endIndex: number }>
@@ -157,6 +161,13 @@ export function useColumnarViewport<TData extends ColumnarChartData>(
     setData: () => undefined,
   }))
   const fieldKey = useMemo(() => stableFieldKey(fields), [fields])
+  const selectedFields = useMemo(() => parseFieldKey(fieldKey), [fieldKey])
+  const exact = requiresExactCoordinates(rawData)
+  const useLod = enabled && !exact
+  const exactWindow = useMemo(
+    () => (enabled && exact ? selectExactWindow(rawData, selectedFields, range) : undefined),
+    [enabled, exact, rawData, range, selectedFields],
+  )
 
   const replaceData = useCallback((nextData: TData) => {
     rawDataRef.current = nextData
@@ -173,7 +184,12 @@ export function useColumnarViewport<TData extends ColumnarChartData>(
       setRawData(merged)
 
       const source = dataSourceRef.current
-      if (!enabled || !source || hasNewColumn(current, nextData)) {
+      if (
+        !enabled ||
+        requiresExactCoordinates(merged) ||
+        !source ||
+        hasNewColumn(current, nextData)
+      ) {
         loadDataRef.current = merged
         setLoadVersion((version) => version + 1)
         return
@@ -190,7 +206,7 @@ export function useColumnarViewport<TData extends ColumnarChartData>(
 
       async function appendToSource(activeSource: DataSource) {
         try {
-          await activeSource.append(cloneColumnarData(appendInput))
+          await activeSource.append(toDataSourceInput(appendInput))
           if (dataSourceRef.current === activeSource) {
             setSourceVersion((version) => version + 1)
           }
@@ -218,7 +234,7 @@ export function useColumnarViewport<TData extends ColumnarChartData>(
 
     const sourceData = loadDataRef.current
 
-    if (!enabled) {
+    if (!useLod) {
       dataSourceRef.current?.destroy()
       dataSourceRef.current = null
       setState({
@@ -255,7 +271,7 @@ export function useColumnarViewport<TData extends ColumnarChartData>(
 
     async function loadSource() {
       try {
-        await source.load(cloneColumnarData(sourceData))
+        await source.load(toDataSourceInput(sourceData))
         if (!cancelled) {
           setSourceVersion((version) => version + 1)
         }
@@ -284,12 +300,11 @@ export function useColumnarViewport<TData extends ColumnarChartData>(
       }
       source.destroy()
     }
-  }, [appendData, enabled, loadVersion, replaceData])
+  }, [appendData, loadVersion, replaceData, useLod])
 
   useEffect(() => {
     const source = dataSourceRef.current
-    const selectedFields = parseFieldKey(fieldKey)
-    if (!enabled || !source || selectedFields.length === 0) return
+    if (!useLod || !source || selectedFields.length === 0) return
 
     void sourceVersion
 
@@ -353,22 +368,32 @@ export function useColumnarViewport<TData extends ColumnarChartData>(
     return () => {
       cancelled = true
     }
-  }, [appendData, enabled, fieldKey, range, replaceData, sourceVersion, targetPixels])
+  }, [appendData, range, replaceData, selectedFields, sourceVersion, targetPixels, useLod])
 
   return useMemo(
     () => ({
       ...state,
+      ...(exactWindow && {
+        data: exactWindow,
+        gaps: exactWindow.gaps ?? [],
+        lodLevel: 0,
+        rawPointCount: countWindowPoints(rawData),
+        returnedPointCount: countWindowPoints(exactWindow),
+        loading: false,
+        error: null,
+      }),
       rawData,
       appendData,
       setData: replaceData,
     }),
-    [appendData, rawData, replaceData, state],
+    [appendData, exactWindow, rawData, replaceData, state],
   )
 }
 
 export function useSeriesVisibility(series: readonly SeriesConfig[]): {
   visibilityMap: Record<string, boolean>
   toggleSeries: (key: string) => void
+  setSeriesVisible: (key: string, visible: boolean) => void
 } {
   const [visibilityMap, setVisibilityMap] = useState<Record<string, boolean>>(() =>
     initialVisibility(series),
@@ -390,6 +415,52 @@ export function useSeriesVisibility(series: readonly SeriesConfig[]): {
       [key]: !(previous[key] ?? true),
     }))
   }, [])
+
+  const setSeriesVisible = useCallback((key: string, visible: boolean) => {
+    setVisibilityMap((previous) =>
+      !Object.hasOwn(previous, key) || previous[key] === visible
+        ? previous
+        : { ...previous, [key]: visible },
+    )
+  }, [])
+
+  return { visibilityMap, toggleSeries, setSeriesVisible }
+}
+
+export function useSyncedSeriesVisibility(
+  series: readonly SeriesConfig[],
+  sync: ReturnType<typeof useChartSync>,
+): {
+  visibilityMap: Record<string, boolean>
+  toggleSeries: (key: string, visible?: boolean) => void
+} {
+  const { visibilityMap, toggleSeries: toggleLocal, setSeriesVisible } = useSeriesVisibility(series)
+  const seen = useRef<Readonly<Record<string, ChartSyncSeriesVisibilityEvent>>>({})
+
+  useEffect(() => {
+    const updates = sync.syncState.seriesVisibility
+    if (!updates) return
+    for (const event of Object.values(updates)) {
+      if (seen.current[event.key] === event || !sync.acceptsEvent(event)) continue
+      const key = sync.resolveSeriesKey(event.key, event.source)
+      if (key !== null) setSeriesVisible(key, event.visible)
+    }
+    seen.current = updates
+  }, [setSeriesVisible, sync.acceptsEvent, sync.resolveSeriesKey, sync.syncState.seriesVisibility])
+
+  const toggleSeries = useCallback(
+    (key: string, visible?: boolean) => {
+      if (!sync.syncSeries && visible === undefined) {
+        toggleLocal(key)
+        return
+      }
+      if (!Object.hasOwn(visibilityMap, key)) return
+      const next = visible ?? !visibilityMap[key]
+      setSeriesVisible(key, next)
+      sync.updateSeriesVisibility(key, next)
+    },
+    [setSeriesVisible, sync.syncSeries, sync.updateSeriesVisibility, toggleLocal, visibilityMap],
+  )
 
   return { visibilityMap, toggleSeries }
 }
@@ -601,16 +672,90 @@ export function liveEdgeRange(
   return [start ?? end, end]
 }
 
-function cloneColumnarData(data: ColumnarChartData): ColumnarData {
-  const columns: Record<string, Float64Array> = {}
-  for (const [field, values] of Object.entries(data.columns)) {
-    columns[field] = new Float64Array(values)
-  }
-
+function toDataSourceInput(data: ColumnarChartData): ColumnarData {
+  // DataSource owns worker transfers and its cache. Supplying the original
+  // views avoids redundant copies and keeps quality available for decimation.
   return {
-    timestamps: new Float64Array(data.timestamps),
-    columns,
+    timestamps: data.timestamps,
+    columns: data.columns,
+    ...(data.quality && { quality: data.quality }),
   }
+}
+
+function requiresExactCoordinates(data: ColumnarChartData): boolean {
+  // Dense LOD combines samples by shared X buckets. Structural holes and
+  // independent X arrays must instead retain their per-sample semantics.
+  return data.sampleKinds !== undefined || data.seriesTimestamps !== undefined
+}
+
+function countWindowPoints(data: ColumnarChartData): number {
+  let count = data.timestamps.length
+  for (const grid of Object.values(data.seriesTimestamps ?? {})) {
+    count = Math.max(count, grid.length)
+  }
+  return count
+}
+
+function selectExactWindow<TData extends ColumnarChartData>(
+  data: TData,
+  fields: readonly string[],
+  range: readonly [number, number] | undefined,
+): TData {
+  if (!range) return data
+
+  const [start, end] = windowIndices(data.timestamps, range)
+  const window: ColumnarChartData = {
+    timestamps: data.timestamps.subarray(start, end),
+    columns: {},
+  }
+  for (const field of fields) {
+    const values = data.columns[field]
+    if (values === undefined) continue
+    const grid = data.seriesTimestamps?.[field]
+    const [fieldStart, fieldEnd] = grid ? windowIndices(grid, range) : [start, end]
+    window.columns[field] = values.subarray(fieldStart, fieldEnd)
+    if (grid) {
+      window.seriesTimestamps ??= {}
+      window.seriesTimestamps[field] = grid.subarray(fieldStart, fieldEnd)
+    }
+    const kinds = data.sampleKinds?.[field]
+    if (kinds) {
+      window.sampleKinds ??= {}
+      window.sampleKinds[field] = kinds.subarray(fieldStart, fieldEnd)
+    }
+    const quality = data.quality?.[field]
+    if (quality) {
+      window.quality ??= {}
+      window.quality[field] = quality.subarray(fieldStart, fieldEnd)
+    }
+  }
+  if (data.gaps && end > start) {
+    window.gaps = data.gaps
+      .filter((gap) => gap.startIndex < end && gap.endIndex >= start)
+      .map((gap) => ({
+        startIndex: Math.max(0, gap.startIndex - start),
+        endIndex: Math.min(end - 1, gap.endIndex) - start,
+      }))
+  }
+  return window as TData
+}
+
+function windowIndices(timestamps: Float64Array, [min, max]: readonly [number, number]) {
+  const start = timestampBoundary(timestamps, min, false)
+  const end = Math.max(start, timestampBoundary(timestamps, max, true))
+  return [start, end] as const
+}
+
+function timestampBoundary(timestamps: Float64Array, target: number, inclusive: boolean): number {
+  let low = 0
+  let high = timestamps.length
+  while (low < high) {
+    const middle = (low + high) >>> 1
+    const timestamp = timestamps[middle] as number
+    if (timestamp < target || (inclusive && timestamp === target)) low = middle + 1
+    else high = middle
+  }
+  return low
 }
 
 function filledFloat64(length: number, value: number): Float64Array {
@@ -623,24 +768,94 @@ function concatColumnarChartData(
   current: ColumnarChartData,
   next: ColumnarChartData,
 ): ColumnarChartData {
+  const facets = new Set([
+    ...Object.keys(current.seriesTimestamps ?? {}),
+    ...Object.keys(next.seriesTimestamps ?? {}),
+  ])
   const merged: ColumnarChartData = {
     timestamps: concatFloat64(current.timestamps, next.timestamps),
-    columns: concatFloat64Columns(
+    columns: {},
+  }
+
+  if (facets.size === 0) {
+    merged.columns = concatFloat64Columns(
       current.columns,
       next.columns,
       current.timestamps.length,
       next.timestamps.length,
-    ),
+    )
+  } else {
+    merged.seriesTimestamps = {}
+    const fields = new Set([...Object.keys(current.columns), ...Object.keys(next.columns)])
+    for (const field of fields) {
+      const independent = facets.has(field)
+      const left = coordinatesForField(current, field, independent)
+      const right = coordinatesForField(next, field, independent)
+      if (independent) merged.seriesTimestamps[field] = concatFloat64(left, right)
+      merged.columns[field] = concatFloat64(
+        current.columns[field] ?? filledFloat64(left.length, Number.NaN),
+        next.columns[field] ?? filledFloat64(right.length, Number.NaN),
+      )
+    }
   }
-  const quality = concatQualityColumns(current, next)
-  if (quality) {
-    merged.quality = quality
-  }
-  const provenance = concatProvenanceColumns(current, next)
-  if (provenance) {
-    merged.provenance = provenance
+
+  const quality = concatQualityColumns(current, next, facets)
+  if (quality) merged.quality = quality
+  const provenance = concatProvenanceColumns(current, next, facets)
+  if (provenance) merged.provenance = provenance
+  const sampleKinds = concatSampleKinds(current, next, facets)
+  if (sampleKinds) merged.sampleKinds = sampleKinds
+  if (current.gaps || next.gaps) {
+    const offset = current.timestamps.length
+    merged.gaps = [
+      ...(current.gaps ?? []),
+      ...(next.gaps ?? []).map(({ startIndex, endIndex }) => ({
+        startIndex: startIndex + offset,
+        endIndex: endIndex + offset,
+      })),
+    ]
   }
   return merged
+}
+
+const EMPTY_TIMESTAMPS = new Float64Array()
+
+function coordinatesForField(
+  data: ColumnarChartData,
+  field: string,
+  independent: boolean,
+): Float64Array {
+  if (!independent) return data.timestamps
+  if (!Object.hasOwn(data.columns, field)) return EMPTY_TIMESTAMPS
+  return data.seriesTimestamps?.[field] ?? data.timestamps
+}
+
+function concatSampleKinds(
+  current: ColumnarChartData,
+  next: ColumnarChartData,
+  facets: ReadonlySet<string>,
+): Record<string, Uint8Array> | undefined {
+  if (!current.sampleKinds && !next.sampleKinds) return undefined
+
+  const kinds: Record<string, Uint8Array> = {}
+  const fields = new Set([...Object.keys(current.columns), ...Object.keys(next.columns)])
+  for (const field of fields) {
+    const independent = facets.has(field)
+    const left = current.sampleKinds?.[field] ?? defaultSampleKinds(current, field, independent)
+    const right = next.sampleKinds?.[field] ?? defaultSampleKinds(next, field, independent)
+    kinds[field] = concatUint8(left, right)
+  }
+  return kinds
+}
+
+function defaultSampleKinds(data: ColumnarChartData, field: string, independent: boolean) {
+  const count = coordinatesForField(data, field, independent).length
+  return filledUint8(
+    count,
+    Object.hasOwn(data.columns, field)
+      ? TimeSeriesSampleKind.Observed
+      : TimeSeriesSampleKind.AlignmentHole,
+  )
 }
 
 function normalizeAppendData(
@@ -653,7 +868,7 @@ function normalizeAppendData(
   }
 
   const normalized: ColumnarChartData = {
-    timestamps: new Float64Array(next.timestamps),
+    timestamps: next.timestamps,
     columns,
   }
   const quality = normalizeAppendQuality(current, next)
@@ -681,14 +896,19 @@ function lastTimestamp(timestamps: Float64Array): number | undefined {
 function concatQualityColumns(
   current: ColumnarChartData,
   next: ColumnarChartData,
+  facets: ReadonlySet<string>,
 ): Record<string, Uint8Array> | undefined {
   if (!current.quality && !next.quality) return undefined
 
   const quality: Record<string, Uint8Array> = {}
   const fields = new Set([...Object.keys(current.columns), ...Object.keys(next.columns)])
   for (const field of fields) {
-    const left = current.quality?.[field] ?? filledUint8(current.timestamps.length, 0)
-    const right = next.quality?.[field] ?? filledUint8(next.timestamps.length, 0)
+    const independent = facets.has(field)
+    const left =
+      current.quality?.[field] ??
+      filledUint8(coordinatesForField(current, field, independent).length, 0)
+    const right =
+      next.quality?.[field] ?? filledUint8(coordinatesForField(next, field, independent).length, 0)
     quality[field] = concatUint8(left, right)
   }
   return quality
@@ -710,6 +930,7 @@ function normalizeAppendQuality(
 function concatProvenanceColumns(
   current: ColumnarChartData,
   next: ColumnarChartData,
+  facets: ReadonlySet<string>,
 ): ColumnarTooltipProvenanceMap | undefined {
   if (!current.provenance && !next.provenance) return undefined
 
@@ -719,11 +940,12 @@ function concatProvenanceColumns(
     ...Object.keys(next.provenance ?? {}),
   ])
   for (const field of fields) {
+    const independent = facets.has(field)
     const merged = concatProvenanceField(
       current.provenance?.[field],
-      current.timestamps.length,
+      coordinatesForField(current, field, independent).length,
       next.provenance?.[field],
-      next.timestamps.length,
+      coordinatesForField(next, field, independent).length,
     )
     if (merged !== undefined) provenance[field] = merged
   }

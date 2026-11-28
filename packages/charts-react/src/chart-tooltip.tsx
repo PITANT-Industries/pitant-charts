@@ -1,6 +1,14 @@
 'use client'
 
-import { type CSSProperties, type ReactNode, useLayoutEffect, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  type ReactNode,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import { type ChartDisplayItemsOptions, selectChartDisplayItems } from './chart-display-items.js'
 
 // ── Public types ─────────────────────────────────────────────
 
@@ -31,7 +39,9 @@ export interface ChartTooltipPayload {
   series: ChartTooltipSeries[]
 }
 
-export interface ChartTooltipProps {
+export type ChartTooltipLayout = 'list' | 'table' | 'inline'
+
+export interface ChartTooltipProps extends ChartDisplayItemsOptions<ChartTooltipSeries> {
   /** Tooltip payload — null when not hovering */
   payload: ChartTooltipPayload | null
   /** Screen-space position where tooltip should appear (relative to container) */
@@ -39,6 +49,7 @@ export interface ChartTooltipProps {
   /** Custom content renderer */
   children?: (payload: ChartTooltipPayload) => ReactNode
   className?: string
+  layout?: ChartTooltipLayout
 }
 
 // ── Styles ───────────────────────────────────────────────────
@@ -148,34 +159,66 @@ function seriesMetadata(series: ChartTooltipSeries): string[] {
   return parts
 }
 
-function DefaultTooltipContent({ payload }: { payload: ChartTooltipPayload }) {
+function DefaultTooltipContent({
+  payload,
+  layout,
+}: {
+  payload: ChartTooltipPayload
+  layout: ChartTooltipLayout
+}) {
+  const table = layout === 'table'
+  const inline = layout === 'inline'
   return (
     <>
       <div style={headerStyle}>{payload.label}</div>
-      {payload.series.map((s) => {
-        const metadata = seriesMetadata(s)
-        return (
-          <div key={s.key} style={rowStyle}>
-            <span style={labelGroupStyle}>
-              <span style={{ ...swatchStyle, backgroundColor: s.color }} aria-hidden />
-              <span style={seriesLabelStyle}>{s.label}</span>
-            </span>
-            <span style={valueStyle}>
-              {s.value !== null ? s.formatted : '\u2014'}
-              {metadata.length > 0 ? (
-                <span style={metadataStyle}>{metadata.join(' / ')}</span>
-              ) : null}
-            </span>
-          </div>
-        )
-      })}
+      <div
+        role={table ? 'table' : undefined}
+        style={inline ? { display: 'flex', flexWrap: 'wrap', gap: '0.75rem' } : undefined}
+      >
+        {payload.series.map((s) => {
+          const metadata = seriesMetadata(s)
+          return (
+            <div key={s.key} role={table ? 'row' : undefined} style={rowStyle}>
+              <span role={table ? 'rowheader' : undefined} style={labelGroupStyle}>
+                <span style={{ ...swatchStyle, backgroundColor: s.color }} aria-hidden />
+                <span style={seriesLabelStyle}>{s.label}</span>
+              </span>
+              <span role={table ? 'cell' : undefined} style={valueStyle}>
+                {s.value !== null ? s.formatted : '\u2014'}
+                {metadata.length > 0 ? (
+                  <span style={metadataStyle}>{metadata.join(' / ')}</span>
+                ) : null}
+              </span>
+            </div>
+          )
+        })}
+      </div>
     </>
   )
 }
 
 // ── Component ────────────────────────────────────────────────
 
-export function ChartTooltip({ payload, position, children, className }: ChartTooltipProps) {
+export function ChartTooltip({
+  payload,
+  position,
+  children,
+  className,
+  filter,
+  sort,
+  limit,
+  layout = 'list',
+}: ChartTooltipProps) {
+  const displayPayload = useMemo(() => {
+    if (!payload) return null
+    const displayed = selectChartDisplayItems(payload.series, {
+      ...(filter !== undefined ? { filter } : {}),
+      ...(sort !== undefined ? { sort } : {}),
+      ...(limit !== undefined ? { limit } : {}),
+    })
+    if (displayed === payload.series) return payload
+    return displayed.length > 0 ? { ...payload, series: [...displayed] } : null
+  }, [filter, limit, payload, sort])
   const tooltipRef = useRef<HTMLDivElement>(null)
   const [adjusted, setAdjusted] = useState<{ x: number; y: number } | null>(null)
 
@@ -193,9 +236,12 @@ export function ChartTooltip({ payload, position, children, className }: ChartTo
     }
 
     setAdjusted(adjustPosition(position, rect, parent))
-  }, [position])
+    // The list can change size while the pointer stays in the same position.
+    void displayPayload
+    void layout
+  }, [displayPayload, layout, position])
 
-  if (!payload || !position) return null
+  if (!displayPayload || !position) return null
 
   const pos = adjusted ?? { x: position.x + OFFSET, y: position.y - OFFSET }
 
@@ -210,7 +256,11 @@ export function ChartTooltip({ payload, position, children, className }: ChartTo
       }}
       role="tooltip"
     >
-      {children ? children(payload) : <DefaultTooltipContent payload={payload} />}
+      {children ? (
+        children(displayPayload)
+      ) : (
+        <DefaultTooltipContent payload={displayPayload} layout={layout} />
+      )}
     </div>
   )
 }

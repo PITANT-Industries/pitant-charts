@@ -3,6 +3,7 @@
 import {
   buildKpiStripCommandFrame,
   buildKpiStripRenderPlan,
+  type ChartFramePlugin,
   type KpiStripItem as CoreKpiStripItem,
   commandFrameToSvg,
   createChartLayout,
@@ -62,6 +63,7 @@ export interface KpiStripData {
 }
 
 export interface KpiStripConfig {
+  plugins?: readonly ChartFramePlugin<KpiStripRenderPlan>[]
   columns?: number
   maxItems?: number
   labels?: {
@@ -108,7 +110,7 @@ export interface UseKpiStripReturn {
 export interface KpiStripProps
   extends Pick<
     ChartContainerProps,
-    'className' | 'style' | 'aspectRatio' | 'ariaLabel' | 'ariaDescribedBy'
+    'className' | 'style' | 'aspectRatio' | 'ariaLabel' | 'ariaDescribedBy' | 'pixelRatio'
   > {
   config: KpiStripConfig
   data: KpiStripData
@@ -222,6 +224,7 @@ export function useKpiStrip(options: UseKpiStripOptions): UseKpiStripReturn {
         dimensions?.height ?? 1,
         config.labels?.visible !== false,
         config.labels?.maxCount,
+        config.plugins,
       ),
     )
     const renderTime = performance.now() - started
@@ -241,6 +244,7 @@ export function useKpiStrip(options: UseKpiStripOptions): UseKpiStripReturn {
   }, [
     config.labels?.maxCount,
     config.labels?.visible,
+    config.plugins,
     containerRef,
     context,
     renderPlan,
@@ -260,6 +264,7 @@ export function useKpiStrip(options: UseKpiStripOptions): UseKpiStripReturn {
               dimensions.height,
               config.labels?.visible !== false,
               config.labels?.maxCount,
+              config.plugins,
             ),
           )
         },
@@ -275,12 +280,13 @@ export function useKpiStrip(options: UseKpiStripOptions): UseKpiStripReturn {
                 dimensions.height,
                 config.labels?.visible !== false,
                 config.labels?.maxCount,
+                config.plugins,
               ),
             ),
             buildSvgOptions(dimensions, 'KPI strip'),
           ),
       }),
-    [config.labels?.maxCount, config.labels?.visible, containerRef, renderPlan],
+    [config.labels?.maxCount, config.labels?.visible, config.plugins, containerRef, renderPlan],
   )
 
   return {
@@ -327,8 +333,10 @@ function createKpiStripFrameOptions(
   height: number,
   labels: boolean,
   maxLabelCount: number | undefined,
+  plugins?: KpiStripConfig['plugins'],
 ) {
   const frameOptions = {
+    ...(plugins ? { plugins } : {}),
     layout: createKpiStripLayout(renderPlan, width, height),
     labels,
   }
@@ -352,6 +360,7 @@ export function KpiStrip(props: KpiStripProps): JSX.Element {
     config,
     data,
     onResize,
+    pixelRatio,
     renderer,
     style,
   } = props
@@ -380,6 +389,7 @@ export function KpiStrip(props: KpiStripProps): JSX.Element {
 
   return (
     <ChartContainer
+      {...(pixelRatio !== undefined ? { pixelRatio } : {})}
       ref={containerRef}
       ariaLabel={ariaLabel}
       onResize={handleResize}

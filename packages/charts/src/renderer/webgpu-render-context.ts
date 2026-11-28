@@ -2,6 +2,7 @@ import { GPUPipelineManager } from './gpu-pipeline.js'
 import type {
   FillOptions,
   LineOptions,
+  MarkBatchOptions,
   RectOptions,
   RenderClipRect,
   RenderContext,
@@ -19,6 +20,11 @@ interface TextDraw {
   y: number
   options: TextOptions
 }
+
+const MARK_ELLIPSE_OFFSETS = Array.from({ length: 9 }, (_, index) => {
+  const angle = (Math.PI * index) / 8
+  return [(1 - Math.cos(angle)) / 2, Math.sin(angle)] as const
+})
 
 /**
  * WebGPU render context with instanced line rendering,
@@ -312,13 +318,61 @@ export class WebGPURenderContext implements RenderContext {
     }
   }
 
+  drawMarks(bounds: Float32Array, options: MarkBatchOptions): void {
+    if (this._lost || !this._pass || bounds.length < 4) return
+    const ellipse = options.shape === 'ellipse'
+    const pairs = ellipse ? MARK_ELLIPSE_OFFSETS.length : 2
+    const maxPairs = Math.floor(bounds.length / 4) * (pairs + 2) - 2
+    const upper = new Float32Array(maxPairs * 2)
+    const lower = new Float32Array(maxPairs * 2)
+    let offset = 0
+    const appendPair = (x: number, yUpper: number, yLower: number) => {
+      upper[offset] = x
+      lower[offset] = x
+      upper[offset + 1] = yUpper
+      lower[offset + 1] = yLower
+      offset += 2
+    }
+
+    for (let i = 0; i + 3 < bounds.length; i += 4) {
+      const x = bounds[i] as number
+      const y = bounds[i + 1] as number
+      const w = bounds[i + 2] as number
+      const h = bounds[i + 3] as number
+      if (!(w > 0 && h > 0)) continue
+      const startY = ellipse ? y + h / 2 : y
+      if (offset > 0) {
+        // Duplicate the boundary vertices to disconnect adjacent triangle strips.
+        const previousX = lower[offset - 2] as number
+        const previousY = lower[offset - 1] as number
+        appendPair(previousX, previousY, previousY)
+        appendPair(x, startY, startY)
+      }
+      if (ellipse) {
+        for (const [xRatio, yRatio] of MARK_ELLIPSE_OFFSETS) {
+          const pointX = x + xRatio * w
+          const halfHeight = (yRatio * h) / 2
+          appendPair(pointX, startY - halfHeight, startY + halfHeight)
+        }
+      } else {
+        appendPair(x, y, y + h)
+        appendPair(x + w, y, y + h)
+      }
+    }
+    this.drawFill(upper.subarray(0, offset), lower.subarray(0, offset), { color: options.color })
+  }
+
   drawText(text: string, x: number, y: number, options: TextOptions): void {
     // Text is deferred to Canvas2D overlay — GPU text is complex and not needed for charts
     this._pendingTexts.push({ text, x, y, options })
   }
 
   setTransform(transform: ViewTransform): void {
-    this._transformMatrix = transform.toMatrix4()
+    const matrix = transform.toMatrix4()
+    // CSS pixel Y increases downward, while WebGPU clip-space Y increases upward.
+    matrix[5] = -(matrix[5] as number)
+    matrix[13] = -(matrix[13] as number)
+    this._transformMatrix = matrix
   }
 
   setClipRect(rect: RenderClipRect | null): void {
@@ -413,7 +467,15 @@ export class WebGPURenderContext implements RenderContext {
       ctx.font = `${options.fontSize ?? 12}px ${options.font ?? 'sans-serif'}`
       ctx.textAlign = options.align ?? 'left'
       ctx.textBaseline = options.baseline ?? 'top'
-      ctx.fillText(text, x, y)
+      if (options.rotation) {
+        ctx.save()
+        ctx.translate(x, y)
+        ctx.rotate((options.rotation * Math.PI) / 180)
+        ctx.fillText(text, 0, 0)
+        ctx.restore()
+      } else {
+        ctx.fillText(text, x, y)
+      }
     }
 
     ctx.restore()

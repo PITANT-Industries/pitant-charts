@@ -1,14 +1,12 @@
 import { RenderCommandList, ZLayer } from '../renderer/render-command-list.js'
 import type { RectOptions, RenderContext } from '../renderer/types.js'
 import type { ViewTransform } from '../renderer/view-transform.js'
+import { type ChartFrameOptions, extendChartFrame, renderChartFrame } from './chart-frame.js'
 import {
   addChartGuidesToCommandList,
-  type ChartGuideOptions,
   type ChartLayout,
-  type ChartLayoutOptions,
   createPlotViewportTransform,
   createViewportTransform,
-  drawCommandList,
   expandRange,
   isFiniteNumber,
   type NumericRange,
@@ -69,10 +67,7 @@ export interface SpectrogramRenderPlan {
   warnings: readonly string[]
 }
 
-export interface SpectrogramFrameOptions {
-  layout?: ChartLayout | ChartLayoutOptions
-  guides?: ChartGuideOptions | false
-}
+export type SpectrogramFrameOptions = ChartFrameOptions<SpectrogramRenderPlan>
 
 export interface SpectrogramCommandFrame {
   width: number
@@ -221,7 +216,14 @@ export function buildSpectrogramCommandFrame(
 ): SpectrogramCommandFrame {
   const layout = resolveChartLayout(options.layout, width, height, plan.xRelativeRange, plan.yRange)
   const transform = layout
-    ? createPlotViewportTransform(plan.xRelativeRange, plan.yRange, width, height, layout.plotArea)
+    ? createPlotViewportTransform(
+        plan.xRelativeRange,
+        plan.yRange,
+        width,
+        height,
+        layout.plotArea,
+        layout,
+      )
     : createSpectrogramViewTransform(plan, width, height)
   const commands = new RenderCommandList()
   addSpectrogramToCommandList(commands, plan)
@@ -229,13 +231,17 @@ export function buildSpectrogramCommandFrame(
     addChartGuidesToCommandList(commands, layout, plan.xRelativeRange, plan.yRange, options.guides)
   }
 
-  return {
-    width,
-    height,
-    layout,
-    commands,
-    transform,
-  }
+  return extendChartFrame(
+    {
+      width,
+      height,
+      layout,
+      commands,
+      transform,
+    },
+    plan,
+    options.plugins,
+  )
 }
 
 export function renderSpectrogramPlan(
@@ -244,10 +250,7 @@ export function renderSpectrogramPlan(
   options: SpectrogramFrameOptions = {},
 ): void {
   const frame = buildSpectrogramCommandFrame(plan, context.width, context.height, options)
-  context.setTransform(frame.transform)
-  context.beginFrame()
-  drawCommandList(context, frame.commands)
-  context.endFrame()
+  renderChartFrame(context, frame, plan, options.plugins)
 }
 
 function buildBinExtents(

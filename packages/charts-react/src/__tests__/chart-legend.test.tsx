@@ -13,6 +13,26 @@ const items: ChartLegendItem[] = [
 ]
 
 describe('ChartLegend', () => {
+  it('filters and sorts displayed entries without changing their toggle keys', () => {
+    const onToggle = vi.fn()
+    render(
+      <ChartLegend
+        items={items}
+        filter={(item) => item.visible}
+        sort={(left, right) => right.label.localeCompare(left.label)}
+        limit={1}
+        renderValue={() => '55.1%'}
+        onToggle={onToggle}
+      />,
+    )
+    const button = screen.getByRole('button', { name: 'Memory: visible' })
+    expect(screen.getAllByRole('button')).toHaveLength(1)
+    expect(button.textContent).toContain('55.1%')
+    fireEvent.click(button)
+    expect(onToggle).toHaveBeenCalledWith('mem', false)
+    expect(items.map(({ key }) => key)).toEqual(['cpu', 'mem', 'disk'])
+  })
+
   it('renders <ul> with aria-label', () => {
     const { container } = render(<ChartLegend items={items} />)
     const list = container.querySelector('ul')

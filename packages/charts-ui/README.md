@@ -55,6 +55,18 @@ export function OrdersChart() {
 
 All charts take an accessible `label`, an optional `className`, and an optional `height` in pixels or as a CSS length. The default is `16rem`.
 
+## Configure Cartesian charts
+
+Supply `yAxes` and match a series' `yAxisKey` to its axis. Each axis can define
+its own range, formatter, side and scale. Series can choose line, bar, area or
+point marks and select linear, stepped or monotone interpolation. Use `stack`
+on bar or area series to group them, and set `stackOffset` for diverging or
+normalized stacks. `orientation="vertical"` places the value axis horizontally.
+
+Supply `xAxis.value` for a continuous numeric domain. For dated samples, use
+epoch milliseconds with a time scale and an IANA `timeZone` for labels. The
+`ticks` option lets the caller provide specific dates or numeric positions.
+
 ## Theme
 
 Import `warpdrive.css` and put `chart-library-theme` on the element that should supply the theme. Add `data-theme="dark"` or `dark` to switch to Night. If your app already supplies its own tokens, import `styles.css` and the chart will read the nearest theme. Theme tokens accept full CSS colors or raw HSL channels. Set `--chart-1` through `--chart-8` to override the categorical series, and use `--font-interface` to inherit the app's typography. Each series or slice can also supply a CSS color directly.

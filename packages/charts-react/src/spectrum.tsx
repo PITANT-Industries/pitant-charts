@@ -3,6 +3,7 @@
 import {
   buildSpectrumCommandFrame,
   buildSpectrumRenderPlan,
+  type ChartFramePlugin,
   type ChartLayout,
   type SpectrumFrequencyBand as CoreSpectrumFrequencyBand,
   type SpectrumPeakMarker as CoreSpectrumPeakMarker,
@@ -77,6 +78,7 @@ export interface SpectrumFrequencyBandConfig {
 }
 
 export interface SpectrumConfig {
+  plugins?: readonly ChartFramePlugin<SpectrumRenderPlan>[]
   series: SpectrumSeriesConfig[]
   peakMarkers?: SpectrumPeakMarkerConfig[]
   bands?: SpectrumFrequencyBandConfig[]
@@ -132,6 +134,7 @@ export interface SpectrumProps
   onResize?: (width: number, height: number, dpr: number) => void
   chartKey?: string
   children?: ReactNode | ((chart: UseSpectrumReturn) => ReactNode)
+  pixelRatio?: number
 }
 
 const EMPTY_SPECTRUM_STATS: SpectrumStats = {
@@ -244,7 +247,10 @@ export function useSpectrum(options: UseSpectrumOptions): UseSpectrumReturn {
     }
 
     const started = performance.now()
-    renderSpectrumPlan(context, renderPlan, { layout })
+    renderSpectrumPlan(context, renderPlan, {
+      layout,
+      ...(config.plugins ? { plugins: config.plugins } : {}),
+    })
     const renderTime = performance.now() - started
 
     setStats({
@@ -256,7 +262,7 @@ export function useSpectrum(options: UseSpectrumOptions): UseSpectrumReturn {
       segmentCount: renderPlan.segmentCount,
       peakMarkerCount: renderPlan.peakMarkers.length,
     })
-  }, [containerRef, context, layout, renderPlan, resizeKey])
+  }, [config.plugins, containerRef, context, layout, renderPlan, resizeKey])
 
   const exportImage = useCallback(
     (format: 'png' | 'svg', exportOptions?: ExportOptions) =>
@@ -269,11 +275,15 @@ export function useSpectrum(options: UseSpectrumOptions): UseSpectrumReturn {
             dimensions.width,
             dimensions.height,
           )
-          renderSpectrumPlan(exportContext, renderPlan, { layout: exportLayout })
+          renderSpectrumPlan(exportContext, renderPlan, {
+            layout: exportLayout,
+            ...(config.plugins ? { plugins: config.plugins } : {}),
+          })
         },
         renderSvg: (dimensions) =>
           commandFrameToSvg(
             buildSpectrumCommandFrame(renderPlan, dimensions.width, dimensions.height, {
+              ...(config.plugins ? { plugins: config.plugins } : {}),
               layout: createSpectrumLayout(
                 config,
                 renderPlan,
@@ -355,15 +365,19 @@ function createSpectrumLayout(
       visible: true,
       size: 34,
       tickCount: 6,
-      ...(config.xAxis?.label !== undefined ? { label: config.xAxis.label } : {}),
-      ...(config.xAxis?.formatValue !== undefined ? { formatValue: config.xAxis.formatValue } : {}),
+      ...config.xAxis,
+      ...(config.xAxis?.scale ||
+      config.xAxis?.calendar ||
+      config.xAxis?.tickValues ||
+      config.xAxis?.rangePolicy
+        ? { valueOffset: renderPlan.xOrigin }
+        : {}),
     },
     yAxis: {
       visible: true,
       size: 58,
       tickCount: 5,
-      ...(config.yAxis?.label !== undefined ? { label: config.yAxis.label } : {}),
-      ...(config.yAxis?.formatValue !== undefined ? { formatValue: config.yAxis.formatValue } : {}),
+      ...config.yAxis,
     },
     grid: {
       visible: true,
@@ -390,6 +404,7 @@ export function Spectrum(props: SpectrumProps): JSX.Element {
     config,
     data,
     onResize,
+    pixelRatio,
     renderer,
     style,
   } = props
@@ -418,6 +433,7 @@ export function Spectrum(props: SpectrumProps): JSX.Element {
 
   return (
     <ChartContainer
+      {...(pixelRatio !== undefined ? { pixelRatio } : {})}
       ref={containerRef}
       ariaLabel={ariaLabel}
       onResize={handleResize}

@@ -1,7 +1,15 @@
 'use client'
 
 import type { ReactNode, RefObject } from 'react'
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import type { Dimensions } from './use-dimensions.js'
 import { useDimensions } from './use-dimensions.js'
 
@@ -16,6 +24,8 @@ export interface ChartContainerProps {
   children?: ReactNode
   /** Aspect ratio constraint (e.g. `16 / 9`). Omit for parent-sized. */
   aspectRatio?: number
+  /** Optional backing-store pixel ratio. Defaults to the device ratio. */
+  pixelRatio?: number
   /** Fired after the container or device-pixel-ratio changes. */
   onResize?: (width: number, height: number, dpr: number) => void
   /** Accessible label for the chart. Defaults to `"Chart"`. */
@@ -46,12 +56,29 @@ export interface ChartContainerContext {
 
 export const ChartContainer = forwardRef<ChartContainerRef, ChartContainerProps>(
   function ChartContainer(
-    { className, style, children, aspectRatio, onResize, ariaLabel = 'Chart', ariaDescribedBy },
+    {
+      className,
+      style,
+      children,
+      aspectRatio,
+      pixelRatio,
+      onResize,
+      ariaLabel = 'Chart',
+      ariaDescribedBy,
+    },
     ref,
   ) {
     const containerRef = useRef<HTMLDivElement>(null)
     const canvasRef = useRef<HTMLCanvasElement>(null)
-    const dims = useDimensions(containerRef)
+    const measured = useDimensions(containerRef)
+    const dpr =
+      pixelRatio !== undefined && Number.isFinite(pixelRatio) && pixelRatio > 0
+        ? pixelRatio
+        : measured.dpr
+    const dims = useMemo(
+      () => ({ width: measured.width, height: measured.height, dpr }),
+      [measured.width, measured.height, dpr],
+    )
     const [, setTick] = useState(0)
 
     // Keep a stable ref to avoid re-attaching ResizeObserver in useDimensions

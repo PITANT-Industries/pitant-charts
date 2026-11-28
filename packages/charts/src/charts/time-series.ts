@@ -1,34 +1,73 @@
 import { RenderCommandList, ZLayer } from '../renderer/render-command-list.js'
 import type { FillOptions, LineOptions, RenderContext, TextOptions } from '../renderer/types.js'
-import type { ViewTransform } from '../renderer/view-transform.js'
+import { ViewTransform } from '../renderer/view-transform.js'
+import type { ChartScale } from './axis-scale.js'
+import { type ChartFrameOptions, extendChartFrame, renderChartFrame } from './chart-frame.js'
 import {
-  type AxisLayoutOptions,
   addChartGuidesToCommandList,
-  type ChartGuideOptions,
   type ChartLayout,
-  type ChartLayoutOptions,
   type ChartRect,
   createPlotViewportTransform,
   createViewportTransform,
-  drawCommandList,
   expandRange,
   finiteRange,
   getDefaultColor,
   isFiniteNumber,
+  type NamedYAxisLayoutOptions,
   type NumericRange,
   normalizeRange,
   type RgbaColor,
   relativeRange,
   resolveChartLayout,
 } from './common.js'
+import { TimeSeriesSampleKind } from './time-series-alignment.js'
+import {
+  buildTimeSeriesArea,
+  buildTimeSeriesBarBounds,
+  buildTimeSeriesPointBounds,
+  tessellateTimeSeriesSpline,
+} from './time-series-geometry.js'
+import { sameTimeSeriesTimestamps, stackTimeSeriesColumns } from './time-series-stack.js'
 
-export type TimeSeriesInterpolation = 'linear' | 'step-after' | 'step-before'
+export type TimeSeriesInterpolation = 'linear' | 'step-after' | 'step-before' | 'spline'
+
+export type TimeSeriesMark = 'line' | 'area' | 'bar' | 'point'
+
+export interface TimeSeriesStackGroup {
+  /** Series keys ordered from the baseline outward. */
+  series: readonly string[]
+  /** Split positive and negative contributions by default. */
+  mode?: 'split' | 'cumulative'
+}
+
+export interface TimeSeriesStackOptions {
+  groups: readonly TimeSeriesStackGroup[]
+  /** Convert contributions and their bases to signed proportions. */
+  percent?: boolean
+}
+
+export interface TimeSeriesPointOptions {
+  /** Marker diameter in CSS pixels. */
+  size?: number
+  color?: RgbaColor
+  shape?: 'square' | 'circle'
+}
+
+export interface TimeSeriesPathContext {
+  series: TimeSeriesPlannedSeries
+  xRange: NumericRange
+  xOrigin: number
+  yRange: NumericRange
+  /** The active axis transform is available when building a complete command frame. */
+  transform?: ViewTransform
+  commands: Pick<RenderCommandList, 'addLine' | 'addFill' | 'addRect' | 'addMarks' | 'addText'>
+}
+
+/** Replace the default series geometry with portable render commands. */
+export type TimeSeriesPathBuilder = (context: TimeSeriesPathContext) => void
 
 /** An independent vertical scale. The first configured axis is the primary scale. */
-export interface TimeSeriesYAxisOptions extends AxisLayoutOptions {
-  key: string
-  side?: 'left' | 'right'
-  range?: NumericRange
+export interface TimeSeriesYAxisOptions extends NamedYAxisLayoutOptions {
   paddingRatio?: number
 }
 
@@ -46,6 +85,18 @@ export interface TimeSeriesSeries {
   interpolation?: TimeSeriesInterpolation
   visible?: boolean
   gapThreshold?: number
+  /** Draw through missing samples while still respecting the elapsed-time gap threshold. */
+  spanGaps?: boolean
+  mark?: TimeSeriesMark
+  /** Fill color for bars, areas or a line filled to its baseline. */
+  fillColor?: RgbaColor
+  /** Baseline for bars and filled areas, defaulting to zero. */
+  baseline?: number
+  /** Fraction of local sample spacing occupied by a bar. Defaults to 0.75. */
+  barWidthRatio?: number
+  /** Show markers at real sample coordinates on any enabled series. */
+  points?: TimeSeriesPointOptions
+  path?: TimeSeriesPathBuilder
 }
 
 export interface TimeSeriesValueBand {
@@ -243,6 +294,10 @@ export interface TimeSeriesSpcTrack {
 export interface TimeSeriesDataSet {
   timestamps: Float64Array
   columns: Record<string, Float64Array>
+  /** Optional field-specific timestamps for independently sampled series. */
+  seriesTimestamps?: Record<string, Float64Array>
+  /** Optional sample kinds from alignTimeSeriesColumns. */
+  sampleKinds?: Record<string, Uint8Array>
   series: readonly TimeSeriesSeries[]
   bands?: readonly TimeSeriesBand[]
   annotations?: readonly TimeSeriesAnnotation[]
@@ -254,9 +309,13 @@ export interface TimeSeriesDataSet {
 export interface TimeSeriesRenderOptions {
   xRange?: NumericRange
   yRange?: NumericRange
+  /** Scale for primary-domain inference when using a legacy Y axis. */
+  yScale?: ChartScale
   yAxes?: readonly TimeSeriesYAxisOptions[]
+  stack?: TimeSeriesStackOptions
   gapThreshold?: number
   interpolation?: TimeSeriesInterpolation
+  spanGaps?: boolean
   defaultColor?: RgbaColor
   defaultLineWidth?: number
   defaultBandFillColor?: RgbaColor
@@ -297,6 +356,8 @@ export interface TimeSeriesRenderOptions {
 export interface TimeSeriesLineSegment {
   buffer: Float32Array
   pointCount: number
+  /** Interleaved X/Y coordinates of the corresponding stacked baseline. */
+  lower?: Float32Array
 }
 
 export interface TimeSeriesPlannedSeries {
@@ -307,6 +368,14 @@ export interface TimeSeriesPlannedSeries {
   style: LineOptions
   interpolation: TimeSeriesInterpolation
   segments: readonly TimeSeriesLineSegment[]
+  mark?: TimeSeriesMark
+  fillColor?: RgbaColor
+  baseline?: number
+  barWidthRatio?: number
+  points?: TimeSeriesPointOptions
+  path?: TimeSeriesPathBuilder
+  /** Actual samples for point markers on a stepped line. */
+  pointSegments?: readonly TimeSeriesLineSegment[]
   sourcePointCount: number
   includedSampleCount: number
   renderedPointCount: number
@@ -477,10 +546,7 @@ export interface TimeSeriesRenderPlan {
   warnings: readonly string[]
 }
 
-export interface TimeSeriesFrameOptions {
-  layout?: ChartLayout | ChartLayoutOptions
-  guides?: ChartGuideOptions | false
-}
+export type TimeSeriesFrameOptions = ChartFrameOptions<TimeSeriesRenderPlan>
 
 export interface TimeSeriesCommandFrame {
   width: number
@@ -573,6 +639,10 @@ function collectYAxes(
       warnings.push('A Y axis with an empty key was ignored.')
     } else if (axes.has(axis.key)) {
       warnings.push(`Duplicate Y axis "${axis.key}" was ignored.`)
+    } else if (axis.from && !axes.has(axis.from.key)) {
+      warnings.push(
+        `Y axis "${axis.key}" was ignored because source axis "${axis.from.key}" must precede it.`,
+      )
     } else {
       axes.set(axis.key, createAxisState(axis))
     }
@@ -586,12 +656,69 @@ function resolveAxisRange(
   legacyPadding: number | undefined,
 ): NumericRange {
   const fixedRange = axis.options.range ?? legacyRange
-  if (fixedRange) return normalizeRange(fixedRange)
-  if (axis.min === Number.POSITIVE_INFINITY) return axis.range
-  return expandRange([axis.min, axis.max], axis.options.paddingRatio ?? legacyPadding ?? 0.05)
+  const scale = axis.options.scale
+  if (scale?.type !== 'log') {
+    if (fixedRange) return normalizeRange(fixedRange)
+    if (axis.min === Number.POSITIVE_INFINITY) return axis.range
+    return expandRange([axis.min, axis.max], axis.options.paddingRatio ?? legacyPadding ?? 0.05)
+  }
+  const base = scale.base ?? 10
+  if (fixedRange?.every((value) => Number.isFinite(value) && value > 0)) {
+    if (fixedRange[0] !== fixedRange[1]) return normalizeRange(fixedRange)
+    return [fixedRange[0] / base, fixedRange[0] * base]
+  }
+  if (axis.min === Number.POSITIVE_INFINITY) return [1, base]
+  if (axis.min === axis.max) return [axis.min / base, axis.max * base]
+  const padding = axis.options.paddingRatio ?? legacyPadding ?? 0.05
+  if (padding === 0) return [axis.min, axis.max]
+  const minLog = Math.log(axis.min)
+  const maxLog = Math.log(axis.max)
+  const logPadding = Math.max(padding, 0) * (maxLog - minLog)
+  return [
+    Math.max(Number.MIN_VALUE, Math.exp(minLog - logPadding)),
+    Math.min(Number.MAX_VALUE, Math.exp(maxLog + logPadding)),
+  ]
+}
+
+function propagateDependentExtents(axisStates: ReadonlyMap<string, TimeSeriesAxisState>): void {
+  const axes = Array.from(axisStates.values()).reverse()
+  for (const axis of axes) {
+    const conversion = axis.options.from
+    if (!conversion || axis.min === Number.POSITIVE_INFINITY) continue
+    const source = axisStates.get(conversion.key)
+    const bounds = normalizeFiniteRange(
+      conversion.toSource(axis.min),
+      conversion.toSource(axis.max),
+    )
+    if (source && bounds) includeAxisExtent(source, bounds[0], bounds[1])
+  }
+}
+
+function planNamedYAxis(
+  axis: TimeSeriesAxisState,
+  axisStates: ReadonlyMap<string, TimeSeriesAxisState>,
+  warnings: string[],
+): TimeSeriesPlannedYAxis {
+  const { from, ...options } = axis.options
+  if (from) {
+    const source = axisStates.get(from.key)
+    const range =
+      source &&
+      normalizeFiniteRange(from.fromSource(source.range[0]), from.fromSource(source.range[1]))
+    if (range && range[0] !== range[1]) {
+      axis.range = range
+      return { ...axis.options, range }
+    }
+    warnings.push(`Y axis "${axis.options.key}" could not convert source axis "${from.key}".`)
+  }
+  return { ...options, range: axis.range }
 }
 
 function includeAxisExtent(axis: TimeSeriesAxisState, min: number, max: number): void {
+  if (axis.options.scale?.type === 'log') {
+    if (!(max > 0)) return
+    if (!(min > 0)) min = max
+  }
   axis.min = Math.min(axis.min, min)
   axis.max = Math.max(axis.max, max)
 }
@@ -601,11 +728,35 @@ function annotationYAxisKey(annotation: TimeSeriesAnnotation): string | undefine
   return annotation.yAxisKey
 }
 
+function timeSeriesExtent(data: TimeSeriesDataSet): NumericRange {
+  if (!data.seriesTimestamps) return finiteRange(data.timestamps)
+  const timestampColumns = new Set([data.timestamps, ...Object.values(data.seriesTimestamps)])
+  let min = Number.POSITIVE_INFINITY
+  let max = Number.NEGATIVE_INFINITY
+  for (const column of timestampColumns) {
+    for (const value of column) {
+      if (!Number.isFinite(value)) continue
+      min = Math.min(min, value)
+      max = Math.max(max, value)
+    }
+  }
+  return min === Number.POSITIVE_INFINITY ? [0, 1] : expandRange([min, max], 0)
+}
+
+function envelopeTimestamps(
+  data: TimeSeriesDataSet,
+  band: TimeSeriesEnvelopeBand,
+): Float64Array | undefined {
+  const lower = data.seriesTimestamps?.[band.lowerField] ?? data.timestamps
+  const upper = data.seriesTimestamps?.[band.upperField] ?? data.timestamps
+  return sameTimeSeriesTimestamps(lower, upper) ? lower : undefined
+}
+
 export function buildTimeSeriesRenderPlan(
   data: TimeSeriesDataSet,
   options: TimeSeriesRenderOptions = {},
 ): TimeSeriesRenderPlan {
-  const xRange = options.xRange ? normalizeRange(options.xRange) : finiteRange(data.timestamps)
+  const xRange = options.xRange ? normalizeRange(options.xRange) : timeSeriesExtent(data)
   const xOrigin = xRange[0]
   const xRelativeRange = relativeRange(xRange, xOrigin)
   const plannedSeries: TimeSeriesPlannedSeries[] = []
@@ -617,10 +768,22 @@ export function buildTimeSeriesRenderPlan(
   const warnings: string[] = []
   const axisStates = options.yAxes?.length ? collectYAxes(options.yAxes, warnings) : undefined
   const primaryAxis = axisStates?.values().next().value ?? createAxisState({ key: 'y' })
+  if (!primaryAxis.options.scale && options.yScale) {
+    primaryAxis.options = { ...primaryAxis.options, scale: options.yScale }
+  }
   const getYAxis = (axisKey: string | undefined): TimeSeriesAxisState | undefined =>
     axisKey === undefined || axisKey === primaryAxis.options.key
       ? primaryAxis
       : axisStates?.get(axisKey)
+  const stacked = options.stack
+    ? stackTimeSeriesColumns(
+        data,
+        options.stack,
+        primaryAxis.options.key,
+        options.includeHidden,
+        warnings,
+      )
+    : undefined
   let sourcePointCount = 0
   let includedSampleCount = 0
   let renderedPointCount = 0
@@ -637,27 +800,41 @@ export function buildTimeSeriesRenderPlan(
       continue
     }
 
-    const values = data.columns[series.field]
+    const stack = stacked?.get(series.key)
+    const values = stack?.values ?? data.columns[series.field]
     if (!values) {
       warnings.push(`Series "${series.key}" skipped because column "${series.field}" is missing.`)
       continue
     }
 
-    const pointCount = Math.min(data.timestamps.length, values.length)
-    if (data.timestamps.length !== values.length) {
+    const timestamps = data.seriesTimestamps?.[series.field] ?? data.timestamps
+    const pointCount = Math.min(timestamps.length, values.length)
+    if (timestamps.length !== values.length) {
       warnings.push(
         `Series "${series.key}" uses ${pointCount} points because timestamp and value lengths differ.`,
       )
     }
 
     const interpolation = series.interpolation ?? options.interpolation ?? 'linear'
-    const build = buildSeriesSegments(data.timestamps, values, {
+    const pointOrBar = series.mark === 'point' || series.mark === 'bar'
+    const samples = {
       pointCount,
       xRange,
       xOrigin,
       gapThreshold: series.gapThreshold ?? options.gapThreshold ?? 0,
-      interpolation,
-    })
+      spanGaps: series.spanGaps ?? options.spanGaps ?? false,
+      sampleKinds: data.sampleKinds?.[series.field],
+      lowerValues: stack?.lower,
+      positiveOnly: axis.options.scale?.type === 'log',
+      keepSingletons: pointOrBar || series.points !== undefined,
+      interpolation: pointOrBar ? ('linear' as const) : interpolation,
+    }
+    const build = buildSeriesSegments(timestamps, values, samples)
+    const pointSegments =
+      series.points &&
+      (samples.interpolation === 'step-before' || samples.interpolation === 'step-after')
+        ? buildSeriesSegments(timestamps, values, { ...samples, interpolation: 'linear' }).segments
+        : undefined
 
     sourcePointCount += pointCount
     includedSampleCount += build.includedSampleCount
@@ -666,6 +843,15 @@ export function buildTimeSeriesRenderPlan(
 
     if (build.includedSampleCount > 0) {
       includeAxisExtent(axis, build.minY, build.maxY)
+      if (
+        !stack &&
+        (series.mark === 'bar' ||
+          series.mark === 'area' ||
+          (series.mark !== 'point' && series.fillColor !== undefined))
+      ) {
+        const baseline = series.baseline ?? 0
+        if (Number.isFinite(baseline)) includeAxisExtent(axis, baseline, baseline)
+      }
     }
 
     plannedSeries.push({
@@ -679,6 +865,13 @@ export function buildTimeSeriesRenderPlan(
       },
       interpolation,
       segments: build.segments,
+      ...(series.mark !== undefined ? { mark: series.mark } : {}),
+      ...(series.fillColor !== undefined ? { fillColor: series.fillColor } : {}),
+      ...(series.baseline !== undefined ? { baseline: series.baseline } : {}),
+      ...(series.barWidthRatio !== undefined ? { barWidthRatio: series.barWidthRatio } : {}),
+      ...(series.points !== undefined ? { points: series.points } : {}),
+      ...(series.path !== undefined ? { path: series.path } : {}),
+      ...(pointSegments ? { pointSegments } : {}),
       sourcePointCount: pointCount,
       includedSampleCount: build.includedSampleCount,
       renderedPointCount: build.renderedPointCount,
@@ -696,10 +889,15 @@ export function buildTimeSeriesRenderPlan(
       continue
     }
 
+    const timestamps = band.kind === 'envelope' ? envelopeTimestamps(data, band) : data.timestamps
+    if (!timestamps) {
+      warnings.push(`Band "${band.key}" skipped because envelope fields use different timestamps.`)
+      continue
+    }
     const build =
       band.kind === 'value-band'
         ? buildValueBandSegments(band, { xRange, xOrigin })
-        : buildEnvelopeBandSegments(data.timestamps, data.columns, band, {
+        : buildEnvelopeBandSegments(timestamps, data.columns, band, {
             xRange,
             xOrigin,
             gapThreshold: band.gapThreshold ?? options.gapThreshold ?? 0,
@@ -755,11 +953,12 @@ export function buildTimeSeriesRenderPlan(
     if (axis && extent) includeAxisExtent(axis, extent[0], extent[1])
   }
 
+  if (axisStates?.size) propagateDependentExtents(axisStates)
   primaryAxis.range = resolveAxisRange(primaryAxis, options.yRange, options.yPaddingRatio)
   const yAxes = axisStates?.size
     ? Array.from(axisStates.values(), (axis): TimeSeriesPlannedYAxis => {
         if (axis !== primaryAxis) axis.range = resolveAxisRange(axis, undefined, undefined)
-        return { ...axis.options, range: axis.range }
+        return planNamedYAxis(axis, axisStates, warnings)
       })
     : undefined
   const yRange = primaryAxis.range
@@ -918,7 +1117,8 @@ export function buildTimeSeriesRenderPlan(
       track.laneOffsetRatio ?? trackOffsets[placement] * (laneHeightRatio + 0.015)
     trackOffsets[placement] += 1
 
-    const build = buildAnomalyTrackSegments(data.timestamps, values, track, {
+    const timestamps = data.seriesTimestamps?.[track.scoreField] ?? data.timestamps
+    const build = buildAnomalyTrackSegments(timestamps, values, track, {
       xRange,
       xOrigin,
       yRange,
@@ -1105,13 +1305,146 @@ export function addTimeSeriesToCommandList(
   plan: TimeSeriesRenderPlan,
   z: ZLayer = ZLayer.Line,
   axisTransforms?: YAxisTransforms,
+  defaultTransform?: ViewTransform,
 ): void {
+  let pixelTransform: ViewTransform | undefined
   for (const series of plan.series) {
     const transform = getAxisTransform(axisTransforms, series.yAxisKey)
-    for (const segment of series.segments) {
-      commands.addLine(segment.buffer, series.style, z, transform)
+    if (
+      series.mark === undefined &&
+      series.interpolation !== 'spline' &&
+      !series.fillColor &&
+      !series.points &&
+      !series.path
+    ) {
+      for (const segment of series.segments) {
+        commands.addLine(segment.buffer, series.style, z, transform)
+      }
+      continue
+    }
+
+    const seriesTransform = transform ?? defaultTransform
+    const yRange = plan.yAxes?.find((axis) => axis.key === series.yAxisKey)?.range ?? plan.yRange
+    if (series.path) {
+      series.path({
+        series,
+        xRange: plan.xRange,
+        xOrigin: plan.xOrigin,
+        yRange,
+        ...(seriesTransform ? { transform: seriesTransform } : {}),
+        commands: {
+          addLine: (buffer, style, layer, override = transform) =>
+            commands.addLine(buffer, style, layer ?? z, override),
+          addFill: (upper, lower, style, layer, override = transform) =>
+            commands.addFill(upper, lower, style, layer, override),
+          addRect: (x, y, width, height, style, layer, override = transform) =>
+            commands.addRect(x, y, width, height, style, layer, override),
+          addMarks: (bounds, style, layer, override = transform) =>
+            commands.addMarks(bounds, style, layer, override),
+          addText: commands.addText.bind(commands),
+        },
+      })
+      continue
+    }
+
+    const baseline = resolveMarkBaseline(series.baseline ?? 0, yRange, seriesTransform)
+    const bar = series.mark === 'bar'
+    const point = series.mark === 'point'
+    if ((bar || point || series.points) && seriesTransform && !pixelTransform) {
+      const { viewportWidth, viewportHeight } = seriesTransform
+      pixelTransform = new ViewTransform(viewportWidth, viewportHeight)
+      pixelTransform.setTranslate(-viewportWidth / 2, -viewportHeight / 2)
+    }
+
+    if (bar) {
+      const widthRatio = clampNumber(series.barWidthRatio ?? 0.75, 0.02, 1)
+      const bounds = buildTimeSeriesBarBounds(
+        series.segments,
+        baseline,
+        widthRatio,
+        seriesTransform,
+      )
+      commands.addMarks(
+        bounds,
+        { color: series.fillColor ?? series.style.color },
+        z,
+        pixelTransform,
+      )
+    } else if (!point) {
+      addTimeSeriesLine(commands, series, baseline, z, transform, seriesTransform)
+    }
+
+    if (point || series.points) {
+      const size = clampNumber(series.points?.size ?? 5, 1, 128)
+      const bounds = buildTimeSeriesPointBounds(
+        series.pointSegments ?? series.segments,
+        size,
+        seriesTransform,
+      )
+      const shape = series.points?.shape === 'square' ? 'rect' : 'ellipse'
+      commands.addMarks(
+        bounds,
+        { color: series.points?.color ?? series.style.color, shape },
+        ZLayer.Overlay,
+        pixelTransform,
+      )
     }
   }
+}
+
+function addTimeSeriesLine(
+  commands: RenderCommandList,
+  series: TimeSeriesPlannedSeries,
+  baseline: number,
+  z: ZLayer,
+  commandTransform: ViewTransform | undefined,
+  seriesTransform: ViewTransform | undefined,
+): void {
+  const [r, g, b, a] = series.style.color
+  const fill =
+    series.fillColor ?? (series.mark === 'area' ? ([r, g, b, a * 0.25] as const) : undefined)
+  for (const { buffer, pointCount, lower } of series.segments) {
+    if (pointCount < 2) continue
+    const line =
+      series.interpolation === 'spline'
+        ? tessellateTimeSeriesSpline(buffer, seriesTransform)
+        : buffer
+    if (fill) {
+      const validLower = lower && projectedBaseline(lower, baseline, seriesTransform)
+      const areaBase =
+        validLower && series.interpolation === 'spline'
+          ? tessellateTimeSeriesSpline(validLower, seriesTransform)
+          : validLower
+      const area = buildTimeSeriesArea(line, baseline, areaBase)
+      commands.addFill(area.upper, area.lower, { color: fill }, ZLayer.Fill, commandTransform)
+    }
+    commands.addLine(line, series.style, z, commandTransform)
+  }
+}
+
+function projectedBaseline(
+  lower: Float32Array,
+  baseline: number,
+  transform: ViewTransform | undefined,
+): Float32Array {
+  if (!transform?.hasProjection) return lower
+  let result = lower
+  for (let index = 1; index < lower.length; index += 2) {
+    const y = lower[index] as number
+    if (Number.isFinite(transform.mapY(y))) continue
+    if (result === lower) result = lower.slice()
+    result[index] = baseline
+  }
+  return result
+}
+
+function resolveMarkBaseline(
+  value: number,
+  yRange: NumericRange,
+  transform: ViewTransform | undefined,
+): number {
+  if (!Number.isFinite(value)) return yRange[0]
+  return transform && !Number.isFinite(transform.mapY(value)) ? yRange[0] : value
 }
 
 export function createTimeSeriesViewTransform(
@@ -1131,13 +1464,17 @@ export function buildTimeSeriesCommandFrame(
   let layoutOptions = options.layout
   if (plan.yAxes?.length && !(layoutOptions && 'plotArea' in layoutOptions)) {
     const base = layoutOptions ?? { width, height, xAxis: { visible: true } }
+    const { side: legacySide, ...legacyYAxis } = base.yAxis ?? {}
     const axisLayout = new Map(base.yAxes?.map((axis) => [axis.key, axis]))
     layoutOptions = {
       ...base,
       yRange: plan.yRange,
       yAxes: plan.yAxes.map((axis, index) => ({
         visible: true,
-        ...(index === 0 ? base.yAxis : {}),
+        ...(index === 0 ? legacyYAxis : {}),
+        ...(index === 0 && (legacySide === 'left' || legacySide === 'right')
+          ? { side: legacySide }
+          : {}),
         ...axis,
         ...axisLayout.get(axis.key),
         key: axis.key,
@@ -1148,15 +1485,21 @@ export function buildTimeSeriesCommandFrame(
   const layout = resolveChartLayout(layoutOptions, width, height, plan.xRelativeRange, plan.yRange)
   const plotArea = layout?.plotArea ?? { x: 0, y: 0, width, height }
   const transform = layout
-    ? createPlotViewportTransform(plan.xRelativeRange, plan.yRange, width, height, plotArea)
+    ? createPlotViewportTransform(plan.xRelativeRange, plan.yRange, width, height, plotArea, layout)
     : createTimeSeriesViewTransform(plan, width, height)
   const secondaryAxes = plan.yAxes?.slice(1)
   const axisTransforms = secondaryAxes?.length
     ? new Map(
-        secondaryAxes.map((axis) => [
-          axis.key,
-          createPlotViewportTransform(plan.xRelativeRange, axis.range, width, height, plotArea),
-        ]),
+        secondaryAxes.map((axis) => {
+          const projection = layout?.yAxes?.find((item) => item.key === axis.key)?.projection
+          return [
+            axis.key,
+            createPlotViewportTransform(plan.xRelativeRange, axis.range, width, height, plotArea, {
+              ...(layout?.xProjection ? { xProjection: layout.xProjection } : {}),
+              ...(projection ? { yProjection: projection } : {}),
+            }),
+          ]
+        }),
       )
     : undefined
   const commands = new RenderCommandList()
@@ -1167,19 +1510,23 @@ export function buildTimeSeriesCommandFrame(
   addTimeSeriesAnnotationsToCommandList(commands, plan, undefined, undefined, axisTransforms)
   addTimeSeriesSpcTracksToCommandList(commands, plan, undefined, undefined, axisTransforms)
   addTimeSeriesAnomalyTracksToCommandList(commands, plan)
-  addTimeSeriesToCommandList(commands, plan, undefined, axisTransforms)
+  addTimeSeriesToCommandList(commands, plan, undefined, axisTransforms, transform)
   addTimeSeriesEventMarkersToCommandList(commands, plan)
   addTimeSeriesAnnotationLabelsToCommandList(commands, plan, transform, plotArea, axisTransforms)
   addTimeSeriesEventMarkerLabelsToCommandList(commands, plan, transform, plotArea)
   addTimeSeriesSpcMarkerLabelsToCommandList(commands, plan, transform, plotArea, axisTransforms)
 
-  return {
-    width,
-    height,
-    layout,
-    commands,
-    transform,
-  }
+  return extendChartFrame(
+    {
+      width,
+      height,
+      layout,
+      commands,
+      transform,
+    },
+    plan,
+    options.plugins,
+  )
 }
 
 function buildAnnotationSegments(
@@ -2196,33 +2543,91 @@ export function renderTimeSeriesPlan(
   options: TimeSeriesFrameOptions = {},
 ): void {
   const frame = buildTimeSeriesCommandFrame(plan, context.width, context.height, options)
-  context.setTransform(frame.transform)
-  context.beginFrame()
-  drawCommandList(
+  renderChartFrame(
     context,
-    frame.commands,
-    frame.transform,
-    plan.yAxes?.length && frame.layout ? frame.layout.plotArea : undefined,
+    frame,
+    plan,
+    options.plugins,
+    !!plan.yAxes?.length || frame.transform.hasProjection,
   )
-  context.endFrame()
+}
+
+interface SeriesWindow {
+  pointCount: number
+  xRange: NumericRange
+  xOrigin: number
+  gapThreshold: number
+}
+
+/** The standard line does not need per-sample flags or a paired baseline. */
+function buildLinearSeriesSegments(
+  timestamps: Float64Array,
+  values: Float64Array,
+  { pointCount, xRange: [startTime, endTime], xOrigin, gapThreshold }: SeriesWindow,
+): SegmentBuildResult {
+  const scratch = new Float32Array(pointCount * 2)
+  const segments: TimeSeriesLineSegment[] = []
+  let write = 0
+  let start = 0
+  let renderedPointCount = 0
+  let minY = Number.POSITIVE_INFINITY
+  let maxY = Number.NEGATIVE_INFINITY
+  let previousTime = 0
+
+  const closeSegment = () => {
+    const pointCount = (write - start) / 2
+    if (pointCount >= 2) {
+      segments.push({ buffer: scratch.subarray(start, write), pointCount })
+      renderedPointCount += pointCount
+    }
+    start = write
+  }
+
+  for (let i = 0; i < pointCount; i++) {
+    const time = timestamps[i]
+    const value = values[i]
+    if (!isFiniteNumber(time) || !isFiniteNumber(value) || time < startTime || time > endTime) {
+      closeSegment()
+      continue
+    }
+    if (gapThreshold > 0 && write > start && time - previousTime > gapThreshold) closeSegment()
+    scratch[write++] = time - xOrigin
+    scratch[write++] = value
+    minY = Math.min(minY, value)
+    maxY = Math.max(maxY, value)
+    previousTime = time
+  }
+  closeSegment()
+  return { segments, includedSampleCount: write / 2, renderedPointCount, minY, maxY }
 }
 
 function buildSeriesSegments(
   timestamps: Float64Array,
   values: Float64Array,
-  options: {
-    pointCount: number
-    xRange: NumericRange
-    xOrigin: number
-    gapThreshold: number
+  options: SeriesWindow & {
     interpolation: TimeSeriesInterpolation
+    keepSingletons: boolean
+    positiveOnly: boolean
+    spanGaps: boolean
+    sampleKinds: Uint8Array | undefined
+    lowerValues: Float64Array | undefined
   },
 ): SegmentBuildResult {
-  const maxFloats =
-    options.interpolation === 'linear'
-      ? options.pointCount * 2
-      : Math.max(0, options.pointCount * 4 - 2)
+  if (
+    (options.interpolation === 'linear' || options.interpolation === 'spline') &&
+    !options.keepSingletons &&
+    !options.positiveOnly &&
+    !options.spanGaps &&
+    !options.sampleKinds &&
+    !options.lowerValues
+  ) {
+    return buildLinearSeriesSegments(timestamps, values, options)
+  }
+  const stepped = options.interpolation === 'step-before' || options.interpolation === 'step-after'
+  const maxFloats = stepped ? Math.max(0, options.pointCount * 4 - 2) : options.pointCount * 2
   const scratch = new Float32Array(maxFloats)
+  const { lowerValues, positiveOnly, sampleKinds, spanGaps } = options
+  const lowerScratch = lowerValues ? new Float32Array(maxFloats) : undefined
   const segments: TimeSeriesLineSegment[] = []
   let write = 0
   let segmentStart = 0
@@ -2233,33 +2638,50 @@ function buildSeriesSegments(
   let maxY = Number.NEGATIVE_INFINITY
   let previousX = 0
   let previousY = 0
+  let previousLower = 0
 
   const pushSegment = () => {
-    if (segmentPointCount >= 2) {
+    if (segmentPointCount >= (options.keepSingletons ? 1 : 2)) {
       const buffer = scratch.subarray(segmentStart, write)
-      segments.push({ buffer, pointCount: segmentPointCount })
+      segments.push({
+        buffer,
+        pointCount: segmentPointCount,
+        ...(lowerScratch ? { lower: lowerScratch.subarray(segmentStart, write) } : {}),
+      })
       renderedPointCount += segmentPointCount
     }
     segmentPointCount = 0
     segmentStart = write
   }
 
-  const appendPoint = (x: number, y: number) => {
-    scratch[write++] = x
-    scratch[write++] = y
-    segmentPointCount += 1
-  }
+  const appendPoint = lowerScratch
+    ? (x: number, y: number, lower: number) => {
+        lowerScratch[write] = x
+        lowerScratch[write + 1] = lower
+        scratch[write++] = x
+        scratch[write++] = y
+        segmentPointCount += 1
+      }
+    : (x: number, y: number) => {
+        scratch[write++] = x
+        scratch[write++] = y
+        segmentPointCount += 1
+      }
 
   for (let i = 0; i < options.pointCount; i++) {
     const timestamp = timestamps[i]
     const value = values[i]
     if (
       !isFiniteNumber(timestamp) ||
-      !isFiniteNumber(value) ||
       timestamp < options.xRange[0] ||
       timestamp > options.xRange[1]
     ) {
       pushSegment()
+      continue
+    }
+    if (!isFiniteNumber(value) || (positiveOnly && value <= 0)) {
+      const kind = sampleKinds?.[i]
+      if (!spanGaps && kind !== TimeSeriesSampleKind.AlignmentHole) pushSegment()
       continue
     }
 
@@ -2274,24 +2696,31 @@ function buildSeriesSegments(
       pushSegment()
     }
 
+    const lower = lowerValues ? (lowerValues[i] as number) : value
     if (segmentPointCount === 0) {
       segmentStart = write
-      appendPoint(x, value)
+      appendPoint(x, value, lower)
     } else if (options.interpolation === 'step-after') {
-      appendPoint(x, previousY)
-      appendPoint(x, value)
+      appendPoint(x, previousY, previousLower)
+      appendPoint(x, value, lower)
     } else if (options.interpolation === 'step-before') {
-      appendPoint(previousX, value)
-      appendPoint(x, value)
+      appendPoint(previousX, value, lower)
+      appendPoint(x, value, lower)
     } else {
-      appendPoint(x, value)
+      appendPoint(x, value, lower)
     }
 
     includedSampleCount += 1
-    minY = Math.min(minY, value)
-    maxY = Math.max(maxY, value)
+    if (lowerValues && (!positiveOnly || lower > 0)) {
+      minY = Math.min(minY, value, lower)
+      maxY = Math.max(maxY, value, lower)
+    } else {
+      minY = Math.min(minY, value)
+      maxY = Math.max(maxY, value)
+    }
     previousX = x
     previousY = value
+    previousLower = lower
   }
 
   pushSegment()

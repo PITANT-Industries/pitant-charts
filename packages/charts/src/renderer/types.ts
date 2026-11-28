@@ -30,6 +30,12 @@ export interface RectOptions {
   strokeWidth?: number
 }
 
+/** A batch of uniformly styled marks with interleaved x, y, width and height. */
+export interface MarkBatchOptions {
+  color: readonly [r: number, g: number, b: number, a: number]
+  shape?: 'rect' | 'ellipse'
+}
+
 /**
  * Options for text rendering.
  */
@@ -39,6 +45,8 @@ export interface TextOptions {
   fontSize?: number
   align?: 'left' | 'center' | 'right'
   baseline?: 'top' | 'middle' | 'bottom'
+  /** Clockwise rotation about the text anchor, in degrees. */
+  rotation?: number
 }
 
 /**
@@ -91,6 +99,7 @@ export interface RenderContext {
   drawFill(upper: Float32Array, lower: Float32Array, options: FillOptions): void
   drawRect(x: number, y: number, w: number, h: number, options: RectOptions): void
   drawText(text: string, x: number, y: number, options: TextOptions): void
+  drawMarks?(bounds: Float32Array, options: MarkBatchOptions): void
 
   setTransform(transform: import('./view-transform.js').ViewTransform): void
   setClipRect?(rect: RenderClipRect | null): void

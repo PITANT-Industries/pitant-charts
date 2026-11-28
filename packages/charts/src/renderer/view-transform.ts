@@ -1,3 +1,5 @@
+import type { AxisProjection } from '../charts/axis-scale.js'
+
 /**
  * ViewTransform manages pan (translate) + zoom (scale) in data space.
  * Converts between data coordinates, pixel coordinates, and clip coordinates.
@@ -9,6 +11,8 @@ export class ViewTransform {
   private _translateY = 0
   private _viewportWidth = 0
   private _viewportHeight = 0
+  private _xProjection: AxisProjection | undefined
+  private _yProjection: AxisProjection | undefined
 
   constructor(viewportWidth: number, viewportHeight: number) {
     this._viewportWidth = viewportWidth
@@ -49,6 +53,26 @@ export class ViewTransform {
     this._translateY = ty
   }
 
+  setProjections(
+    xProjection: AxisProjection | undefined,
+    yProjection: AxisProjection | undefined,
+  ): void {
+    this._xProjection = xProjection
+    this._yProjection = yProjection
+  }
+
+  get hasProjection(): boolean {
+    return this._xProjection !== undefined || this._yProjection !== undefined
+  }
+
+  mapX(value: number): number {
+    return this._xProjection?.toRatio(value) ?? value
+  }
+
+  mapY(value: number): number {
+    return this._yProjection?.toRatio(value) ?? value
+  }
+
   /**
    * Pan by pixel delta.
    */
@@ -78,8 +102,8 @@ export class ViewTransform {
    */
   dataToPixel(dataX: number, dataY: number): { x: number; y: number } {
     return {
-      x: (dataX + this._translateX) * this._scaleX + this._viewportWidth / 2,
-      y: (dataY + this._translateY) * this._scaleY + this._viewportHeight / 2,
+      x: (this.mapX(dataX) + this._translateX) * this._scaleX + this._viewportWidth / 2,
+      y: (this.mapY(dataY) + this._translateY) * this._scaleY + this._viewportHeight / 2,
     }
   }
 
@@ -87,10 +111,9 @@ export class ViewTransform {
    * Convert pixel coordinate to data coordinate.
    */
   pixelToData(pixelX: number, pixelY: number): { x: number; y: number } {
-    return {
-      x: (pixelX - this._viewportWidth / 2) / this._scaleX - this._translateX,
-      y: (pixelY - this._viewportHeight / 2) / this._scaleY - this._translateY,
-    }
+    const x = (pixelX - this._viewportWidth / 2) / this._scaleX - this._translateX
+    const y = (pixelY - this._viewportHeight / 2) / this._scaleY - this._translateY
+    return { x: this._xProjection?.fromRatio(x) ?? x, y: this._yProjection?.fromRatio(y) ?? y }
   }
 
   /**

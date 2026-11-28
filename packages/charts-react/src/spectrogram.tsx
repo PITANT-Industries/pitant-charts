@@ -3,6 +3,7 @@
 import {
   buildSpectrogramCommandFrame,
   buildSpectrogramRenderPlan,
+  type ChartFramePlugin,
   type ChartLayout,
   commandFrameToSvg,
   createChartLayout,
@@ -49,6 +50,7 @@ export interface SpectrogramColorStopConfig {
 }
 
 export interface SpectrogramConfig {
+  plugins?: readonly ChartFramePlugin<SpectrogramRenderPlan>[]
   colorStops?: readonly SpectrogramColorStopConfig[]
   missingRgba?: RgbaColor
   includeMissing?: boolean
@@ -105,6 +107,7 @@ export interface SpectrogramProps
   onResize?: (width: number, height: number, dpr: number) => void
   chartKey?: string
   children?: ReactNode | ((chart: UseSpectrogramReturn) => ReactNode)
+  pixelRatio?: number
 }
 
 const EMPTY_SPECTROGRAM_STATS: SpectrogramStats = {
@@ -199,7 +202,10 @@ export function useSpectrogram(options: UseSpectrogramOptions): UseSpectrogramRe
     }
 
     const started = performance.now()
-    renderSpectrogramPlan(context, renderPlan, { layout })
+    renderSpectrogramPlan(context, renderPlan, {
+      layout,
+      ...(config.plugins ? { plugins: config.plugins } : {}),
+    })
     const renderTime = performance.now() - started
 
     setStats({
@@ -211,7 +217,7 @@ export function useSpectrogram(options: UseSpectrogramOptions): UseSpectrogramRe
       timeBinCount: renderPlan.timeBinCount,
       frequencyBinCount: renderPlan.frequencyBinCount,
     })
-  }, [containerRef, context, layout, renderPlan, resizeKey])
+  }, [config.plugins, containerRef, context, layout, renderPlan, resizeKey])
 
   const exportImage = useCallback(
     (format: 'png' | 'svg', exportOptions?: ExportOptions) =>
@@ -223,11 +229,15 @@ export function useSpectrogram(options: UseSpectrogramOptions): UseSpectrogramRe
             dimensions.width,
             dimensions.height,
           )
-          renderSpectrogramPlan(exportContext, renderPlan, { layout: exportLayout })
+          renderSpectrogramPlan(exportContext, renderPlan, {
+            layout: exportLayout,
+            ...(config.plugins ? { plugins: config.plugins } : {}),
+          })
         },
         renderSvg: (dimensions) =>
           commandFrameToSvg(
             buildSpectrogramCommandFrame(renderPlan, dimensions.width, dimensions.height, {
+              ...(config.plugins ? { plugins: config.plugins } : {}),
               layout: createSpectrogramLayout(
                 config,
                 renderPlan,
@@ -278,15 +288,19 @@ function createSpectrogramLayout(
       visible: true,
       size: 34,
       tickCount: 6,
-      ...(config.xAxis?.label !== undefined ? { label: config.xAxis.label } : {}),
-      ...(config.xAxis?.formatValue !== undefined ? { formatValue: config.xAxis.formatValue } : {}),
+      ...config.xAxis,
+      ...(config.xAxis?.scale ||
+      config.xAxis?.calendar ||
+      config.xAxis?.tickValues ||
+      config.xAxis?.rangePolicy
+        ? { valueOffset: renderPlan.xOrigin }
+        : {}),
     },
     yAxis: {
       visible: true,
       size: 58,
       tickCount: 5,
-      ...(config.yAxis?.label !== undefined ? { label: config.yAxis.label } : {}),
-      ...(config.yAxis?.formatValue !== undefined ? { formatValue: config.yAxis.formatValue } : {}),
+      ...config.yAxis,
     },
     grid: {
       visible: true,
@@ -313,6 +327,7 @@ export function Spectrogram(props: SpectrogramProps): JSX.Element {
     config,
     data,
     onResize,
+    pixelRatio,
     renderer,
     style,
   } = props
@@ -341,6 +356,7 @@ export function Spectrogram(props: SpectrogramProps): JSX.Element {
 
   return (
     <ChartContainer
+      {...(pixelRatio !== undefined ? { pixelRatio } : {})}
       ref={containerRef}
       ariaLabel={ariaLabel}
       onResize={handleResize}

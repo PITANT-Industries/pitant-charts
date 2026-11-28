@@ -3,6 +3,7 @@
 import {
   buildDigitalChannelCommandFrame,
   buildDigitalChannelRenderPlan,
+  type ChartFramePlugin,
   type ChartLayout,
   type ChartPointerCoordinates,
   type DigitalChannelSeries as CoreDigitalChannelSeries,
@@ -11,7 +12,6 @@ import {
   DEFAULT_CHART_COLORS,
   type DigitalChannelRenderOptions,
   type DigitalChannelRenderPlan,
-  mapDataPointToChartPoint,
   type RgbaColor,
   renderDigitalChannelPlan,
 } from '@pitant/charts'
@@ -29,7 +29,12 @@ import {
 import type { ChartContainerProps, ChartContainerRef } from './chart-container.js'
 import { ChartContainer } from './chart-container.js'
 import { ChartDataZoom } from './chart-data-zoom.js'
-import { ChartRegionZoomLayer } from './chart-interactions.js'
+import {
+  type ChartRangeSelection,
+  ChartRegionZoomLayer,
+  type ChartRegionZoomLayerProps,
+  type ChartSelectionOptions,
+} from './chart-interactions.js'
 import type { ChartLegendItem } from './chart-legend.js'
 import {
   EMPTY_RANGE,
@@ -40,10 +45,10 @@ import {
   useColumnarViewport,
   useLegendItems,
   useRenderer,
-  useSeriesVisibility,
+  useSyncedSeriesVisibility,
 } from './chart-runtime.js'
-import { useChartSync } from './chart-sync-group.js'
-import type { ChartTooltipPayload } from './chart-tooltip.js'
+import { resolveSyncedCursor, useChartSync } from './chart-sync-group.js'
+import type { ChartTooltipPayload, ChartTooltipProps } from './chart-tooltip.js'
 import { ChartTooltip } from './chart-tooltip.js'
 import {
   buildColumnarTooltipPayload,
@@ -74,6 +79,7 @@ export interface DigitalChannelConfigSeries extends SeriesConfig {
 }
 
 export interface DigitalChannelConfig {
+  plugins?: readonly ChartFramePlugin<DigitalChannelRenderPlan>[]
   channels: DigitalChannelConfigSeries[]
   xAxis?: AxisConfig & {
     gapThreshold?: number
@@ -109,7 +115,7 @@ export interface UseDigitalChannelReturn {
   visibleRange: readonly [number, number]
   setVisibleRange: (range: readonly [number, number]) => void
   legendItems: readonly ChartLegendItem[]
-  toggleSeries: (key: string) => void
+  toggleSeries: (key: string, visible?: boolean) => void
   tooltipPayload: ChartTooltipPayload | null
   tooltipPosition: { x: number; y: number } | null
   syncedCursorX: number | null
@@ -127,6 +133,22 @@ export interface UseDigitalChannelReturn {
   layout: ChartLayout
 }
 
+export interface DigitalChannelInteractionOptions
+  extends Pick<
+    ChartRegionZoomLayerProps,
+    | 'crosshair'
+    | 'hoverLock'
+    | 'keyboardNavigation'
+    | 'onSelectionChange'
+    | 'pan'
+    | 'snapHover'
+    | 'touchNavigation'
+    | 'wheelZoom'
+  > {
+  selection?: Omit<ChartSelectionOptions, 'mode'>
+  selectedRanges?: Pick<ChartRangeSelection, 'xRange'> | null
+}
+
 export interface DigitalChannelProps
   extends Pick<
     ChartContainerProps,
@@ -139,7 +161,10 @@ export interface DigitalChannelProps
   onResize?: (width: number, height: number, dpr: number) => void
   chartKey?: string
   dataZoom?: boolean
+  interaction?: DigitalChannelInteractionOptions
+  tooltip?: Omit<ChartTooltipProps, 'payload' | 'position'>
   children?: ReactNode | ((chart: UseDigitalChannelReturn) => ReactNode)
+  pixelRatio?: number
 }
 
 const EMPTY_TOOLTIP: ChartTooltipPayload | null = null
@@ -166,7 +191,7 @@ export function useDigitalChannel(options: UseDigitalChannelOptions): UseDigital
     containerRef,
     renderer: config.renderer ?? 'auto',
   })
-  const { visibilityMap, toggleSeries } = useSeriesVisibility(config.channels)
+  const { visibilityMap, toggleSeries } = useSyncedSeriesVisibility(config.channels, sync)
   const legendItems = useLegendItems(config.channels, visibilityMap)
   const tooltipSeries = useMemo(
     () =>
@@ -284,7 +309,10 @@ export function useDigitalChannel(options: UseDigitalChannelOptions): UseDigital
     }
 
     const started = performance.now()
-    renderDigitalChannelPlan(context, renderPlan, { layout })
+    renderDigitalChannelPlan(context, renderPlan, {
+      layout,
+      ...(config.plugins ? { plugins: config.plugins } : {}),
+    })
     const renderTime = performance.now() - started
 
     setStats({
@@ -299,7 +327,7 @@ export function useDigitalChannel(options: UseDigitalChannelOptions): UseDigital
       returnedPointCount: viewport.returnedPointCount,
       dataLoading: viewport.loading,
     })
-  }, [containerRef, context, layout, renderPlan, resizeKey, viewport])
+  }, [config.plugins, containerRef, context, layout, renderPlan, resizeKey, viewport])
 
   const setData = useCallback(
     (nextData: DigitalChannelColumnData) => {
@@ -336,12 +364,12 @@ export function useDigitalChannel(options: UseDigitalChannelOptions): UseDigital
   )
 
   useEffect(() => {
-    if (!sync.isSynced || sync.syncState.source === chartKey) return
+    if (!sync.canReceive('xRange')) return
     const range = sync.syncState.xRange
     if (!range) return
 
     setVisibleRangeState((current) => (rangesEqual(current, range) ? current : range))
-  }, [chartKey, sync.isSynced, sync.syncState.source, sync.syncState.xRange])
+  }, [sync.canReceive, sync.syncState.xRange])
 
   const handleHoverChange = useCallback(
     (coordinates: ChartPointerCoordinates | null) => {
@@ -363,54 +391,50 @@ export function useDigitalChannel(options: UseDigitalChannelOptions): UseDigital
       setTooltipPayload(payload)
       setTooltipPosition(payload ? { x: coordinates.chartX, y: coordinates.chartY } : null)
       setSyncedCursorX(null)
-      sync.updateCursor(payload?.timestamp ?? null)
+      sync.updateCursor(payload?.timestamp ?? null, {
+        xRatio: coordinates.plotRatioX,
+        yRatio: coordinates.plotRatioY,
+        y: coordinates.dataY,
+      })
     },
     [config.xAxis?.formatValue, config.yAxis?.formatValue, sync, tooltipSeries, viewport.rawData],
   )
 
   useEffect(() => {
-    if (!sync.isSynced || sync.syncState.source === chartKey) return
-    const timestamp = sync.syncState.cursorTimestamp
-    if (timestamp === null || !timestampInRange(timestamp, renderPlan.xRange)) {
-      setTooltipPayload(null)
-      setTooltipPosition(null)
-      setSyncedCursorX(null)
-      return
-    }
-
-    const payload = buildColumnarTooltipPayload({
-      data: viewport.rawData,
-      series: tooltipSeries,
-      timestamp,
-      formatX: config.xAxis?.formatValue,
-      formatY: config.yAxis?.formatValue,
-    })
-    const yMid = (renderPlan.yRange[0] + renderPlan.yRange[1]) / 2
-    const point = mapDataPointToChartPoint({
-      x: timestamp,
-      y: yMid,
+    if (!sync.canReceive('cursor')) return
+    const cursor = resolveSyncedCursor(sync.syncState, sync.cursorOptions, {
       layout,
       xRange: renderPlan.xRelativeRange,
       yRange: renderPlan.yRange,
-      xValueOffset: renderPlan.xOrigin,
-      clampToPlot: true,
+      xOrigin: renderPlan.xOrigin,
     })
-
+    const payload =
+      cursor.timestamp !== null
+        ? buildColumnarTooltipPayload({
+            data: viewport.rawData,
+            series: tooltipSeries,
+            timestamp: cursor.timestamp,
+            formatX: config.xAxis?.formatValue,
+            formatY: config.yAxis?.formatValue,
+          })
+        : null
     setTooltipPayload(payload)
-    setTooltipPosition(payload ? { x: point.x, y: point.y } : null)
-    setSyncedCursorX(payload ? point.x : null)
+    setTooltipPosition(
+      payload && cursor.x !== null
+        ? { x: cursor.x, y: layout.plotArea.y + layout.plotArea.height / 2 }
+        : null,
+    )
+    setSyncedCursorX(cursor.x)
   }, [
-    chartKey,
     config.xAxis?.formatValue,
     config.yAxis?.formatValue,
     layout,
     renderPlan.xOrigin,
-    renderPlan.xRange,
     renderPlan.xRelativeRange,
     renderPlan.yRange,
-    sync.isSynced,
-    sync.syncState.cursorTimestamp,
-    sync.syncState.source,
+    sync.canReceive,
+    sync.cursorOptions,
+    sync.syncState,
     tooltipSeries,
     viewport.rawData,
   ])
@@ -427,11 +451,15 @@ export function useDigitalChannel(options: UseDigitalChannelOptions): UseDigital
             dimensions.width,
             dimensions.height,
           )
-          renderDigitalChannelPlan(exportContext, renderPlan, { layout: exportLayout })
+          renderDigitalChannelPlan(exportContext, renderPlan, {
+            layout: exportLayout,
+            ...(config.plugins ? { plugins: config.plugins } : {}),
+          })
         },
         renderSvg: (dimensions) =>
           commandFrameToSvg(
             buildDigitalChannelCommandFrame(renderPlan, dimensions.width, dimensions.height, {
+              ...(config.plugins ? { plugins: config.plugins } : {}),
               layout: createDigitalChannelLayout(
                 config,
                 renderPlan,
@@ -497,15 +525,19 @@ function createDigitalChannelLayout(
       visible: true,
       size: 32,
       tickCount: 6,
-      ...(config.xAxis?.label !== undefined ? { label: config.xAxis.label } : {}),
-      ...(config.xAxis?.formatValue !== undefined ? { formatValue: config.xAxis.formatValue } : {}),
+      ...config.xAxis,
+      ...(config.xAxis?.scale ||
+      config.xAxis?.calendar ||
+      config.xAxis?.tickValues ||
+      config.xAxis?.rangePolicy
+        ? { valueOffset: renderPlan.xOrigin }
+        : {}),
     },
     yAxis: {
       visible: true,
       size: 84,
       tickCount: yTickCount,
-      ...(config.yAxis?.label !== undefined ? { label: config.yAxis.label } : {}),
-      ...(config.yAxis?.formatValue !== undefined ? { formatValue: config.yAxis.formatValue } : {}),
+      ...config.yAxis,
     },
     grid: {
       visible: true,
@@ -532,10 +564,13 @@ export function DigitalChannel(props: DigitalChannelProps): JSX.Element {
     config,
     data,
     dataZoom = false,
+    interaction,
     onResize,
+    pixelRatio,
     renderer,
     streaming,
     style,
+    tooltip,
   } = props
   const containerRef = useRef<ChartContainerRef | null>(null)
   const generatedChartKey = useId()
@@ -568,6 +603,7 @@ export function DigitalChannel(props: DigitalChannelProps): JSX.Element {
 
   return (
     <ChartContainer
+      {...(pixelRatio !== undefined ? { pixelRatio } : {})}
       ref={containerRef}
       ariaLabel={ariaLabel}
       onResize={handleResize}
@@ -577,6 +613,7 @@ export function DigitalChannel(props: DigitalChannelProps): JSX.Element {
       {...(style !== undefined ? { style } : {})}
     >
       <ChartRegionZoomLayer
+        {...interaction}
         containerRef={containerRef}
         fullRange={chart.fullRange}
         layout={chart.layout}
@@ -598,7 +635,7 @@ export function DigitalChannel(props: DigitalChannelProps): JSX.Element {
           visibleRange={activeDataZoomRange(chart.visibleRange, chart.fullRange)}
         />
       ) : null}
-      <ChartTooltip payload={chart.tooltipPayload} position={chart.tooltipPosition} />
+      <ChartTooltip {...tooltip} payload={chart.tooltipPayload} position={chart.tooltipPosition} />
       {typeof children === 'function' ? children(chart) : children}
     </ChartContainer>
   )
@@ -616,10 +653,6 @@ function rangeFromTimestamps(timestamps: Float64Array): readonly [number, number
 
 function rangesEqual(left: readonly [number, number], right: readonly [number, number]): boolean {
   return left[0] === right[0] && left[1] === right[1]
-}
-
-function timestampInRange(timestamp: number, range: readonly [number, number]): boolean {
-  return timestamp >= range[0] && timestamp <= range[1]
 }
 
 function activeDataZoomRange(

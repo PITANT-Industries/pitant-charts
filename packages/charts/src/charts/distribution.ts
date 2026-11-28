@@ -1,14 +1,12 @@
 import { RenderCommandList, ZLayer } from '../renderer/render-command-list.js'
 import type { LineOptions, RectOptions, RenderContext, TextOptions } from '../renderer/types.js'
 import type { ViewTransform } from '../renderer/view-transform.js'
+import { type ChartFrameOptions, extendChartFrame, renderChartFrame } from './chart-frame.js'
 import {
   addChartGuidesToCommandList,
-  type ChartGuideOptions,
   type ChartLayout,
-  type ChartLayoutOptions,
   createPlotViewportTransform,
   createViewportTransform,
-  drawCommandList,
   expandRange,
   getDefaultColor,
   isFiniteNumber,
@@ -114,10 +112,7 @@ export interface DistributionRenderPlan {
   warnings: readonly string[]
 }
 
-export interface DistributionFrameOptions {
-  layout?: ChartLayout | ChartLayoutOptions
-  guides?: ChartGuideOptions | false
-}
+export type DistributionFrameOptions = ChartFrameOptions<DistributionRenderPlan>
 
 export interface DistributionCommandFrame {
   width: number
@@ -246,7 +241,14 @@ export function buildDistributionCommandFrame(
 ): DistributionCommandFrame {
   const layout = resolveChartLayout(options.layout, width, height, plan.xRelativeRange, plan.yRange)
   const transform = layout
-    ? createPlotViewportTransform(plan.xRelativeRange, plan.yRange, width, height, layout.plotArea)
+    ? createPlotViewportTransform(
+        plan.xRelativeRange,
+        plan.yRange,
+        width,
+        height,
+        layout.plotArea,
+        layout,
+      )
     : createDistributionViewTransform(plan, width, height)
   const commands = new RenderCommandList()
   if (layout && options.guides !== false) {
@@ -261,13 +263,17 @@ export function buildDistributionCommandFrame(
     layout?.plotArea ?? { x: 0, y: 0, width, height },
   )
 
-  return {
-    width,
-    height,
-    layout,
-    commands,
-    transform,
-  }
+  return extendChartFrame(
+    {
+      width,
+      height,
+      layout,
+      commands,
+      transform,
+    },
+    plan,
+    options.plugins,
+  )
 }
 
 export function renderDistributionPlan(
@@ -276,10 +282,7 @@ export function renderDistributionPlan(
   options: DistributionFrameOptions = {},
 ): void {
   const frame = buildDistributionCommandFrame(plan, context.width, context.height, options)
-  context.setTransform(frame.transform)
-  context.beginFrame()
-  drawCommandList(context, frame.commands)
-  context.endFrame()
+  renderChartFrame(context, frame, plan, options.plugins)
 }
 
 function buildDistributionBins(

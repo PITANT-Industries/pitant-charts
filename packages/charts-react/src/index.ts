@@ -22,20 +22,33 @@ export type { ChartContainerProps, ChartContainerRef } from './chart-container.j
 export { ChartContainer } from './chart-container.js'
 export type { ChartDataZoomProps } from './chart-data-zoom.js'
 export { ChartDataZoom } from './chart-data-zoom.js'
-export type { ChartRegionZoomLayerProps } from './chart-interactions.js'
+export type { ChartDisplayItemsOptions } from './chart-display-items.js'
+export type {
+  ChartCrosshairOptions,
+  ChartRangeSelection,
+  ChartRegionZoomLayerProps,
+  ChartSelectionOptions,
+} from './chart-interactions.js'
 export { ChartRegionZoomLayer } from './chart-interactions.js'
 // Legend
 export type { ChartLegendItem, ChartLegendProps } from './chart-legend.js'
 export { ChartLegend } from './chart-legend.js'
 // Sync
 export type {
+  ChartSyncCursorMode,
+  ChartSyncCursorOptions,
+  ChartSyncCursorPosition,
+  ChartSyncEvent,
+  ChartSyncFilters,
   ChartSyncGroupProps,
+  ChartSyncSeriesVisibilityEvent,
   SyncMode,
   SyncState,
 } from './chart-sync-group.js'
 export { ChartSyncGroup, useChartSync } from './chart-sync-group.js'
 // Tooltip
 export type {
+  ChartTooltipLayout,
   ChartTooltipPayload,
   ChartTooltipProps,
   ChartTooltipProvenance,
@@ -65,6 +78,7 @@ export type {
   DigitalChannelColumnData,
   DigitalChannelConfig,
   DigitalChannelConfigSeries,
+  DigitalChannelInteractionOptions,
   DigitalChannelProps,
   DigitalChannelStats,
   UseDigitalChannelOptions,
@@ -140,6 +154,7 @@ export type {
   TimeSeriesDerivedSeriesConfig,
   TimeSeriesEnvelopeBandConfig,
   TimeSeriesEventMarkerConfig,
+  TimeSeriesInteractionOptions,
   TimeSeriesProps,
   TimeSeriesRulerAnnotationConfig,
   TimeSeriesSeriesConfig,

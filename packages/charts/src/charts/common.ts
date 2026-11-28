@@ -1,6 +1,19 @@
 import { type RenderCommandList, ZLayer } from '../renderer/render-command-list.js'
-import type { RenderContext } from '../renderer/types.js'
+import type {
+  FillOptions,
+  LineOptions,
+  MarkBatchOptions,
+  RenderContext,
+} from '../renderer/types.js'
 import { ViewTransform } from '../renderer/view-transform.js'
+import {
+  type AxisProjection,
+  type CalendarAxisOptions,
+  type ChartScale,
+  calendarTicks,
+  createAxisProjection,
+  logarithmicTicks,
+} from './axis-scale.js'
 
 export type RgbaColor = readonly [r: number, g: number, b: number, a: number]
 export type NumericRange = readonly [min: number, max: number]
@@ -20,18 +33,46 @@ export interface EdgeInsets {
   left: number
 }
 
+export interface AxisRangePolicy {
+  softMin?: number
+  softMax?: number
+  hardMin?: number
+  hardMax?: number
+  apply?: (range: NumericRange) => NumericRange
+}
+
 export interface AxisLayoutOptions {
   visible?: boolean
-  size?: number
+  size?: number | 'auto'
   tickCount?: number
+  /** Tick label rotation in degrees. */
+  tickRotation?: number
+  side?: 'left' | 'right' | 'top' | 'bottom'
   label?: string
   formatValue?: (value: number) => string
+  scale?: ChartScale
+  rangePolicy?: AxisRangePolicy
+  /** Minimum spacing between automatically generated ticks, in CSS pixels. */
+  tickSpacing?: number
+  calendar?: CalendarAxisOptions
+  /** Restores the original values of a rebased data axis for ticks and scale math. */
+  valueOffset?: number
+  /** Explicit original data values, or a generator that receives original bounds. */
+  tickValues?: readonly number[] | ((range: NumericRange, targetCount: number) => readonly number[])
+}
+
+/** Bidirectional unit conversion to an earlier named axis. */
+export interface DependentYAxis {
+  key: string
+  fromSource(value: number): number
+  toSource(value: number): number
 }
 
 export interface NamedYAxisLayoutOptions extends AxisLayoutOptions {
   key: string
   side?: 'left' | 'right'
   range?: NumericRange
+  from?: DependentYAxis
 }
 
 export interface LegendLayoutOptions {
@@ -76,6 +117,9 @@ export interface LaidOutYAxis {
   area: ChartRect | null
   ticks: readonly AxisTick[]
   label: string | null
+  projection?: AxisProjection
+  range?: NumericRange
+  tickRotation?: number
 }
 
 export interface ChartLayout {
@@ -85,12 +129,18 @@ export interface ChartLayout {
   overlayArea: ChartRect
   xAxisArea: ChartRect | null
   yAxisArea: ChartRect | null
+  xAxisSide?: 'top'
+  yAxisSide?: 'right'
+  xTickRotation?: number
+  yTickRotation?: number
   legendArea: ChartRect | null
   xAxisLabel: string | null
   yAxisLabel: string | null
   xTicks: readonly AxisTick[]
   yTicks: readonly AxisTick[]
   yAxes?: readonly LaidOutYAxis[]
+  xProjection?: AxisProjection
+  yProjection?: AxisProjection
 }
 
 export interface ChartGuideOptions {
@@ -236,6 +286,8 @@ export function createChartLayout(options: ChartLayoutOptions): ChartLayout {
     }
   }
 
+  const xAtTop = options.xAxis?.side === 'top'
+  const yAtRight = options.yAxis?.side === 'right'
   const namedYAxes = options.yAxes?.length ? options.yAxes : undefined
   const namedAxisAreas: (ChartRect | null)[] = []
   let yAxisArea: ChartRect | null = null
@@ -246,7 +298,12 @@ export function createChartLayout(options: ChartLayoutOptions): ChartLayout {
         namedAxisAreas[index] = null
         continue
       }
-      const size = clampReservation(Math.max(1, axis.size ?? 56), plotArea.width, minPlotWidth, 0)
+      const size = clampReservation(
+        axisSize(axis, axis.range ?? options.yRange ?? [0, 1], 56, false),
+        plotArea.width,
+        minPlotWidth,
+        0,
+      )
       if (size <= 0) {
         namedAxisAreas[index] = null
         continue
@@ -262,48 +319,86 @@ export function createChartLayout(options: ChartLayoutOptions): ChartLayout {
     }
   } else if (options.yAxis?.visible === true) {
     const size = clampReservation(
-      Math.max(1, options.yAxis.size ?? 56),
+      axisSize(options.yAxis, options.yRange ?? [0, 1], 56, false),
       plotArea.width,
       minPlotWidth,
       0,
     )
-    yAxisArea = { x: plotArea.x, y: plotArea.y, width: size, height: plotArea.height }
-    plotArea = trimLeft(plotArea, size)
+    yAxisArea = {
+      x: yAtRight ? plotArea.x + plotArea.width - size : plotArea.x,
+      y: plotArea.y,
+      width: size,
+      height: plotArea.height,
+    }
+    if (yAtRight) plotArea.width = Math.max(1, plotArea.width - size)
+    else plotArea = trimLeft(plotArea, size)
   }
 
   const xAxisVisible = options.xAxis?.visible === true
-  const xAxisSize = Math.max(1, options.xAxis?.size ?? 34)
+  const xAxisSize = axisSize(options.xAxis, options.xRange ?? [0, 1], 34, true)
   let xAxisArea: ChartRect | null = null
   if (xAxisVisible) {
     const size = clampReservation(xAxisSize, plotArea.height, minPlotHeight, 0)
     xAxisArea = {
       x: plotArea.x,
-      y: plotArea.y + plotArea.height - size,
+      y: xAtTop ? plotArea.y : plotArea.y + plotArea.height - size,
       width: plotArea.width,
       height: size,
     }
-    plotArea.height = Math.max(1, plotArea.height - size)
+    if (xAtTop) plotArea = trimTop(plotArea, size)
+    else plotArea.height = Math.max(1, plotArea.height - size)
   }
 
-  const xTickCount = options.grid?.xTickCount ?? options.xAxis?.tickCount ?? 6
-  const yTickCount = options.grid?.yTickCount ?? options.yAxis?.tickCount ?? 5
-  const yAxes = namedYAxes?.map((axis, index): LaidOutYAxis => {
+  const xTickCount = options.xAxis?.tickCount ?? options.grid?.xTickCount ?? 6
+  const yTickCount = options.yAxis?.tickCount ?? options.grid?.yTickCount ?? 5
+  const xRange = axisDomain(options.xRange ?? [0, 1], options.xAxis)
+  const yRange = axisDomain(options.yRange ?? [0, 1], options.yAxis)
+  const xProjection = axisProjection(xRange, options.xAxis)
+  const yAxes: LaidOutYAxis[] = []
+  for (const [index, axis] of (namedYAxes ?? []).entries()) {
     const area = namedAxisAreas[index]
-    return {
+    const source = axis.from ? yAxes.find((entry) => entry.key === axis.from?.key) : undefined
+    const sourceRange = source?.range
+    const conversion = axis.from
+    const range =
+      conversion && sourceRange
+        ? normalizeRange([
+            conversion.fromSource(sourceRange[0]),
+            conversion.fromSource(sourceRange[1]),
+          ])
+        : axisDomain(axis.range ?? yRange, axis)
+    const projection =
+      conversion && source && sourceRange
+        ? dependentAxisProjection(
+            source.projection ??
+              createAxisProjection({ type: 'linear' }, expandRange(sourceRange, 0)),
+            conversion,
+          )
+        : axisProjection(range, axis)
+    const tickOptions =
+      conversion && source && axis.tickValues === undefined
+        ? { ...axis, tickValues: source.ticks.map(({ value }) => conversion.fromSource(value)) }
+        : axis
+    yAxes.push({
       key: axis.key,
+      range,
       side: axis.side ?? (index === 0 ? 'left' : 'right'),
-      area: area ? { ...area, height: plotArea.height } : null,
+      area: area ? { ...area, y: plotArea.y, height: plotArea.height } : null,
       label: axis.label ?? null,
+      ...(axis.tickRotation ? { tickRotation: axis.tickRotation } : {}),
       ticks: buildAxisTicks(
-        axis.range ?? options.yRange ?? [0, 1],
+        range,
         axis.tickCount ?? (index === 0 ? yTickCount : 5),
         plotArea.y + plotArea.height,
         -plotArea.height,
-        axis.formatValue,
+        tickOptions,
+        projection,
       ),
-    }
-  })
-  const primaryYAxis = yAxes?.[0]
+      ...(projection ? { projection } : {}),
+    })
+  }
+  const primaryYAxis = yAxes[0]
+  const yProjection = primaryYAxis ? primaryYAxis.projection : axisProjection(yRange, options.yAxis)
 
   return {
     bounds,
@@ -312,26 +407,34 @@ export function createChartLayout(options: ChartLayoutOptions): ChartLayout {
     overlayArea: legendArea ?? plotArea,
     xAxisArea,
     yAxisArea: primaryYAxis ? primaryYAxis.area : yAxisArea,
+    ...(xAtTop ? { xAxisSide: 'top' as const } : {}),
+    ...(yAtRight ? { yAxisSide: 'right' as const } : {}),
+    ...(options.xAxis?.tickRotation ? { xTickRotation: options.xAxis.tickRotation } : {}),
+    ...(options.yAxis?.tickRotation ? { yTickRotation: options.yAxis.tickRotation } : {}),
     legendArea,
     xAxisLabel: options.xAxis?.label ?? null,
     yAxisLabel: primaryYAxis ? primaryYAxis.label : (options.yAxis?.label ?? null),
     xTicks: buildAxisTicks(
-      options.xRange ?? [0, 1],
+      xRange,
       xTickCount,
       plotArea.x,
       plotArea.width,
-      options.xAxis?.formatValue,
+      options.xAxis,
+      xProjection,
     ),
     yTicks:
       primaryYAxis?.ticks ??
       buildAxisTicks(
-        options.yRange ?? [0, 1],
+        yRange,
         yTickCount,
         plotArea.y + plotArea.height,
         -plotArea.height,
-        options.yAxis?.formatValue,
+        options.yAxis,
+        yProjection,
       ),
-    ...(yAxes ? { yAxes } : {}),
+    ...(namedYAxes ? { yAxes } : {}),
+    ...(xProjection ? { xProjection } : {}),
+    ...(yProjection ? { yProjection } : {}),
   }
 }
 
@@ -359,9 +462,10 @@ export function createPlotViewportTransform(
   canvasWidth: number,
   canvasHeight: number,
   plotArea: ChartRect,
+  projections?: Pick<ChartLayout, 'xProjection' | 'yProjection'>,
 ): ViewTransform {
-  const [xMin, xMax] = expandRange(xRange, 0)
-  const [yMin, yMax] = expandRange(yRange, 0)
+  const [xMin, xMax] = projections?.xProjection ? [0, 1] : expandRange(xRange, 0)
+  const [yMin, yMax] = projections?.yProjection ? [0, 1] : expandRange(yRange, 0)
   const fullWidth = Math.max(1, canvasWidth)
   const fullHeight = Math.max(1, canvasHeight)
   const plotWidth = Math.max(1, plotArea.width)
@@ -372,6 +476,7 @@ export function createPlotViewportTransform(
   const scaleY = -plotHeight / ySpan
   const transform = new ViewTransform(fullWidth, fullHeight)
 
+  transform.setProjections(projections?.xProjection, projections?.yProjection)
   transform.setScale(scaleX, scaleY)
   transform.setTranslate(
     (plotArea.x - fullWidth / 2) / scaleX - xMin,
@@ -405,17 +510,22 @@ export function addChartGuidesToCommandList(
     fontSize: options.fontSize ?? 11,
   }
 
+  const xmin = layout.xProjection?.fromRatio(0) ?? xRange[0]
+  const xmax = layout.xProjection?.fromRatio(1) ?? xRange[1]
+  const ymin = layout.yProjection?.fromRatio(0) ?? yRange[0]
+  const ymax = layout.yProjection?.fromRatio(1) ?? yRange[1]
+
   if (gridVisible) {
     for (const tick of layout.xTicks) {
       commands.addLine(
-        new Float32Array([tick.value, yRange[0], tick.value, yRange[1]]),
+        new Float32Array([tick.value, ymin, tick.value, ymax]),
         gridStyle,
         ZLayer.Fill,
       )
     }
     for (const tick of layout.yTicks) {
       commands.addLine(
-        new Float32Array([xRange[0], tick.value, xRange[1], tick.value]),
+        new Float32Array([xmin, tick.value, xmax, tick.value]),
         gridStyle,
         ZLayer.Fill,
       )
@@ -423,20 +533,22 @@ export function addChartGuidesToCommandList(
   }
 
   if (axesVisible) {
+    const horizontal = layout.xAxisSide === 'top' ? ymax : ymin
+    const vertical: NumericRange = [ymin, ymax]
     commands.addLine(
-      new Float32Array([xRange[0], yRange[0], xRange[1], yRange[0]]),
+      new Float32Array([xmin, horizontal, xmax, horizontal]),
       axisStyle,
       ZLayer.Overlay,
     )
     if (layout.yAxes) {
       if (layout.yAxes.some(({ area, side }) => area && side === 'left')) {
-        addYAxisSpine(commands, xRange[0], yRange, axisStyle)
+        addYAxisSpine(commands, xmin, vertical, axisStyle)
       }
       if (layout.yAxes.some(({ area, side }) => area && side === 'right')) {
-        addYAxisSpine(commands, xRange[1], yRange, axisStyle)
+        addYAxisSpine(commands, xmax, vertical, axisStyle)
       }
     } else {
-      addYAxisSpine(commands, xRange[0], yRange, axisStyle)
+      addYAxisSpine(commands, layout.yAxisSide === 'right' ? xmax : xmin, vertical, axisStyle)
     }
   }
 
@@ -477,15 +589,43 @@ export function drawCommandList(
         currentTransform = transform
       }
     }
+    const projection = currentTransform?.hasProjection ? currentTransform : undefined
     switch (command.kind) {
       case 'line':
-        context.drawLines(command.buffer, command.options)
+        if (projection) drawProjectedLine(context, projection, command.buffer, command.options)
+        else context.drawLines(command.buffer, command.options)
         break
       case 'fill':
-        context.drawFill(command.upper, command.lower, command.options)
+        if (projection)
+          drawProjectedFill(context, projection, command.upper, command.lower, command.options)
+        else context.drawFill(command.upper, command.lower, command.options)
         break
       case 'rect':
-        context.drawRect(command.x, command.y, command.w, command.h, command.options)
+        if (projection) {
+          const x = projection.mapX(command.x)
+          const y = projection.mapY(command.y)
+          const right = projection.mapX(command.x + command.w)
+          const bottom = projection.mapY(command.y + command.h)
+          if (
+            Number.isFinite(x) &&
+            Number.isFinite(y) &&
+            Number.isFinite(right) &&
+            Number.isFinite(bottom)
+          ) {
+            context.drawRect(
+              Math.min(x, right),
+              Math.min(y, bottom),
+              Math.abs(right - x),
+              Math.abs(bottom - y),
+              command.options,
+            )
+          }
+        } else {
+          context.drawRect(command.x, command.y, command.w, command.h, command.options)
+        }
+        break
+      case 'marks':
+        drawMarks(context, command.bounds, command.options, projection)
         break
       case 'text':
         context.drawText(command.text, command.x, command.y, command.options)
@@ -495,6 +635,109 @@ export function drawCommandList(
   if (clipped) context.setClipRect?.(null)
   if (defaultTransform && currentTransform !== defaultTransform)
     context.setTransform(defaultTransform)
+}
+
+function drawMarks(
+  context: RenderContext,
+  bounds: Float32Array,
+  options: MarkBatchOptions,
+  projection: ViewTransform | undefined,
+): void {
+  if (context.drawMarks && !projection) {
+    context.drawMarks(bounds, options)
+    return
+  }
+  const projected = new Float32Array(bounds.length)
+  let size = 0
+  for (let index = 0; index < bounds.length; index += 4) {
+    const x = bounds[index] as number
+    const y = bounds[index + 1] as number
+    const w = bounds[index + 2] as number
+    const h = bounds[index + 3] as number
+    const left = projection?.mapX(x) ?? x
+    const right = projection?.mapX(x + w) ?? x + w
+    const top = projection?.mapY(y) ?? y
+    const bottom = projection?.mapY(y + h) ?? y + h
+    if (
+      !Number.isFinite(left) ||
+      !Number.isFinite(right) ||
+      !Number.isFinite(top) ||
+      !Number.isFinite(bottom)
+    )
+      continue
+    if (context.drawMarks) {
+      projected.set(
+        [
+          Math.min(left, right),
+          Math.min(top, bottom),
+          Math.abs(right - left),
+          Math.abs(bottom - top),
+        ],
+        size,
+      )
+      size += 4
+    } else {
+      context.drawRect(
+        Math.min(left, right),
+        Math.min(top, bottom),
+        Math.abs(right - left),
+        Math.abs(bottom - top),
+        { fillColor: options.color },
+      )
+    }
+  }
+  if (size > 0) context.drawMarks?.(projected.subarray(0, size), options)
+}
+
+function projectPairs(raw: Float32Array, transform: ViewTransform): Float32Array {
+  const projected = new Float32Array(raw.length)
+  for (let index = 0; index < raw.length; index += 2) {
+    projected[index] = transform.mapX(raw[index] as number)
+    projected[index + 1] = transform.mapY(raw[index + 1] as number)
+  }
+  return projected
+}
+
+function finitePair(values: Float32Array, index: number): boolean {
+  return Number.isFinite(values[index]) && Number.isFinite(values[index + 1])
+}
+
+function drawProjectedLine(
+  context: RenderContext,
+  transform: ViewTransform,
+  buffer: Float32Array,
+  options: LineOptions,
+): void {
+  const values = projectPairs(buffer, transform)
+  let start = 0
+  for (let index = 0; index <= values.length; index += 2) {
+    if (index < values.length && finitePair(values, index)) continue
+    if (index - start >= 4) context.drawLines(values.subarray(start, index), options)
+    start = index + 2
+  }
+}
+
+function drawProjectedFill(
+  context: RenderContext,
+  transform: ViewTransform,
+  upper: Float32Array,
+  lower: Float32Array,
+  options: FillOptions,
+): void {
+  const top = projectPairs(upper, transform)
+  const bottom = projectPairs(lower, transform)
+  if (top.length !== bottom.length) {
+    if (top.every(Number.isFinite) && bottom.every(Number.isFinite))
+      context.drawFill(top, bottom, options)
+    return
+  }
+  let start = 0
+  for (let index = 0; index <= top.length; index += 2) {
+    if (index < top.length && finitePair(top, index) && finitePair(bottom, index)) continue
+    if (index - start >= 4)
+      context.drawFill(top.subarray(start, index), bottom.subarray(start, index), options)
+    start = index + 2
+  }
 }
 
 function resolveInsets(value: number | Partial<EdgeInsets>): EdgeInsets {
@@ -547,17 +790,120 @@ function trimLeft(rect: ChartRect, size: number): ChartRect {
   }
 }
 
+function axisSize(
+  axis: AxisLayoutOptions | undefined,
+  range: NumericRange,
+  fallback: number,
+  horizontal: boolean,
+): number {
+  if (axis?.size !== 'auto') return Math.max(1, axis?.size ?? fallback)
+  const offset = axis.valueOffset ?? 0
+  const [min, max] = range
+  const time = axis.calendar
+    ? calendarTicks([min + offset, max + offset], 4, axis.calendar)
+    : undefined
+  const labelLength = [min, (min + max) / 2, max].reduce(
+    (longest, value) =>
+      Math.max(longest, formatAxisValue(value + offset, axis.formatValue ?? time?.format).length),
+    0,
+  )
+  const angle = ((axis.tickRotation ?? 0) * Math.PI) / 180
+  const contribution = horizontal ? Math.abs(Math.sin(angle)) : Math.abs(Math.cos(angle))
+  return Math.ceil(Math.max(fallback, labelLength * 7 * contribution + (axis.label ? 25 : 14)))
+}
+
+function dependentAxisProjection(
+  source: AxisProjection,
+  conversion: DependentYAxis,
+): AxisProjection {
+  return {
+    toRatio: (value) => source.toRatio(conversion.toSource(value)),
+    fromRatio: (ratio) => conversion.fromSource(source.fromRatio(ratio)),
+  }
+}
+
+function axisDomain(range: NumericRange, options?: AxisLayoutOptions): NumericRange {
+  const domain = normalizeRange(range)
+  const policy = options?.rangePolicy
+  const offset = options?.valueOffset ?? 0
+  let lo = domain[0] + offset
+  let hi = domain[1] + offset
+  if (policy) {
+    lo = Math.min(lo, policy.softMin ?? lo)
+    hi = Math.max(hi, policy.softMax ?? hi)
+    if (policy.apply) [lo, hi] = normalizeRange(policy.apply([lo, hi]))
+    lo = Math.max(lo, policy.hardMin ?? lo)
+    hi = Math.min(hi, policy.hardMax ?? hi)
+    if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) {
+      lo = domain[0] + offset
+      hi = domain[1] + offset
+    }
+  }
+  if (options?.scale?.type === 'log') {
+    const base = options.scale.base ?? 10
+    if (hi <= 0) return [1 - offset, base - offset]
+    if (lo <= 0) lo = Math.max(Number.MIN_VALUE, hi / base ** 3)
+    else if (lo === hi) return [lo / base - offset, hi * base - offset]
+  }
+  return [lo - offset, hi - offset]
+}
+
+function axisProjection(
+  range: NumericRange,
+  options?: AxisLayoutOptions,
+): AxisProjection | undefined {
+  const scale = options?.scale ?? (options?.rangePolicy ? { type: 'linear' as const } : undefined)
+  if (!scale) return undefined
+  return createAxisProjection(scale, expandRange(range, 0), options?.valueOffset)
+}
+
 function buildAxisTicks(
   range: NumericRange,
   requestedCount: number,
   startPosition: number,
   positionSpan: number,
-  formatValue: ((value: number) => string) | undefined,
+  options?: AxisLayoutOptions,
+  projection?: AxisProjection,
 ): AxisTick[] {
   const [min, max] = normalizeRange(range)
-  const count = Math.max(2, Math.min(24, Math.floor(requestedCount)))
+  const spacing = options?.tickSpacing
+  const budget = spacing && spacing > 0 ? Math.floor(Math.abs(positionSpan) / spacing) + 1 : 24
+  const count = Math.max(2, Math.min(24, budget, Math.floor(requestedCount)))
   const span = max - min
-  const ticks: AxisTick[] = []
+  const offset = options?.valueOffset ?? 0
+  const valueRange: NumericRange = [min + offset, max + offset]
+  const time = options?.calendar ? calendarTicks(valueRange, count, options.calendar) : undefined
+  const explicit =
+    typeof options?.tickValues === 'function'
+      ? options.tickValues(valueRange, count)
+      : options?.tickValues
+  const ticks =
+    explicit ??
+    time?.values ??
+    (options?.scale?.type === 'log'
+      ? logarithmicTicks(valueRange, count, options.scale.base ?? 10)
+      : options?.scale?.type === 'ordinal'
+        ? options.scale.values
+        : undefined)
+  const format = options?.formatValue ?? time?.format
+  if (ticks) {
+    const result: AxisTick[] = []
+    const seen = new Set<number>()
+    for (const original of ticks) {
+      const value = original - offset
+      if (!Number.isFinite(value) || value < min || value > max || seen.has(value)) continue
+      seen.add(value)
+      const ratio = projection?.toRatio(value) ?? (span > 0 ? (value - min) / span : 0)
+      if (!Number.isFinite(ratio)) continue
+      result.push({
+        value,
+        ratio,
+        position: startPosition + positionSpan * ratio,
+        label: formatAxisValue(original, format),
+      })
+    }
+    if (result.length) return result
+  }
 
   if (!Number.isFinite(span) || span <= 0) {
     return [
@@ -565,23 +911,21 @@ function buildAxisTicks(
         value: min,
         ratio: 0,
         position: startPosition,
-        label: formatAxisValue(min, formatValue),
+        label: formatAxisValue(min + offset, format),
       },
     ]
   }
 
-  for (let i = 0; i < count; i++) {
-    const ratio = count === 1 ? 0 : i / (count - 1)
-    const value = min + span * ratio
-    ticks.push({
+  return Array.from({ length: count }, (_, index): AxisTick => {
+    const ratio = index / (count - 1)
+    const value = projection?.fromRatio(ratio) ?? min + span * ratio
+    return {
       value,
       ratio,
       position: startPosition + positionSpan * ratio,
-      label: formatAxisValue(value, formatValue),
-    })
-  }
-
-  return ticks
+      label: formatAxisValue(value + offset, format),
+    }
+  })
 }
 
 function addAxisTextToCommandList(
@@ -594,7 +938,8 @@ function addAxisTextToCommandList(
   },
 ): void {
   if (layout.xAxisArea) {
-    const tickY = layout.xAxisArea.y + 6
+    const atTop = layout.xAxisSide === 'top'
+    const tickY = atTop ? layout.xAxisArea.y + layout.xAxisArea.height - 6 : layout.xAxisArea.y + 6
     for (const tick of layout.xTicks) {
       commands.addText(
         tick.label,
@@ -603,7 +948,8 @@ function addAxisTextToCommandList(
         {
           ...style,
           align: 'center',
-          baseline: 'top',
+          baseline: atTop ? 'bottom' : 'top',
+          ...(layout.xTickRotation ? { rotation: layout.xTickRotation } : {}),
         },
         ZLayer.Text,
       )
@@ -613,11 +959,11 @@ function addAxisTextToCommandList(
       commands.addText(
         layout.xAxisLabel,
         layout.xAxisArea.x + layout.xAxisArea.width / 2,
-        layout.xAxisArea.y + layout.xAxisArea.height - 2,
+        atTop ? layout.xAxisArea.y + 2 : layout.xAxisArea.y + layout.xAxisArea.height - 2,
         {
           ...style,
           align: 'center',
-          baseline: 'bottom',
+          baseline: atTop ? 'top' : 'bottom',
         },
         ZLayer.Text,
       )
@@ -625,9 +971,15 @@ function addAxisTextToCommandList(
   }
 
   const yAxes = layout.yAxes ?? [
-    { side: 'left', area: layout.yAxisArea, ticks: layout.yTicks, label: layout.yAxisLabel },
+    {
+      side: layout.yAxisSide ?? 'left',
+      area: layout.yAxisArea,
+      ticks: layout.yTicks,
+      label: layout.yAxisLabel,
+      tickRotation: layout.yTickRotation,
+    },
   ]
-  for (const { area, side, ticks, label } of yAxes) {
+  for (const { area, side, ticks, label, tickRotation } of yAxes) {
     if (!area) continue
     const fromRight = side === 'right'
     const tickX = fromRight ? area.x + 6 : area.x + area.width - 6
@@ -640,6 +992,7 @@ function addAxisTextToCommandList(
           ...style,
           align: fromRight ? 'left' : 'right',
           baseline: 'middle',
+          ...(tickRotation ? { rotation: tickRotation } : {}),
         },
         ZLayer.Text,
       )

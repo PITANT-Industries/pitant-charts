@@ -1,4 +1,10 @@
-import { DEFAULT_CHART_COLORS, findNearestTimestampIndex, type RgbaColor } from '@pitant/charts'
+import {
+  DEFAULT_CHART_COLORS,
+  findNearestTimestampIndex,
+  type NearestTimestampResult,
+  type RgbaColor,
+  TimeSeriesSampleKind,
+} from '@pitant/charts'
 import type {
   ChartTooltipPayload,
   ChartTooltipProvenance,
@@ -34,6 +40,8 @@ export interface ColumnarTooltipData {
   timestamps: Float64Array
   columns: Record<string, Float64Array>
   quality?: Record<string, Uint8Array>
+  sampleKinds?: Record<string, Uint8Array>
+  seriesTimestamps?: Record<string, Float64Array>
   provenance?: ColumnarTooltipProvenanceMap
   gaps?: ReadonlyArray<{ startIndex: number; endIndex: number }>
 }
@@ -69,7 +77,7 @@ export function buildColumnarTooltipPayload({
   series,
   timestamp,
 }: ColumnarTooltipOptions): ChartTooltipPayload | null {
-  const nearest = findNearestTimestampIndex(data.timestamps, timestamp)
+  const nearest = findNearestColumnarTimestamp(data, timestamp)
   if (!nearest) return null
 
   const gap = isIndexInGap(nearest.index, data.gaps)
@@ -78,11 +86,25 @@ export function buildColumnarTooltipPayload({
     const item = series[index]
     if (!item || item.visible === false) continue
 
-    const values = data.columns[item.field]
-    const rawValue = values?.[nearest.index]
-    const value = Number.isFinite(rawValue) ? (rawValue as number) : null
-    const quality = data.quality?.[item.field]?.[nearest.index] ?? null
-    const provenance = provenanceForIndex(data.provenance?.[item.field], nearest.index)
+    const timeline = data.seriesTimestamps?.[item.field]
+    const indexInSeries = timeline
+      ? findNearestTimestampIndex(timeline, timestamp)?.index
+      : nearest.index
+    const sampleKind =
+      indexInSeries === undefined ? undefined : data.sampleKinds?.[item.field]?.[indexInSeries]
+    const rawValue =
+      indexInSeries === undefined ? undefined : data.columns[item.field]?.[indexInSeries]
+    const value =
+      (sampleKind === undefined || sampleKind === TimeSeriesSampleKind.Observed) &&
+      Number.isFinite(rawValue)
+        ? (rawValue as number)
+        : null
+    const quality =
+      indexInSeries === undefined ? null : (data.quality?.[item.field]?.[indexInSeries] ?? null)
+    const provenance =
+      indexInSeries === undefined
+        ? null
+        : provenanceForIndex(data.provenance?.[item.field], indexInSeries)
     const row: ChartTooltipSeries = {
       key: item.key,
       label: item.label,
@@ -99,7 +121,9 @@ export function buildColumnarTooltipPayload({
       row.qualityLabel = qualityLabel(quality)
     }
     if (provenance) row.provenance = provenance
-    if (gap) row.gap = true
+    if ((gap && !timeline) || sampleKind === TimeSeriesSampleKind.ExplicitGap) {
+      row.gap = true
+    }
     rows.push(row)
   }
 
@@ -110,6 +134,19 @@ export function buildColumnarTooltipPayload({
     label: formatX?.(nearest.timestamp) ?? formatNumber(nearest.timestamp),
     series: rows,
   }
+}
+
+export function findNearestColumnarTimestamp(
+  data: ColumnarTooltipData,
+  target: number,
+): NearestTimestampResult | null {
+  let nearest = findNearestTimestampIndex(data.timestamps, target)
+  if (nearest) return nearest
+  for (const timeline of Object.values(data.seriesTimestamps ?? {})) {
+    const candidate = findNearestTimestampIndex(timeline, target)
+    if (candidate && (!nearest || candidate.distance < nearest.distance)) nearest = candidate
+  }
+  return nearest
 }
 
 function formatTooltipValue(

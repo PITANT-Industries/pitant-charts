@@ -127,8 +127,12 @@ export function mapChartPointToDataPoint(input: MapChartPointToDataInput): Chart
   )
   const [xMin, xMax] = normalizeRange(input.xRange)
   const [yMin, yMax] = normalizeRange(input.yRange)
-  const relativeX = interpolateRange(xMin, xMax, plotPoint.ratioX)
-  const dataY = interpolateRange(yMax, yMin, plotPoint.ratioY)
+  const relativeX =
+    input.layout.xProjection?.fromRatio(plotPoint.ratioX) ??
+    interpolateRange(xMin, xMax, plotPoint.ratioX)
+  const dataY =
+    input.layout.yProjection?.fromRatio(1 - plotPoint.ratioY) ??
+    interpolateRange(yMax, yMin, plotPoint.ratioY)
 
   return {
     x: relativeX + (input.xValueOffset ?? 0),
@@ -141,8 +145,10 @@ export function mapDataPointToChartPoint(input: MapDataPointToChartInput): Chart
   const [xMin, xMax] = normalizeRange(input.xRange)
   const [yMin, yMax] = normalizeRange(input.yRange)
   const relativeX = input.relativeX ?? input.x - (input.xValueOffset ?? 0)
-  const ratioX = rangeRatio(xMin, xMax, relativeX)
-  const ratioY = rangeRatio(yMax, yMin, input.y)
+  const ratioX = input.layout.xProjection?.toRatio(relativeX) ?? rangeRatio(xMin, xMax, relativeX)
+  const ratioY = input.layout.yProjection
+    ? 1 - input.layout.yProjection.toRatio(input.y)
+    : rangeRatio(yMax, yMin, input.y)
   const plotRatioX = input.clampToPlot === true ? clamp01(ratioX) : ratioX
   const plotRatioY = input.clampToPlot === true ? clamp01(ratioY) : ratioY
 
