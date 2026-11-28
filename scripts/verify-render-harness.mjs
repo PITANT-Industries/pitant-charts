@@ -175,6 +175,7 @@ try {
 
   const baseUrl = `http://127.0.0.1:${harnessPort}/`
   let webgpuAvailable = false
+  let webgpuUnavailableReason = 'A WebGPU adapter is unavailable on the harness origin'
   if (requestedRenderers.includes('webgpu')) {
     // WebGPU is gated on a secure context. about:blank does not inherit localhost's origin.
     await tab.send('Page.navigate', { url: baseUrl })
@@ -196,7 +197,15 @@ try {
     if (softwareWebgpu && !webgpuAvailable) {
       throw new Error('The requested SwiftShader WebGPU adapter is unavailable.')
     }
-    if (softwareWebgpu) console.log('WebGPU test adapter:', adapterInfo)
+    if (softwareWebgpu) {
+      console.log('WebGPU test adapter:', adapterInfo)
+      const control = await probeSoftwareWebgpuCanvas(tab)
+      console.log('Software WebGPU canvas control:', control)
+      if (!control.canvas) {
+        webgpuAvailable = false
+        webgpuUnavailableReason = 'SwiftShader could not present an independent WebGPU canvas'
+      }
+    }
   }
   const results = []
 
@@ -207,7 +216,7 @@ try {
           renderer,
           profile,
           skipped: true,
-          reason: 'A WebGPU adapter is unavailable on the harness origin',
+          reason: webgpuUnavailableReason,
         })
         continue
       }
@@ -243,6 +252,53 @@ try {
   tab?.disconnect()
   await stopChildren(children.reverse())
   await removeWithRetry(profileDir)
+}
+
+async function probeSoftwareWebgpuCanvas(tab) {
+  return await evaluate(
+    tab,
+    `(async () => {
+      const adapter = await navigator.gpu.requestAdapter()
+      const device = await adapter.requestDevice()
+      const canvas = document.createElement('canvas')
+      canvas.width = canvas.height = 16
+      document.body.append(canvas)
+      const buffer = device.createBuffer({
+        size: 256, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+      })
+      try {
+        const context = canvas.getContext('webgpu')
+        context.configure({
+          device, format: navigator.gpu.getPreferredCanvasFormat(),
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
+        })
+        const texture = context.getCurrentTexture()
+        const encoder = device.createCommandEncoder()
+        const pass = encoder.beginRenderPass({ colorAttachments: [{
+          view: texture.createView(), loadOp: 'clear', storeOp: 'store',
+          clearValue: { r: 1, g: 0, b: 1, a: 1 }
+        }] })
+        pass.end()
+        encoder.copyTextureToBuffer({ texture }, { buffer, bytesPerRow: 256 }, [1, 1, 1])
+        device.queue.submit([encoder.finish()])
+        const gpu = await Promise.race([
+          buffer.mapAsync(GPUMapMode.READ).then(() => Array.from(new Uint8Array(buffer.getMappedRange(0, 4)))),
+          new Promise(resolve => setTimeout(() => resolve(null), 4_000))
+        ])
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+        const snapshot = document.createElement('canvas')
+        const pixels = snapshot.getContext('2d', { willReadFrequently: true })
+        pixels.drawImage(canvas, 0, 0)
+        const sample = Array.from(pixels.getImageData(0, 0, 1, 1).data)
+        const isMagenta = rgba => rgba?.[0] > 240 && rgba[1] < 15 && rgba[2] > 240 && rgba[3] > 240
+        return { gpu, sample, canvas: isMagenta(gpu) && isMagenta(sample) }
+      } finally {
+        buffer.destroy()
+        canvas.remove()
+        device.destroy()
+      }
+    })()`,
+  )
 }
 
 async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
