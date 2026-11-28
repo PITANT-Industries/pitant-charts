@@ -108,7 +108,7 @@ try {
     {
       cwd: HARNESS_DIR,
       env: { ...process.env, BROWSER: 'none' },
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['ignore', 'ignore', 'pipe'],
     },
   )
   children.push(harness)
@@ -131,7 +131,7 @@ try {
       `--window-size=${VIEWPORT.width},${VIEWPORT.height}`,
       'about:blank',
     ],
-    { stdio: ['ignore', 'pipe', 'pipe'] },
+    { stdio: ['ignore', 'ignore', 'pipe'] },
   )
   children.push(chrome)
   captureOutput(chrome, 'chrome')
