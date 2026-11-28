@@ -11,7 +11,7 @@ owns canvas mounting, resize, accessibility, and interaction state.
 ## Install
 
 ```sh
-bun add /path/to/pitant-charts/pitant-charts-1.0.0.tgz
+bun add /path/to/pitant-charts/pitant-charts-1.1.0.tgz
 ```
 
 Build and pack the archive from the repository checkout. [Source installation](../../docs/getting-started.md#install-from-source)

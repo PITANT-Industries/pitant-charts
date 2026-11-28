@@ -18,7 +18,7 @@ npm pack ./packages/charts ./packages/charts-react
 In your React app, install both archives from the same build.
 
 ```sh
-bun add /path/to/pitant-charts/pitant-charts-1.0.0.tgz /path/to/pitant-charts/pitant-charts-react-1.0.0.tgz
+bun add /path/to/pitant-charts/pitant-charts-1.1.0.tgz /path/to/pitant-charts/pitant-charts-react-1.1.0.tgz
 ```
 
 Import PITANT chart tokens once in the application shell:

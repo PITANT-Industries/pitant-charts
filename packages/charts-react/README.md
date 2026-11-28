@@ -11,7 +11,7 @@ render harnesses that own the canvas lifecycle.
 ## Install
 
 ```sh
-bun add /path/to/pitant-charts/pitant-charts-1.0.0.tgz /path/to/pitant-charts/pitant-charts-react-1.0.0.tgz
+bun add /path/to/pitant-charts/pitant-charts-1.1.0.tgz /path/to/pitant-charts/pitant-charts-react-1.1.0.tgz
 ```
 
 Build and pack both archives from the same repository checkout. [Source installation](../../docs/getting-started.md#install-from-source)

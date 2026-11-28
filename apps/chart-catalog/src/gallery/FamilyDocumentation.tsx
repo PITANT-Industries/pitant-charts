@@ -35,8 +35,8 @@ cd pitant-charts
 bun install --frozen-lockfile
 bun run build
 npm pack ./packages/charts ./packages/charts-react`
-const catalogInstall = archiveInstallCommands(['pitant-chart-catalog-0.7.0.tgz'])
-const nativeInstall = archiveInstallCommands(['pitant-charts-1.0.0.tgz', 'pitant-charts-react-1.0.0.tgz'])
+const catalogInstall = archiveInstallCommands(['pitant-chart-catalog-0.8.0.tgz'])
+const nativeInstall = archiveInstallCommands(['pitant-charts-1.1.0.tgz', 'pitant-charts-react-1.1.0.tgz'])
 const properties: PropGuide[] = [
   { name: 'example', type: 'ChartExample', description: 'Required. Select a registered chart with getExample(id).' },
   { name: 'data', type: 'ChartData', description: 'Optional categories, numeric series, and family-specific rows. Omit it to use the included sample data. See Data and usage for accepted fields.' },

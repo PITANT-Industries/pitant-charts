@@ -33,8 +33,8 @@ The dashboard package and catalog workspace share a version. The industrial core
    ```
 
 3. Run **Publish industrial packages** in GitHub Actions with `dry_run=true`. Check the release gate, registry smoke, and both npm dry runs. GitHub uses its CI benchmark profile. Local `release:check` defaults to strict targets.
-4. Confirm the intended commit and create the matching `industrial-v<version>` tag, such as `industrial-v1.0.0`. A published GitHub Release with that tag triggers publication. For manual publication, run the workflow on the matching tag with `dry_run=false`. The publishing step uses the repository’s `NPM_TOKEN` secret.
-5. Check both exact versions on npm and confirm their provenance. Install both into a fresh React app and verify a `TimeSeries`, a `DigitalChannel`, one shadcn registry block, and PNG and SVG exports. The registry smoke task validates the local archive install path.
+4. Confirm the intended commit and create the matching `industrial-v<version>` tag, such as `industrial-v1.1.0`. Attach both `.tgz` files to the GitHub Release. The release runs the validation workflow and publishes to npm with provenance when `NPM_TOKEN` is configured. For manual npm publication, run the workflow on the matching tag with `dry_run=false`.
+5. Install both release archives into a fresh React app and verify a `TimeSeries`, a `DigitalChannel`, one shadcn registry block, and PNG and SVG exports. The registry smoke task validates the archive install path. If npm publication ran, check both exact versions on npm and confirm their provenance.
 
 ## Recover from a failed release
 

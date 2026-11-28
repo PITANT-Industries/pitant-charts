@@ -6,10 +6,10 @@ PITANT Charts provides React dashboard components, a gallery of reusable chart e
 
 | Package | Use it for | Data |
 | --- | --- | --- |
-| `pitant-charts` 0.7.0 | Line, grouped bar, donut, and sunburst charts in a React dashboard | Rows with accessors, slices, or a hierarchy |
-| `@pitant/chart-catalog` 0.7.0 | Browsing chart designs and embedding a specific variant such as a gauge, Sankey diagram, or heatmap | Categories and series, or records with fields specific to the chart family |
-| `@pitant/charts-react` 1.0.0 | Historian trends, streaming signals, state lanes, synchronized charts, and scientific plots in React | Typed arrays or structured inputs specific to the chart |
-| `@pitant/charts` 1.0.0 | The industrial renderer and data engine. Use the core directly when your app owns the canvas lifecycle. | Typed arrays and renderer commands |
+| `pitant-charts` 0.8.0 | Line, grouped bar, donut, and sunburst charts in a React dashboard | Rows with accessors, slices, or a hierarchy |
+| `@pitant/chart-catalog` 0.8.0 | Browsing chart designs and embedding a specific variant such as a gauge, Sankey diagram, or heatmap | Categories and series, or records with fields specific to the chart family |
+| `@pitant/charts-react` 1.1.0 | Historian trends, streaming signals, state lanes, synchronized charts, and scientific plots in React | Typed arrays or structured inputs specific to the chart |
+| `@pitant/charts` 1.1.0 | The industrial renderer and data engine. Use the core directly when your app owns the canvas lifecycle. | Typed arrays and renderer commands |
 
 The dashboard and catalog packages share a version. CI checks that they match. The industrial packages have their own version. [Dashboard package](../packages/charts-ui/README.md) · [Catalog package](../apps/chart-catalog/README.md) · [Industrial React API](../packages/charts-react/README.md)
 
@@ -40,9 +40,9 @@ npm pack ./packages/charts ./packages/charts-react
 In your React app, install the archives you built. Replace `/path/to/pitant-charts/` with the checkout path.
 
 ```sh
-bun add /path/to/pitant-charts/pitant-charts-0.7.0.tgz
-bun add /path/to/pitant-charts/pitant-chart-catalog-0.7.0.tgz
-bun add /path/to/pitant-charts/pitant-charts-1.0.0.tgz /path/to/pitant-charts/pitant-charts-react-1.0.0.tgz
+bun add /path/to/pitant-charts/pitant-charts-0.8.0.tgz
+bun add /path/to/pitant-charts/pitant-chart-catalog-0.8.0.tgz
+bun add /path/to/pitant-charts/pitant-charts-1.1.0.tgz /path/to/pitant-charts/pitant-charts-react-1.1.0.tgz
 ```
 
 ## Add a dashboard chart

@@ -3,16 +3,31 @@
 This changelog tracks `@pitant/charts` and `@pitant/charts-react`. The dashboard
 and catalog packages share a separate version. See their [release procedure](docs/release-checklist.md#dashboard-and-catalog).
 
-## Unreleased
+## 1.1.0 - 2026-11-28
 
 ### Added
 
+- Named Y axes for channels and overlays, with independent ranges, labels,
+  grids and tick formats. The multi-axis registry block plots three units
+  on one canvas.
+- Rotated Cartesian plots, calendar-aware ticks, nonlinear and ordinal
+  scales, dependent unit conversions, and automatic arcsinh thresholds.
+- Mixed marks, stacking, independent timestamps, sample-level styling,
+  dashed strokes, and dense or sparse numeric heatmaps.
+- XY selection, configurable hover and synchronization, plugin lifecycle
+  hooks, and batched imperative updates and redraws.
 - TimeSeries value-band and envelope-band support in the core render plan,
   React config, command-frame SVG export, and benchmark suite.
 - TimeSeries visual-only derived series overlays for moving average, delta,
   rate-of-change, and scale/offset with a high-density benchmark gate.
 - Browser render-harness `bands` profile for mounted React TimeSeries
   value/envelope band verification.
+
+### Fixed
+
+- Preserved epoch and fractional-millisecond timestamp precision through
+  raw and downsampled viewport queries on the main thread and in workers.
+- Aligned WebGPU positions with Canvas2D and verified both renderers in Chrome.
 
 ## 1.0.0 - 2026-05-19
 

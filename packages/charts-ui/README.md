@@ -14,10 +14,10 @@ cd packages/charts-ui
 bun run check
 bun run palette:check
 bun pm pack
-bun scripts/check-package.ts pitant-charts-0.7.0.tgz
+bun scripts/check-package.ts pitant-charts-0.8.0.tgz
 ```
 
-From your React app, run `bun add /path/to/pitant-charts-0.7.0.tgz`.
+From your React app, run `bun add /path/to/pitant-charts-0.8.0.tgz`.
 
 [Repository setup and release checks](../../docs/release-checklist.md#dashboard-and-catalog)
 

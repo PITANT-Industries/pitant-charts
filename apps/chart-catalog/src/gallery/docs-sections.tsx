@@ -56,6 +56,8 @@ const guideHeadings = {
   },
   changelog: {
     'chart-catalog': 'Chart catalog',
+    'dashboard-0-8-0': 'Dashboard components 0.8.0',
+    'industrial-1-1-0': 'Industrial engine and React bindings 1.1.0',
     'dashboard-0-7-0': 'Dashboard components 0.7.0',
     'industrial-1-0-0': 'Industrial engine and React bindings 1.0.0',
   },
@@ -74,9 +76,9 @@ function GuideHeading<Section extends DocsSectionId>({ section, id }: {
 }
 
 const registryUrl = 'https://opensource.pitant.de/charts/r'
-const dashboardPackage = 'pitant-charts-0.7.0.tgz'
-const catalogPackage = 'pitant-chart-catalog-0.7.0.tgz'
-const nativePackages = ['pitant-charts-1.0.0.tgz', 'pitant-charts-react-1.0.0.tgz'] as const
+const dashboardPackage = 'pitant-charts-0.8.0.tgz'
+const catalogPackage = 'pitant-chart-catalog-0.8.0.tgz'
+const nativePackages = ['pitant-charts-1.1.0.tgz', 'pitant-charts-react-1.1.0.tgz'] as const
 const timeSeriesBlock = `${registryUrl}/pitant-time-series.json`
 const setup = `git clone ${repositoryUrl}.git
 cd pitant-charts
@@ -331,6 +333,14 @@ function Changelog() {
         <li><a href="#docs=spectral-waterfall">Spectral Waterfall</a> combines a 3D spectrum history with a selected spectrum and heatmap. Its examples use frequency data from the Mauna Loa CO₂ record and temperature-resolved X-ray diffraction of DyNiC₂.</li>
         <li><a href="#docs=spectrum">Spectrum</a>, <a href="#docs=spectrogram">Spectrogram</a>, <a href="#docs=correlation-matrix">Correlation Matrix</a>, and <a href="#docs=process-control">Process Control</a> have domain data examples.</li>
       </ul>
+    </section>
+    <section>
+      <GuideHeading section="changelog" id="dashboard-0-8-0" />
+      <p>Line and bar charts support independent value axes, mixed marks, stacking, continuous numeric or date axes, and rotated layouts.</p>
+    </section>
+    <section>
+      <GuideHeading section="changelog" id="industrial-1-1-0" />
+      <p>TimeSeries preserves fractional timestamps and supports independent Y axes, mixed marks, and rotated layouts. Numeric heatmaps support nonuniform grids and sparse cells, with PNG and SVG export.</p>
     </section>
     <section>
       <GuideHeading section="changelog" id="dashboard-0-7-0" />
