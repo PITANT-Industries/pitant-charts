@@ -11,6 +11,8 @@ import {
   type BinarySchema,
   type ColumnarData,
   type DataInput,
+  timestampFromNanoseconds,
+  timestampToNanoseconds,
   toBigIntTimestamps,
   toColumnar,
   type ViewportQuery,
@@ -88,7 +90,7 @@ export class DataSource {
     this._columnarCache = cloneColumnarCache(columnar)
 
     // Convert timestamps to BigInt nanoseconds for the low-level engine
-    const bigTimestamps = toBigIntTimestamps(columnar.timestamps, timeUnit)
+    const bigTimestamps = toBigIntTimestamps(columnar.timestamps, timeUnit, 'nanosecond')
 
     // Ingest each column as a separate series
     const stats: Record<string, SeriesStats> = {}
@@ -127,7 +129,7 @@ export class DataSource {
     }
 
     const cacheAppend = cloneColumnarCache(columnar)
-    const bigTimestamps = toBigIntTimestamps(columnar.timestamps, timeUnit)
+    const bigTimestamps = toBigIntTimestamps(columnar.timestamps, timeUnit, 'nanosecond')
 
     const counts: Record<string, number> = {}
     for (const [name, values] of Object.entries(columnar.columns)) {
@@ -154,8 +156,8 @@ export class DataSource {
     const cached = this._columnarCache
     const timeUnit = this._options.timeUnit ?? cached?.timeUnit ?? 'ms'
     const nsMultiplier = timeUnit === 'ns' ? 1n : timeUnit === 'us' ? 1_000n : 1_000_000n
-    const startNs = BigInt(Math.round(query.start)) * nsMultiplier
-    const endNs = BigInt(Math.round(query.end)) * nsMultiplier
+    const startNs = timestampToNanoseconds(query.start, nsMultiplier)
+    const endNs = timestampToNanoseconds(query.end, nsMultiplier)
     const targetColumns = query.columns ?? [...this._columns]
 
     // Query first column to get timestamps + gaps + LOD level
@@ -183,7 +185,7 @@ export class DataSource {
     const pointCount = firstResult.pointCount
     const timestamps = new Float64Array(pointCount)
     for (let i = 0; i < pointCount; i++) {
-      timestamps[i] = Number((firstResult.timestamps[i] as bigint) / nsMultiplier)
+      timestamps[i] = timestampFromNanoseconds(firstResult.timestamps[i] as bigint, nsMultiplier)
     }
 
     const columns: Record<string, Float64Array> = {}
@@ -236,8 +238,8 @@ export class DataSource {
     const stats = await this._engine.getStats(firstCol)
 
     return {
-      start: Number(stats.firstTimestamp / nsDivisor),
-      end: Number(stats.lastTimestamp / nsDivisor),
+      start: timestampFromNanoseconds(stats.firstTimestamp, nsDivisor),
+      end: timestampFromNanoseconds(stats.lastTimestamp, nsDivisor),
     }
   }
 

@@ -362,11 +362,28 @@ const TIME_UNIT_TO_NS: Record<string, bigint> = {
 export function toBigIntTimestamps(
   timestamps: Float64Array,
   timeUnit: 'ms' | 'us' | 'ns' = 'ms',
+  resolution: 'input-unit' | 'nanosecond' = 'input-unit',
 ): BigInt64Array {
   const multiplier = TIME_UNIT_TO_NS[timeUnit] ?? 1_000_000n
   const result = new BigInt64Array(timestamps.length)
-  for (let i = 0; i < timestamps.length; i++) {
-    result[i] = BigInt(Math.round(timestamps[i] as number)) * multiplier
+  if (resolution === 'nanosecond' && multiplier !== 1n) {
+    for (let index = 0; index < timestamps.length; index++) {
+      result[index] = timestampToNanoseconds(timestamps[index] as number, multiplier)
+    }
+  } else {
+    for (let index = 0; index < timestamps.length; index++) {
+      result[index] = BigInt(Math.round(timestamps[index] as number)) * multiplier
+    }
   }
   return result
+}
+
+export function timestampToNanoseconds(value: number, multiplier: bigint): bigint {
+  const whole = Math.trunc(value)
+  if (whole === value) return BigInt(whole) * multiplier
+  return BigInt(whole) * multiplier + BigInt(Math.round((value - whole) * Number(multiplier)))
+}
+
+export function timestampFromNanoseconds(value: bigint, divisor: bigint): number {
+  return Number(value / divisor) + Number(value % divisor) / Number(divisor)
 }

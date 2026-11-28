@@ -13,6 +13,18 @@ function makeRows(n: number) {
 describe('DataSource', () => {
   // ── load ──────────────────────────────────────────────────
 
+  it('preserves sub-millisecond samples and query bounds at a modern epoch', async () => {
+    const source = new DataSource()
+    const epoch = Date.UTC(2026, 10, 28, 12)
+    const timestamps = Float64Array.of(epoch, epoch + 0.25, epoch + 0.5, epoch + 0.75)
+    await source.load({ timestamps, columns: { value: Float64Array.of(1, 2, 3, 4) } })
+    const result = await source.query({ start: epoch + 0.2, end: epoch + 0.6, targetPixels: 100 })
+    expect(Array.from(result.timestamps)).toEqual([epoch + 0.25, epoch + 0.5])
+    expect(Array.from(result.columns['value'] ?? [])).toEqual([2, 3])
+    expect(await source.getTimeRange()).toEqual({ start: epoch, end: epoch + 0.75 })
+    source.destroy()
+  })
+
   describe('load', () => {
     it('loads JSON rows and returns stats per column', async () => {
       const ds = new DataSource()
