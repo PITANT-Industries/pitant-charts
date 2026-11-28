@@ -12,6 +12,8 @@ export interface LineOptions {
   width: number
   cap?: 'butt' | 'round'
   join?: 'miter' | 'round'
+  /** Alternating stroke and gap lengths in CSS pixels. */
+  dash?: readonly number[]
 }
 
 /**

@@ -244,6 +244,36 @@ describe('useDigitalChannel', () => {
     })
   })
 
+  it('can use the previous observed digital sample when hovering before a state transition', () => {
+    const config: DigitalChannelConfig = {
+      channels: [
+        {
+          key: 'running',
+          label: 'Running',
+          field: 'running',
+          stateLabels: { 0: 'Stopped', 1: 'Running' },
+          hoverIndex: 'previous',
+        },
+      ],
+    }
+    const { result } = renderHook(() => {
+      const containerRef = useRef<ChartContainerRef | null>(null)
+      return useDigitalChannel({ config, data: DATA, containerRef })
+    })
+
+    act(() => {
+      result.current.handleHoverChange(pointerAt(9))
+    })
+
+    expect(result.current.tooltipPayload?.timestamp).toBe(10)
+    expect(result.current.tooltipPayload?.series[0]).toMatchObject({
+      key: 'running',
+      value: 0,
+      formatted: 'Stopped',
+      sampleTimestamp: 0,
+    })
+  })
+
   it('syncs x-range and cursor payloads through ChartSyncGroup', async () => {
     render(
       <ChartSyncGroup>

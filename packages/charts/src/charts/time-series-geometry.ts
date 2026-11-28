@@ -1,5 +1,10 @@
+import type { MarkBatchOptions } from '../renderer/types.js'
 import type { ViewTransform } from '../renderer/view-transform.js'
-import type { TimeSeriesLineSegment } from './time-series.js'
+import type {
+  TimeSeriesLineSegment,
+  TimeSeriesMarkSample,
+  TimeSeriesPlannedSeries,
+} from './time-series.js'
 
 /**
  * Tessellate a monotone cubic through the samples without overshooting either
@@ -102,16 +107,12 @@ export function buildTimeSeriesPointBounds(
 ): Float32Array {
   const bounds = new Float32Array(sampleCount(segments) * 4)
   let write = 0
-  for (const { buffer } of segments) {
-    for (let i = 0; i < buffer.length; i += 2) {
-      const point = project(buffer, i, transform)
-      if (!(Number.isFinite(point.x) && Number.isFinite(point.y))) continue
-      bounds[write++] = point.x - size / 2
-      bounds[write++] = point.y - size / 2
-      bounds[write++] = size
-      bounds[write++] = size
-    }
-  }
+  visitPointCenters(segments, transform, (_, _offset, x, y) => {
+    bounds[write++] = x - size / 2
+    bounds[write++] = y - size / 2
+    bounds[write++] = size
+    bounds[write++] = size
+  })
   return bounds.subarray(0, write)
 }
 
@@ -121,10 +122,167 @@ export function buildTimeSeriesBarBounds(
   widthRatio: number,
   transform: ViewTransform | undefined,
 ): Float32Array {
-  const baselineY = transform ? transform.dataToPixel(0, baseline).y : baseline
   const bounds = new Float32Array(sampleCount(segments) * 4)
   let write = 0
-  for (const { buffer, lower } of segments) {
+  visitBarPositions(segments, baseline, transform, (_, _offset, x, top, height, spacing) => {
+    const width = spacing * widthRatio
+    bounds[write++] = x - width / 2
+    bounds[write++] = top
+    bounds[write++] = width
+    bounds[write++] = height
+  })
+  return bounds.subarray(0, write)
+}
+
+interface TimeSeriesMarkBatch {
+  bounds: Float32Array
+  options: MarkBatchOptions
+}
+
+interface MarkRun {
+  bounds: number[]
+  options: MarkBatchOptions
+}
+
+export function buildStyledTimeSeriesPointBatches(
+  series: TimeSeriesPlannedSeries,
+  size: number,
+  defaults: MarkBatchOptions,
+  transform: ViewTransform | undefined,
+): TimeSeriesMarkBatch[] {
+  const runs: MarkRun[] = []
+  visitPointCenters(series.pointSegments ?? series.segments, transform, (segment, offset, x, y) => {
+    const sample = markSample(series, segment, offset)
+    const style = sample && series.points?.style?.(sample)
+    if (style?.visible === false) return
+    const diameter = boundedSize(style?.size, size, 1, 128)
+    const shape =
+      style?.shape === undefined
+        ? (defaults.shape ?? 'ellipse')
+        : style.shape === 'circle'
+          ? 'ellipse'
+          : 'rect'
+    const run = markRun(runs, style?.color ?? defaults.color, shape)
+    run.bounds.push(x - diameter / 2, y - diameter / 2, diameter, diameter)
+  })
+  return packMarkRuns(runs)
+}
+
+export function buildStyledTimeSeriesBarBatches(
+  series: TimeSeriesPlannedSeries,
+  baseline: number,
+  widthRatio: number,
+  color: MarkBatchOptions['color'],
+  transform: ViewTransform | undefined,
+): TimeSeriesMarkBatch[] {
+  const runs: MarkRun[] = []
+  visitBarPositions(
+    series.segments,
+    baseline,
+    transform,
+    (segment, offset, x, top, height, spacing, base) => {
+      const sample = markSample(series, segment, offset, base)
+      const style = sample && series.barStyle?.(sample)
+      if (style?.visible === false) return
+      const width = boundedSize(
+        style?.width,
+        spacing * boundedSize(style?.widthRatio, widthRatio, 0.02, 1),
+        0.01,
+        Number.POSITIVE_INFINITY,
+      )
+      markRun(runs, style?.color ?? color, 'rect').bounds.push(x - width / 2, top, width, height)
+    },
+  )
+  return packMarkRuns(runs)
+}
+
+function boundedSize(
+  value: number | undefined,
+  defaultValue: number,
+  min: number,
+  max: number,
+): number {
+  return value === undefined || !Number.isFinite(value)
+    ? defaultValue
+    : Math.max(min, Math.min(max, value))
+}
+
+function markSample(
+  series: TimeSeriesPlannedSeries,
+  segment: TimeSeriesLineSegment,
+  offset: number,
+  baseline?: number,
+): TimeSeriesMarkSample | undefined {
+  const index = segment.sampleIndices?.[offset / 2]
+  const source = series.markSource
+  if (!source || index === undefined) return undefined
+  const timestamp = source.timestamps[index]
+  const value = source.values[index]
+  const plottedValue = source.plottedValues[index]
+  if (timestamp === undefined || value === undefined || plottedValue === undefined) return undefined
+  return {
+    index,
+    seriesKey: series.key,
+    field: series.field,
+    timestamp,
+    value,
+    plottedValue,
+    ...(baseline !== undefined ? { baseline } : {}),
+  }
+}
+
+function markRun(
+  runs: MarkRun[],
+  color: MarkBatchOptions['color'],
+  shape: NonNullable<MarkBatchOptions['shape']>,
+): MarkRun {
+  const last = runs[runs.length - 1]
+  if (
+    last?.options.shape === shape &&
+    color.every((channel, index) => last.options.color[index] === channel)
+  ) {
+    return last
+  }
+  const run: MarkRun = { bounds: [], options: { color, shape } }
+  runs.push(run)
+  return run
+}
+
+function packMarkRuns(runs: MarkRun[]): TimeSeriesMarkBatch[] {
+  return runs.map(({ bounds, options }) => ({ bounds: Float32Array.from(bounds), options }))
+}
+
+function visitPointCenters(
+  segments: readonly TimeSeriesLineSegment[],
+  transform: ViewTransform | undefined,
+  visit: (segment: TimeSeriesLineSegment, offset: number, x: number, y: number) => void,
+): void {
+  for (const segment of segments) {
+    const { buffer } = segment
+    for (let i = 0; i < buffer.length; i += 2) {
+      const { x, y } = project(buffer, i, transform)
+      if (Number.isFinite(x) && Number.isFinite(y)) visit(segment, i, x, y)
+    }
+  }
+}
+
+function visitBarPositions(
+  segments: readonly TimeSeriesLineSegment[],
+  baseline: number,
+  transform: ViewTransform | undefined,
+  visit: (
+    segment: TimeSeriesLineSegment,
+    offset: number,
+    x: number,
+    top: number,
+    height: number,
+    spacing: number,
+    baseline: number,
+  ) => void,
+): void {
+  const baselineY = transform ? transform.dataToPixel(0, baseline).y : baseline
+  for (const segment of segments) {
+    const { buffer, lower } = segment
     if (buffer.length < 2) continue
     let current = project(buffer, 0, transform)
     let previousX: number | undefined
@@ -138,17 +296,20 @@ export function buildTimeSeriesBarBounds(
       const baseY = Number.isFinite(stackedY) ? stackedY : baselineY
       const height = Math.abs(current.y - baseY)
       if (Number.isFinite(current.x) && height > 0 && Number.isFinite(height)) {
-        const width = (Number.isFinite(spacing) ? spacing : 8) * widthRatio
-        bounds[write++] = current.x - width / 2
-        bounds[write++] = Math.min(current.y, baseY)
-        bounds[write++] = width
-        bounds[write++] = height
+        visit(
+          segment,
+          i,
+          current.x,
+          Math.min(current.y, baseY),
+          height,
+          Number.isFinite(spacing) ? spacing : 8,
+          Number.isFinite(stackedY) ? (lower?.[i + 1] ?? baseline) : baseline,
+        )
       }
       previousX = current.x
       if (next) current = next
     }
   }
-  return bounds.subarray(0, write)
 }
 
 function splineSubdivisions(

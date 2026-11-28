@@ -53,6 +53,7 @@ import { ChartTooltip } from './chart-tooltip.js'
 import {
   buildColumnarTooltipPayload,
   type ColumnarTooltipProvenanceMap,
+  type SeriesHoverIndex,
 } from './chart-tooltip-data.js'
 import type {
   AxisConfig,
@@ -76,6 +77,7 @@ export interface DigitalChannelConfigSeries extends SeriesConfig {
   lineWidth?: number
   gapThreshold?: number
   stateLabels?: Record<number, string>
+  hoverIndex?: SeriesHoverIndex
 }
 
 export interface DigitalChannelConfig {

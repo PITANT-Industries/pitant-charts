@@ -145,6 +145,9 @@ const trend = new TimeSeriesChart(context, {
 ```
 
 Each scale can define its own bounds, padding, tick count, formatter, and gutter.
+A scale can also set its own label color and grid style. Grids normally follow
+the primary scale. Set `grid: true` or provide a line style on a secondary scale
+to draw its grid, or set `grid: false` on an axis to suppress that axis's grid.
 A band, Y annotation, ruler, or SPC track can use the corresponding `yAxisKey`.
 The command frame uses the same axis transformations for Canvas2D, WebGPU, and SVG.
 
@@ -190,6 +193,34 @@ All eight imperative chart classes accept `frame.plugins`. Implement
 `extendFrame(frame, plan)` to append render commands that appear in live charts
 and exports. `beforeDraw` and `afterDraw` run inside the native rendering frame
 for work that needs the rendering context.
+
+### Style individual points and bars
+
+Use `points.style(sample)` to change a marker’s color, diameter or shape.
+On bar series, use `barStyle(sample)` to set color, an exact width in CSS
+pixels or a fraction of neighboring sample spacing. Return `{ visible: false }`
+to skip a mark while retaining its sample for the line and domain calculations.
+
+```ts
+const pressureBars = {
+  key: 'pressure',
+  label: 'Pressure',
+  field: 'pressure',
+  mark: 'bar',
+  barStyle: ({ value }) => value > 1.7
+    ? { color: [0.9, 0.15, 0.1, 1], widthRatio: 0.85 }
+    : undefined,
+} satisfies import('@pitant/charts').TimeSeriesSeries
+```
+
+Callbacks run for drawable input samples in the current render plan. A sample
+carries its exact input timestamp and value, its index in the input arrays, and
+its plotted value after stacking. Bar callbacks also receive their baseline.
+Use the timestamp for identity across viewport queries. Style overrides share
+the same geometry on Canvas2D, WebGPU and SVG.
+
+Set a trend series' `dash` to alternating stroke and gap lengths in CSS pixels.
+Dash lengths stay fixed when the axis range or device pixel ratio changes.
 
 ## Data Rules
 

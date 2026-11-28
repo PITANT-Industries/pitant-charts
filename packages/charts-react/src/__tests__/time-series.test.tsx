@@ -966,6 +966,71 @@ describe('useTimeSeries', () => {
     expect(screen.getByTestId('right-pressure').textContent).toBe('false')
   })
 
+  it('shows and clears a programmatic inspection rectangle without changing the chart ranges', () => {
+    const onSelectionChange = vi.fn()
+    render(
+      <TimeSeries config={CONFIG} data={DATA} interaction={{ onSelectionChange }}>
+        {(chart) => (
+          <>
+            <button
+              type="button"
+              onClick={() => chart.setSelection({ xRange: [1018, 1005], yRange: [6, 9] })}
+            >
+              Inspect range
+            </button>
+            <button type="button" onClick={() => chart.setSelection(null)}>
+              Clear range
+            </button>
+            <span data-testid="selection-view-range">{JSON.stringify(chart.dataRange)}</span>
+            <span data-testid="selection-y-range">{JSON.stringify(chart.visibleYRange)}</span>
+          </>
+        )}
+      </TimeSeries>,
+    )
+
+    expect(screen.queryByTestId('chart-region-zoom-selection')).toBeNull()
+    fireEvent.click(screen.getByText('Inspect range'))
+    expect(screen.getByTestId('chart-region-zoom-selection')).toBeTruthy()
+    expect(onSelectionChange).toHaveBeenLastCalledWith({ xRange: [1005, 1018], yRange: [6, 9] })
+    expect(screen.getByTestId('selection-view-range').textContent).toBe('[1000,1020]')
+    expect(screen.getByTestId('selection-y-range').textContent).toBe('null')
+    fireEvent.click(screen.getByText('Clear range'))
+    expect(screen.queryByTestId('chart-region-zoom-selection')).toBeNull()
+    expect(onSelectionChange).toHaveBeenLastCalledWith(null)
+  })
+
+  it('reports selections through the callback when the rectangle is controlled', () => {
+    const onSelectionChange = vi.fn()
+    const interaction = { selectedRanges: null, onSelectionChange }
+    const { result } = renderHook(() =>
+      useTimeSeries({
+        config: CONFIG,
+        data: DATA,
+        containerRef: fakeContainerRef(700),
+        interaction,
+      }),
+    )
+    act(() => result.current.setSelection({ xRange: [1000, 1015] }))
+    expect(onSelectionChange).toHaveBeenLastCalledWith({ xRange: [1000, 1015] })
+    expect(result.current.selectedRanges).toBe(null)
+  })
+
+  it('passes raw per-series hover policies through the native TimeSeries component', () => {
+    const config: TimeSeriesConfig = {
+      series: [{ key: 'temp', label: 'Temperature', field: 'temp', hoverIndex: 'previous' }],
+    }
+    const { result } = renderHook(() =>
+      useTimeSeries({ config, data: DATA, containerRef: fakeContainerRef(700) }),
+    )
+    act(() => result.current.handleHoverChange(pointerAt(1009)))
+    expect(result.current.tooltipPayload?.timestamp).toBe(1010)
+    expect(result.current.tooltipPayload?.series[0]).toMatchObject({
+      key: 'temp',
+      value: 10,
+      sampleTimestamp: 1000,
+    })
+  })
+
   it('component renders a chart container and exposes chart state to children', () => {
     render(
       <TimeSeries ariaLabel="Process trend" config={CONFIG} data={DATA}>

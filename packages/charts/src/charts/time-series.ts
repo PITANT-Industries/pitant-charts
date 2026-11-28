@@ -22,6 +22,8 @@ import {
 } from './common.js'
 import { TimeSeriesSampleKind } from './time-series-alignment.js'
 import {
+  buildStyledTimeSeriesBarBatches,
+  buildStyledTimeSeriesPointBatches,
   buildTimeSeriesArea,
   buildTimeSeriesBarBounds,
   buildTimeSeriesPointBounds,
@@ -46,11 +48,45 @@ export interface TimeSeriesStackOptions {
   percent?: boolean
 }
 
+/** Input sample used to style a point or bar in the current render plan. */
+export interface TimeSeriesMarkSample {
+  seriesKey: string
+  field: string
+  index: number
+  timestamp: number
+  value: number
+  /** Value after stacking, if the series belongs to a stack. */
+  plottedValue: number
+  baseline?: number
+}
+
+export interface TimeSeriesPointStyle {
+  visible?: boolean
+  size?: number
+  color?: RgbaColor
+  shape?: 'square' | 'circle'
+}
+
+export interface TimeSeriesBarStyle {
+  visible?: boolean
+  color?: RgbaColor
+  /** Bar width in CSS pixels. Takes precedence over widthRatio. */
+  width?: number
+  /** Fraction of the available space between neighboring samples. */
+  widthRatio?: number
+}
+
+export type TimeSeriesBarStyleCallback = (
+  sample: TimeSeriesMarkSample,
+) => TimeSeriesBarStyle | undefined
+
 export interface TimeSeriesPointOptions {
   /** Marker diameter in CSS pixels. */
   size?: number
   color?: RgbaColor
   shape?: 'square' | 'circle'
+  /** Override styling or suppress individual sample markers. */
+  style?: (sample: TimeSeriesMarkSample) => TimeSeriesPointStyle | undefined
 }
 
 export interface TimeSeriesPathContext {
@@ -82,6 +118,8 @@ export interface TimeSeriesSeries {
   field: string
   color?: RgbaColor
   lineWidth?: number
+  /** Dash and gap lengths in CSS pixels. */
+  dash?: readonly number[]
   interpolation?: TimeSeriesInterpolation
   visible?: boolean
   gapThreshold?: number
@@ -94,6 +132,8 @@ export interface TimeSeriesSeries {
   baseline?: number
   /** Fraction of local sample spacing occupied by a bar. Defaults to 0.75. */
   barWidthRatio?: number
+  /** Override styling or suppress individual bars. */
+  barStyle?: TimeSeriesBarStyleCallback
   /** Show markers at real sample coordinates on any enabled series. */
   points?: TimeSeriesPointOptions
   path?: TimeSeriesPathBuilder
@@ -358,6 +398,8 @@ export interface TimeSeriesLineSegment {
   pointCount: number
   /** Interleaved X/Y coordinates of the corresponding stacked baseline. */
   lower?: Float32Array
+  /** Indices into the input arrays for opt-in mark callbacks. */
+  sampleIndices?: Uint32Array
 }
 
 export interface TimeSeriesPlannedSeries {
@@ -372,8 +414,15 @@ export interface TimeSeriesPlannedSeries {
   fillColor?: RgbaColor
   baseline?: number
   barWidthRatio?: number
+  barStyle?: TimeSeriesBarStyleCallback
   points?: TimeSeriesPointOptions
   path?: TimeSeriesPathBuilder
+  /** Unprojected input columns for mark callbacks. */
+  markSource?: {
+    timestamps: Float64Array
+    values: Float64Array
+    plottedValues: Float64Array
+  }
   /** Actual samples for point markers on a stepped line. */
   pointSegments?: readonly TimeSeriesLineSegment[]
   sourcePointCount: number
@@ -801,12 +850,13 @@ export function buildTimeSeriesRenderPlan(
     }
 
     const stack = stacked?.get(series.key)
-    const values = stack?.values ?? data.columns[series.field]
-    if (!values) {
+    const sourceValues = data.columns[series.field]
+    if (!sourceValues) {
       warnings.push(`Series "${series.key}" skipped because column "${series.field}" is missing.`)
       continue
     }
 
+    const values = stack?.values ?? sourceValues
     const timestamps = data.seriesTimestamps?.[series.field] ?? data.timestamps
     const pointCount = Math.min(timestamps.length, values.length)
     if (timestamps.length !== values.length) {
@@ -817,6 +867,12 @@ export function buildTimeSeriesRenderPlan(
 
     const interpolation = series.interpolation ?? options.interpolation ?? 'linear'
     const pointOrBar = series.mark === 'point' || series.mark === 'bar'
+    const steppedMarkers =
+      !pointOrBar &&
+      series.points !== undefined &&
+      (interpolation === 'step-before' || interpolation === 'step-after')
+    const stylePoints = series.points?.style !== undefined
+    const styleBars = series.mark === 'bar' && series.barStyle !== undefined
     const samples = {
       pointCount,
       xRange,
@@ -826,15 +882,18 @@ export function buildTimeSeriesRenderPlan(
       sampleKinds: data.sampleKinds?.[series.field],
       lowerValues: stack?.lower,
       positiveOnly: axis.options.scale?.type === 'log',
+      trackSampleIndices: !series.path && ((stylePoints && !steppedMarkers) || styleBars),
       keepSingletons: pointOrBar || series.points !== undefined,
       interpolation: pointOrBar ? ('linear' as const) : interpolation,
     }
     const build = buildSeriesSegments(timestamps, values, samples)
-    const pointSegments =
-      series.points &&
-      (samples.interpolation === 'step-before' || samples.interpolation === 'step-after')
-        ? buildSeriesSegments(timestamps, values, { ...samples, interpolation: 'linear' }).segments
-        : undefined
+    const pointSegments = steppedMarkers
+      ? buildSeriesSegments(timestamps, values, {
+          ...samples,
+          trackSampleIndices: !series.path && stylePoints,
+          interpolation: 'linear',
+        }).segments
+      : undefined
 
     sourcePointCount += pointCount
     includedSampleCount += build.includedSampleCount
@@ -862,6 +921,7 @@ export function buildTimeSeriesRenderPlan(
       style: {
         color: series.color ?? getDefaultColor(seriesIndex, options.defaultColor),
         width: series.lineWidth ?? options.defaultLineWidth ?? 1.5,
+        ...(series.dash !== undefined ? { dash: series.dash } : {}),
       },
       interpolation,
       segments: build.segments,
@@ -869,6 +929,10 @@ export function buildTimeSeriesRenderPlan(
       ...(series.fillColor !== undefined ? { fillColor: series.fillColor } : {}),
       ...(series.baseline !== undefined ? { baseline: series.baseline } : {}),
       ...(series.barWidthRatio !== undefined ? { barWidthRatio: series.barWidthRatio } : {}),
+      ...(styleBars && series.barStyle ? { barStyle: series.barStyle } : {}),
+      ...(!series.path && (styleBars || stylePoints)
+        ? { markSource: { timestamps, values: sourceValues, plottedValues: values } }
+        : {}),
       ...(series.points !== undefined ? { points: series.points } : {}),
       ...(series.path !== undefined ? { path: series.path } : {}),
       ...(pointSegments ? { pointSegments } : {}),
@@ -1358,36 +1422,51 @@ export function addTimeSeriesToCommandList(
 
     if (bar) {
       const widthRatio = clampNumber(series.barWidthRatio ?? 0.75, 0.02, 1)
-      const bounds = buildTimeSeriesBarBounds(
-        series.segments,
-        baseline,
-        widthRatio,
-        seriesTransform,
-      )
-      commands.addMarks(
-        bounds,
-        { color: series.fillColor ?? series.style.color },
-        z,
-        pixelTransform,
-      )
+      const color = series.fillColor ?? series.style.color
+      if (series.barStyle && series.markSource) {
+        for (const batch of buildStyledTimeSeriesBarBatches(
+          series,
+          baseline,
+          widthRatio,
+          color,
+          seriesTransform,
+        )) {
+          commands.addMarks(batch.bounds, batch.options, z, pixelTransform)
+        }
+      } else {
+        const bounds = buildTimeSeriesBarBounds(
+          series.segments,
+          baseline,
+          widthRatio,
+          seriesTransform,
+        )
+        commands.addMarks(bounds, { color }, z, pixelTransform)
+      }
     } else if (!point) {
       addTimeSeriesLine(commands, series, baseline, z, transform, seriesTransform)
     }
 
     if (point || series.points) {
       const size = clampNumber(series.points?.size ?? 5, 1, 128)
-      const bounds = buildTimeSeriesPointBounds(
-        series.pointSegments ?? series.segments,
-        size,
-        seriesTransform,
-      )
+      const color = series.points?.color ?? series.style.color
       const shape = series.points?.shape === 'square' ? 'rect' : 'ellipse'
-      commands.addMarks(
-        bounds,
-        { color: series.points?.color ?? series.style.color, shape },
-        ZLayer.Overlay,
-        pixelTransform,
-      )
+      if (series.points?.style && series.markSource) {
+        for (const batch of buildStyledTimeSeriesPointBatches(
+          series,
+          size,
+          { color, shape },
+          seriesTransform,
+        )) {
+          commands.addMarks(batch.bounds, batch.options, ZLayer.Overlay, pixelTransform)
+        }
+      } else {
+        const bounds = buildTimeSeriesPointBounds(
+          series.pointSegments ?? series.segments,
+          size,
+          seriesTransform,
+        )
+        commands.addMarks(bounds, { color, shape }, ZLayer.Overlay, pixelTransform)
+      }
     }
   }
 }
@@ -2608,6 +2687,7 @@ function buildSeriesSegments(
     interpolation: TimeSeriesInterpolation
     keepSingletons: boolean
     positiveOnly: boolean
+    trackSampleIndices: boolean
     spanGaps: boolean
     sampleKinds: Uint8Array | undefined
     lowerValues: Float64Array | undefined
@@ -2617,6 +2697,7 @@ function buildSeriesSegments(
     (options.interpolation === 'linear' || options.interpolation === 'spline') &&
     !options.keepSingletons &&
     !options.positiveOnly &&
+    !options.trackSampleIndices &&
     !options.spanGaps &&
     !options.sampleKinds &&
     !options.lowerValues
@@ -2628,6 +2709,7 @@ function buildSeriesSegments(
   const scratch = new Float32Array(maxFloats)
   const { lowerValues, positiveOnly, sampleKinds, spanGaps } = options
   const lowerScratch = lowerValues ? new Float32Array(maxFloats) : undefined
+  const sampleScratch = options.trackSampleIndices ? new Uint32Array(maxFloats / 2) : undefined
   const segments: TimeSeriesLineSegment[] = []
   let write = 0
   let segmentStart = 0
@@ -2647,6 +2729,9 @@ function buildSeriesSegments(
         buffer,
         pointCount: segmentPointCount,
         ...(lowerScratch ? { lower: lowerScratch.subarray(segmentStart, write) } : {}),
+        ...(sampleScratch
+          ? { sampleIndices: sampleScratch.subarray(segmentStart / 2, write / 2) }
+          : {}),
       })
       renderedPointCount += segmentPointCount
     }
@@ -2709,6 +2794,7 @@ function buildSeriesSegments(
     } else {
       appendPoint(x, value, lower)
     }
+    if (sampleScratch) sampleScratch[write / 2 - 1] = i
 
     includedSampleCount += 1
     if (lowerValues && (!positiveOnly || lower > 0)) {

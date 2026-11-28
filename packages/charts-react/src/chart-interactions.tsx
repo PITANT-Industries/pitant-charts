@@ -195,8 +195,10 @@ export function ChartRegionZoomLayer({
         height: y ? Math.abs(drag.start.plotY - drag.current.plotY) : plot.height,
       }
     }
-    const ranges = selectedRanges === undefined ? storedSelection : selectedRanges
-    if (!ranges || (!ranges.xRange && !ranges.yRange)) return null
+    const ranges = normalizeChartSelection(
+      selectedRanges === undefined ? storedSelection : selectedRanges,
+    )
+    if (!ranges) return null
     const first = mapDataPointToChartPoint({
       x: ranges.xRange?.[0] ?? xOrigin + xRange[0],
       y: ranges.yRange?.[0] ?? yRange[0],
@@ -698,6 +700,16 @@ function selectedAxes(
   if (!x || !y || adaptivePx <= 0) return { x, y }
   if (dx >= adaptivePx && dy >= adaptivePx) return { x, y }
   return { x: dx >= dy, y: dy > dx }
+}
+
+export function normalizeChartSelection(
+  ranges: ChartRangeSelection | null,
+): ChartRangeSelection | null {
+  if (!ranges) return null
+  const xRange = ranges.xRange ? orderedRange(...ranges.xRange) : undefined
+  const yRange = ranges.yRange ? orderedRange(...ranges.yRange) : undefined
+  if (!xRange && !yRange) return null
+  return { ...(xRange ? { xRange } : {}), ...(yRange ? { yRange } : {}) }
 }
 
 function orderedRange(first: number, last: number): NumericRange | undefined {

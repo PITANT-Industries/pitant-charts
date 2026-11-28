@@ -1,3 +1,4 @@
+import { normalizeLineDash } from './line-dash.js'
 import type {
   FillOptions,
   LineOptions,
@@ -92,6 +93,8 @@ export class Canvas2DRenderContext implements RenderContext {
     // Apply only the backing-store scale when stroking so width stays in CSS pixels.
     ctx.save()
     ctx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0)
+    const dash = normalizeLineDash(options.dash)
+    if (dash) ctx.setLineDash([...dash])
     ctx.stroke()
     ctx.restore()
   }

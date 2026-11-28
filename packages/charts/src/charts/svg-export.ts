@@ -1,3 +1,4 @@
+import { normalizeLineDash } from '../renderer/line-dash.js'
 import type { DrawCommand, RenderCommandList } from '../renderer/render-command-list.js'
 import type {
   FillOptions,
@@ -106,7 +107,9 @@ function lineToSvg(
   if (buffer.length < 4) return null
   const d = linePath(buffer, transform)
   if (!d) return null
-  return `<path d="${d}" fill="none" ${strokeAttrs(options.color, options.width)} stroke-linecap="${options.cap ?? 'butt'}" stroke-linejoin="${options.join ?? 'miter'}"/>`
+  const dash = normalizeLineDash(options.dash)
+  const dashAttribute = dash ? ` stroke-dasharray="${dash.join(' ')}"` : ''
+  return `<path d="${d}" fill="none" ${strokeAttrs(options.color, options.width)} stroke-linecap="${options.cap ?? 'butt'}" stroke-linejoin="${options.join ?? 'miter'}"${dashAttribute}/>`
 }
 
 function fillToSvg(

@@ -172,8 +172,9 @@ tooltip values. PNG and SVG use the same axes as the live chart.
   axis. A named Y axis can derive another unit's positions through `from`.
 - Set `mark` on a series to `'line'`, `'area'`, `'bar'`, or `'point'`. Line
   interpolation also accepts `'spline'`. Per-series `baseline`, `fillRgba`,
-  `points`, and `spanGaps` customize supported marks. `path` replaces the
-  default geometry with renderer-neutral draw commands.
+  `dash`, `points`, and `spanGaps` customize supported marks. `points.style`
+  and `barStyle` configure individual samples, including visibility. `path`
+  replaces the default geometry with renderer-neutral draw commands.
 - Use `config.stack.groups` with series keys when a group shares its time
   positions and Y axis. Set `percent: true` to show signed proportions.
 - Supply per-field sorted `seriesTimestamps` for asynchronous channels.
@@ -187,10 +188,23 @@ tooltip values. PNG and SVG use the same axes as the live chart.
 `TimeSeries` accepts an `interaction` prop. Select `mode: 'x'`, `'y'`, or
 `'xy'` under `interaction.selection`. Set `zoom: false` for an inspection
 rectangle and read the result through `onSelectionChange`. Programmatic
-`selectedRanges` use absolute X and primary Y data values. Set `hoverLock`
-for click-to-pin, `snapToSample` for nearest-sample snapping, or
+`selectedRanges` use absolute X and primary Y data values. In the
+`TimeSeries` render prop or with `useTimeSeries`, call
+`chart.setSelection({ xRange: [start, end], yRange: [low, high] })` to show an
+inspection rectangle without zooming. Omit an axis to span that direction.
+Call `chart.setSelection(null)` to clear it. When `interaction.selectedRanges`
+controls the rectangle, the caller updates it through `onSelectionChange`.
+
+Set `hoverLock` for click-to-pin, `snapToSample` for nearest-sample snapping, or
 `focusClosestSeries` to dim other traces near the cursor. Y zoom acts on the
 primary value axis. Use `setVisibleYRange(null)` to restore its original range.
+
+A `TimeSeries` series or `DigitalChannel` channel can set `hoverIndex` to `'previous'`, `'next'`, `'exact'`, or a
+callback. The callback receives that field's raw timestamps, values, quality
+flags, sample kinds, and nearest index. Return a zero-based index, `undefined`
+to keep the nearest sample, or `null` to leave the reading empty. The tooltip header
+keeps the cursor timestamp and alternate readings expose their actual
+`sampleTimestamp` for custom tooltip rendering.
 
 `ChartSyncGroup` defaults to timestamps and X ranges. Supply
 `cursor={{ x: 'relative', y: 'relative' }}` to synchronize fractional cursor

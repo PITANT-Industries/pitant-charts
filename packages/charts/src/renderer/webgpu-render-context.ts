@@ -1,4 +1,5 @@
 import { GPUPipelineManager } from './gpu-pipeline.js'
+import { normalizeLineDash, packDashedLine } from './line-dash.js'
 import type {
   FillOptions,
   LineOptions,
@@ -209,6 +210,16 @@ export class WebGPURenderContext implements RenderContext {
     const numPoints = buffer.length / 2
     if (numPoints < 2) return
 
+    const pattern = normalizeLineDash(options.dash)
+    const dashed = pattern
+      ? packDashedLine(
+          buffer,
+          pattern,
+          (this._width * this._dpr * (this._transformMatrix[0] as number)) / 2,
+          (this._height * this._dpr * (this._transformMatrix[5] as number)) / 2,
+          this._dpr,
+        )
+      : undefined
     const { pipeline, frameBindGroupLayout, lineBindGroupLayout } =
       this._pipelineManager.getLinePipeline()
 
@@ -221,7 +232,7 @@ export class WebGPURenderContext implements RenderContext {
     )
 
     // Point storage buffer
-    const pointBuffer = this._pipelineManager.createPointBuffer(buffer)
+    const pointBuffer = this._pipelineManager.createPointBuffer(dashed?.buffer ?? buffer)
     this._frameBuffers.push(pointBuffer)
 
     // Line uniforms
@@ -233,6 +244,7 @@ export class WebGPURenderContext implements RenderContext {
       options.width * this._dpr,
       capVal,
       joinVal,
+      dashed?.period ?? 0,
     )
     this._frameBuffers.push(uniformBuffer)
 

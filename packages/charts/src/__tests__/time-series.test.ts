@@ -525,6 +525,91 @@ describe('time-series chart planning', () => {
     expect(svg).toContain(' A 4.5 4.5 ')
   })
 
+  it('styles real point samples using exact input coordinates and preserves the line style', () => {
+    const epoch = Date.UTC(2026, 10, 28, 12)
+    const timestamps = new Float64Array([epoch, epoch + 0.125, epoch + 0.5])
+    const values = new Float64Array([10.1, 20.2, 15.3])
+    const seen: { index: number; timestamp: number; value: number }[] = []
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps,
+        columns: { a: values },
+        series: [
+          {
+            key: 'a',
+            field: 'a',
+            label: 'A',
+            interpolation: 'step-after',
+            dash: [8, 4],
+            points: {
+              style: ({ index, timestamp, value }) => {
+                seen.push({ index, timestamp, value })
+                if (index === 1) return { visible: false }
+                return { size: 11, shape: 'square', color: [0, 1, 0, 1] }
+              },
+            },
+          },
+        ],
+      },
+      { xRange: [epoch + 0.1, epoch + 0.5] },
+    )
+    const frame = buildTimeSeriesCommandFrame(plan, 300, 160)
+    const commands = frame.commands.sorted()
+    expect(seen).toEqual([
+      { index: 1, timestamp: epoch + 0.125, value: 20.2 },
+      { index: 2, timestamp: epoch + 0.5, value: 15.3 },
+    ])
+    const line = commands.find((command) => command.kind === 'line')
+    const points = commands.find((command) => command.kind === 'marks')
+    if (line?.kind !== 'line' || points?.kind !== 'marks')
+      throw new Error('Expected styled geometry')
+    expect(line.buffer.length).toBe(6)
+    expect(line.options.dash).toEqual([8, 4])
+    expect(points.options).toEqual({ color: [0, 1, 0, 1], shape: 'rect' })
+    expect(points.bounds.subarray(2)).toEqual(new Float32Array([11, 11]))
+  })
+
+  it('groups bar style overrides by matching paint and reports stacked value and base', () => {
+    const seen: number[][] = []
+    const plan = buildTimeSeriesRenderPlan(
+      {
+        timestamps: new Float64Array([0, 1, 2]),
+        columns: { a: new Float64Array([2, 3, 4]), b: new Float64Array([5, 6, 7]) },
+        series: [
+          { key: 'a', field: 'a', label: 'A', mark: 'bar' },
+          {
+            key: 'b',
+            field: 'b',
+            label: 'B',
+            mark: 'bar',
+            barStyle: ({ index, value, plottedValue, baseline }) => {
+              seen.push([index, value, plottedValue, baseline ?? -1])
+              if (index === 2) return { visible: false }
+              return { color: [1, 0, 0, 1], ...(index === 0 ? { width: 7 } : { widthRatio: 0.2 }) }
+            },
+          },
+        ],
+      },
+      {
+        xRange: [0, 2],
+        stack: { groups: [{ series: ['a', 'b'] }] },
+      },
+    )
+    const frame = buildTimeSeriesCommandFrame(plan, 300, 160)
+    const marks = frame.commands.sorted().filter((command) => command.kind === 'marks')
+    expect(seen).toEqual([
+      [0, 5, 7, 2],
+      [1, 6, 9, 3],
+      [2, 7, 11, 4],
+    ])
+    expect(marks).toHaveLength(2)
+    expect(marks[1]?.options.color).toEqual([1, 0, 0, 1])
+    expect(marks[1]?.bounds.length).toBe(8)
+    expect(marks[1]?.bounds[2]).toBe(7)
+    expect(marks[1]?.bounds[6]).toBeCloseTo(30)
+    expect(commandFrameToSvg(frame)).toContain('fill="rgb(255 0 0)"')
+  })
+
   it('only marks real samples on stepped lines', () => {
     const plan = buildTimeSeriesRenderPlan({
       timestamps: new Float64Array([0, 5, 10]),

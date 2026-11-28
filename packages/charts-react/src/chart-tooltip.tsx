@@ -18,6 +18,8 @@ export interface ChartTooltipSeries {
   color: string
   value: number | null
   formatted: string
+  /** Actual source timestamp when this row uses a facet or a hover policy. */
+  sampleTimestamp?: number
   quality?: number | null
   qualityLabel?: string
   gap?: boolean

@@ -60,6 +60,8 @@ export type {
   ColumnarTooltipProvenanceField,
   ColumnarTooltipProvenanceMap,
   ColumnarTooltipProvenanceValue,
+  SeriesHoverIndex,
+  SeriesHoverIndexContext,
 } from './chart-tooltip-data.js'
 // Correlation matrix
 export type {

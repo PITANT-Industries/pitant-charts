@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { calendarTicks, createAxisProjection } from '../charts/axis-scale.js'
-import { createChartLayout, createPlotViewportTransform } from '../charts/common.js'
+import {
+  addChartGuidesToCommandList,
+  createChartLayout,
+  createPlotViewportTransform,
+} from '../charts/common.js'
 import { mapChartPointToDataPoint, mapDataPointToChartPoint } from '../charts/pointer.js'
+import { RenderCommandList, ZLayer } from '../renderer/render-command-list.js'
 
 describe('axis scales', () => {
   it('keeps log ticks, rendered coordinates, and interactions on the same reversed axis', () => {
@@ -52,6 +57,52 @@ describe('axis scales', () => {
       source?.ticks.map((tick) => tick.position),
     )
     expect(dependent?.projection?.fromRatio(0.5)).toBe(122)
+  })
+
+  it('draws a secondary grid and labels at the secondary axis positions', () => {
+    const gridColor = [0.2, 0.4, 0.8, 0.5] as const
+    const textColor = [0.2, 0.4, 0.8, 1] as const
+    const layout = createChartLayout({
+      width: 400,
+      height: 240,
+      xAxis: { grid: false },
+      yAxes: [
+        { key: 'temperature', range: [0, 100], grid: false },
+        {
+          key: 'pressure',
+          range: [1, 1000],
+          scale: { type: 'log', reverse: true },
+          grid: { color: gridColor, width: 2 },
+          textColor,
+        },
+        { key: 'flow', range: [0, 10] },
+      ],
+    })
+    const commands = new RenderCommandList()
+    addChartGuidesToCommandList(commands, layout, [0, 1], [0, 100])
+    const grid = commands
+      .sorted()
+      .flatMap((command) => (command.kind === 'line' && command.z === ZLayer.Fill ? [command] : []))
+    const axis = layout.yAxes?.[1]
+    expect(grid.length).toBe(4)
+    expect(grid.map((command) => command.options)).toEqual(
+      axis?.ticks.map(() => ({ color: gridColor, width: 2 })),
+    )
+    for (const [index, command] of grid.entries()) {
+      const point = command.transform?.dataToPixel(
+        command.buffer[0] as number,
+        command.buffer[1] as number,
+      )
+      expect(point?.x).toBe(layout.plotArea.x)
+      expect(point?.y).toBeCloseTo(axis?.ticks[index]?.position ?? NaN)
+    }
+    expect(
+      commands
+        .sorted()
+        .flatMap((command) =>
+          command.kind === 'text' && command.options.color === textColor ? [command.y] : [],
+        ),
+    ).toEqual(axis?.ticks.map(({ position }) => position))
   })
 
   it('round-trips ordinal, custom and signed nonlinear projections', () => {

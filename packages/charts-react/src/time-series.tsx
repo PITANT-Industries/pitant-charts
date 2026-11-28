@@ -24,6 +24,7 @@ import {
   renderTimeSeriesPlan,
   type TimeSeriesAnomalyTrackPlacement,
   type TimeSeriesAnomalyTrackReviewerState,
+  type TimeSeriesBarStyleCallback,
   type TimeSeriesDerivedColumnKind,
   type TimeSeriesEventMarkerPlacement,
   type TimeSeriesEventMarkerType,
@@ -52,7 +53,12 @@ import {
 import type { ChartContainerProps, ChartContainerRef } from './chart-container.js'
 import { ChartContainer } from './chart-container.js'
 import { ChartDataZoom } from './chart-data-zoom.js'
-import { ChartRegionZoomLayer, type ChartRegionZoomLayerProps } from './chart-interactions.js'
+import {
+  type ChartRangeSelection,
+  ChartRegionZoomLayer,
+  type ChartRegionZoomLayerProps,
+  normalizeChartSelection,
+} from './chart-interactions.js'
 import type { ChartLegendItem } from './chart-legend.js'
 import {
   EMPTY_RANGE,
@@ -72,6 +78,7 @@ import {
   buildColumnarTooltipPayload,
   type ColumnarTooltipProvenanceMap,
   findNearestColumnarTimestamp,
+  type SeriesHoverIndex,
 } from './chart-tooltip-data.js'
 import type {
   AxisConfig,
@@ -98,14 +105,18 @@ export interface TimeSeriesSeriesConfig extends SeriesConfig {
   rgba?: RgbaColor
   lineWidth?: number
   interpolation?: TimeSeriesInterpolation
+  dash?: readonly number[]
   gapThreshold?: number
   mark?: TimeSeriesMark
   baseline?: number
   fillRgba?: RgbaColor
   barWidthRatio?: number
+  barStyle?: TimeSeriesBarStyleCallback
   points?: TimeSeriesPointOptions
   spanGaps?: boolean
   path?: TimeSeriesPathBuilder
+  /** Choose the raw sample inspected at the cursor. Defaults to nearest. */
+  hoverIndex?: SeriesHoverIndex
 }
 
 export interface TimeSeriesDerivedSeriesConfig extends Omit<TimeSeriesSeriesConfig, 'field'> {
@@ -352,6 +363,10 @@ export interface UseTimeSeriesReturn {
   setData: (data: TimeSeriesColumnData) => void
   visibleRange: readonly [number, number]
   setVisibleRange: (range: readonly [number, number]) => void
+  selectedRanges: ChartRangeSelection | null
+  /** Set an inspection rectangle without changing either viewport. */
+  setSelection: (selection: ChartRangeSelection | null) => void
+  handleSelectionChange: (selection: ChartRangeSelection | null) => void
   visibleYRange: NumericRange | null
   /** Set null to restore the configured or automatically fitted primary Y range. */
   setVisibleYRange: (range: NumericRange | null) => void
@@ -417,6 +432,26 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     streaming,
   } = options
   const [visibleRange, setVisibleRangeState] = useState<readonly [number, number]>(EMPTY_RANGE)
+  const [selection, setSelectionState] = useState<ChartRangeSelection | null>(null)
+  const controlledSelection = interaction?.selectedRanges
+  const selectionIsControlled = controlledSelection !== undefined
+  const onSelectionChange = interaction?.onSelectionChange
+  const keepDragSelection = interaction?.selection?.zoom === false
+  const setSelection = useCallback(
+    (ranges: ChartRangeSelection | null) => {
+      const normalized = normalizeChartSelection(ranges)
+      if (!selectionIsControlled) setSelectionState(normalized)
+      onSelectionChange?.(normalized)
+    },
+    [onSelectionChange, selectionIsControlled],
+  )
+  const handleSelectionChange = useCallback(
+    (ranges: ChartRangeSelection | null) => {
+      if (ranges === null || keepDragSelection) setSelection(ranges)
+      else onSelectionChange?.(ranges)
+    },
+    [keepDragSelection, onSelectionChange, setSelection],
+  )
   const [visibleYRange, setVisibleYRangeState] = useState<NumericRange | null>(null)
   const [stats, setStats] = useState<TimeSeriesStats>(EMPTY_TIMESERIES_STATS)
   const [tooltipPayload, setTooltipPayload] = useState<ChartTooltipPayload | null>(EMPTY_TOOLTIP)
@@ -461,12 +496,14 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
         }
         if (series.yAxisKey !== undefined) planned.yAxisKey = series.yAxisKey
         if (series.lineWidth !== undefined) planned.lineWidth = series.lineWidth
+        if (series.dash !== undefined) planned.dash = series.dash
         if (series.interpolation !== undefined) planned.interpolation = series.interpolation
         if (series.gapThreshold !== undefined) planned.gapThreshold = series.gapThreshold
         if (series.mark !== undefined) planned.mark = series.mark
         if (series.baseline !== undefined) planned.baseline = series.baseline
         if (series.fillRgba !== undefined) planned.fillColor = series.fillRgba
         if (series.barWidthRatio !== undefined) planned.barWidthRatio = series.barWidthRatio
+        if (series.barStyle !== undefined) planned.barStyle = series.barStyle
         if (series.points !== undefined) planned.points = series.points
         if (series.spanGaps !== undefined) planned.spanGaps = series.spanGaps
         if (series.path !== undefined) planned.path = series.path
@@ -900,6 +937,9 @@ export function useTimeSeries(options: UseTimeSeriesOptions): UseTimeSeriesRetur
     setData,
     visibleRange,
     setVisibleRange,
+    selectedRanges: controlledSelection === undefined ? selection : controlledSelection,
+    setSelection,
+    handleSelectionChange,
     visibleYRange,
     setVisibleYRange,
     snapHover,
@@ -1285,6 +1325,8 @@ export function TimeSeries(props: TimeSeriesProps): JSX.Element {
         layout={chart.layout}
         onHoverChange={chart.handleHoverChange}
         onRangeChange={chart.setVisibleRange}
+        onSelectionChange={chart.handleSelectionChange}
+        selectedRanges={chart.selectedRanges}
         onYRangeChange={chart.setVisibleYRange}
         snapHover={chart.snapHover}
         syncedCursorX={chart.syncedCursorX}

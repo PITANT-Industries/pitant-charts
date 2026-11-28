@@ -25,6 +25,26 @@ export type ColumnarTooltipProvenanceField =
 
 export type ColumnarTooltipProvenanceMap = Record<string, ColumnarTooltipProvenanceField>
 
+export interface SeriesHoverIndexContext {
+  seriesKey: string
+  field: string
+  /** Cursor position in the same time units as timestamps. */
+  timestamp: number
+  timestamps: Float64Array
+  values: Float64Array | undefined
+  quality: Uint8Array | undefined
+  sampleKinds: Uint8Array | undefined
+  nearestIndex: number | null
+}
+
+/** Return null for an empty reading or undefined to use the nearest reading. */
+export type SeriesHoverIndex =
+  | 'nearest'
+  | 'previous'
+  | 'next'
+  | 'exact'
+  | ((context: SeriesHoverIndexContext) => number | null | undefined)
+
 export interface ColumnarTooltipSeriesConfig {
   key: string
   label: string
@@ -34,6 +54,7 @@ export interface ColumnarTooltipSeriesConfig {
   visible?: boolean
   stateLabels?: Record<number, string>
   formatValue?: (value: number) => string
+  hoverIndex?: SeriesHoverIndex
 }
 
 export interface ColumnarTooltipData {
@@ -86,23 +107,39 @@ export function buildColumnarTooltipPayload({
     const item = series[index]
     if (!item || item.visible === false) continue
 
-    const timeline = data.seriesTimestamps?.[item.field]
-    const indexInSeries = timeline
-      ? findNearestTimestampIndex(timeline, timestamp)?.index
-      : nearest.index
-    const sampleKind =
-      indexInSeries === undefined ? undefined : data.sampleKinds?.[item.field]?.[indexInSeries]
-    const rawValue =
-      indexInSeries === undefined ? undefined : data.columns[item.field]?.[indexInSeries]
+    const facetTimeline = data.seriesTimestamps?.[item.field]
+    const timeline = facetTimeline ?? data.timestamps
+    const values = data.columns[item.field]
+    const qualityFlags = data.quality?.[item.field]
+    const sampleKinds = data.sampleKinds?.[item.field]
+    const nearestIndex = facetTimeline
+      ? (findNearestTimestampIndex(facetTimeline, timestamp)?.index ?? null)
+      : timeline.length > 0
+        ? nearest.index
+        : null
+    const indexInSeries =
+      item.hoverIndex && item.hoverIndex !== 'nearest'
+        ? selectHoverIndex(item.hoverIndex, {
+            seriesKey: item.key,
+            field: item.field,
+            timestamp,
+            timestamps: timeline,
+            values,
+            quality: qualityFlags,
+            sampleKinds,
+            nearestIndex,
+          })
+        : nearestIndex
+    const sampleKind = indexInSeries === null ? undefined : sampleKinds?.[indexInSeries]
+    const rawValue = indexInSeries === null ? undefined : values?.[indexInSeries]
     const value =
       (sampleKind === undefined || sampleKind === TimeSeriesSampleKind.Observed) &&
       Number.isFinite(rawValue)
         ? (rawValue as number)
         : null
-    const quality =
-      indexInSeries === undefined ? null : (data.quality?.[item.field]?.[indexInSeries] ?? null)
+    const quality = indexInSeries === null ? null : (qualityFlags?.[indexInSeries] ?? null)
     const provenance =
-      indexInSeries === undefined
+      indexInSeries === null
         ? null
         : provenanceForIndex(data.provenance?.[item.field], indexInSeries)
     const row: ChartTooltipSeries = {
@@ -121,8 +158,18 @@ export function buildColumnarTooltipPayload({
       row.qualityLabel = qualityLabel(quality)
     }
     if (provenance) row.provenance = provenance
-    if ((gap && !timeline) || sampleKind === TimeSeriesSampleKind.ExplicitGap) {
-      row.gap = true
+    if (indexInSeries !== null) {
+      const sampleTimestamp = timeline[indexInSeries]
+      if (
+        (facetTimeline !== undefined || item.hoverIndex !== undefined) &&
+        sampleTimestamp !== undefined
+      ) {
+        row.sampleTimestamp = sampleTimestamp
+      }
+      const seriesGap =
+        facetTimeline === undefined &&
+        (indexInSeries === nearest.index ? gap : isIndexInGap(indexInSeries, data.gaps))
+      if (seriesGap || sampleKind === TimeSeriesSampleKind.ExplicitGap) row.gap = true
     }
     rows.push(row)
   }
@@ -134,6 +181,26 @@ export function buildColumnarTooltipPayload({
     label: formatX?.(nearest.timestamp) ?? formatNumber(nearest.timestamp),
     series: rows,
   }
+}
+
+function selectHoverIndex(
+  policy: SeriesHoverIndex,
+  context: SeriesHoverIndexContext,
+): number | null {
+  const { nearestIndex, timestamp, timestamps } = context
+  let index = nearestIndex
+  if (typeof policy === 'function') {
+    const selected = policy(context)
+    if (selected !== undefined) index = selected
+  } else if (nearestIndex !== null) {
+    const nearestTimestamp = timestamps[nearestIndex] as number
+    if (policy === 'previous' && nearestTimestamp > timestamp) index = nearestIndex - 1
+    if (policy === 'next' && nearestTimestamp < timestamp) index = nearestIndex + 1
+    if (policy === 'exact' && nearestTimestamp !== timestamp) index = null
+  }
+  return index !== null && Number.isInteger(index) && index >= 0 && index < timestamps.length
+    ? index
+    : null
 }
 
 export function findNearestColumnarTimestamp(

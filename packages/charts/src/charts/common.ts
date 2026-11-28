@@ -49,6 +49,9 @@ export interface AxisLayoutOptions {
   tickRotation?: number
   side?: 'left' | 'right' | 'top' | 'bottom'
   label?: string
+  textColor?: RgbaColor
+  /** Grid lines follow this axis's ticks. A secondary axis must opt in. */
+  grid?: boolean | Partial<Pick<LineOptions, 'color' | 'width' | 'dash'>>
   formatValue?: (value: number) => string
   scale?: ChartScale
   rangePolicy?: AxisRangePolicy
@@ -120,6 +123,8 @@ export interface LaidOutYAxis {
   projection?: AxisProjection
   range?: NumericRange
   tickRotation?: number
+  textColor?: AxisLayoutOptions['textColor']
+  grid?: AxisLayoutOptions['grid']
 }
 
 export interface ChartLayout {
@@ -133,6 +138,10 @@ export interface ChartLayout {
   yAxisSide?: 'right'
   xTickRotation?: number
   yTickRotation?: number
+  xTextColor?: AxisLayoutOptions['textColor']
+  yTextColor?: AxisLayoutOptions['textColor']
+  xGrid?: AxisLayoutOptions['grid']
+  yGrid?: AxisLayoutOptions['grid']
   legendArea: ChartRect | null
   xAxisLabel: string | null
   yAxisLabel: string | null
@@ -386,6 +395,8 @@ export function createChartLayout(options: ChartLayoutOptions): ChartLayout {
       area: area ? { ...area, y: plotArea.y, height: plotArea.height } : null,
       label: axis.label ?? null,
       ...(axis.tickRotation ? { tickRotation: axis.tickRotation } : {}),
+      ...(axis.textColor ? { textColor: axis.textColor } : {}),
+      ...(axis.grid === undefined ? {} : { grid: axis.grid }),
       ticks: buildAxisTicks(
         range,
         axis.tickCount ?? (index === 0 ? yTickCount : 5),
@@ -411,6 +422,10 @@ export function createChartLayout(options: ChartLayoutOptions): ChartLayout {
     ...(yAtRight ? { yAxisSide: 'right' as const } : {}),
     ...(options.xAxis?.tickRotation ? { xTickRotation: options.xAxis.tickRotation } : {}),
     ...(options.yAxis?.tickRotation ? { yTickRotation: options.yAxis.tickRotation } : {}),
+    ...(options.xAxis?.textColor ? { xTextColor: options.xAxis.textColor } : {}),
+    ...(options.yAxis?.textColor ? { yTextColor: options.yAxis.textColor } : {}),
+    ...(options.xAxis?.grid === undefined ? {} : { xGrid: options.xAxis.grid }),
+    ...(options.yAxis?.grid === undefined ? {} : { yGrid: options.yAxis.grid }),
     legendArea,
     xAxisLabel: options.xAxis?.label ?? null,
     yAxisLabel: primaryYAxis ? primaryYAxis.label : (options.yAxis?.label ?? null),
@@ -516,20 +531,20 @@ export function addChartGuidesToCommandList(
   const ymax = layout.yProjection?.fromRatio(1) ?? yRange[1]
 
   if (gridVisible) {
-    for (const tick of layout.xTicks) {
-      commands.addLine(
-        new Float32Array([tick.value, ymin, tick.value, ymax]),
-        gridStyle,
-        ZLayer.Fill,
-      )
+    if (layout.xGrid !== false) {
+      const style = mergeGridStyle(gridStyle, layout.xGrid)
+      for (const tick of layout.xTicks) {
+        commands.addLine(new Float32Array([tick.value, ymin, tick.value, ymax]), style, ZLayer.Fill)
+      }
     }
-    for (const tick of layout.yTicks) {
-      commands.addLine(
-        new Float32Array([xmin, tick.value, xmax, tick.value]),
-        gridStyle,
-        ZLayer.Fill,
-      )
+    const primaryGrid = layout.yAxes?.[0]?.grid ?? layout.yGrid
+    if (primaryGrid !== false) {
+      const style = mergeGridStyle(gridStyle, primaryGrid)
+      for (const tick of layout.yTicks) {
+        commands.addLine(new Float32Array([xmin, tick.value, xmax, tick.value]), style, ZLayer.Fill)
+      }
     }
+    addSecondaryGrids(commands, layout, gridStyle)
   }
 
   if (axesVisible) {
@@ -554,6 +569,35 @@ export function addChartGuidesToCommandList(
 
   if (textVisible) {
     addAxisTextToCommandList(commands, layout, textStyle)
+  }
+}
+
+function mergeGridStyle(defaults: LineOptions, grid: AxisLayoutOptions['grid']): LineOptions {
+  return typeof grid === 'object' ? { ...defaults, ...grid } : defaults
+}
+
+function addSecondaryGrids(
+  commands: RenderCommandList,
+  layout: ChartLayout,
+  defaults: LineOptions,
+): void {
+  const axes = layout.yAxes
+  if (!axes || axes.length < 2) return
+  const { x, width } = layout.plotArea
+  let pixels: ViewTransform | undefined
+  for (let index = 1; index < axes.length; index++) {
+    const axis = axes[index]
+    if (!axis?.grid) continue
+    if (!pixels) {
+      const { width, height } = layout.bounds
+      pixels = new ViewTransform(width, height)
+      pixels.setTranslate(-width / 2, -height / 2)
+    }
+    const style = mergeGridStyle(defaults, axis.grid)
+    for (const tick of axis.ticks) {
+      const y = tick.position
+      commands.addLine(new Float32Array([x, y, x + width, y]), style, ZLayer.Fill, pixels)
+    }
   }
 }
 
@@ -939,6 +983,7 @@ function addAxisTextToCommandList(
 ): void {
   if (layout.xAxisArea) {
     const atTop = layout.xAxisSide === 'top'
+    const textColor = layout.xTextColor ?? style.color
     const tickY = atTop ? layout.xAxisArea.y + layout.xAxisArea.height - 6 : layout.xAxisArea.y + 6
     for (const tick of layout.xTicks) {
       commands.addText(
@@ -947,6 +992,7 @@ function addAxisTextToCommandList(
         tickY,
         {
           ...style,
+          color: textColor,
           align: 'center',
           baseline: atTop ? 'bottom' : 'top',
           ...(layout.xTickRotation ? { rotation: layout.xTickRotation } : {}),
@@ -962,6 +1008,7 @@ function addAxisTextToCommandList(
         atTop ? layout.xAxisArea.y + 2 : layout.xAxisArea.y + layout.xAxisArea.height - 2,
         {
           ...style,
+          color: textColor,
           align: 'center',
           baseline: atTop ? 'top' : 'bottom',
         },
@@ -977,9 +1024,10 @@ function addAxisTextToCommandList(
       ticks: layout.yTicks,
       label: layout.yAxisLabel,
       tickRotation: layout.yTickRotation,
+      textColor: layout.yTextColor,
     },
   ]
-  for (const { area, side, ticks, label, tickRotation } of yAxes) {
+  for (const { area, side, ticks, label, tickRotation, textColor } of yAxes) {
     if (!area) continue
     const fromRight = side === 'right'
     const tickX = fromRight ? area.x + 6 : area.x + area.width - 6
@@ -990,6 +1038,7 @@ function addAxisTextToCommandList(
         tick.position,
         {
           ...style,
+          color: textColor ?? style.color,
           align: fromRight ? 'left' : 'right',
           baseline: 'middle',
           ...(tickRotation ? { rotation: tickRotation } : {}),
@@ -1005,6 +1054,7 @@ function addAxisTextToCommandList(
         area.y + 4,
         {
           ...style,
+          color: textColor ?? style.color,
           align: fromRight ? 'right' : 'left',
           baseline: 'top',
         },
