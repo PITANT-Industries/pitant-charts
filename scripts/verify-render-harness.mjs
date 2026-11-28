@@ -255,14 +255,17 @@ try {
 }
 
 async function probeSoftwareWebgpuCanvas(tab) {
-  return await evaluate(
-    tab,
-    `(async () => {
+  try {
+    const gpu = await evaluate(
+      tab,
+      `(async () => {
       const adapter = await navigator.gpu.requestAdapter()
       const device = await adapter.requestDevice()
       const canvas = document.createElement('canvas')
       canvas.width = canvas.height = 16
+      canvas.style.cssText = 'position:fixed;top:0;left:0;width:16px;height:16px;z-index:2147483647'
       document.body.append(canvas)
+      window.__PITANT_WEBGPU_CONTROL__ = { canvas, device }
       const buffer = device.createBuffer({
         size: 256, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
       })
@@ -286,19 +289,30 @@ async function probeSoftwareWebgpuCanvas(tab) {
           new Promise(resolve => setTimeout(() => resolve(null), 4_000))
         ])
         await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
-        const snapshot = document.createElement('canvas')
-        const pixels = snapshot.getContext('2d', { willReadFrequently: true })
-        pixels.drawImage(canvas, 0, 0)
-        const sample = Array.from(pixels.getImageData(0, 0, 1, 1).data)
-        const isMagenta = rgba => rgba?.[0] > 240 && rgba[1] < 15 && rgba[2] > 240 && rgba[3] > 240
-        return { gpu, sample, canvas: isMagenta(gpu) && isMagenta(sample) }
+        return gpu
       } finally {
         buffer.destroy()
-        canvas.remove()
-        device.destroy()
       }
     })()`,
-  )
+    )
+    const image = await captureViewport(tab)
+    const offset = (image.width * 4 + 4) * 4
+    const sample = [...image.data.subarray(offset, offset + 4)]
+    const isMagenta = (rgba) => rgba?.[0] > 240 && rgba[1] < 15 && rgba[2] > 240 && rgba[3] > 240
+    return { gpu, sample, canvas: isMagenta(gpu) && isMagenta(sample) }
+  } finally {
+    await evaluate(
+      tab,
+      `(() => {
+        const control = window.__PITANT_WEBGPU_CONTROL__
+        if (control) {
+          control.canvas.remove()
+          control.device.destroy()
+          delete window.__PITANT_WEBGPU_CONTROL__
+        }
+      })()`,
+    )
+  }
 }
 
 async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
@@ -336,6 +350,19 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
     20_000,
   )
   const stateErrors = validateProfileState(state, profile)
+  if (renderer === 'webgpu' && options.softwareWebgpu && !options.visual && !options.fps) {
+    await evaluate(
+      tab,
+      `(async () => {
+        for (const surface of document.querySelectorAll('.chart-surface')) {
+          // Verify the WebGPU frame without counting its independent Canvas2D text overlay.
+          const overlay = surface.querySelector('canvas')?.nextElementSibling
+          if (overlay instanceof HTMLCanvasElement) overlay.style.visibility = 'hidden'
+        }
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      })()`,
+    )
+  }
   const viewportImage = await captureViewport(tab)
   const charts = []
   let scrolled = false
@@ -374,10 +401,7 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
       })`,
     )
   }
-  const pixelChecks =
-    renderer === 'webgpu' && options.softwareWebgpu && !options.visual && !options.fps
-      ? await countWebgpuCanvasPixels(tab, expectedSurfaces)
-      : charts.map((chart) => chart.significantPixels)
+  const pixelChecks = charts.map((chart) => chart.significantPixels)
   const visualComparison =
     options.visual && options.baseline
       ? compareVisualResult({ renderer, profile, charts }, options.baseline)
@@ -401,40 +425,6 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
     fpsBenchmark,
     failed,
   }
-}
-
-async function countWebgpuCanvasPixels(tab, expectedSurfaces) {
-  const deadline = Date.now() + 6_000
-  let counts
-  do {
-    counts = await evaluate(
-      tab,
-      `(() => Array.from(document.querySelectorAll('.chart-surface'), surface => {
-        // The renderer's text overlay is a separate sibling canvas.
-        const canvas = surface.querySelector('canvas')
-        if (!canvas?.width || !canvas.height) return 0
-        const snapshot = document.createElement('canvas')
-        snapshot.width = canvas.width
-        snapshot.height = canvas.height
-        const context = snapshot.getContext('2d', { willReadFrequently: true })
-        context.drawImage(canvas, 0, 0)
-        const { data } = context.getImageData(0, 0, snapshot.width, snapshot.height)
-        let visible = 0
-        for (let i = 3; i < data.length; i += 4) {
-          if (data[i] >= 20) visible++
-        }
-        return visible
-      }))()`,
-    )
-    if (
-      counts.length === expectedSurfaces &&
-      counts.every((count) => count >= MIN_SIGNIFICANT_PIXELS)
-    ) {
-      break
-    }
-    await sleep(350)
-  } while (Date.now() < deadline)
-  return counts
 }
 
 function validateProfileState(state, profile) {
