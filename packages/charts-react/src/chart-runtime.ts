@@ -114,13 +114,14 @@ export function useRenderer({
     const canvas = containerRef.current?.canvas
     if (!canvas) return
 
-    let disposed = false
+    const controller = new AbortController()
+    const { signal } = controller
     let resource: RendererSession | undefined
 
     async function init(target: HTMLCanvasElement) {
       try {
-        const context = await createRenderContext(target, { renderer })
-        if (disposed) {
+        const context = await createRenderContext(target, { renderer, signal })
+        if (signal.aborted) {
           context.dispose()
           return
         }
@@ -133,14 +134,14 @@ export function useRenderer({
         setSession(resource)
         setError(null)
       } catch (err) {
-        if (!disposed) setError(err instanceof Error ? err : new Error(String(err)))
+        if (!signal.aborted) setError(err instanceof Error ? err : new Error(String(err)))
       }
     }
 
     void init(canvas)
 
     return () => {
-      disposed = true
+      controller.abort()
       if (!resource) return
       setSession((current) => (current === resource ? null : current))
       try {

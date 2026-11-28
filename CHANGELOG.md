@@ -28,6 +28,8 @@ and catalog packages share a separate version. See their [release procedure](doc
 - Preserved epoch and fractional-millisecond timestamp precision through
   raw and downsampled viewport queries on the main thread and in workers.
 - Aligned WebGPU positions with Canvas2D and verified both renderers in Chrome.
+- Prevented canceled WebGPU initialization from replacing the device on a
+  chart that mounted while the earlier request was still in flight.
 
 ## 1.0.0 - 2026-05-19
 

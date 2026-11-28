@@ -72,6 +72,8 @@ export interface RendererCapabilities {
  */
 export interface RenderContextOptions {
   renderer?: RendererType | 'auto'
+  /** Cancels asynchronous setup before the renderer binds the canvas. */
+  signal?: AbortSignal
 }
 
 /** A renderer clip rectangle in CSS pixels. */

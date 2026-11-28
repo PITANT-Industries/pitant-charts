@@ -4,6 +4,8 @@
 
 - Fixed timestamp precision in the TimeSeries viewport and added regressions
   for dated and fractional-millisecond input.
+- Canceled renderer initialization on unmount so rapid remounts keep their
+  live WebGPU device.
 - Added named Y axes and mixed marks for TimeSeries, rotated plots, and a
   numeric Heatmap component.
 - Added XY selection, custom hover sampling, cursor and range synchronization,

@@ -38,6 +38,7 @@ class CdpClient {
     this.wsUrl = wsUrl
     this.nextId = 1
     this.pending = new Map()
+    this.gpuMessages = []
   }
 
   connect() {
@@ -64,6 +65,17 @@ class CdpClient {
 
   handleMessage(data) {
     const message = JSON.parse(data)
+    if (message.method === 'Log.entryAdded') {
+      const entry = message.params.entry
+      if (
+        /webgpu|dawn|vulkan|gpu device|GPUDevice|GPUAdapter|Invalid TextureView|Queue.Submit/i.test(
+          entry.text,
+        )
+      ) {
+        this.gpuMessages.push(entry.text)
+        if (this.gpuMessages.length > 20) this.gpuMessages.shift()
+      }
+    }
     if (!message.id) return
 
     const pending = this.pending.get(message.id)
@@ -153,6 +165,7 @@ try {
 
   await tab.send('Page.enable')
   await tab.send('Runtime.enable')
+  await tab.send('Log.enable')
   await tab.send('Emulation.setDeviceMetricsOverride', {
     width: VIEWPORT.width,
     height: VIEWPORT.height,
@@ -170,13 +183,20 @@ try {
       `location.href === ${JSON.stringify(baseUrl)} && document.readyState === "complete"`,
       20_000,
     )
-    webgpuAvailable = await evaluate(
+    const adapterInfo = await evaluate(
       tab,
-      '(async () => Boolean(await navigator.gpu?.requestAdapter()))()',
+      `(async () => {
+        const adapter = await navigator.gpu?.requestAdapter()
+        if (!adapter) return null
+        const { vendor, architecture, description, isFallbackAdapter } = adapter.info ?? {}
+        return { vendor, architecture, description, isFallbackAdapter }
+      })()`,
     )
+    webgpuAvailable = adapterInfo !== null
     if (softwareWebgpu && !webgpuAvailable) {
       throw new Error('The requested SwiftShader WebGPU adapter is unavailable.')
     }
+    if (softwareWebgpu) console.log('WebGPU test adapter:', adapterInfo)
   }
   const results = []
 
@@ -196,6 +216,7 @@ try {
         await verifyRenderer(tab, baseUrl, renderer, profile, {
           baseline: visualBaseline,
           fps: fpsMode,
+          softwareWebgpu,
           visual: visualMode,
         }),
       )
@@ -214,6 +235,9 @@ try {
   })
 
   const failed = results.some((result) => result.failed)
+  if (failed && tab.gpuMessages.length) {
+    console.error(`Browser GPU diagnostics:\n${[...new Set(tab.gpuMessages)].join('\n')}`)
+  }
   process.exitCode = failed ? 1 : 0
 } finally {
   tab?.disconnect()
@@ -294,7 +318,10 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
       })`,
     )
   }
-  const pixelChecks = charts.map((chart) => chart.significantPixels)
+  const pixelChecks =
+    renderer === 'webgpu' && options.softwareWebgpu && !options.visual && !options.fps
+      ? await countWebgpuCanvasPixels(tab, expectedSurfaces)
+      : charts.map((chart) => chart.significantPixels)
   const visualComparison =
     options.visual && options.baseline
       ? compareVisualResult({ renderer, profile, charts }, options.baseline)
@@ -302,6 +329,7 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
   const fpsBenchmark = options.fps ? await runFpsBenchmark(tab, renderer, profile) : null
   const failed =
     stateErrors.length > 0 ||
+    pixelChecks.length !== expectedSurfaces ||
     pixelChecks.some((count) => count < MIN_SIGNIFICANT_PIXELS) ||
     visualComparison?.failed === true ||
     fpsBenchmark?.failed === true
@@ -317,6 +345,40 @@ async function verifyRenderer(tab, baseUrl, renderer, profile, options = {}) {
     fpsBenchmark,
     failed,
   }
+}
+
+async function countWebgpuCanvasPixels(tab, expectedSurfaces) {
+  const deadline = Date.now() + 6_000
+  let counts
+  do {
+    counts = await evaluate(
+      tab,
+      `(() => Array.from(document.querySelectorAll('.chart-surface'), surface => {
+        // The renderer's text overlay is a separate sibling canvas.
+        const canvas = surface.querySelector('canvas')
+        if (!canvas?.width || !canvas.height) return 0
+        const snapshot = document.createElement('canvas')
+        snapshot.width = canvas.width
+        snapshot.height = canvas.height
+        const context = snapshot.getContext('2d', { willReadFrequently: true })
+        context.drawImage(canvas, 0, 0)
+        const { data } = context.getImageData(0, 0, snapshot.width, snapshot.height)
+        let visible = 0
+        for (let i = 3; i < data.length; i += 4) {
+          if (data[i] >= 20) visible++
+        }
+        return visible
+      }))()`,
+    )
+    if (
+      counts.length === expectedSurfaces &&
+      counts.every((count) => count >= MIN_SIGNIFICANT_PIXELS)
+    ) {
+      break
+    }
+    await sleep(350)
+  } while (Date.now() < deadline)
+  return counts
 }
 
 function validateProfileState(state, profile) {

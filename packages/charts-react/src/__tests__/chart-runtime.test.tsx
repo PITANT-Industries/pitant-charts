@@ -93,11 +93,12 @@ describe('useRenderer plugin lifecycle', () => {
     const deferred = new Promise<RenderContext>((resolve) => {
       resolveContext = resolve
     })
-    vi.spyOn(charts, 'createRenderContext').mockReturnValueOnce(deferred)
+    const create = vi.spyOn(charts, 'createRenderContext').mockReturnValueOnce(deferred)
 
     const containerRef = chartContainerRef()
     const { unmount } = renderHook(() => useRenderer({ containerRef, plugins: [{ mount }] }))
     unmount()
+    expect(create.mock.calls[0]?.[1]?.signal?.aborted).toBe(true)
     resolveContext({ dispose } as unknown as RenderContext)
     await waitFor(() => expect(dispose).toHaveBeenCalledOnce())
     expect(mount).not.toHaveBeenCalled()

@@ -92,25 +92,36 @@ export class WebGPURenderContext implements RenderContext {
     this._setupTextOverlay()
   }
 
-  static async create(canvas: HTMLCanvasElement): Promise<WebGPURenderContext> {
+  static async create(
+    canvas: HTMLCanvasElement,
+    signal?: AbortSignal,
+  ): Promise<WebGPURenderContext> {
+    signal?.throwIfAborted()
     const adapter = await navigator.gpu.requestAdapter()
+    signal?.throwIfAborted()
     if (!adapter) {
       throw new Error('@pitant/charts: No GPU adapter found')
     }
     const device = await adapter.requestDevice()
+    try {
+      // A later renderer may already own this canvas while GPU creation is pending.
+      signal?.throwIfAborted()
+      const context = canvas.getContext('webgpu')
+      if (!context) {
+        throw new Error('@pitant/charts: Failed to get WebGPU canvas context')
+      }
 
-    const context = canvas.getContext('webgpu')
-    if (!context) {
-      throw new Error('@pitant/charts: Failed to get WebGPU canvas context')
+      const format = navigator.gpu.getPreferredCanvasFormat()
+      context.configure({ device, format, alphaMode: 'premultiplied' })
+
+      const dpr = devicePixelRatio()
+      resizeCanvasBackingStore(canvas, canvas.clientWidth, canvas.clientHeight, dpr)
+
+      return new WebGPURenderContext(canvas, device, context, format)
+    } catch (error) {
+      device.destroy()
+      throw error
     }
-
-    const format = navigator.gpu.getPreferredCanvasFormat()
-    context.configure({ device, format, alphaMode: 'premultiplied' })
-
-    const dpr = devicePixelRatio()
-    resizeCanvasBackingStore(canvas, canvas.clientWidth, canvas.clientHeight, dpr)
-
-    return new WebGPURenderContext(canvas, device, context, format)
   }
 
   get width(): number {

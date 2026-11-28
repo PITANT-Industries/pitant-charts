@@ -173,7 +173,8 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
     const container = containerRef.current
     if (!container?.canvas) return
 
-    let disposed = false
+    const controller = new AbortController()
+    const { signal } = controller
     setReady(false)
     setError(null)
 
@@ -182,8 +183,9 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
         const { createRenderContext } = await import('@pitant/charts')
         const ctx = await createRenderContext(canvas, {
           renderer: config.renderer ?? 'auto',
+          signal,
         })
-        if (disposed) {
+        if (signal.aborted) {
           ctx.dispose()
           return
         }
@@ -191,7 +193,7 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
         setReady(true)
         setError(null)
       } catch (err) {
-        if (!disposed) {
+        if (!signal.aborted) {
           renderCtxRef.current = null
           setReady(false)
           setError(err instanceof Error ? err : new Error(String(err)))
@@ -202,7 +204,7 @@ export function useChart<TConfig extends ChartConfig = ChartConfig>(
     void init(container.canvas)
 
     return () => {
-      disposed = true
+      controller.abort()
       renderCtxRef.current?.dispose()
       renderCtxRef.current = null
       setReady(false)

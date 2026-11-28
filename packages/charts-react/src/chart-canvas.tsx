@@ -1,6 +1,6 @@
 'use client'
 
-import type { RenderContext, RenderContextOptions, RendererType } from '@pitant/charts'
+import type { RenderContext, RendererType } from '@pitant/charts'
 import { type JSX, useCallback, useEffect, useRef } from 'react'
 
 export interface ChartCanvasProps {
@@ -39,12 +39,11 @@ export function ChartCanvas(props: ChartCanvasProps): JSX.Element {
   onErrorRef.current = onContextError
 
   const initContext = useCallback(
-    async (canvas: HTMLCanvasElement, signal: { disposed: boolean }) => {
+    async (canvas: HTMLCanvasElement, signal: AbortSignal) => {
       try {
         const { createRenderContext } = await import('@pitant/charts')
-        const options: RenderContextOptions = { renderer }
-        const ctx = await createRenderContext(canvas, options)
-        if (signal.disposed) {
+        const ctx = await createRenderContext(canvas, { renderer, signal })
+        if (signal.aborted) {
           ctx.dispose()
           return
         }
@@ -53,7 +52,7 @@ export function ChartCanvas(props: ChartCanvasProps): JSX.Element {
         ctxRef.current = ctx
         onReadyRef.current?.(ctx)
       } catch (error) {
-        if (!signal.disposed) {
+        if (!signal.aborted) {
           onErrorRef.current?.(error instanceof Error ? error : new Error(String(error)))
         }
       }
@@ -65,11 +64,11 @@ export function ChartCanvas(props: ChartCanvasProps): JSX.Element {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const signal = { disposed: false }
-    void initContext(canvas, signal)
+    const controller = new AbortController()
+    void initContext(canvas, controller.signal)
 
     return () => {
-      signal.disposed = true
+      controller.abort()
       ctxRef.current?.dispose()
       ctxRef.current = null
     }
